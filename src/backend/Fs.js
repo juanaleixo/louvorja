@@ -1,5 +1,6 @@
 import { app } from 'electron'
 const fs = require('fs');
+const pathModule = require('path');
 
 const Config = require("./Config");
 
@@ -43,7 +44,7 @@ export function getAppBasePath(p) {
     } else if (process.platform === 'win32') {
         path = this.getAppDataPath() + '/LouvorJA/';
     } else {
-        path = this.getAppPath() + '/data/';
+        path = pathModule.join(app.getPath('appData'), 'LouvorJA', 'data');
     }
     if (!fs.existsSync(path)) {
         fs.mkdirSync(path, { recursive: true });
