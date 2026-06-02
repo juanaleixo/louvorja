@@ -194,7 +194,7 @@ export default {
 
   /**
    * Gerenciamento de armazenamento local (S2): stats, clear, verify,
-   * setFilesDir, openDir, checkLocal, setAutoCache.
+   * setFilesDir, openDir, checkLocal, removeFiles, sizeOfPaths, setAutoCache.
    * null no browser/PWA — controle só no desktop.
    */
   get storage() {

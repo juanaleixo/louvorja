@@ -7,7 +7,24 @@
     <section v-else class="opt-section">
       <h3 class="opt-section-title">{{ $t("options.collections_download.connection") }}</h3>
       <div class="opt-row opt-row--col">
-        <div class="opt-folder-path">{{ ftpStatusText }}</div>
+        <div
+          class="opt-connection-status"
+          :class="{
+            'opt-connection-status--ok': ftpOk,
+            'opt-connection-status--checking': ftpChecking,
+          }"
+        >
+          <div v-if="!ftpChecking" class="opt-connection-box">{{ ftpStatusText }}</div>
+          <span class="opt-connection-badge">
+            {{
+              ftpChecking
+                ? $t("options.collections_download.checking")
+                : ftpOk
+                  ? $t("options.collections_download.connected")
+                  : $t("options.collections_download.disconnected")
+            }}
+          </span>
+        </div>
         <div class="opt-folder-actions">
           <button type="button" class="opt-btn" :disabled="ftpChecking" @click="checkFtpConnection">
             {{ $t("options.collections_download.check_connection") }}
@@ -21,11 +38,34 @@
 
       <p class="opt-hint">{{ $t("options.collections_download.hint") }}</p>
 
+      <div class="opt-stats opt-stats--compact">
+        <div class="opt-stat opt-stat--total">
+          <span class="opt-stat-label">{{ $t("options.collections_download.disk_usage") }}</span>
+          <span class="opt-stat-value">
+            <template v-if="diskUsageLoading">
+              {{ $t("options.collections_download.disk_usage_loading") }}
+            </template>
+            <template v-else>
+              {{
+                $t("options.collections_download.disk_usage_detail", {
+                  size: humanSize(diskUsage.bytes),
+                  files: diskUsage.fileCount,
+                  albums: diskUsage.albumCount,
+                  hymnal: diskUsage.hymnalCached
+                    ? $t("options.collections_download.disk_usage_hymnal")
+                    : "",
+                })
+              }}
+            </template>
+          </span>
+        </div>
+      </div>
+
       <div class="opt-folder-actions" style="margin-bottom: 8px">
         <button
           type="button"
           class="opt-btn opt-btn--small"
-          :disabled="downloading || preparing || loadingCategories"
+          :disabled="downloading || preparing || loadingCategories || scanningCache"
           @click="selectAll"
         >
           {{ $t("options.collections_download.select_all") }}
@@ -33,7 +73,7 @@
         <button
           type="button"
           class="opt-btn opt-btn--small"
-          :disabled="downloading || preparing"
+          :disabled="downloading || preparing || scanningCache"
           @click="deselectAll"
         >
           {{ $t("options.collections_download.clear") }}
@@ -41,7 +81,7 @@
         <button
           type="button"
           class="opt-btn opt-btn--small"
-          :disabled="loadingCategories || downloading || preparing"
+          :disabled="loadingCategories || downloading || preparing || scanningCache"
           @click="refreshCatalog"
         >
           {{
@@ -63,6 +103,15 @@
         {{ $t("options.collections_download.loading") }}
       </div>
 
+      <div v-else-if="scanningCache" class="opt-folder-path">
+        {{
+          $t("options.collections_download.scanning_cache", {
+            done: scanCacheDone,
+            total: scanCacheTotal,
+          })
+        }}
+      </div>
+
       <div v-else class="opt-row opt-row--col">
         <div class="opt-download-list">
           <!-- Hinário Adventista (categoria especial) -->
@@ -71,8 +120,8 @@
               <input
                 type="checkbox"
                 :checked="selectedHymnal"
-                :disabled="downloading || preparing"
-                @change="selectedHymnal = $event.target.checked"
+                :disabled="downloading || preparing || scanningCache || saving"
+                @change="onHymnalToggle($event.target.checked)"
               />
               <strong>{{ $t("options.collections_download.hymnal") }}</strong>
               <small class="opt-download-count">
@@ -88,7 +137,7 @@
                 type="checkbox"
                 :checked="isCategoryFullySelected(cat)"
                 :indeterminate.prop="isCategoryPartiallySelected(cat)"
-                :disabled="downloading || preparing"
+                :disabled="downloading || preparing || scanningCache || saving"
                 @change="toggleCategory(cat, $event.target.checked)"
               />
               <strong>{{ cat.name }}</strong>
@@ -106,7 +155,7 @@
                 <input
                   type="checkbox"
                   :checked="selectedAlbums.has(album.id_album)"
-                  :disabled="downloading || preparing"
+                  :disabled="downloading || preparing || scanningCache || saving"
                   @change="toggleAlbum(album.id_album, $event.target.checked)"
                 />
                 <span>{{ album.name }}</span>
@@ -158,20 +207,33 @@
         {{ completedMsg }}
       </div>
 
-      <p v-if="!ftpOk && !downloading && !preparing" class="opt-hint">
+      <p v-if="!ftpOk && !downloading && !preparing" class="opt-hint pt-5">
         {{ $t("options.collections_download.no_connection_hint") }}
       </p>
 
       <div class="opt-folder-actions">
-        <button
-          v-if="!downloading && !preparing"
-          type="button"
-          class="opt-btn opt-btn--primary"
-          :disabled="!hasAnySelection"
-          @click="startDownloads"
-        >
-          {{ $t("options.collections_download.start") }}
-        </button>
+        <template v-if="!downloading && !preparing">
+          <button
+            type="button"
+            class="opt-btn opt-btn--primary"
+            :disabled="!hasAnySelection || saving || scanningCache"
+            @click="startDownloads"
+          >
+            {{ $t("options.collections_download.start") }}
+          </button>
+          <button
+            type="button"
+            class="opt-btn"
+            :disabled="!hasPendingRemovals || saving || scanningCache"
+            @click="saveSelection"
+          >
+            {{
+              saving
+                ? $t("options.collections_download.saving")
+                : $t("options.collections_download.save")
+            }}
+          </button>
+        </template>
         <button
           v-if="downloading"
           type="button"
@@ -200,12 +262,21 @@ const ftpHost = ref(null);
 const ftpError = ref(null);
 
 const loadingCategories = ref(false);
+const scanningCache = ref(false);
+const scanCacheDone = ref(0);
+const scanCacheTotal = ref(0);
 const categories = ref([]);
 const hymnalIds = ref([]);
 const catalogTimestamp = ref(null);
 const selectedAlbums = ref(new Set());
 const selectedHymnal = ref(false);
+/** Álbuns/hinário que estavam completos no disco no último scan/salvamento. */
+const cachedAlbumsBaseline = ref(new Set());
+const cachedHymnalBaseline = ref(false);
 
+const saving = ref(false);
+const diskUsageLoading = ref(false);
+const diskUsage = ref({ bytes: 0, fileCount: 0, albumCount: 0, hymnalCached: false });
 const preparing = ref(false);
 const prepareDone = ref(0);
 const prepareTotal = ref(0);
@@ -225,12 +296,19 @@ const downloadPercent = computed(() =>
 const ftpStatusText = computed(() => {
   if (ftpChecking.value) return t("options.collections_download.checking");
   if (ftpOk.value)
-    return ftpHost.value ? `HTTPS: ${ftpHost.value}` : t("options.collections_download.connected");
+    return ftpHost.value ? `https://${ftpHost.value}` : t("options.collections_download.connected");
   if (ftpError.value) return ftpError.value;
   return t("options.collections_download.disconnected");
 });
 
 const hasAnySelection = computed(() => selectedAlbums.value.size > 0 || selectedHymnal.value);
+
+const hasPendingRemovals = computed(() => {
+  for (const id of cachedAlbumsBaseline.value) {
+    if (!selectedAlbums.value.has(id)) return true;
+  }
+  return cachedHymnalBaseline.value && !selectedHymnal.value;
+});
 
 function isCategoryFullySelected(cat) {
   if (!cat.albums?.length) return false;
@@ -248,10 +326,62 @@ function toggleCategory(cat, checked) {
   });
   selectedAlbums.value = new Set(selectedAlbums.value);
 }
+
 function toggleAlbum(id, checked) {
   if (checked) selectedAlbums.value.add(id);
   else selectedAlbums.value.delete(id);
   selectedAlbums.value = new Set(selectedAlbums.value);
+}
+
+function onHymnalToggle(checked) {
+  selectedHymnal.value = checked;
+}
+
+/** Remove do disco os álbuns/hinário que estavam no cache e foram desmarcados. */
+async function saveSelection() {
+  if (!hasPendingRemovals.value || !Platform.storage?.removeFiles) return;
+
+  saving.value = true;
+  completedMsg.value = null;
+  let removedAlbums = 0;
+  let removedHymnal = false;
+
+  try {
+    const albumsToRemove = [...cachedAlbumsBaseline.value].filter(
+      (id) => !selectedAlbums.value.has(id)
+    );
+
+    for (const id of albumsToRemove) {
+      const files = await collectAlbumFileList(id);
+      await removeFilesFromCache(files);
+      cachedAlbumsBaseline.value.delete(id);
+      removedAlbums += 1;
+    }
+    cachedAlbumsBaseline.value = new Set(cachedAlbumsBaseline.value);
+
+    if (cachedHymnalBaseline.value && !selectedHymnal.value) {
+      const files = await collectHymnalFileList();
+      await removeFilesFromCache(files);
+      cachedHymnalBaseline.value = false;
+      removedHymnal = true;
+    }
+
+    if (removedAlbums > 0 && removedHymnal) {
+      completedMsg.value = t("options.collections_download.save_done_both", { n: removedAlbums });
+    } else if (removedAlbums > 0) {
+      completedMsg.value = t("options.collections_download.save_done_albums", { n: removedAlbums });
+    } else if (removedHymnal) {
+      completedMsg.value = t("options.collections_download.save_done_hymnal");
+    } else {
+      completedMsg.value = t("options.collections_download.save_nothing");
+    }
+    await refreshDiskUsage();
+  } catch (e) {
+    console.error("[Sincronizar] saveSelection:", e);
+    completedMsg.value = e.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 /** Seleciona TUDO: hinário + todos os álbuns de todas as categorias. */
@@ -271,6 +401,64 @@ function nowHHMM() {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+function humanSize(bytes) {
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let val = Number(bytes);
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024;
+    i += 1;
+  }
+  return `${val.toFixed(val < 10 ? 1 : 0)} ${units[i]}`;
+}
+
+/** Soma o tamanho no disco dos álbuns/hinário completos no cache local. */
+async function refreshDiskUsage() {
+  if (!Platform.storage?.sizeOfPaths) return;
+
+  const albumCount = cachedAlbumsBaseline.value.size;
+  const hymnalCached = cachedHymnalBaseline.value;
+  if (albumCount === 0 && !hymnalCached) {
+    diskUsage.value = { bytes: 0, fileCount: 0, albumCount: 0, hymnalCached: false };
+    return;
+  }
+
+  diskUsageLoading.value = true;
+  try {
+    const remotes = new Set();
+    const ALBUM_BATCH = 3;
+
+    const albumIds = [...cachedAlbumsBaseline.value];
+    for (let i = 0; i < albumIds.length; i += ALBUM_BATCH) {
+      const slice = albumIds.slice(i, i + ALBUM_BATCH);
+      await Promise.all(
+        slice.map(async (id) => {
+          const files = await collectAlbumFileList(id);
+          files.forEach((f) => remotes.add(f.remote));
+        })
+      );
+    }
+
+    if (hymnalCached) {
+      const hymFiles = await collectHymnalFileList();
+      hymFiles.forEach((f) => remotes.add(f.remote));
+    }
+
+    const { bytes, count } = await Platform.storage.sizeOfPaths([...remotes]);
+    diskUsage.value = {
+      bytes: bytes ?? 0,
+      fileCount: count ?? 0,
+      albumCount,
+      hymnalCached,
+    };
+  } catch (e) {
+    console.warn("[Sincronizar] refreshDiskUsage:", e);
+  } finally {
+    diskUsageLoading.value = false;
+  }
+}
+
 /** Carrega categorias e hinário em paralelo. fresh=true ignora o cache. */
 async function loadCatalog({ fresh = false } = {}) {
   loadingCategories.value = true;
@@ -288,6 +476,7 @@ async function loadCatalog({ fresh = false } = {}) {
         .filter((n) => Number.isFinite(n));
     }
     catalogTimestamp.value = nowHHMM();
+    await scanLocalCache();
   } catch (e) {
     console.error("[Sincronizar] loadCatalog:", e);
   } finally {
@@ -330,36 +519,126 @@ function toFile(url) {
   return { remote, local, expectedSize: 0 };
 }
 
+function addMusicToFileMap(m, files) {
+  if (!m) return;
+  [m.url_music, m.url_instrumental_music, m.url_image].forEach((u) => {
+    const f = toFile(u);
+    if (f) files.set(f.remote, f);
+  });
+  m.lyric?.forEach((line) => {
+    const f = toFile(line.url_image);
+    if (f) files.set(f.remote, f);
+  });
+}
+
+/** Carrega JSON sem alertas — 404 é esperado para music_* órfãos. */
 async function fetchJson(key) {
-  try {
-    return await Database.get(key);
-  } catch (e) {
-    console.warn(`[Sincronizar] fetchJson(${key}):`, e);
-    return null;
-  }
+  return Database.get(key, { silent: true });
 }
 
 /** Resolve músicas em batches concorrentes. */
-async function collectMusicFiles(musicIds, files) {
+async function collectMusicFiles(musicIds, files, onProgress) {
   const BATCH = 16;
   for (let i = 0; i < musicIds.length; i += BATCH) {
     const slice = musicIds.slice(i, i + BATCH);
     await Promise.all(
       slice.map(async (mid) => {
         const m = await fetchJson(`music_${mid}`);
-        if (!m) return;
-        [m.url_music, m.url_instrumental_music, m.url_image].forEach((u) => {
-          const f = toFile(u);
-          if (f) files.set(f.remote, f);
-        });
-        m.lyric?.forEach((line) => {
-          const f = toFile(line.url_image);
-          if (f) files.set(f.remote, f);
-        });
-        prepareDone.value += 1;
+        addMusicToFileMap(m, files);
+        onProgress?.();
       })
     );
   }
+}
+
+/** Lista de arquivos de mídia de um álbum (capa + todas as músicas). */
+async function collectAlbumFileList(albumId) {
+  const files = new Map();
+  const album = await fetchJson(`album_${albumId}`);
+  if (!album) return [];
+  const f = toFile(album.url_image);
+  if (f) files.set(f.remote, f);
+  const musicIds = (album.musics || [])
+    .map((m) => Number(m.id_music))
+    .filter((n) => Number.isFinite(n));
+  await collectMusicFiles(musicIds, files);
+  return [...files.values()];
+}
+
+/** Lista de arquivos do hinário. */
+async function collectHymnalFileList() {
+  const files = new Map();
+  await collectMusicFiles(hymnalIds.value, files);
+  return [...files.values()];
+}
+
+/** True se todos os arquivos da lista existem no disco local. */
+async function isFileListComplete(files) {
+  if (!files.length || !Platform.storage?.checkLocal) return false;
+  const remotes = files.map((f) => f.remote);
+  const local = await Platform.storage.checkLocal(remotes);
+  return remotes.every((r) => local[r] === true);
+}
+
+async function removeFilesFromCache(files) {
+  if (!files.length || !Platform.storage?.removeFiles) return;
+  await Platform.storage.removeFiles(files.map((f) => f.remote));
+}
+
+/** Marca álbuns/hinário já baixados por completo. */
+async function scanLocalCache() {
+  if (!Platform.storage?.checkLocal) return;
+
+  const albumIds = [];
+  categories.value.forEach((cat) => {
+    cat.albums?.forEach((a) => albumIds.push(a.id_album));
+  });
+
+  const totalSteps = albumIds.length + (hymnalIds.value.length ? 1 : 0);
+  if (totalSteps === 0) return;
+
+  scanningCache.value = true;
+  scanCacheTotal.value = totalSteps;
+  scanCacheDone.value = 0;
+
+  const cachedAlbums = new Set();
+
+  const ALBUM_BATCH = 3;
+  for (let i = 0; i < albumIds.length; i += ALBUM_BATCH) {
+    const slice = albumIds.slice(i, i + ALBUM_BATCH);
+    await Promise.all(
+      slice.map(async (id) => {
+        try {
+          const files = await collectAlbumFileList(id);
+          if (files.length > 0 && (await isFileListComplete(files))) {
+            cachedAlbums.add(id);
+          }
+        } catch (e) {
+          console.warn(`[Sincronizar] scan album ${id}:`, e);
+        } finally {
+          scanCacheDone.value += 1;
+        }
+      })
+    );
+  }
+
+  let hymnalCached = false;
+  if (hymnalIds.value.length) {
+    try {
+      const hymFiles = await collectHymnalFileList();
+      hymnalCached = hymFiles.length > 0 && (await isFileListComplete(hymFiles));
+    } catch (e) {
+      console.warn("[Sincronizar] scan hymnal:", e);
+    }
+    scanCacheDone.value += 1;
+  }
+
+  selectedAlbums.value = cachedAlbums;
+  selectedHymnal.value = hymnalCached;
+  cachedAlbumsBaseline.value = new Set(cachedAlbums);
+  cachedHymnalBaseline.value = hymnalCached;
+  scanningCache.value = false;
+  await refreshDiskUsage();
 }
 
 async function collectFiles() {
@@ -367,13 +646,11 @@ async function collectFiles() {
   const albumIds = [...selectedAlbums.value];
   const allMusicIds = new Set();
 
-  // Etapa 1: álbuns selecionados → capa + ids de músicas
   prepareTotal.value = albumIds.length;
   prepareDone.value = 0;
   await Promise.all(
     albumIds.map(async (id) => {
-      const album =
-        (await fetchJson(`${locale.value}_album_${id}`)) || (await fetchJson(`album_${id}`));
+      const album = await fetchJson(`album_${id}`);
       if (!album) return;
       const f = toFile(album.url_image);
       if (f) files.set(f.remote, f);
@@ -382,15 +659,15 @@ async function collectFiles() {
     })
   );
 
-  // Etapa 2: hinário (se marcado)
   if (selectedHymnal.value) {
     hymnalIds.value.forEach((id) => allMusicIds.add(id));
   }
 
-  // Etapa 3: para cada música única, baixar JSON e coletar URLs
   const musicIds = [...allMusicIds];
   prepareTotal.value = albumIds.length + musicIds.length;
-  await collectMusicFiles(musicIds, files);
+  await collectMusicFiles(musicIds, files, () => {
+    prepareDone.value += 1;
+  });
 
   return [...files.values()];
 }
@@ -451,7 +728,7 @@ async function startDownloads() {
     })
   );
   _cleanup.push(
-    Platform.download.onQueueDone((d) => {
+    Platform.download.onQueueDone(async (d) => {
       downloading.value = false;
       currentDownloadFile.value = null;
       completedMsg.value = t("options.collections_download.completed", {
@@ -459,6 +736,7 @@ async function startDownloads() {
         failed: d?.failed ?? failedDownloadCount.value,
       });
       cleanup();
+      await scanLocalCache();
     })
   );
   _cleanup.push(
@@ -471,7 +749,13 @@ async function startDownloads() {
   );
 
   try {
-    await Platform.download.start(files);
+    const result = await Platform.download.start(files);
+    if (result?.queued === 0) {
+      downloading.value = false;
+      completedMsg.value = result.message || t("options.collections_download.already_up_to_date");
+      cleanup();
+      await scanLocalCache();
+    }
   } catch (e) {
     downloading.value = false;
     ftpError.value = e.message;
@@ -531,5 +815,8 @@ onBeforeUnmount(() => {
 }
 .opt-album {
   font-size: var(--lj-text-sm);
+}
+.opt-stats--compact {
+  margin-bottom: 10px;
 }
 </style>

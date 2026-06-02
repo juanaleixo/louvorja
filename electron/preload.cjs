@@ -239,6 +239,10 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     enforceQuota: (maxBytes) => ipcRenderer.invoke("storage:enforceQuota", maxBytes),
     /** Verifica quais arquivos remotos já estão no disco. */
     checkLocal: (remotePaths) => ipcRenderer.invoke("storage:checkLocal", remotePaths),
+    /** Remove arquivos de mídia do cache local (paths remotos relativos). */
+    removeFiles: (remotePaths) => ipcRenderer.invoke("storage:removeFiles", remotePaths),
+    /** Soma bytes no disco para uma lista de paths remotos. */
+    sizeOfPaths: (remotePaths) => ipcRenderer.invoke("storage:sizeOfPaths", remotePaths),
     /** Liga/desliga auto-cache ao reproduzir mídia. */
     setAutoCache: (enabled) => ipcRenderer.invoke("storage:setAutoCache", enabled),
   },

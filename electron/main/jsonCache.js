@@ -112,7 +112,7 @@ const _inflight = new Map();
  * @param {string} relPath        Ex: "/pt_musics" ou "/music_123"
  * @param {string} remoteBaseUrl  Ex: "https://api.louvorja.com.br/json_db"
  * @param {object} headers        Headers para a requisição (Api-Token, etc.)
- * @returns {Promise<{body: Buffer, contentType: string, fromCache: boolean}>}
+ * @returns {Promise<{body: Buffer|null, contentType: string, fromCache: boolean, status: number}>}
  */
 async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
   const localPath = safeLocalPath(relPath);
@@ -124,6 +124,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
       body: await fs.readFile(localPath),
       contentType: "application/json",
       fromCache: true,
+      status: 200,
     };
   }
 
@@ -149,6 +150,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
             body: response.body,
             contentType: response.contentType,
             fromCache: false,
+            status: response.status,
           };
         }
 
@@ -169,6 +171,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
           body: response.body,
           contentType: "application/json",
           fromCache: false,
+          status: response.status,
         };
       }
 
@@ -180,6 +183,18 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
           body: await fs.readFile(localPath),
           contentType: "application/json",
           fromCache: true,
+          status: 200,
+        };
+      }
+
+      // 404 sem cache: recurso inexistente (ex. music_* órfão) — não lançar exceção
+      if (response.status === 404) {
+        console.warn(`[jsonCache] HTTP 404 para ${relPath} (sem cache local)`);
+        return {
+          body: null,
+          contentType: "application/json",
+          fromCache: false,
+          status: 404,
         };
       }
 
@@ -193,6 +208,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
           body: await fs.readFile(localPath),
           contentType: "application/json",
           fromCache: true,
+          status: 200,
         };
       }
       throw e;

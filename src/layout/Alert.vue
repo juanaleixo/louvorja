@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="show" max-width="480" persistent>
+  <v-dialog v-model="show" max-width="480" persistent :z-index="20000">
     <div class="alert" :class="`alert--${variant}`">
       <header v-if="alert.title" class="alert-header">
         <v-icon :icon="iconForVariant" size="20" class="alert-header-icon" />

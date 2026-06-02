@@ -185,8 +185,12 @@ function handle() {
           headers
         );
 
+        if (result.status === 404) {
+          return new Response("Not found", { status: 404 });
+        }
+
         return new Response(result.body, {
-          status: 200,
+          status: result.status || 200,
           headers: {
             "Content-Type": result.contentType,
             "X-Cache": result.fromCache ? "HIT" : "MISS",

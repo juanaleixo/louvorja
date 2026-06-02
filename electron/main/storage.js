@@ -202,6 +202,74 @@ async function setFilesDir(newDir, options = {}) {
  *
  * @param {number} maxBytes
  */
+/**
+ * Remove arquivos de mídia do disco (paths relativos à pasta de mídia).
+ * @param {string[]} remoteRelPaths  Ex: ["/config/musicas/Album/x.mp3"]
+ * @returns {Promise<{ removed: number }>}
+ */
+/**
+ * Soma o tamanho no disco de uma lista de paths remotos (pasta de mídia).
+ * @param {string[]} remoteRelPaths
+ * @returns {Promise<{ bytes: number, count: number, missing: number }>}
+ */
+async function sizeOfPaths(remoteRelPaths = []) {
+  const filesDir = paths.filesDir();
+  let bytes = 0;
+  let count = 0;
+  let missing = 0;
+  const seen = new Set();
+
+  for (const rel of remoteRelPaths) {
+    if (typeof rel !== "string" || !rel) continue;
+    const cleaned = rel.replace(/^\/+/, "");
+    if (seen.has(cleaned)) continue;
+    seen.add(cleaned);
+
+    const localPath = path.resolve(filesDir, cleaned);
+    if (!localPath.startsWith(filesDir + path.sep) && localPath !== filesDir) {
+      missing += 1;
+      continue;
+    }
+    try {
+      if (await fs.pathExists(localPath)) {
+        const stat = await fs.stat(localPath);
+        if (stat.isFile()) {
+          bytes += stat.size;
+          count += 1;
+        }
+      } else {
+        missing += 1;
+      }
+    } catch {
+      missing += 1;
+    }
+  }
+
+  return { bytes, count, missing };
+}
+
+async function removeFiles(remoteRelPaths = []) {
+  const filesDir = paths.filesDir();
+  let removed = 0;
+  for (const rel of remoteRelPaths) {
+    if (typeof rel !== "string" || !rel) continue;
+    const cleaned = rel.replace(/^\/+/, "");
+    const localPath = path.resolve(filesDir, cleaned);
+    if (!localPath.startsWith(filesDir + path.sep) && localPath !== filesDir) {
+      continue;
+    }
+    try {
+      if (await fs.pathExists(localPath)) {
+        await fs.remove(localPath);
+        removed += 1;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  return { removed };
+}
+
 async function enforceQuota(maxBytes) {
   if (!maxBytes || maxBytes <= 0) return { removed: 0 };
   const filesDir = paths.filesDir();
@@ -238,6 +306,8 @@ module.exports = {
   clearFiles,
   clearUnused,
   verify,
+  sizeOfPaths,
+  removeFiles,
   openFilesDir,
   setFilesDir,
   enforceQuota,
