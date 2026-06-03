@@ -176,14 +176,15 @@ export default async ({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "src"),
-        "@root": path.resolve(__dirname),
-        "@helpers": path.resolve(__dirname, "src/helpers"),
         "@components": path.resolve(__dirname, "src/components"),
-        "@modules": path.resolve(__dirname, "src/modules"),
-        "@layout": path.resolve(__dirname, "src/layout"),
-        "@views": path.resolve(__dirname, "src/views"),
-        "@store": path.resolve(__dirname, "src/store"),
+        "@constants": path.resolve(__dirname, "src/constants"),
+        "@helpers": path.resolve(__dirname, "src/helpers"),
         "@lang": path.resolve(__dirname, "src/lang"),
+        "@layout": path.resolve(__dirname, "src/layout"),
+        "@modules": path.resolve(__dirname, "src/modules"),
+        "@root": path.resolve(__dirname),
+        "@store": path.resolve(__dirname, "src/store"),
+        "@views": path.resolve(__dirname, "src/views"),
       },
     },
     build: {

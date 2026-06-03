@@ -1,12 +1,14 @@
 /** @category deve-virar-composable — Usa UserData + AppData (Pinia); requer renderer. */
 import $userdata from "@/helpers/UserData";
 import $dev from "@/helpers/Dev";
+import {
+  KEY_ACTIVE_DAY,
+  KEY_CATEGORIES,
+  KEY_DAY_NOTES,
+  KEY_DAYS,
+  KEY_SCHEDULED,
+} from "@/constants/UserDataKeys";
 
-const KEY_CATEGORIES = "modules.liturgy.scheduled_categories";
-const KEY_SCHEDULED = "modules.liturgy.scheduled_items";
-const KEY_ACTIVE_DAY = "modules.liturgy.active_day";
-const KEY_DAYS = "modules.liturgy.days";
-const KEY_DAY_NOTES = "modules.liturgy.day_notes";
 // Legacy keys (pré-day-based)
 const KEY_LEGACY_ITEMS = "modules.liturgy.items";
 const KEY_LEGACY_WEEKS = "modules.liturgy.weeks";
