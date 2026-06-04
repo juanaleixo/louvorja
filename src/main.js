@@ -37,6 +37,7 @@ import Favorites from "@/helpers/Favorites";
 import History from "@/helpers/History";
 import Broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
+import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
@@ -176,18 +177,104 @@ $storage.hydrate().then(async () => {
 
   // D5 — Conectar eventos do servidor HTTP às ações do app.
   if (Platform.isDesktop) {
+    // Cache do último versículo enviado — usado para responder a
+    // REQUEST_BIBLE_STATE mesmo quando o módulo Bíblia (Index.vue)
+    // não está montado. Sem isso, abrir a projeção sem o módulo
+    // aberto deixa a tela preta porque o broadcast BIBLE_VERSE é
+    // fire-and-forget e chega antes do BroadcastChannel da nova
+    // janela existir.
+
     Platform.onHttpEvent((eventType, data) => {
-      if (eventType === "http:song-slides") {
-        const action = data.action;
-        if (action === "next") Media.nextSlide();
-        else if (action === "previous") Media.prevSlide();
-        else if (action === "close") Media.close(true);
-      } else if (eventType === "http:open-song") {
-        Media.open({ id_music: data.id_music, mode: data.mode });
-      } else if (eventType === "http:drawing-number") {
-        Broadcast.send(BROADCAST_TYPE.DRAWING_NUMBER, { number: data.number });
-      } else if (eventType === "http:drawing-name") {
-        Broadcast.send(BROADCAST_TYPE.DRAWING_NAME, { name: data.name });
+      const action = data.action;
+      switch (eventType) {
+        case "http:song-slides":
+          switch (action) {
+            case "next":
+              Media.nextSlide();
+              break;
+            case "previous":
+              Media.prevSlide();
+              break;
+            case "close":
+              Media.close(true);
+              break;
+            case "go-to-slide":
+              Media.goToSlide(data.index);
+              break;
+            case "liturgy-execute": {
+              const item = Liturgy.get(data.id);
+              if (item) {
+                // Marca como checked ao executar
+                Liturgy.toggleChecked(item.id);
+
+                // Lógica de execução baseada no tipo
+                if (item.tipo === "musica") {
+                  Media.open({ id_music: item.id_music, mode: data.tag });
+                }
+              }
+              break;
+            }
+
+            case "bible-verse":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+                text: data.text,
+                reference: data.reference,
+                active: true,
+              });
+              ProjectionWindows.openBibleWindow();
+              break;
+            case "bible-next":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "next_verse" });
+              break;
+            case "bible-prev":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "prev_verse" });
+              break;
+            case "bible-close":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+              break;
+            default:
+              console.warn("Ação desconhecida:", action);
+              break;
+          }
+          break;
+
+        case "http:open-song":
+          console.log("[http:open-song] Abrindo música:", data);
+          Media.open({ id_music: data.id_music, mode: data.mode });
+
+          // Se veio de um item da liturgia (Choose Later), marca ele como checked
+          if (data.id) {
+            Liturgy.toggleChecked(data.id);
+          }
+          break;
+        case "http:drawing-number":
+          Broadcast.send(BROADCAST_TYPE.DRAWING_NUMBER, { number: data.number });
+          break;
+        case "http:drawing-name":
+          Broadcast.send(BROADCAST_TYPE.DRAWING_NAME, { name: data.name });
+          break;
+        default:
+          console.warn("Evento desconhecido:", eventType);
+          break;
+      }
+    });
+
+    // Responde a pedidos de estado usando o cache do Broadcast.ts.
+    // Isso garante que janelas de projeção recém-abertas recebam o estado
+    // atual mesmo se o módulo específico (Bíblia ou Música) não estiver montado.
+    Broadcast.listen((msg) => {
+      if (msg.type === BROADCAST_TYPE.REQUEST_BIBLE_STATE) {
+        const last = Broadcast.getLastPayload(BROADCAST_TYPE.BIBLE_VERSE);
+        if (last) {
+          Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, last);
+        }
+      }
+
+      if (msg.type === BROADCAST_TYPE.REQUEST_SLIDE_STATE) {
+        const last = Broadcast.getLastPayload(BROADCAST_TYPE.SLIDE_CHANGE);
+        if (last) {
+          Broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, last);
+        }
       }
     });
 
@@ -290,6 +377,48 @@ $storage.hydrate().then(async () => {
       group: "general",
       label: "Cmd+K",
     });
+
+    // Ctrl+Space: Quick Search
+    Hotkeys.register(
+      "Ctrl+Space",
+      () => {
+        _shell().openCommandPalette();
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_space",
+        group: "general",
+        label: "Ctrl+Space",
+      }
+    );
+
+    // Ctrl+B: Bible Spotlight
+    Hotkeys.register(
+      "Ctrl+b",
+      () => {
+        _shell().openBibleSearch();
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_b",
+        group: "bible",
+        label: "Ctrl+B",
+      }
+    );
+
+    // Ctrl+M: Music Spotlight
+    Hotkeys.register(
+      "Ctrl+m",
+      () => {
+        _shell().openMusicSearch();
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_m",
+        group: "media",
+        label: "Ctrl+M",
+      }
+    );
 
     // Ctrl+F: foca campo de busca do módulo ativo via broadcast
     Hotkeys.register(
