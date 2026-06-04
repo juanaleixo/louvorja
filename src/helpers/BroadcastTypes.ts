@@ -80,6 +80,10 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: Projection, Obs. (ainda não emitido — ver Media.js). */
   MEDIA_CLOSE: "media_close",
 
+  /** Força a RibbonBar a selecionar uma página específica.
+   *  Payload: { pageId: string } */
+  RIBBON_SELECT_PAGE: "ribbon:select_page",
+
   /** Solicita reemissão do estado atual do slide. Emitido por janelas
    *  secundárias (Popup) ao montar para sincronizar com o estado da janela
    *  principal — sem isso, broadcasts são "fire-and-forget" e janelas que

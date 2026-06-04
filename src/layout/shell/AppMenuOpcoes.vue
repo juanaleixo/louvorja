@@ -70,6 +70,26 @@
       </div>
     </section>
 
+    <!-- Bíblia Sagrada -->
+    <section class="opt-section">
+      <h3 class="opt-section-title">{{ $t("options.bible.title") }}</h3>
+
+      <div class="opt-row">
+        <label class="opt-label" for="opt-bible-monitor">{{ $t("options.bible.open_at") }}</label>
+        <select
+          id="opt-bible-monitor"
+          class="opt-select"
+          :value="getPref('bible') ?? ''"
+          @change="setPref('bible', $event.target.value)"
+        >
+          <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option v-for="d in displays" :key="d.id" :value="d.id">
+            {{ d.label || `Monitor ${d.id}` }}
+          </option>
+        </select>
+      </div>
+    </section>
+
     <!-- Slides de Músicas -->
     <section class="opt-section">
       <h3 class="opt-section-title">{{ $t("options.slides.title") }}</h3>

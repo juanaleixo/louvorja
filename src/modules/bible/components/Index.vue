@@ -859,13 +859,32 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload) => {
   }
 });
 
-// Quando uma janela de projeção pede o estado, reemitir o versículo atual.
+// Sincroniza o estado interno se um versículo for emitido por outro componente (ex: Spotlight).
+useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
+  if (!payload || !payload.text) return;
+  if (
+    payload.text !== select_bible.text ||
+    payload.reference !== select_bible.scriptural_reference
+  ) {
+    Object.assign(select_bible, {
+      text: payload.text,
+      scriptural_reference: payload.reference,
+      verses: payload.verses || [],
+      chapter: payload.chapter || select_bible.chapter,
+      id_bible_book: payload.bookId || select_bible.id_bible_book,
+    });
+  }
+});
+
+// Quando uma janela de projeção pede o estado, reemitir o versículo atual apenas se houver um.
 useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
-  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
-    text: select_bible.text || "",
-    reference: select_bible.scriptural_reference || "",
-    active: !!(select_bible.text && select_bible.verses?.length),
-  });
+  if (select_bible.text && select_bible.verses?.length) {
+    Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+      text: select_bible.text || "",
+      reference: select_bible.scriptural_reference || "",
+      active: !!(select_bible.text && select_bible.verses?.length),
+    });
+  }
 });
 </script>
 

@@ -37,6 +37,15 @@
         </button>
         <button
           type="button"
+          class="ribbon-tool ribbon-tool--text"
+          :title="$t('shell.bible_quick_search')"
+          @click="onOpenBibleSearch"
+        >
+          <v-icon icon="mdi-book-open-variant" size="14" />
+          <span>{{ $t("shell.bible_quick_search_short") }}</span>
+        </button>
+        <button
+          type="button"
           class="ribbon-tool"
           :title="$t('ribbon.btn.favorites')"
           :aria-label="$t('ribbon.btn.favorites')"
@@ -130,6 +139,7 @@ import RibbonButton from "./RibbonButton.vue";
 import RibbonScreenButton from "./RibbonScreenButton.vue";
 import AppMenuButton from "./AppMenuButton.vue";
 import { useShell } from "@/composables/useShell";
+import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { RIBBON_PAGES } from "./ribbon-pages.js";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
@@ -275,6 +285,10 @@ function executeButton(btn) {
     shell.openMusicSearch();
     return;
   }
+  if (btn.action === "bible_search") {
+    shell.openBibleSearch();
+    return;
+  }
   if (btn.action && btn.action in LITURGY_ACTIONS) {
     Broadcast.send(BROADCAST_TYPE.LITURGY_RIBBON_ACTION, {
       action: LITURGY_ACTIONS[btn.action],
@@ -314,9 +328,18 @@ function executeButton(btn) {
 function onOpenCommandPalette() {
   shell.openCommandPalette();
 }
+function onOpenBibleSearch() {
+  shell.openBibleSearch();
+}
 function onOpenHotkeys() {
   shell.openHotkeysCheatsheet();
 }
+
+useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
+  if (payload?.pageId) {
+    selectPage(payload.pageId);
+  }
+});
 
 function onOpenAbout() {
   $alert.info({
