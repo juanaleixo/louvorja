@@ -341,6 +341,34 @@
         </div>
       </div>
 
+      <!-- Formatação de texto do retorno personalizada -->
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="userdata.custom_return_text_format ?? false"
+            @change="setUd('custom_return_text_format', $event.target.checked)"
+          />
+          <span>{{ $t("options.slides.custom_return_text_format") }}</span>
+        </label>
+      </div>
+      <div v-if="userdata.custom_return_text_format" class="opt-format-block">
+        <div class="opt-format-row">
+          <label class="opt-format-field">
+            <span class="opt-format-label">{{ $t("options.slides.text_case") }}</span>
+            <select
+              class="opt-select"
+              :value="userdata.slide_return_text_case || 'uppercase'"
+              @change="setUd('slide_return_text_case', $event.target.value)"
+            >
+              <option value="normal">{{ $t("options.slides.case_normal") }}</option>
+              <option value="capitalize">{{ $t("options.slides.case_capitalize") }}</option>
+              <option value="uppercase">{{ $t("options.slides.case_uppercase") }}</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
       <!-- Fundo personalizado -->
       <div class="opt-row">
         <label class="opt-checkbox">

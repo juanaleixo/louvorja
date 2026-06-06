@@ -54,6 +54,7 @@ interface SlideStyleAPI {
   rootStyle:          ComputedRef<CSSProperties>;
   repeatColor:        () => string;
   textBoxStyle:       () => CSSProperties;
+  textTransform:      ComputedRef<string>;
 }
 
 interface SlideCfg {
@@ -309,5 +310,9 @@ export function useSlideStyle(): SlideStyleAPI {
     transition: `opacity ${cfg.value.transition_speed_ms}ms linear`,
   }));
 
-  return { cfg, coverStyle, lyricStyle, auxStyle, nextStyle, bgStyle, rootStyle, repeatColor, textBoxStyle };
+  const textTransform = computed(() =>
+    $userdata.get("options.slide_return_text_case", "uppercase") || "uppercase"
+  );
+
+  return { cfg, coverStyle, lyricStyle, auxStyle, nextStyle, bgStyle, rootStyle, repeatColor, textBoxStyle, textTransform };
 }

@@ -49,7 +49,10 @@
         <div class="return-next-text">
           <span
             class="return-next-content"
-            :style="slideStyle.nextStyle(nextSlide)"
+            :style="{
+              ...slideStyle.nextStyle(nextSlide),
+              textTransform: slideStyle.textTransform.value,
+            }"
             v-html="nextSlide?.lyric || nextSlide?.name || '—'"
           />
         </div>
@@ -82,6 +85,7 @@ const textStyle = computed(() => {
   return {
     ...base,
     fontSize: `clamp(24px, ${isCover.value ? 14 : 11}vh, 160px)`,
+    textTransform: slideStyle.textTransform.value,
   };
 });
 

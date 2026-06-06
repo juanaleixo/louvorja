@@ -193,7 +193,12 @@
       "pos_contain": "Ajustar",
       "pos_stretch": "Esticar",
       "pos_tile": "Lado a lado",
-      "affect_external": "Formatação de texto e fundo personalizados afetam slides externos"
+      "affect_external": "Formatação de texto e fundo personalizados afetam slides externos",
+      "custom_return_text_format": "Formatação de texto do retorno personalizada",
+      "text_case": "Estilo da letra:",
+      "case_normal": "Normal",
+      "case_capitalize": "Capitalizada",
+      "case_uppercase": "MAIÚSCULA"
     },
     "background": {
       "title": "Imagem de Fundo",

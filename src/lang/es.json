@@ -177,7 +177,12 @@
       "pos_contain": "Ajustar",
       "pos_stretch": "Estirar",
       "pos_tile": "Mosaico",
-      "affect_external": "Formato de texto y fondo personalizados afectan diapositivas externas"
+      "affect_external": "Formato de texto y fondo personalizados afectan diapositivas externas",
+      "custom_return_text_format": "Formato de texto de retorno personalizado",
+      "text_case": "Estilo de letra:",
+      "case_normal": "Normal",
+      "case_capitalize": "Capitalizada",
+      "case_uppercase": "MAYÚSCULA"
     },
     "background": {
       "title": "Imagen de Fondo",
