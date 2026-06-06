@@ -19,6 +19,7 @@ const app = createApp(App);
 //Modules
 import ModuleManager from "@/helpers/ModuleManager";
 import $storage from "@/helpers/Storage";
+import $alert from "@helpers/Alert";
 import Platform from "@/helpers/Platform";
 
 //Helpers
@@ -432,12 +433,41 @@ $storage.hydrate().then(async () => {
       }
     );
 
-    // Esc: fecha módulo ativo
+    // Esc: encerra qualquer projeção ativa
     Hotkeys.register(
       "Escape",
       () => {
-        const id = _getActiveModuleId();
-        if (id) Modules.close(id);
+        // Função para encerrar tudo exceto música (que pode ter confirmação)
+        const closeEverythingElse = () => {
+          // 2. Bíblia
+          Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+
+          // 3. Módulos genéricos (counter, timer, etc.)
+          const moduleIds = [
+            "counter",
+            "draw",
+            "name_draw",
+            "message_board",
+            "stopwatch",
+            "timer",
+            "clock",
+          ];
+          for (const id of moduleIds) {
+            Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, { module: id, active: false });
+          }
+        };
+
+        // 1. Música/Slides (com confirmação se ativa)
+        if (_mediaIsActive()) {
+          $alert.yesno("modules.media.alerts.close", (btn) => {
+            if (btn === "yes") {
+              Media.close(true);
+              closeEverythingElse();
+            }
+          });
+        } else {
+          closeEverythingElse();
+        }
       },
       {
         context: "global",
