@@ -1,11 +1,9 @@
 "use strict";
 
-// No main process, helpers do renderer como @helpers/UserData não funcionam
-// pois dependem do Pinia e APIs de browser.
-// Em vez disso, usamos os dados brutos de userStore ou injetados via httpServer.getUserData()
-// import $userdata from "@helpers/UserData";
+const path = require("path");
+const base = process.resourcesPath;
+const { KEY_DAYS, KEY_ACTIVE_DAY } = require(path.join(base, "constants/UserDataKeys.js"));
 
-const { KEY_DAYS, KEY_ACTIVE_DAY } = require("../../../src/constants/UserDataKeys");
 /**
  * Estado em memória para sorteios (replicado entre requests).
  * Mantém sintonia com o estado interno dos módulos de sorteio.

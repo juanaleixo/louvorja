@@ -20,6 +20,16 @@ files:
   - package.json
   - public/ico/**/*
 
+# Arquivos compartilhados entre o main process e o renderer process (copiados para o asar e para o build final)
+extraResources: [
+  {
+    "from": "src/constants",
+    "to": "constants",
+    "filter": ["**/*"]
+  }
+]
+
+
 # Os PNGs do logo precisam ficar fora do asar para que o BrowserWindow
 # possa carregá-los pelo path em runtime (Electron lê PNG bem do asar
 # normalmente, mas mantemos unpacked como precaução cross-platform).
