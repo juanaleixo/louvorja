@@ -231,6 +231,17 @@
         </label>
       </div>
 
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="userdata.minimize_on_start ?? false"
+            @change="setUd('minimize_on_start', $event.target.checked)"
+          />
+          <span>{{ $t("options.slides.minimize_on_start") }}</span>
+        </label>
+      </div>
+
       <!-- Formatação de texto personalizada -->
       <div class="opt-row">
         <label class="opt-checkbox">

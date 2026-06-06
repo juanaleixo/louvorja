@@ -163,7 +163,8 @@ const _self = {
     this.clearVariables();
 
     const id_music = params.id_music;
-    const minimized = params.minimized ? params.minimized : false;
+    const minimizeOnStart = $userdata.get("options.minimize_on_start", false);
+    const minimized = params.minimized !== undefined ? params.minimized : minimizeOnStart;
     const id_album  = params.id_album  ? params.id_album  : null;
     let mode: string = params.mode ? params.mode : "no_audio";
 
