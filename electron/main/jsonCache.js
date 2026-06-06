@@ -61,8 +61,12 @@ function httpRequest(url, headers = {}) {
         });
       });
     });
-    req.on("error", reject);
+    req.on("error", (err) => {
+      console.error(`[jsonCache] Erro na requisição para ${url}:`, err.message);
+      reject(err);
+    });
     req.setTimeout(15000, () => {
+      console.warn(`[jsonCache] Timeout (15s) na requisição para ${url}`);
       req.destroy(new Error("Request timeout"));
     });
   });
@@ -140,18 +144,27 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
       const remoteUrl = remoteBaseUrl + sep + relPath;
       console.log(`[jsonCache] MISS ${relPath} — baixando: ${remoteUrl}`);
       const response = await httpRequest(remoteUrl, headers);
+      console.log(`[jsonCache] Resposta de ${relPath}: status=${response.status}`);
 
       if (response.status >= 200 && response.status < 300) {
+        if (!response.body || response.body.length === 0) {
+          throw new Error(`Resposta vazia do servidor para ${relPath}`);
+        }
         try {
           JSON.parse(response.body.toString("utf-8"));
-        } catch {
-          console.warn(`[jsonCache] Resposta não é JSON válido: ${relPath}`);
-          return {
-            body: response.body,
-            contentType: response.contentType,
-            fromCache: false,
-            status: response.status,
-          };
+        } catch (parseErr) {
+          console.warn(`[jsonCache] Resposta não é JSON válido: ${relPath} - Erro: ${parseErr.message}`);
+          // Se falhou o parse mas temos cache stale, vamos usar o stale
+          if (fs.existsSync(localPath)) {
+            console.warn(`[jsonCache] Usando cache stale para ${relPath} devido a JSON inválido remoto`);
+            return {
+              body: await fs.readFile(localPath),
+              contentType: "application/json",
+              fromCache: true,
+              status: 200,
+            };
+          }
+          throw new Error(`JSON inválido: ${relPath}`);
         }
 
         // Escrita atômica: .tmp único (timestamp + random) → rename

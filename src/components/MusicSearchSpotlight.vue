@@ -70,11 +70,20 @@
                     <v-icon icon="mdi-play-box-multiple" size="16" />
                   </button>
                   <l-music-menu-table
-                    v-else
+                    v-else-if="!Platform.isRemote"
                     :id_music="item.id_music"
                     :name="item.name"
                     :has_instrumental_music="item.has_instrumental_music"
                   />
+                  <div v-else class="d-flex align-center gap-1">
+                    <v-btn
+                      icon="mdi-play-circle-outline"
+                      size="small"
+                      variant="text"
+                      color="primary"
+                      @click.stop="pickMusic(item)"
+                    />
+                  </div>
                 </div>
               </td>
             </tr>
@@ -95,6 +104,7 @@ import { useI18n } from "vue-i18n";
 import LMusicMenuTable from "@/components/MusicMenuTable.vue";
 import Database from "@/helpers/Database";
 import Strings from "@/helpers/Strings";
+import Platform from "@/helpers/Platform";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },

@@ -823,6 +823,7 @@ function clean() {
     scriptural_reference: null,
     text: null,
   });
+  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, null);
 }
 
 function close() {

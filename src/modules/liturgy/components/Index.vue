@@ -206,7 +206,9 @@ async function openChooseLaterSearch(item: LiturgyItemData, mode = "sung") {
   chooseLaterItem.value = item;
   chooseLaterMode.value = mode;
   chooseMusicSearchOpen.value = true;
-  if (!musicsList.value.length) await loadMusicsList();
+  if (chooseLaterItem.value && !isChecked(chooseLaterItem.value)) {
+    toggleChecked(chooseLaterItem.value);
+  }
 }
 
 function onChooseLaterMusicPicked(music: LiturgyMusicItem) {

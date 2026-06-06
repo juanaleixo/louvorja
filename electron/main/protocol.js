@@ -179,23 +179,28 @@ function handle() {
           "Api-Token": _config.apiToken,
         };
 
-        const result = await jsonCache.fetchJson(
-          pathname,
-          _config.databaseUrl,
-          headers
-        );
+        try {
+          const result = await jsonCache.fetchJson(
+            pathname,
+            _config.databaseUrl,
+            headers
+          );
 
-        if (result.status === 404) {
-          return new Response("Not found", { status: 404 });
+          if (result.status === 404) {
+            return new Response("Not found", { status: 404 });
+          }
+
+          return new Response(result.body, {
+            status: result.status || 200,
+            headers: {
+              "Content-Type": result.contentType,
+              "X-Cache": result.fromCache ? "HIT" : "MISS",
+            },
+          });
+        } catch (e) {
+          console.error(`[protocol] Erro ao buscar JSON em ${pathname}:`, e);
+          return new Response(e.message || "JSON Cache Error", { status: 500 });
         }
-
-        return new Response(result.body, {
-          status: result.status || 200,
-          headers: {
-            "Content-Type": result.contentType,
-            "X-Cache": result.fromCache ? "HIT" : "MISS",
-          },
-        });
       }
 
       // ------------------------------------------------------------------
