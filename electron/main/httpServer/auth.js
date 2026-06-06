@@ -51,9 +51,9 @@ function setupAuth(getToken) {
     if (_isLocalhost(ip)) return next();
     if (!_isProtectedPath(req.path)) return next();
 
-    const provided = req.query && req.query.token;
+    const provided = (req.query && req.query.token) || (req.body && req.body.token) || (req.headers && req.headers['x-token']);
     const expected = resolve();
-    if (!expected || provided !== expected) {
+    if (!expected || String(provided).toUpperCase() !== String(expected).toUpperCase()) {
       return res.status(401).json({
         status: "error",
         message: "Token inválido",

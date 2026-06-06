@@ -145,4 +145,11 @@ export default {
       _localListeners.delete(callback);
     };
   },
+
+  /**
+   * Retorna o último payload de um tipo stateful recebido NESTA janela.
+   */
+  getLastPayload(type: string): any | null {
+    return _lastByType.get(type)?.payload || null;
+  },
 };

@@ -1,0 +1,437 @@
+<template>
+  <div class="pa-4">
+    <v-btn
+      block
+      color="primary"
+      variant="outlined"
+      prepend-icon="mdi-book-search"
+      class="mb-4"
+      @click="bibleSearchOpen = true"
+    >
+      {{ t("ribbon.btn.bible_search") }}
+    </v-btn>
+
+    <v-divider class="mb-4" />
+
+    <v-select
+      v-model="bibleSelection.version"
+      :items="bibleData.versions"
+      item-title="title"
+      item-value="id_bible_version"
+      :label="t('options.bible.version')"
+      density="compact"
+      variant="outlined"
+      class="mb-3"
+      @update:model-value="onVersionSelect"
+    />
+
+    <v-select
+      v-model="bibleSelection.book"
+      :items="bibleData.books"
+      item-title="name"
+      item-value="id_bible_book"
+      :label="t('components.bible.book')"
+      density="compact"
+      variant="outlined"
+      class="mb-3"
+      @update:model-value="onBookSelect"
+    />
+    <v-row dense>
+      <v-col cols="6">
+        <v-select
+          v-model="bibleSelection.chapter"
+          :items="bibleData.chapters"
+          :label="t('components.bible.chapter')"
+          density="compact"
+          variant="outlined"
+          :disabled="!bibleSelection.book"
+          @update:model-value="onChapterSelect"
+        />
+      </v-col>
+      <v-col cols="6">
+        <v-select
+          v-model="bibleSelection.verse"
+          :items="bibleData.verses"
+          :label="t('components.bible.verses')"
+          density="compact"
+          variant="outlined"
+          :disabled="!bibleSelection.chapter"
+          @update:model-value="onVerseSelect"
+        />
+      </v-col>
+    </v-row>
+
+    <!-- Grade de versículos do capítulo atual -->
+    <template
+      v-if="activeBible.active && activeBible.chapterVerses && activeBible.chapterVerses.length > 0"
+    >
+      <v-divider class="my-4" />
+      <div class="px-2 py-1 bg-surface-variant text-caption d-flex align-center mb-2">
+        <v-icon icon="mdi-book-open-variant" size="small" class="mr-1" />
+        <span class="text-truncate">{{ activeBible.reference }}</span>
+      </div>
+      <div class="remote-slides-grid">
+        <v-card
+          v-for="(text, verse) in activeBible.chapterVerses"
+          :key="verse"
+          class="slide-card"
+          :color="verse + 1 === activeBible.verse ? 'primary' : ''"
+          :variant="verse + 1 === activeBible.verse ? 'flat' : 'outlined'"
+          @click="goToVerse(verse + 1)"
+        >
+          <div class="slide-num">{{ verse + 1 }}</div>
+          <div class="slide-text" v-html="text" />
+        </v-card>
+      </div>
+    </template>
+
+    <bible-search-spotlight v-model="bibleSearchOpen" @select="onBibleSearchSelect" />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import Database from "@/helpers/Database";
+import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
+
+/** @typedef {import('@/types/Bible').ActiveBibleState} ActiveBibleState */
+
+const props = defineProps({
+  token: String,
+  /** @type {ActiveBibleState} */
+  activeBible: {
+    type: Object,
+    required: true,
+  },
+});
+
+const emit = defineEmits(["show-snackbar", "update:active-bible"]);
+
+const { t, locale } = useI18n();
+
+const bibleSearchOpen = ref(false);
+const bibleData = ref({ versions: [], books: [], chapters: [], verses: [] });
+const bibleSelection = ref({ version: null, book: null, chapter: null, verse: null });
+const fullBible = ref(null);
+
+async function loadBible() {
+  const lang = locale.value || "pt";
+  const params = await Database.get(`${lang}_params`);
+  if (params && params.bible_versions) {
+    bibleData.value.versions = params.bible_versions;
+    const preferred = await getPreferredBibleVersion();
+    if (preferred && bibleData.value.versions.find((v) => v.id_bible_version == preferred)) {
+      bibleSelection.value.version = preferred;
+    } else if (bibleData.value.versions.length > 0) {
+      bibleSelection.value.version = bibleData.value.versions[0].id_bible_version;
+    }
+  } else {
+    const versions = await Database.get(`${lang}_bible_version`);
+    if (versions) {
+      bibleData.value.versions = versions.map((v) => ({
+        id_bible_version: v.id_bible_version,
+        title: v.name || v.title || v.abbreviation,
+      }));
+      if (bibleData.value.versions.length > 0) {
+        bibleSelection.value.version = bibleData.value.versions[0].id_bible_version;
+      }
+    }
+  }
+
+  const books = await Database.get(`${lang}_bible_book`);
+  bibleData.value.books = books || [];
+}
+
+async function getPreferredBibleVersion() {
+  try {
+    const res = await fetch(`/api/user-data?path=id_bible_version&token=${props.token}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.value;
+    }
+  } catch (e) {
+    console.error("Erro ao buscar versão da bíblia:", e);
+  }
+  return null;
+}
+
+async function onVersionSelect() {
+  bibleSelection.value.book = null;
+  bibleSelection.value.chapter = null;
+  bibleSelection.value.verse = null;
+  bibleData.value.chapters = [];
+  bibleData.value.verses = [];
+}
+
+async function onBookSelect(id) {
+  if (!id) {
+    bibleData.value.chapters = [];
+    bibleData.value.verses = [];
+    return;
+  }
+
+  // Se recebemos um ID, garantimos que seja número
+  const bookId = Number(id);
+
+  bibleSelection.value.chapter = null;
+  bibleSelection.value.verse = null;
+
+  const book = bibleData.value.books.find((b) => b.id_bible_book === bookId);
+  if (book && book.chapters) {
+    bibleData.value.chapters = Array.from({ length: book.chapters }, (_, i) => i + 1);
+  } else {
+    const versionId = bibleSelection.value.version || (await getPreferredBibleVersion());
+    const dbKey = versionId ? `bible_${versionId}_${bookId}` : `pt_bible_${bookId}`;
+    const full = await Database.get(dbKey);
+    if (full && full.chapters) {
+      const chapterKeys = Object.keys(full.chapters)
+        .map(Number)
+        .filter((n) => !isNaN(n));
+      const chaptersCount = chapterKeys.length > 0 ? Math.max(...chapterKeys) : 0;
+      bibleData.value.chapters = Array.from({ length: chaptersCount }, (_, i) => i + 1);
+    }
+  }
+  bibleData.value.verses = [];
+}
+
+function onChapterSelect(num) {
+  if (!num) {
+    bibleData.value.verses = [];
+    return;
+  }
+  bibleSelection.value.verse = null;
+  loadChapterVerses(num);
+}
+
+async function loadChapterVerses(num) {
+  const bookId = Number(bibleSelection.value.book);
+  const versionId = bibleSelection.value.version || (await getPreferredBibleVersion());
+  if (!bookId || !versionId) return;
+
+  const dbKey = `bible_${versionId}_${bookId}_${num}`;
+  const chapterData = await Database.get(dbKey);
+
+  if (chapterData) {
+    const verseKeys = Object.keys(chapterData)
+      .map(Number)
+      .filter((n) => !isNaN(n));
+    const versesCount = verseKeys.length > 0 ? Math.max(...verseKeys) : 0;
+    bibleData.value.verses = Array.from({ length: versesCount }, (_, i) => i + 1);
+    fullBible.value = { chapters: { [num]: chapterData } };
+
+    // Sincroniza com o pai para mostrar a grade
+    const arr = [];
+    for (let i = 1; i <= versesCount; i++) {
+      arr.push(chapterData[i] || chapterData[String(i)] || "");
+    }
+
+    const book = bibleData.value.books.find((b) => b.id_bible_book === bookId);
+    const reference = book ? `${book.name} ${num}` : `Capítulo ${num}`;
+
+    /** @type {ActiveBibleState} */
+    const newActive = {
+      ...props.activeBible,
+      active: true,
+      reference,
+      chapterVerses: arr,
+      bookId,
+      chapter: num,
+      versionId,
+    };
+    emit("update:active-bible", newActive);
+  }
+}
+
+function onVerseSelect(num) {
+  if (!num) return;
+  projectVerse();
+}
+
+function projectVerse() {
+  if (!bibleSelection.value.book || !bibleSelection.value.chapter || !bibleSelection.value.verse)
+    return;
+
+  const book = bibleData.value.books.find((b) => b.id_bible_book === bibleSelection.value.book);
+  if (!book || !fullBible.value) return;
+
+  const chapterData =
+    fullBible.value?.chapters?.[bibleSelection.value.chapter] ||
+    fullBible.value?.chapters?.[String(bibleSelection.value.chapter)];
+  if (!chapterData) return;
+
+  const text =
+    chapterData[bibleSelection.value.verse] || chapterData[String(bibleSelection.value.verse)];
+  const reference = `${book.name} ${bibleSelection.value.chapter}:${bibleSelection.value.verse}`;
+
+  // Sincroniza com o pai para mostrar a grade
+  const arr = [];
+  if (chapterData) {
+    const verseKeys = Object.keys(chapterData)
+      .map(Number)
+      .filter((n) => !isNaN(n));
+    const versesCount = verseKeys.length > 0 ? Math.max(...verseKeys) : 0;
+    for (let i = 1; i <= versesCount; i++) {
+      arr.push(chapterData[i] || chapterData[String(i)] || "");
+    }
+  }
+
+  /** @type {ActiveBibleState} */
+  const newActive = {
+    ...props.activeBible,
+    active: true,
+    reference,
+    bookId: bibleSelection.value.book,
+    chapter: bibleSelection.value.chapter,
+    verse: bibleSelection.value.verse,
+    versionId: bibleSelection.value.version,
+    chapterVerses: arr.length > 0 ? arr : props.activeBible.chapterVerses,
+  };
+
+  emit("update:active-bible", newActive);
+
+  fetch(
+    `/api/bible?text=${encodeURIComponent(text)}&reference=${encodeURIComponent(
+      reference
+    )}&bookId=${bibleSelection.value.book}&chapter=${bibleSelection.value.chapter}&verse=${
+      bibleSelection.value.verse
+    }&token=${props.token}`
+  )
+    .then((res) => {
+      if (!res.ok) emit("show-snackbar", "Erro ao projetar bíblia", "error");
+    })
+    .catch(() => emit("show-snackbar", "Erro de conexão", "error"));
+
+  emit("show-snackbar", reference);
+}
+
+async function onBibleSearchSelect(res) {
+  try {
+    const resProject = await fetch(
+      `/api/bible?text=${encodeURIComponent(res.text)}&reference=${encodeURIComponent(
+        res.reference
+      )}&bookId=${res.bookId}&chapter=${res.chapter}&verse=${res.verse}&token=${props.token}`
+    );
+    if (resProject.ok) {
+      emit("show-snackbar", t("components.music_menu.execute") + ": " + res.reference);
+
+      // Atualiza localmente para carregar a grade imediatamente
+      if (res.bookId && res.chapter) {
+        bibleSelection.value.book = res.bookId;
+        bibleSelection.value.chapter = res.chapter;
+        bibleSelection.value.verse = res.verse || 1;
+        await onBookSelect(res.bookId);
+        bibleSelection.value.chapter = res.chapter;
+        await loadChapterVerses(res.chapter);
+
+        /** @type {ActiveBibleState} */
+        const newActive = {
+          ...props.activeBible,
+          active: true,
+          reference: res.reference,
+          bookId: res.bookId,
+          chapter: res.chapter,
+          verse: res.verse || 1,
+        };
+        emit("update:active-bible", newActive);
+      }
+    } else {
+      const err = await resProject.json();
+      emit(
+        "show-snackbar",
+        "Erro: " + (err.message || err.error || resProject.statusText),
+        "error"
+      );
+    }
+  } catch (e) {
+    console.error("[RemoteBible] Erro ao projetar versículo:", e);
+    emit("show-snackbar", "Erro de conexão", "error");
+  }
+}
+
+function goToVerse(num) {
+  if (!props.activeBible.bookId || !props.activeBible.chapter) return;
+
+  const book = bibleData.value.books.find((b) => b.id_bible_book === props.activeBible.bookId);
+  if (!book) return;
+
+  const text = props.activeBible.chapterVerses[num - 1];
+  const reference = `${book.name} ${props.activeBible.chapter}:${num}`;
+
+  fetch(
+    `/api/bible?text=${encodeURIComponent(text)}&reference=${encodeURIComponent(reference)}&bookId=${
+      props.activeBible.bookId
+    }&chapter=${props.activeBible.chapter}&verse=${num}&token=${props.token}`
+  ).catch(() => emit("show-snackbar", "Erro ao projetar bíblia", "error"));
+
+  /** @type {ActiveBibleState} */
+  const newActiveBible = {
+    ...props.activeBible,
+    active: true,
+    reference: reference,
+    verse: num,
+    bookId: props.activeBible.bookId,
+    chapter: props.activeBible.chapter,
+  };
+
+  emit("update:active-bible", newActiveBible);
+}
+
+onMounted(() => {
+  loadBible();
+});
+
+defineExpose({
+  loadBibleChapter: async (payload) => {
+    if (payload.bookId && payload.chapter) {
+      const bId = Number(payload.bookId);
+      bibleSelection.value.book = bId;
+      bibleSelection.value.chapter = payload.chapter;
+      bibleSelection.value.verse = payload.verses?.[0] || 1;
+
+      // Carrega os metadados do livro para popular os seletores se necessário
+      if (bibleData.value.books.length === 0) {
+        await loadBible();
+      }
+
+      await onBookSelect(bId);
+      bibleSelection.value.chapter = payload.chapter; // Reseta pois onBookSelect limpa
+      await loadChapterVerses(payload.chapter);
+    }
+  },
+});
+</script>
+
+<style scoped>
+.remote-slides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.slide-card {
+  aspect-ratio: 16/9;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+.slide-num {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+.slide-text {
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  margin: auto;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

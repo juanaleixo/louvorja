@@ -39,6 +39,7 @@ const SPA_ROUTES = new Set([
   "/projection/module",
   "/clock",
   "/operator",
+  "/remote",
 ]);
 
 /**
@@ -217,6 +218,10 @@ function _setupAliases(app) {
       return res.redirect(302, "/#/obs/bible" + _carryToken(req));
     }
     return res.status(404).send("Use /biblia?transmissao (OBS).");
+  });
+
+  app.get("/controle", (req, res) => {
+    return res.redirect(302, "/#/remote" + _carryToken(req));
   });
 }
 

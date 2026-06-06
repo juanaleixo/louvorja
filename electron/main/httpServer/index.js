@@ -117,6 +117,7 @@ function start({ port, mainWindow } = {}) {
 
   const app = express();
   app.disable("x-powered-by");
+  app.use(express.json()); // Permite ler JSON no body (necessário para body.token)
 
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -133,8 +134,11 @@ function start({ port, mainWindow } = {}) {
   // SSE — clients remotos (OBS/celular) recebem slide_change, bible_verse,
   // module_projection_value etc. Auth já passou (token query ou localhost).
   app.get("/events", events.handler);
-
-  setupRoutes(app, { mainWindow: _mainWindow });
+  
+  setupRoutes(app, { 
+    mainWindow: _mainWindow,
+    getUserData: () => getUserData()
+  });
 
   // Arquivos legacy do Delphi (`userData/server/*`) — opcional, mantém
   // compatibilidade com instalações antigas que ainda apontem para esse path.
@@ -222,6 +226,10 @@ function publish(msg) {
   events.publish(msg);
 }
 
+function getUserData() {
+  return userStore.read("user_data") || {};
+}
+
 module.exports = {
   start,
   stop,
@@ -230,4 +238,5 @@ module.exports = {
   resetToken,
   setMainWindow,
   publish,
+  getUserData,
 };

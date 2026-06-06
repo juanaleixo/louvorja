@@ -3,6 +3,10 @@
     "name": "Loor JA"
   },
   "modules": {
+    "liturgy": {
+      "name": "Liturgia",
+      "empty": "Ningún ítem en la liturgia de hoy."
+    },
     "invalid": {
       "title": "#Error#"
     }
@@ -125,6 +129,11 @@
         "dark": "Oscuro"
       }
     },
+    "bible": {
+      "title": "Biblia Sagrada",
+      "open_at": "Abrir en el monitor:",
+      "version": "Versión"
+    },
     "monitors": {
       "title": "Monitores",
       "identify": "Identificar Monitores",
@@ -199,7 +208,16 @@
       "win_bible": "Biblia — Transmisión",
       "win_projection": "Proyección",
       "win_operator": "Operador",
-      "win_clock": "Reloj"
+      "win_clock": "Reloj",
+      "remote_control": "Control Remoto"
+    },
+    "module": {
+      "bible": {
+        "book": "Libro",
+        "chapter": "Capítulo",
+        "verses": "Versículo",
+        "empty_search": "No se encontraron versículos para esta búsqueda."
+      }
     },
     "updates": {
       "title": "Actualizaciones",
@@ -564,6 +582,7 @@
       "about": "Acerca de",
       "settings": "Opciones",
       "transmission": "Transmitir",
+      "remote_control": "Control Remoto",
       "import_export": "Importar/Exportar",
       "sync": "Sincronizar Archivos",
       "feedback": "Enviar Comentarios",

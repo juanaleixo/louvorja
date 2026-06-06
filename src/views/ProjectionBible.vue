@@ -61,10 +61,7 @@
         </span>
       </div>
 
-      <div v-else class="projection-bible-empty">
-        <div class="projection-bible-empty__icon">📖</div>
-        <div class="projection-bible-empty__hint">Selecione um versículo</div>
-      </div>
+      <div v-else class="projection-bible-empty"></div>
     </Transition>
   </div>
 </template>
@@ -237,18 +234,6 @@ watch([font, font_color, font_size, background_color, image], onResize);
   text-align: center;
   color: rgba(255, 255, 255, 0.35);
   user-select: none;
-}
-
-.projection-bible-empty__icon {
-  font-size: 6vw;
-  margin-bottom: 1vw;
-  opacity: 0.5;
-}
-
-.projection-bible-empty__hint {
-  font-size: 1.5vw;
-  font-family: Arial, sans-serif;
-  letter-spacing: 0.04em;
 }
 
 .fade-verse-enter-active,

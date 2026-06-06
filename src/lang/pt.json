@@ -3,6 +3,10 @@
     "name": "Louvor JA"
   },
   "modules": {
+    "liturgy": {
+      "name": "Liturgia",
+      "empty": "Nenhum item na liturgia de hoje."
+    },
     "invalid": {
       "title": "#Erro#"
     }
@@ -19,6 +23,12 @@
     }
   },
   "components": {
+    "bible": {
+      "book": "Livro",
+      "chapter": "Capítulo",
+      "verses": "Versículo",
+      "empty_search": "Nenhum versículo encontrado para esta busca."
+    },
     "format_panel": {
       "text_section": "Texto",
       "reference_section": "Referência",
@@ -135,6 +145,11 @@
         "dark": "Escuro"
       }
     },
+    "bible": {
+      "title": "Bíblia Sagrada",
+      "open_at": "Abrir no monitor:",
+      "version": "Versão"
+    },
     "monitors": {
       "title": "Monitores",
       "identify": "Identificar Monitores",
@@ -209,7 +224,8 @@
       "win_bible": "Bíblia — Transmissão",
       "win_projection": "Projeção",
       "win_operator": "Operador",
-      "win_clock": "Relógio"
+      "win_clock": "Relógio",
+      "remote_control": "Controle Remoto"
     },
     "updates": {
       "title": "Atualizações",
@@ -573,6 +589,7 @@
       "about": "Sobre...",
       "settings": "Opções",
       "transmission": "Transmitir",
+      "remote_control": "Controle Remoto",
       "import_export": "Importar/Exportar",
       "sync": "Sincronizar Arquivos",
       "feedback": "Enviar Feedback",

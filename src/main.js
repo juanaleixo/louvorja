@@ -177,13 +177,6 @@ $storage.hydrate().then(async () => {
 
   // D5 — Conectar eventos do servidor HTTP às ações do app.
   if (Platform.isDesktop) {
-    // Cache do último versículo enviado — usado para responder a
-    // REQUEST_BIBLE_STATE mesmo quando o módulo Bíblia (Index.vue)
-    // não está montado. Sem isso, abrir a projeção sem o módulo
-    // aberto deixa a tela preta porque o broadcast BIBLE_VERSE é
-    // fire-and-forget e chega antes do BroadcastChannel da nova
-    // janela existir.
-
     Platform.onHttpEvent((eventType, data) => {
       const action = data.action;
       switch (eventType) {
@@ -219,6 +212,10 @@ $storage.hydrate().then(async () => {
               Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
                 text: data.text,
                 reference: data.reference,
+                bookId: data.bookId,
+                chapter: data.chapter,
+                verses: data.verses,
+                versionId: data.versionId,
                 active: true,
               });
               ProjectionWindows.openBibleWindow();
@@ -237,7 +234,6 @@ $storage.hydrate().then(async () => {
               break;
           }
           break;
-
         case "http:open-song":
           console.log("[http:open-song] Abrindo música:", data);
           Media.open({ id_music: data.id_music, mode: data.mode });

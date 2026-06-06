@@ -43,6 +43,11 @@ const routes = [
     component: () => import("@/views/ObsBible.vue"),
   },
   {
+    path: "/remote",
+    name: "RemoteControl",
+    component: () => import("@views/remote_control/RemoteControl.vue"),
+  },
+  {
     path: "/projection/bible",
     name: "ProjectionBible",
     component: () => import("@/views/ProjectionBible.vue"),

@@ -138,6 +138,7 @@ const remoteLinks = [
   { alias: "/musica?transmissao", titleKey: "options.transmission.win_music" },
   { alias: "/musica?retorno", titleKey: "options.transmission.win_return" },
   { alias: "/biblia?transmissao", titleKey: "options.transmission.win_bible" },
+  { alias: "/controle", titleKey: "options.transmission.remote_control" },
 ];
 
 const localWindows = [

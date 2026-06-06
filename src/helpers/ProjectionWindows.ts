@@ -33,6 +33,7 @@ interface DisplaysAPI {
 const FEATURE_PROJECTION = "musicas"; // /projection
 const FEATURE_OPERATOR   = "operador"; // /operator
 const FEATURE_RETURN     = "retorno";  // /projection/return
+const FEATURE_BIBLE      = "bible";    // /projection/bible
 
 const _openWebWindows: Record<string, Window | null> = {};
 
@@ -141,6 +142,20 @@ export async function openProjectionWindows(): Promise<void> {
 }
 
 /**
+ * Abre especificamente a janela da Bíblia se houver monitor configurado.
+ */
+export async function openBibleWindow(): Promise<void> {
+  const prefs = await _readPrefs();
+  const monitorId = prefs[FEATURE_BIBLE] ?? prefs[FEATURE_PROJECTION] ?? null;
+
+  if (monitorId != null) {
+    const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
+    const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
+    await _open("/projection/bible", FEATURE_BIBLE, monitorId, fullscreen, alwaysOnTop);
+  }
+}
+
+/**
  * Fecha todas as janelas auxiliares abertas pela media.
  */
 export async function closeProjectionWindows(): Promise<void> {
@@ -148,7 +163,8 @@ export async function closeProjectionWindows(): Promise<void> {
     _close(FEATURE_PROJECTION),
     _close(FEATURE_OPERATOR),
     _close(FEATURE_RETURN),
+    _close(FEATURE_BIBLE),
   ]);
 }
 
-export default { openProjectionWindows, closeProjectionWindows };
+export default { openProjectionWindows, closeProjectionWindows, openBibleWindow };

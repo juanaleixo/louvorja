@@ -73,6 +73,30 @@ export function useProjectionState(): ProjectionStateReturn {
     }
   });
 
+  // Listener para versículos da bíblia. Permite que a janela de projeção principal
+  // (Projection.vue) ou o OBS/Return exibam versículos quando o usuário não tem
+  // um monitor de Bíblia dedicado ou quando o sinal é global.
+  useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
+    const p = payload as Record<string, unknown>;
+    if (p.active) {
+      slide.value = {
+        lyric: (p.text as string) || "",
+        aux_lyric: (p.reference as string) || "",
+        is_bible: true,
+      } as Slide;
+      title.value = (p.reference as string) || "";
+      progress.value = 0;
+      slideIndex.value = 0;
+      totalSlides.value = 1;
+    } else {
+      // Se não estiver ativo e o slide atual for bíblia, limpamos
+      if (slide.value && (slide.value as any).is_bible) {
+        slide.value = null;
+        title.value = "";
+      }
+    }
+  });
+
   // Limpa a tela quando a música é fechada — emitido por `useMedia.close()`.
   // Sem este reset, janelas de projeção e clients de transmissão (OBS)
   // ficam mostrando a letra da música anterior indefinidamente.
