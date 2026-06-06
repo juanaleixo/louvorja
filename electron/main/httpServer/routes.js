@@ -1,8 +1,25 @@
 "use strict";
 
 const path = require("path");
-const base = process.resourcesPath;
-const { KEY_DAYS, KEY_ACTIVE_DAY } = require(path.join(base, "constants/UserDataKeys.js"));
+const fs = require("fs");
+
+// ---------------------------------------------------------------
+// Carregamento dinâmico (DEV + BUILD)
+// ---------------------------------------------------------------
+function loadUserDataKeys() {
+  // Caminho no build (dentro de resources/)
+  const prodPath = path.join(process.resourcesPath, "constants", "UserDataKeys.js");
+  if (fs.existsSync(prodPath)) {
+    return require(prodPath);
+  }
+
+  // Caminho em DEV (dentro do projeto)
+  const devPath = path.join(__dirname, "../../../src/constants/UserDataKeys.js");
+  if (fs.existsSync(devPath)) {
+    return require(devPath);
+  }
+}
+const { KEY_DAYS, KEY_ACTIVE_DAY } = loadUserDataKeys();
 
 /**
  * Estado em memória para sorteios (replicado entre requests).
