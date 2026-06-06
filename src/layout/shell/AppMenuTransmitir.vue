@@ -128,7 +128,14 @@ import Platform from "@/helpers/Platform";
 const isDesktop = computed(() => Platform.isDesktop);
 const { displays, getPreferred, setPreferred } = useDisplays();
 
-const FULLSCREEN_ROUTES = ["/projection", "/projection/return", "/obs", "/obs/bible", "/clock"];
+const FULLSCREEN_ROUTES = [
+  "/projection",
+  "/projection/return",
+  "/projection/bible/return",
+  "/obs",
+  "/obs/bible",
+  "/clock",
+];
 const FRAMED_ROUTES = ["/operator"];
 
 // Aliases compat-Delphi: mantemos exatamente os mesmos paths que o
@@ -137,6 +144,7 @@ const FRAMED_ROUTES = ["/operator"];
 const remoteLinks = [
   { alias: "/musica?transmissao", titleKey: "options.transmission.win_music" },
   { alias: "/musica?retorno", titleKey: "options.transmission.win_return" },
+  { alias: "/biblia?retorno", titleKey: "options.transmission.win_bible_return" },
   { alias: "/biblia?transmissao", titleKey: "options.transmission.win_bible" },
   { alias: "/controle", titleKey: "options.transmission.remote_control" },
 ];
@@ -151,6 +159,11 @@ const localWindows = [
     route: "/projection/return",
     icon: "mdi-monitor-eye",
     titleKey: "options.transmission.win_return",
+  },
+  {
+    route: "/projection/bible/return",
+    icon: "mdi-book-open-page-variant",
+    titleKey: "options.transmission.win_bible_return",
   },
   {
     route: "/operator",

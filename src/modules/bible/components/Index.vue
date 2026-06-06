@@ -294,6 +294,7 @@ import AppData from "@/helpers/AppData";
 import UserData from "@/helpers/UserData";
 import Database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
+import ProjectionWindows from "@/helpers/ProjectionWindows";
 import { scrollToElement } from "@/helpers/Dom";
 
 const HISTORY_MAX = 30;
@@ -628,11 +629,30 @@ async function selVerse(event, num) {
   select_bible.scriptural_reference = scripturalReference(select_bible);
   select_bible.text = getSelectedVerses(select_bible.verses);
 
+  let next_text = "";
+  let next_reference = "";
+
+  const max_v = Math.max(0, ...Object.keys(verses.value).map(Number));
+  if (num < max_v) {
+    const next_v = num + 1;
+    next_text = verses.value[next_v];
+    next_reference = `${bible.book} ${bible.chapter}:${next_v}`;
+  } else if (bible.chapter < book.value.chapters) {
+    // Tenta pegar do cache se já tivermos carregado o próximo capítulo em algum momento,
+    // ou apenas indica o próximo capítulo. Como carregar é async,
+    // o ideal seria ter um cache ou carregar antecipadamente.
+    next_reference = `${bible.book} ${bible.chapter + 1}:1`;
+  }
+
   Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
     text: select_bible.text,
     reference: select_bible.scriptural_reference,
+    next_text,
+    next_reference,
     active: true,
   });
+
+  ProjectionWindows.openBibleWindow();
 
   pushHistory(select_bible);
   scrollToElement(document.getElementById(`listVerse_${last_verse.value}`));
@@ -824,6 +844,7 @@ function clean() {
     text: null,
   });
   Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, null);
+  ProjectionWindows.closeProjectionWindows();
 }
 
 function close() {
@@ -880,9 +901,24 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
 // Quando uma janela de projeção pede o estado, reemitir o versículo atual apenas se houver um.
 useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   if (select_bible.text && select_bible.verses?.length) {
+    const num = select_bible.verses[select_bible.verses.length - 1];
+    let next_text = "";
+    let next_reference = "";
+
+    const max_v = Math.max(0, ...Object.keys(verses.value).map(Number));
+    if (num < max_v) {
+      const next_v = num + 1;
+      next_text = verses.value[next_v];
+      next_reference = `${bible.book} ${bible.chapter}:${next_v}`;
+    } else if (bible.chapter < (book.value?.chapters || 0)) {
+      next_reference = `${bible.book} ${bible.chapter + 1}:1`;
+    }
+
     Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
       text: select_bible.text || "",
       reference: select_bible.scriptural_reference || "",
+      next_text,
+      next_reference,
       active: !!(select_bible.text && select_bible.verses?.length),
     });
   }

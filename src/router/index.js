@@ -53,6 +53,11 @@ const routes = [
     component: () => import("@/views/ProjectionBible.vue"),
   },
   {
+    path: "/projection/bible/return",
+    name: "ProjectionBibleReturn",
+    component: () => import("@/views/ProjectionBibleReturn.vue"),
+  },
+  {
     path: "/projection/module",
     name: "ModuleProjection",
     component: () => import("@/views/ModuleProjection.vue"),

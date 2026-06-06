@@ -34,6 +34,7 @@ const FEATURE_PROJECTION = "musicas"; // /projection
 const FEATURE_OPERATOR   = "operador"; // /operator
 const FEATURE_RETURN     = "retorno";  // /projection/return
 const FEATURE_BIBLE      = "bible";    // /projection/bible
+const FEATURE_BIBLE_RETURN = "bible_return"; // /projection/bible/return
 
 const _openWebWindows: Record<string, Window | null> = {};
 
@@ -147,11 +148,22 @@ export async function openProjectionWindows(): Promise<void> {
 export async function openBibleWindow(): Promise<void> {
   const prefs = await _readPrefs();
   const monitorId = prefs[FEATURE_BIBLE] ?? prefs[FEATURE_PROJECTION] ?? null;
+  const openReturn = ($userdata.get("options.open_return", false) as unknown) === true;
+  const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
+  const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
 
   if (monitorId != null) {
-    const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
-    const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
     await _open("/projection/bible", FEATURE_BIBLE, monitorId, fullscreen, alwaysOnTop);
+  }
+
+  if (openReturn) {
+    await _open(
+      "/projection/bible/return",
+      FEATURE_BIBLE_RETURN,
+      prefs[FEATURE_RETURN] ?? null,
+      fullscreen,
+      alwaysOnTop
+    );
   }
 }
 
@@ -164,6 +176,7 @@ export async function closeProjectionWindows(): Promise<void> {
     _close(FEATURE_OPERATOR),
     _close(FEATURE_RETURN),
     _close(FEATURE_BIBLE),
+    _close(FEATURE_BIBLE_RETURN),
   ]);
 }
 

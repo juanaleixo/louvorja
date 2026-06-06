@@ -217,7 +217,12 @@ function _setupAliases(app) {
     if (Object.prototype.hasOwnProperty.call(req.query, "transmissao")) {
       return res.redirect(302, "/#/obs/bible" + _carryToken(req));
     }
-    return res.status(404).send("Use /biblia?transmissao (OBS).");
+    if (Object.prototype.hasOwnProperty.call(req.query, "retorno")) {
+      return res.redirect(302, "/#/projection/bible/return" + _carryToken(req));
+    }
+    return res
+      .status(404)
+      .send("Use /biblia?transmissao (OBS) ou /biblia?retorno (stage).");
   });
 
   app.get("/controle", (req, res) => {

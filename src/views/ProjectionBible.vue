@@ -118,6 +118,10 @@ const border_spacing_px = computed(() => pcToPx(border_spacing.value));
 
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   console.log("[ProjectionBible] Recebido BIBLE_VERSE:", payload);
+  if (payload === null || payload.active === false) {
+    window.close();
+    return;
+  }
   text.value = payload?.text || "";
   reference.value = payload?.reference || "";
   active.value = payload?.active ?? !!payload?.text;
@@ -137,6 +141,7 @@ function onResize() {
 function onKey(e) {
   if (e.key === "Escape") {
     e.preventDefault();
+    Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
     setTimeout(() => window.close(), 150);
   }
 }
