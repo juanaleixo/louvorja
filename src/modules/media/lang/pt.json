@@ -2,6 +2,7 @@
   "alerts": {
     "not_loaded": "Ocorreu um erro ao carregar este áudio!",
     "close": "Deseja fechar este slide?",
+    "close_audio": "Deseja parar a música?",
     "open_remote": "A música está sendo aberta em sua aplicação desktop.",
     "open_remote_error": "Ocorreu um erro ao executar sua música em sua aplicação desktop. Verifique se a transmissão está ativa, ou desative a conexão remota para executar neste local."
   },

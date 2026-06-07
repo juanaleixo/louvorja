@@ -310,7 +310,10 @@ const _self = {
   close(force = false): void {
     if (!force) {
       const self = this;
-      $alert.yesno("modules.media.alerts.close", function (btn?: string) {
+      const key = $appdata.get("modules.media.config.audio_only")
+        ? "modules.media.alerts.close_audio"
+        : "modules.media.alerts.close";
+      $alert.yesno(key, function (btn?: string) {
         if (btn == "yes") self.close(true);
       });
       return;
@@ -376,21 +379,104 @@ const _self = {
     }
     $dev.write("open audio", params);
 
-    const id_music = params.id_music;
-    let mode: string = params.mode ? params.mode : "audio";
+    _audio.stop();
+    this.clearVariables();
 
-    $appdata.set("loading", true);
+    const id_music = params.id_music;
+    const mode = params.mode || "audio";
+
+    _loadingId = id_music ?? null;
+    $appdata.set("modules.media.loading", true);
 
     let data = await $database.get<MusicData>(`music_${id_music}`);
-    if (data == null) {
-      $appdata.set("loading", false);
+    if (data == null || _loadingId !== id_music) {
+      this.close(true);
       return;
     }
 
-    const url = mode == "instrumental" ? data.url_instrumental_music : data.url_music;
-    window.open($path.file(url as string), "_blank", "noopener,noreferrer");
+    $appdata.set("modules.media.data", data);
+    $appdata.set("modules.media.id_music", id_music);
+    $appdata.set("modules.media.config.title", data.name);
+    $appdata.set("modules.media.config.mode", mode);
+    $appdata.set("modules.media.config.is_paused", true);
+    $appdata.set("modules.media.config.slide_index", 0);
+    $appdata.set("modules.media.config.last_slide", 1);
+    $appdata.set("modules.media.config.audio_only", true);
 
-    $appdata.set("loading", false);
+    const volume = $appdata.get("modules.media.config.volume");
+    _audio.setVolume(volume as number);
+    _audio.getElement().currentTime = 0;
+
+    const audioUrl = $path.file(
+      mode == "instrumental"
+        ? (data.url_instrumental_music as string)
+        : (data.url_music as string)
+    );
+    $appdata.set("modules.media.config.audio", audioUrl);
+
+    if ($appdata.get("is_online") && $userdata.get("modules.media.lazy_load")) {
+      $appdata.set("modules.media.config.lazy", true);
+      _audio.setSrc(audioUrl, true);
+      $appdata.set("modules.media.loading", false);
+      this.pause(false);
+    } else {
+      $appdata.set("modules.media.config.lazy", false);
+      const self = this;
+      if (_audioXhr) {
+        try { _audioXhr.abort(); } catch (_) { /* ignore */ }
+        _audioXhr = null;
+      }
+      let request = new XMLHttpRequest();
+      _audioXhr = request;
+      try {
+        request.open("GET", audioUrl, true);
+      } catch (error) {
+        if (_audioXhr === request) _audioXhr = null;
+        $appdata.set("modules.media.loading", false);
+        self.close(true);
+        $alert.error({ text: "modules.media.alerts.not_loaded", error }, function (a?: unknown) {
+          if (a) self.openAudio(id_music as string | number);
+        });
+        return;
+      }
+
+      request.responseType = "blob";
+      request.onload = function (this: XMLHttpRequest) {
+        if (_audioXhr === request) _audioXhr = null;
+        if (_loadingId !== id_music) return;
+        if (this.status == 200) {
+          _audio.setSrc(URL.createObjectURL(this.response as Blob), false);
+          self.pause(false);
+        } else {
+          self.close(true);
+          $alert.error(
+            { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
+            function (a?: unknown) {
+              if (a) self.openAudio(id_music as string | number);
+            }
+          );
+        }
+      };
+      request.onerror = function () {
+        if (_audioXhr === request) _audioXhr = null;
+        if (_loadingId !== id_music) return;
+        self.close(true);
+        $alert.error(
+          { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
+          function (a?: unknown) {
+            if (a) self.openAudio(id_music as string | number);
+          }
+        );
+      };
+      request.onabort = function () {
+        if (_audioXhr === request) _audioXhr = null;
+      };
+
+      request.send();
+      $appdata.set("modules.media.loading", false);
+    }
+
+    this.minimize();
   },
 
   clearVariables(): void {
@@ -410,6 +496,7 @@ const _self = {
     $appdata.set("modules.media.config.volume", 100);
     $appdata.set("modules.media.config.is_paused", false);
     $appdata.set("modules.media.config.is_fading", false);
+    $appdata.set("modules.media.config.audio_only", false);
   },
 
   minimize(): void {
