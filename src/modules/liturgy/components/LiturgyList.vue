@@ -175,6 +175,7 @@ const t = (key: string) => _t(key, locale.value);
   color: var(--lj-white);
 }
 .lit-btn--primary:hover {
+  color: var(--lj-navy);
   filter: brightness(1.1);
 }
 .mt-4 {
