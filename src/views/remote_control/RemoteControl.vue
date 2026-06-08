@@ -24,7 +24,7 @@
         </v-tab>
         <v-tab value="slides">
           <v-icon icon="mdi-view-grid" class="mr-1" />
-          Slides
+          {{ t("remote_control.tabs.slides") }}
         </v-tab>
       </v-tabs>
 
@@ -95,7 +95,7 @@
       <v-list density="compact">
         <v-list-item
           prepend-icon="mdi-close-circle"
-          title="Fechar Projeção"
+          :title="t('remote_control.slides.close_projection')"
           color="error"
           @click="closeMedia"
         />
@@ -112,10 +112,10 @@
       <div class="pa-4 d-flex justify-space-between align-center">
         <div class="cursor-pointer" @click="closeBible">
           <v-btn icon="mdi-monitor" variant="tonal" />
-          <span class="ml-2">Limpar a Tela</span>
+          <span class="ml-2">{{ t("remote_control.bible.clear_screen") }}</span>
         </div>
         <div class="cursor-pointer" @click="closeProjection">
-          <span class="mr-2">Encerrar Projeção</span>
+          <span class="mr-2">{{ t("remote_control.bible.close_projection") }}</span>
           <v-btn icon="mdi-projector-screen" variant="tonal" />
         </div>
       </div>
@@ -132,7 +132,7 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import RemoteMusic from "./RemoteMusic.vue";
 import RemoteBible from "./RemoteBible.vue";
@@ -260,7 +260,9 @@ function nextVerseRemote() {
     activeBible.value.verse = newVerse;
     updateVerseReference(newVerse);
   }
-  fetch(`/api/bible?action=next&token=${token.value}`).catch(() => showSnackbar("Erro", "error"));
+  fetch(`/api/bible?action=next&token=${token.value}`).catch(() =>
+    showSnackbar(t("remote_control.errors.generic"), "error")
+  );
 }
 
 function prevVerseRemote() {
@@ -270,7 +272,9 @@ function prevVerseRemote() {
     activeBible.value.verse = newVerse;
     updateVerseReference(newVerse);
   }
-  fetch(`/api/bible?action=prev&token=${token.value}`).catch(() => showSnackbar("Erro", "error"));
+  fetch(`/api/bible?action=prev&token=${token.value}`).catch(() =>
+    showSnackbar(t("remote_control.errors.generic"), "error")
+  );
 }
 
 function updateVerseReference(verse) {
@@ -284,7 +288,7 @@ async function closeBible() {
   try {
     await fetch(`/api/bible?action=close&token=${token.value}`);
     activeBible.value.active = false;
-    showSnackbar("Tela da Bíblia limpa");
+    showSnackbar(t("remote_control.bible.screen_cleaned"));
   } catch (e) {
     console.error("Erro ao fechar bíblia:", e);
   }
@@ -294,7 +298,7 @@ async function closeProjection() {
     await fetch(`/api/song-slides?action=close&token=${token.value}`);
     activeBible.value.active = false;
     activeBible.value.chapterVerses = [];
-    showSnackbar("Projeção da Bíblia encerrada");
+    showSnackbar(t("remote_control.bible.projection_closed"));
   } catch (e) {
     console.error("Erro ao fechar bíblia:", e);
   }
@@ -315,7 +319,7 @@ function prevSlide() {
 function goToSlide(index) {
   currentSlideIndex.value = index;
   fetch(`/api/song-slides?action=go-to-slide&index=${index}&token=${token.value}`).catch(() =>
-    showSnackbar("Erro ao trocar slide", "error")
+    showSnackbar(t("remote_control.slides.error_change"), "error")
   );
 }
 
@@ -324,7 +328,7 @@ async function closeMedia() {
     await fetch(`/api/song-slides?action=close&token=${token.value}`);
     slides.value = [];
     currentTitle.value = "";
-    showSnackbar("Projeção encerrada");
+    showSnackbar(t("remote_control.slides.projection_closed"));
   } catch (e) {
     console.error("Erro ao fechar mídia:", e);
   }
@@ -335,7 +339,7 @@ function showSnackbar(text, color = "success") {
 }
 
 function refreshState() {
-  showSnackbar("Sincronizando...");
+  showSnackbar(t("remote_control.sync.syncing"));
 }
 
 onMounted(() => {

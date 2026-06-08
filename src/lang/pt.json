@@ -218,7 +218,7 @@
       "server_stopped": "Servidor desligado",
       "start_server": "Ligar",
       "stop_server": "Desligar",
-      "auto_start": "Ligar automaticamente com o app",
+      "auto_start": "Ligar automaticamente ao iniciar",
       "copy": "Copiar",
       "copied": "Copiado",
       "open_window": "Abrir",
@@ -230,6 +230,8 @@
       "token_reset": "Gerar novo",
       "local_windows": "Janelas locais",
       "local_windows_hint": "Abrir uma das views como janela do app — útil em monitor secundário no mesmo computador.",
+      "use_hostname": "Usar nome da máquina em vez do IP",
+      "use_hostname_hint": "As URLs usarão http://{hostname}:{port} em vez de http://{ip}:{port} — útil quando o IP muda (DHCP).",
       "win_music": "Música — Transmissão",
       "win_return": "Música — Retorno",
       "win_bible": "Bíblia — Transmissão",
@@ -351,6 +353,28 @@
     "build": "Build",
     "platform": "Plataforma",
     "credits": "Desenvolvido com ❤ para a comunidade Adventista."
+  },
+  "remote_control": {
+    "tabs": {
+      "slides": "Slides"
+    },
+    "bible": {
+      "clear_screen": "Limpar a Tela",
+      "close_projection": "Encerrar Projeção",
+      "screen_cleaned": "Tela da Bíblia limpa",
+      "projection_closed": "Projeção da Bíblia encerrada"
+    },
+    "slides": {
+      "close_projection": "Fechar Projeção",
+      "projection_closed": "Projeção encerrada",
+      "error_change": "Erro ao trocar slide"
+    },
+    "errors": {
+      "generic": "Erro"
+    },
+    "sync": {
+      "syncing": "Sincronizando..."
+    }
   },
   "popup": {
     "close": "Fechar Janela"

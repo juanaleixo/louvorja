@@ -8,18 +8,24 @@ const fs = require("fs");
 // ---------------------------------------------------------------
 function loadUserDataKeys() {
   // Caminho no build (dentro de resources/)
-  const prodPath = path.join(process.resourcesPath, "constants", "UserDataKeys.js");
-  if (fs.existsSync(prodPath)) {
+  const prodPath = process.resourcesPath
+    ? path.join(process.resourcesPath, "constants", "UserDataKeys.js")
+    : null;
+  if (prodPath && fs.existsSync(prodPath)) {
     return require(prodPath);
   }
-
   // Caminho em DEV (dentro do projeto)
   const devPath = path.join(__dirname, "../../../src/constants/UserDataKeys.js");
   if (fs.existsSync(devPath)) {
     return require(devPath);
   }
 }
-const { KEY_DAYS, KEY_ACTIVE_DAY } = loadUserDataKeys();
+const keys = loadUserDataKeys();
+if (!keys || !keys.KEY_DAYS || !keys.KEY_ACTIVE_DAY) {
+  console.error("[routes] UserDataKeys.js não encontrado ou incompleto");
+  throw new Error("UserDataKeys.js missing or incomplete");
+}
+const { KEY_DAYS, KEY_ACTIVE_DAY } = keys;
 
 /**
  * Estado em memória para sorteios (replicado entre requests).

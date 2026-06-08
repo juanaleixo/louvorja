@@ -262,6 +262,8 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     status: () => ipcRenderer.invoke("httpServer:status"),
     /** Retorna lista de IPs IPv4 locais (não-loopback). */
     localIps: () => ipcRenderer.invoke("httpServer:localIps"),
+    /** Retorna o nome da máquina na rede local (ex: "MacBook-Pro.local"). */
+    hostname: () => ipcRenderer.invoke("httpServer:hostname"),
     /** Regenera token (revoga acessos antigos). Retorna novo token. */
     resetToken: () => ipcRenderer.invoke("httpServer:resetToken"),
   },

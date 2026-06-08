@@ -572,6 +572,16 @@ ipcMain.handle("httpServer:localIps", () => {
   return ips;
 });
 
+/**
+ * Retorna o nome da máquina na rede local (ex: "desktop.local").
+ * Usado nas URLs de transmissão quando a opção "usar hostname" está ativa.
+ */
+ipcMain.handle("httpServer:hostname", () => {
+  const os = require("os");
+  const raw = os.hostname();
+  return raw.includes(".") ? raw : `${raw}.local`;
+});
+
 // ---------------------------------------------------------------------------
 // IPC handlers de atalhos globais (D6)
 // ---------------------------------------------------------------------------

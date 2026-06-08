@@ -47,6 +47,26 @@
           />
           <span>{{ $t("options.transmission.auto_start") }}</span>
         </label>
+
+        <div>
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="useHostname"
+              @change="toggleUseHostname($event.target.checked)"
+            />
+            <span>{{ $t("options.transmission.use_hostname") }}</span>
+          </label>
+          <p class="opt-hint">
+            {{
+              $t("options.transmission.use_hostname_hint", {
+                hostname: hostname || "...",
+                port: httpServer.port,
+                ip: primaryHost,
+              })
+            }}
+          </p>
+        </div>
       </section>
 
       <!-- URLs de transmissão (compatibilidade Delphi) -->
@@ -193,6 +213,8 @@ const httpServerAutoStart = ref(false);
 const localIps = ref([]);
 const copiedKey = ref(null);
 const globalShortcutsEnabled = ref(false);
+const useHostname = ref(false);
+const hostname = ref("");
 
 // IP "público" preferido — primeiro não-loopback. Cai pra 127.0.0.1
 // quando a máquina não tem interface de rede ativa (raro: notebook offline).
@@ -202,7 +224,8 @@ const primaryHost = computed(() => {
 
 const baseUrl = computed(() => {
   if (!httpServer.value.running) return "";
-  return `http://${primaryHost.value}:${httpServer.value.port}`;
+  const h = useHostname.value ? hostname.value : primaryHost.value;
+  return `http://${h}:${httpServer.value.port}`;
 });
 
 function featureKey(route) {
@@ -323,6 +346,19 @@ async function toggleGlobalShortcuts(enabled) {
   }
 }
 
+async function toggleUseHostname(enabled) {
+  useHostname.value = enabled;
+  if (!Platform.userStore) return;
+  try {
+    const cfg = (await Platform.userStore.read("config")) || {};
+    if (!cfg.httpServer) cfg.httpServer = {};
+    cfg.httpServer.useHostname = enabled;
+    await Platform.userStore.write("config", cfg);
+  } catch (e) {
+    console.warn("[Transmitir] useHostname:", e);
+  }
+}
+
 onMounted(async () => {
   if (!isDesktop.value) return;
   if (Platform.httpServer) {
@@ -330,6 +366,8 @@ onMounted(async () => {
       await refreshStatus();
       const cfg = (await Platform.userStore?.read("config")) || {};
       httpServerAutoStart.value = cfg.httpServer?.autoStart ?? false;
+      useHostname.value = cfg.httpServer?.useHostname ?? false;
+      hostname.value = await Platform.httpServer.hostname();
     } catch (e) {
       console.warn("[Transmitir] init:", e);
     }

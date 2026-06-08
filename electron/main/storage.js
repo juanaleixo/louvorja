@@ -255,7 +255,7 @@ async function removeFiles(remoteRelPaths = []) {
     if (typeof rel !== "string" || !rel) continue;
     const cleaned = rel.replace(/^\/+/, "");
     const localPath = path.resolve(filesDir, cleaned);
-    if (!localPath.startsWith(filesDir + path.sep) && localPath !== filesDir) {
+    if (!localPath.startsWith(filesDir + path.sep) || localPath === filesDir) {
       continue;
     }
     try {
