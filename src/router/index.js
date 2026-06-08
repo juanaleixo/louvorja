@@ -62,6 +62,16 @@ const routes = [
     name: "ModuleProjection",
     component: () => import("@/views/ModuleProjection.vue"),
   },
+  {
+    path: "/projection/file",
+    name: "FileProjection",
+    component: () => import("@/views/FileProjection.vue"),
+  },
+  {
+    path: "/projection/file/return",
+    name: "FileProjectionReturn",
+    component: () => import("@/views/FileProjectionReturn.vue"),
+  },
 ];
 
 // Em Electron prod o app é servido via file:// (legacy) ou louvorja://app

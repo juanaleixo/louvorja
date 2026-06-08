@@ -439,10 +439,10 @@ $storage.hydrate().then(async () => {
       () => {
         // Função para encerrar tudo exceto música (que pode ter confirmação)
         const closeEverythingElse = () => {
-          // 2. Bíblia
+          // Bíblia
           Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
 
-          // 3. Módulos genéricos (counter, timer, etc.)
+          // Módulos genéricos (counter, timer, etc.)
           const moduleIds = [
             "counter",
             "draw",
@@ -457,8 +457,17 @@ $storage.hydrate().then(async () => {
           }
         };
 
-        // 1. Música/Slides (com confirmação se ativa)
-        if (_mediaIsActive()) {
+        // Projeção de arquivos de imagem e vídeo
+        if (Broadcast.getLastPayload(BROADCAST_TYPE.FILE_PROJECTION)) {
+          $alert.yesno("modules.media.alerts.close_projection", (btn) => {
+            if (btn === "yes") {
+              Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { action: "clear" });
+              Media.close(true);
+              closeEverythingElse();
+            }
+          });
+        } else if (_mediaIsActive()) {
+          // Música/Slides (com confirmação se ativa)
           $alert.yesno("modules.media.alerts.close", (btn) => {
             if (btn === "yes") {
               Media.close(true);

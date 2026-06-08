@@ -70,7 +70,7 @@ export function usePlayerState(): {
   fullscreen: (value?: boolean) => void;
   toggleVolume: () => void;
   setVolume: (value?: number) => void;
-  seekToProgress: () => void;
+  seekToProgress: (pct: number) => void;
   goToSlide: (index: number) => void;
 } {
   const { t }     = useI18n();
@@ -211,8 +211,8 @@ export function usePlayerState(): {
   function setVolume(value?: number): void {
     Media.setVolume(value ?? audio.volume.value);
   }
-  function seekToProgress(): void {
-    const time = (audio.duration.value * audio.progress.value) / 100;
+  function seekToProgress(pct: number): void {
+    const time = (audio.duration.value * pct) / 100;
     Media.goToTime(time);
   }
   function goToSlide(index: number): void { Media.goToSlide(index); }

@@ -746,6 +746,17 @@ ipcMain.handle("storage:chooseDir", async (event) => {
   return result.filePaths[0];
 });
 
+/** Abre diálogo para selecionar um único arquivo (liturgia). */
+ipcMain.handle("storage:chooseFile", async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(win, {
+    properties: ["openFile"],
+    title: "Selecionar arquivo",
+  });
+  if (result.canceled || !result.filePaths?.length) return null;
+  return result.filePaths[0];
+});
+
 /**
  * Verifica quais dos arquivos remotos JÁ ESTÃO no disco. Usado para
  * mostrar o indicador "✓ baixado / ⬇ online" nas listas de música.

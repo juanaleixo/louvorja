@@ -408,13 +408,14 @@ onMounted(loadDBVersion);
   left: 0;
   bottom: 0;
   background: linear-gradient(180deg, var(--lj-color-cover-gold), var(--lj-color-cover-gold-dark));
-  transition: width 0.4s linear;
+  transition: width 0.1s linear;
   box-shadow: 0 0 8px var(--lj-gold-alpha-60);
 }
 
 .player-gauge-fill--paused {
   background: linear-gradient(180deg, var(--lj-warning), var(--lj-warning-dark));
   box-shadow: none;
+  transition: width 0.1s linear;
 }
 
 .player-gauge-fill--mute {

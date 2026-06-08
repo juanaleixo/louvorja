@@ -28,6 +28,14 @@ let _loadingId: string | number | null = null;
 // drenando bytes da rede e ocupando handlers).
 let _audioXhr: XMLHttpRequest | null = null;
 
+function _broadcastVideoState(currentTime?: number, isPaused?: boolean): void {
+  if (!$appdata.get("modules.media.config.video_file")) return;
+  $broadcast.send(BROADCAST_TYPE.VIDEO_STATE, {
+    currentTime: currentTime ?? _audio.currentTime.value,
+    isPaused: isPaused ?? _audio.isPaused.value,
+  });
+}
+
 // Mantém $appdata sincronizado com o estado reativo de useSlides
 // (Player.vue, Footer.vue e media/Index.vue ainda leem de $appdata)
 watch(
@@ -52,6 +60,10 @@ watch(
   { flush: "sync" }
 );
 
+// Throttle para evitar sobrecarga de broadcasts de sincronia de vídeo
+let _lastVideoSync = 0;
+const _VIDEO_SYNC_INTERVAL = 500; // ms entre broadcasts de sincronia
+
 // Callback de timeUpdate: mantém $appdata de timing e fecha ao fim da música.
 _audio.onTimeUpdate((ct, d) => {
   $appdata.set("modules.media.config.current_time", ct);
@@ -62,6 +74,15 @@ _audio.onTimeUpdate((ct, d) => {
   if (!_audio.isPaused.value && ct >= d && d > 0) {
     _self.close(true);
   }
+
+  // Sincronia contínua de vídeo: broadcast periódico para manter o <video>
+  // das janelas de projeção sincronizado com o <audio> oculto.
+  const now = Date.now();
+  if (!$appdata.get("modules.media.config.is_paused") && now - _lastVideoSync >= _VIDEO_SYNC_INTERVAL) {
+    _lastVideoSync = now;
+    _broadcastVideoState();
+  }
+
 });
 
 export interface MediaOpenParams {
@@ -69,6 +90,8 @@ export interface MediaOpenParams {
   id_album?: string | number | null;
   mode?: "audio" | "instrumental" | "no_audio";
   minimized?: boolean;
+  url?: string;
+  title?: string;
 }
 
 function _buildSlidesFrom(data: MusicData): Slide[] {
@@ -313,7 +336,7 @@ const _self = {
       const key = $appdata.get("modules.media.config.audio_only")
         ? "modules.media.alerts.close_audio"
         : "modules.media.alerts.close";
-      $alert.yesno(key, function (btn?: string) {
+      $alert.yesno({title: key}, function (btn?: string) {
         if (btn == "yes") self.close(true);
       });
       return;
@@ -382,9 +405,41 @@ const _self = {
     _audio.stop();
     this.clearVariables();
 
-    const id_music = params.id_music;
     const mode = params.mode || "audio";
 
+    // Modo URL direta (ex: arquivo de áudio da liturgia) — pula busca no banco
+    if (params.url) {
+      _loadingId = null;
+      $appdata.set("modules.media.loading", true);
+      $appdata.set("modules.media.config.title", params.title || "");
+      $appdata.set("modules.media.config.mode", mode);
+      $appdata.set("modules.media.config.is_paused", true);
+      $appdata.set("modules.media.config.slide_index", 0);
+      $appdata.set("modules.media.config.last_slide", 1);
+      $appdata.set("modules.media.config.audio_only", true);
+
+      const audioUrl = params.url;
+      $appdata.set("modules.media.config.audio", audioUrl);
+
+      const self = this;
+      _audio.getElement().onerror = function () {
+        _audio.getElement().onerror = null;
+        self.close(true);
+        $alert.error("modules.media.alerts.file_not_found");
+      };
+
+      const volume = $appdata.get("modules.media.config.volume");
+      _audio.setVolume(volume as number);
+      _audio.getElement().currentTime = 0;
+
+      _audio.setSrc(audioUrl, true);
+      $appdata.set("modules.media.loading", false);
+      this.pause(false);
+      this.minimize();
+      return;
+    }
+
+    const id_music = params.id_music;
     _loadingId = id_music ?? null;
     $appdata.set("modules.media.loading", true);
 
@@ -497,6 +552,7 @@ const _self = {
     $appdata.set("modules.media.config.is_paused", false);
     $appdata.set("modules.media.config.is_fading", false);
     $appdata.set("modules.media.config.audio_only", false);
+    $appdata.set("modules.media.config.video_file", false);
   },
 
   minimize(): void {
@@ -539,11 +595,13 @@ const _self = {
 
   goToTime(time: number): void {
     _audio.seekTo(time);
+    _broadcastVideoState(time);
   },
 
   advanceTime(time = 10): void {
     if (_audio.duration.value > 0 && $appdata.get("modules.media.config.audio") != "") {
       _audio.advanceTime(time);
+      _broadcastVideoState();
     }
   },
 
@@ -553,9 +611,10 @@ const _self = {
 
   pause(bool = true, callback?: () => void): void {
     const fade_audio = $userdata.get("modules.media.fade_audio", false);
+    const isVideo = $appdata.get("modules.media.config.video_file");
 
     if (bool) {
-      if (fade_audio) {
+      if (fade_audio && !isVideo) {
         _audio.fadeOut(() => {
           _audio.pause(callback);
           $appdata.set("modules.media.config.is_paused", true);
@@ -565,6 +624,7 @@ const _self = {
         _audio.pause(callback);
         $appdata.set("modules.media.config.is_paused", true);
       }
+      _broadcastVideoState();
     } else {
       const self = this;
       _audio.play((e) => {
@@ -572,7 +632,7 @@ const _self = {
           if (a) self.open($appdata.get("modules.media.id_music") as string | number);
         });
       });
-      if (fade_audio) {
+      if (fade_audio && !isVideo) {
         _audio.fadeIn($appdata.get("modules.media.config.volume") as number, () => {
           $appdata.set("modules.media.config.is_fading", false);
           if (callback) callback();
@@ -583,6 +643,7 @@ const _self = {
         if (callback) callback();
       }
       $appdata.set("modules.media.config.is_paused", false);
+      _broadcastVideoState();
     }
   },
 

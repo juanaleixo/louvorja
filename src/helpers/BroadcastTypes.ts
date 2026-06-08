@@ -80,6 +80,17 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: Projection, Obs. (ainda não emitido — ver Media.js). */
   MEDIA_CLOSE: "media_close",
 
+  /** Projeção de arquivo (imagem/vídeo) vindo de liturgia ou outro módulo.
+   *  Payload: { url: string, type: "image" | "video", title?: string }
+   *  Emitido por: liturgy (arquivo). Recebido por: Projection. */
+  FILE_PROJECTION: "file_projection",
+
+  /** Sincronização de vídeo entre o player principal e a projeção.
+   *  Payload: { currentTime: number, isPaused: boolean }
+   *  Emitido por: useMedia.ts (onTimeUpdate + goToTime + pause/play).
+   *  Recebido por: FileProjection.vue (sincroniza o <video> com o <audio>). */
+  VIDEO_STATE: "video_state",
+
   /** Força a RibbonBar a selecionar uma página específica.
    *  Payload: { pageId: string } */
   RIBBON_SELECT_PAGE: "ribbon:select_page",

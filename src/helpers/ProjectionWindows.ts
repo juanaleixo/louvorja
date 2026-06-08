@@ -27,7 +27,7 @@ interface DisplayPlatform {
 }
 
 interface DisplaysAPI {
-  getPrefs: () => Promise<Record<string, number | null>>;
+  getPrefs: () => Promise<Record<string, number | string | null>>;
 }
 
 const FEATURE_PROJECTION = "musicas"; // /projection
@@ -35,6 +35,8 @@ const FEATURE_OPERATOR   = "operador"; // /operator
 const FEATURE_RETURN     = "retorno";  // /projection/return
 const FEATURE_BIBLE      = "bible";    // /projection/bible
 const FEATURE_BIBLE_RETURN = "bible_return"; // /projection/bible/return
+const FEATURE_FILE_PROJECTION = "file_projection"; // /projection/file
+const FEATURE_FILE_RETURN = "file_return"; // /projection/file/return
 
 const _openWebWindows: Record<string, Window | null> = {};
 
@@ -89,15 +91,37 @@ async function _close(feature: string): Promise<void> {
 
 async function _readPrefs(): Promise<Record<string, number | null>> {
   const api = (Platform as { displays?: DisplaysAPI }).displays;
+  let raw: Record<string, number | string | null>;
   if (Platform.isDesktop && api) {
     try {
-      return await api.getPrefs();
+      raw = await api.getPrefs();
     } catch {
-      return {};
+      raw = {};
     }
+  } else {
+    raw = ($userdata.get("displays.preferred", {}) as Record<string, number | string | null>) ?? {};
   }
-  // Web fallback: leitura direta do $userdata
-  return ($userdata.get("displays.preferred", {}) as Record<string, number | null>) ?? {};
+
+  const primaryId = ($userdata.get("options.monitor_primary", null) as number | null) ?? null;
+  const secondaryId = ($userdata.get("options.monitor_secondary", null) as number | null) ?? null;
+
+  const resolved: Record<string, number | null> = {};
+  for (const [key, val] of Object.entries(raw)) {
+    resolved[key] = _resolveMonitorId(val, primaryId, secondaryId);
+  }
+  return resolved;
+}
+
+function _resolveMonitorId(
+  raw: number | string | null | undefined,
+  primaryId: number | null,
+  secondaryId: number | null
+): number | null {
+  if (raw == null) return null;
+  if (typeof raw === "number") return raw;
+  if (raw === "primary") return primaryId;
+  if (raw === "secondary") return secondaryId;
+  return null;
 }
 
 /**
@@ -143,6 +167,37 @@ export async function openProjectionWindows(): Promise<void> {
 }
 
 /**
+ * Abre as janelas de projeção de arquivo (imagem/vídeo da liturgia).
+ * Usa rotas dedicadas para não interferir com as janelas de música.
+ *
+ * Se não houver monitor específico para arquivo, usa o mesmo da projeção
+ * principal (fallback "Mesma janela" abre na janela atual).
+ */
+export async function openFileProjectionWindows(): Promise<void> {
+  const prefs = await _readPrefs();
+  const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
+  const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
+
+  // Projeção de arquivo — fallback para o monitor da projeção principal
+  const fileProjMonitor = prefs[FEATURE_FILE_PROJECTION] ?? prefs[FEATURE_PROJECTION] ?? null;
+  if (fileProjMonitor != null) {
+    await _open("/projection/file", FEATURE_FILE_PROJECTION, fileProjMonitor, fullscreen, alwaysOnTop);
+  }
+
+  // Retorno de arquivo — respeita a opção "Reproduzir na Tela de Retorno" do player
+  const openFileReturn = ($userdata.get("modules.media.project_return", false) as unknown) === true;
+  if (openFileReturn) {
+    await _open(
+      "/projection/file/return",
+      FEATURE_FILE_RETURN,
+      prefs[FEATURE_FILE_RETURN] ?? prefs[FEATURE_RETURN] ?? null,
+      fullscreen,
+      alwaysOnTop
+    );
+  }
+}
+
+/**
  * Abre especificamente a janela da Bíblia se houver monitor configurado.
  */
 export async function openBibleWindow(): Promise<void> {
@@ -177,7 +232,9 @@ export async function closeProjectionWindows(): Promise<void> {
     _close(FEATURE_RETURN),
     _close(FEATURE_BIBLE),
     _close(FEATURE_BIBLE_RETURN),
+    _close(FEATURE_FILE_PROJECTION),
+    _close(FEATURE_FILE_RETURN),
   ]);
 }
 
-export default { openProjectionWindows, closeProjectionWindows, openBibleWindow };
+export default { openProjectionWindows, closeProjectionWindows, openBibleWindow, openFileProjectionWindows };

@@ -142,37 +142,12 @@
             />
             <button
               class="lit-btn lit-btn--ghost"
-              :title="t('actions.choose_folder')"
-              @click="chooseFolder"
-            >
-              <v-icon icon="mdi-folder-outline" size="14" />
-            </button>
-            <button
-              class="lit-btn lit-btn--ghost"
               :title="t('actions.choose_file')"
               @click="chooseFile"
             >
               <v-icon icon="mdi-file-outline" size="14" />
             </button>
           </div>
-        </div>
-        <div class="lit-field-row">
-          <label class="lit-radio">
-            <input
-              type="radio"
-              :checked="form.dir_info === 'E'"
-              @change="setFormField('dir_info', 'E')"
-            />
-            {{ t("inputs.path_external") }}
-          </label>
-          <label class="lit-radio">
-            <input
-              type="radio"
-              :checked="form.dir_info === 'I'"
-              @change="setFormField('dir_info', 'I')"
-            />
-            {{ t("inputs.path_internal") }}
-          </label>
         </div>
       </div>
 
@@ -318,7 +293,6 @@ const props = withDefaults(
     saveItem: () => void;
     confirmRemove: (index: number, closeDialog?: boolean) => void;
     openSite: () => void;
-    chooseFolder: () => Promise<void>;
     chooseFile: () => Promise<void>;
     openSchedulesDialog: () => void;
   }>(),

@@ -12,7 +12,7 @@
         :height="10"
         :buffer-value="buffered"
         :color="progressColor"
-        @click="$emit('seek')"
+        @click="onClick"
       />
     </div>
     <div class="text-left text-caption">
@@ -44,7 +44,16 @@ const props = defineProps({
   lastSlide: { type: Number, default: 0 },
 });
 
-defineEmits(["seek"]);
+const emit = defineEmits(["seek"]);
+
+function onClick(e) {
+  const el = e.currentTarget;
+  if (!el) return; // Quando o áudio é de alguma música do programa
+  // Quando é de algum arquivo externo segue a lógica
+  const { left, width } = el.getBoundingClientRect();
+  const pct = Math.round(((e.clientX - left) / width) * 100);
+  emit("seek", Math.max(0, Math.min(pct, 100)));
+}
 
 const progressColor = computed(() => {
   if (props.isPaused) return "warning";

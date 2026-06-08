@@ -60,6 +60,38 @@ function setRemoteConfig(cfg) {
  * passa direto para o renderer sem gravar no disco.
  */
 let _autoCacheEnabled = true;
+/**
+ * MIME type por extensão (apenas para o host "local" onde criamos
+ * Responses customizados com Range support).
+ */
+const _MIME_TYPES = {
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".flac": "audio/flac",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".avi": "video/x-msvideo",
+  ".mov": "video/quicktime",
+  ".mkv": "video/x-matroska",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".bmp": "image/bmp",
+  ".pdf": "application/pdf",
+  ".json": "application/json",
+  ".txt": "text/plain",
+};
+function _getMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return _MIME_TYPES[ext] || "application/octet-stream";
+}
+
 function setAutoCacheEnabled(enabled) {
   _autoCacheEnabled = !!enabled;
 }
@@ -260,6 +292,79 @@ function handle() {
         }
 
         return new Response("File not found", { status: 404 });
+      }
+
+      // ------------------------------------------------------------------
+      // louvorja://local/<caminho-absoluto>
+      // Serve arquivos de caminhos absolutos arbitrários (liturgia,
+      // arrastar/soltar, etc). Ex:
+      //   louvorja://local/Users/diego/Music/song.mp3          (Unix)
+      //   louvorja://local/C:/Users/diego/Music/song.mp3       (Windows)
+      //
+      // O pathname (ex: /Users/diego/Music/song.mp3) é o caminho
+      // absoluto real (a `/` inicial já faz parte do path Unix).
+      // ------------------------------------------------------------------
+      if (host === "local") {
+        // pathname vem percent-encoded (ex: %20 → espaço): decodifica
+        const raw = decodeURIComponent(pathname);
+
+        if (!raw || raw.includes("..")) {
+          console.warn("[protocol] local: path traversal bloqueado:", pathname);
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        if (!fs.existsSync(raw)) {
+          return new Response("Not found", { status: 404 });
+        }
+
+        const rangeHeader = request.headers.get("range");
+
+        // Suporte a Range requests (necessário para seeking em <audio>/<video>)
+        if (rangeHeader) {
+          const stat = fs.statSync(raw);
+          const fileSize = stat.size;
+          const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
+
+          if (match) {
+            const start = parseInt(match[1], 10);
+            const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+            const chunkSize = end - start + 1;
+
+            const stream = fs.createReadStream(raw, { start, end });
+            const readable = new ReadableStream({
+              start(controller) {
+                stream.on("data", (chunk) => {
+                  try { controller.enqueue(chunk); } catch {
+                    // Consumer fechou o ReadableStream (seek/nav) →
+                    // para de ler do disco.
+                    stream.destroy();
+                  }
+                });
+                stream.on("end", () => {
+                  try { controller.close(); } catch { /* ignore */ }
+                });
+                stream.on("error", (err) => {
+                  try { controller.error(err); } catch { /* ignore */ }
+                });
+              },
+              cancel() {
+                stream.destroy();
+              },
+            });
+
+            return new Response(readable, {
+              status: 206,
+              headers: {
+                "Content-Type": _getMimeType(raw),
+                "Content-Length": String(chunkSize),
+                "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+                "Accept-Ranges": "bytes",
+              },
+            });
+          }
+        }
+
+        return electron.net.fetch(pathToFileURL(raw).toString());
       }
 
       // Host desconhecido

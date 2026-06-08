@@ -67,6 +67,49 @@
         <button type="button" class="opt-btn" @click="identify(5000)">
           {{ $t("options.monitors.identify") }}
         </button>
+
+        <div class="opt-row" style="margin-top: 12px">
+          <label class="opt-label" for="opt-monitor-primary">
+            {{ $t("options.monitors.primary") }}
+          </label>
+          <select
+            id="opt-monitor-primary"
+            class="opt-select"
+            :value="monitorPrimary ?? ''"
+            @change="
+              setUd(
+                'monitor_primary',
+                $event.target.value === '' ? null : Number($event.target.value)
+              )
+            "
+          >
+            <option value="">{{ $t("options.slides.none") }}</option>
+            <option v-for="d in displays" :key="d.id" :value="d.id">
+              {{ d.label || `Monitor ${d.id}` }}
+            </option>
+          </select>
+        </div>
+        <div class="opt-row">
+          <label class="opt-label" for="opt-monitor-secondary">
+            {{ $t("options.monitors.secondary") }}
+          </label>
+          <select
+            id="opt-monitor-secondary"
+            class="opt-select"
+            :value="monitorSecondary ?? ''"
+            @change="
+              setUd(
+                'monitor_secondary',
+                $event.target.value === '' ? null : Number($event.target.value)
+              )
+            "
+          >
+            <option value="">{{ $t("options.slides.none") }}</option>
+            <option v-for="d in displays" :key="d.id" :value="d.id">
+              {{ d.label || `Monitor ${d.id}` }}
+            </option>
+          </select>
+        </div>
       </div>
     </section>
 
@@ -83,6 +126,8 @@
           @change="setPref('bible', $event.target.value)"
         >
           <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
           <option v-for="d in displays" :key="d.id" :value="d.id">
             {{ d.label || `Monitor ${d.id}` }}
           </option>
@@ -103,6 +148,8 @@
           @change="setPref('musicas', $event.target.value)"
         >
           <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
           <option v-for="d in displays" :key="d.id" :value="d.id">
             {{ d.label || `Monitor ${d.id}` }}
           </option>
@@ -177,6 +224,8 @@
           @change="setPref('operador', $event.target.value)"
         >
           <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
           <option v-for="d in displays" :key="d.id" :value="d.id">
             {{ d.label || `Monitor ${d.id}` }}
           </option>
@@ -200,11 +249,14 @@
           @change="setPref('retorno', $event.target.value)"
         >
           <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
           <option v-for="d in displays" :key="d.id" :value="d.id">
             {{ d.label || `Monitor ${d.id}` }}
           </option>
         </select>
       </div>
+
       <div class="opt-row">
         <label class="opt-label" for="opt-slides-next-text-size">
           {{ $t("options.slides.text_size") }}
@@ -451,6 +503,8 @@
           @change="setPref('videos', $event.target.value)"
         >
           <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
           <option v-for="d in displays" :key="d.id" :value="d.id">
             {{ d.label || `Monitor ${d.id}` }}
           </option>
@@ -487,6 +541,55 @@
     <!-- Player de Áudio/Vídeo -->
     <section class="opt-section">
       <h3 class="opt-section-title">{{ $t("options.player.title") }}</h3>
+      <div class="opt-row">
+        <label class="opt-label" for="opt-file-proj-monitor">
+          {{ $t("options.slides.open_file_at") }}
+        </label>
+        <select
+          id="opt-file-proj-monitor"
+          class="opt-select"
+          :value="getPref('file_projection') ?? ''"
+          @change="setPref('file_projection', $event.target.value)"
+        >
+          <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
+          <option v-for="d in displays" :key="d.id" :value="d.id">
+            {{ d.label || `Monitor ${d.id}` }}
+          </option>
+        </select>
+      </div>
+
+      <div class="opt-row">
+        <label class="opt-label" for="opt-file-return-monitor">
+          {{ $t("options.slides.open_file_return_at") }}
+        </label>
+        <select
+          id="opt-file-return-monitor"
+          class="opt-select"
+          :value="getPref('file_return') ?? ''"
+          @change="setPref('file_return', $event.target.value)"
+        >
+          <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
+          <option v-for="d in displays" :key="d.id" :value="d.id">
+            {{ d.label || `Monitor ${d.id}` }}
+          </option>
+        </select>
+      </div>
+
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="mediaProjectReturn"
+            @change="setMedia('project_return', $event.target.checked)"
+          />
+          <span>{{ $t("options.player.project_return") }}</span>
+        </label>
+      </div>
+      <p class="opt-hint">{{ $t("options.player.project_return_hint") }}</p>
 
       <div class="opt-row">
         <label class="opt-checkbox">
@@ -509,6 +612,51 @@
           />
           <span>{{ $t("options.player.lazy_load") }}</span>
         </label>
+      </div>
+    </section>
+
+    <!-- Projeção de Arquivos (imagem/vídeo da liturgia) -->
+    <section class="opt-section">
+      <h3 class="opt-section-title">{{ $t("options.file_projection.title") }}</h3>
+
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="fileProjectionFade"
+            @change="setFileProj('fade', $event.target.checked)"
+          />
+          <span>{{ $t("options.file_projection.fade") }}</span>
+        </label>
+      </div>
+
+      <div v-if="fileProjectionFade" class="opt-row">
+        <label class="opt-label" for="opt-fade-duration">
+          {{ $t("options.file_projection.fade_duration") }}
+        </label>
+        <div class="opt-range-group">
+          <input
+            id="opt-fade-duration"
+            type="range"
+            min="0"
+            max="3000"
+            step="100"
+            class="opt-range"
+            :value="fileProjectionFadeDuration"
+            @input="setFileProj('fade_duration', Number($event.target.value))"
+          />
+          <input
+            type="number"
+            min="0"
+            max="5000"
+            step="100"
+            class="opt-input opt-input--num"
+            style="width: 80px"
+            :value="fileProjectionFadeDuration"
+            @input="setFileProj('fade_duration', Number($event.target.value) || 500)"
+          />
+          <span class="opt-unit">ms</span>
+        </div>
       </div>
     </section>
 
@@ -655,6 +803,9 @@ const userdata = computed(() => {
   );
 });
 
+const monitorPrimary = computed(() => $userdata.get("options.monitor_primary", null));
+const monitorSecondary = computed(() => $userdata.get("options.monitor_secondary", null));
+
 function setUd(key, value) {
   $userdata.set(`options.${key}`, value);
 }
@@ -673,14 +824,33 @@ function restoreTextFormat() {
 // Player de mídia: chaves vivem em modules.media.* (lugar onde Media.js lê)
 const mediaFadeAudio = computed(() => $userdata.get("modules.media.fade_audio", false) === true);
 const mediaLazyLoad = computed(() => $userdata.get("modules.media.lazy_load", true) === true);
+const mediaProjectReturn = computed(
+  () => $userdata.get("modules.media.project_return", false) === true
+);
 
 function setMedia(key, value) {
   $userdata.set(`modules.media.${key}`, value);
 }
 
+const fileProjectionFade = computed(
+  () => $userdata.get("options.file_projection.fade", true) !== false
+);
+const fileProjectionFadeDuration = computed(
+  () => $userdata.get("options.file_projection.fade_duration", 500) || 500
+);
+
+function setFileProj(key, value) {
+  $userdata.set(`options.file_projection.${key}`, value);
+}
+
 function setPref(feature, displayId) {
-  const id = displayId === "" ? null : Number(displayId);
-  setPreferred(feature, id);
+  if (displayId === "") {
+    setPreferred(feature, null);
+  } else if (displayId === "primary" || displayId === "secondary") {
+    setPreferred(feature, displayId);
+  } else {
+    setPreferred(feature, Number(displayId));
+  }
 }
 
 function getPref(feature) {

@@ -138,6 +138,8 @@
       "title": "Monitores",
       "identify": "Identificar Monitores",
       "no_displays": "Ningún monitor adicional disponible (modo web o monitor único).",
+      "primary": "Pantalla principal",
+      "secondary": "Pantalla de Retorno",
       "primary_short": "Principal",
       "use_default": "Usar predeterminado"
     },
@@ -152,6 +154,9 @@
       "always_on_top": "Mostrar músicas siempre al frente",
       "open_operator": "Abrir Pantalla del Operador",
       "open_return": "Abrir Pantalla de Retorno",
+      "open_file_at": "Proyectar archivos en:",
+      "open_file_return_at": "Retorno de archivos en:",
+      "none": "Ninguno",
       "show_title": "Mostrar título de la música en la primera diapositiva",
       "minimize_on_start": "Pantalla de Control Minimizada",
       "same_window": "Misma ventana",
@@ -322,7 +327,14 @@
       "title": "Reproductor de Audio/Vídeo",
       "fade_audio": "Aplicar fundido al iniciar/parar audio",
       "fade_audio_hint": "Cuando está activado, el audio sube gradualmente al reproducir y baja antes de detener. Por defecto desactivado para respuesta inmediata.",
-      "lazy_load": "Cargar audios bajo demanda"
+      "lazy_load": "Cargar audios bajo demanda",
+      "project_return": "Reproducir en la pantalla de retorno",
+      "project_return_hint": "Cuando está activado, la imagen o video también se muestra en la pantalla de retorno (stage display)."
+    },
+    "file_projection": {
+      "title": "Proyección de Archivos",
+      "fade": "Usar fundido al abrir/cerrar proyección",
+      "fade_duration": "Duración del fundido"
     }
   },
   "about": {

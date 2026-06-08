@@ -154,6 +154,8 @@
       "title": "Monitores",
       "identify": "Identificar Monitores",
       "no_displays": "Nenhum monitor adicional disponível (modo web ou monitor único).",
+      "primary": "Tela principal",
+      "secondary": "Tela de retorno",
       "primary_short": "Principal",
       "use_default": "Usar padrão"
     },
@@ -168,6 +170,9 @@
       "always_on_top": "Exibir músicas sempre em primeiro plano",
       "open_operator": "Abrir Tela do Operador",
       "open_return": "Abrir Tela de Retorno",
+      "open_file_at": "Projetar arquivos em:",
+      "open_file_return_at": "Retorno de arquivos em:",
+      "none": "Nenhum",
       "show_title": "Exibir título da música no primeiro slide",
       "minimize_on_start": "Tela de Controle Minimizada",
       "same_window": "Mesma janela",
@@ -330,7 +335,14 @@
       "title": "Player de Áudio/Vídeo",
       "fade_audio": "Aplicar fade ao iniciar/parar áudio",
       "fade_audio_hint": "Quando ativado, o áudio aumenta gradualmente ao tocar e diminui antes de parar. Por padrão desligado para resposta imediata.",
-      "lazy_load": "Carregar áudios sob demanda"
+      "lazy_load": "Carregar áudios sob demanda",
+      "project_return": "Reproduzir na tela de retorno",
+      "project_return_hint": "Quando ativado, a imagem ou vídeo também é exibida na tela de retorno (stage display)."
+    },
+    "file_projection": {
+      "title": "Projeção de Arquivos",
+      "fade": "Usar fade ao abrir/fechar projeção",
+      "fade_duration": "Duração do fade"
     }
   },
   "about": {

@@ -233,6 +233,8 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     openDir: () => ipcRenderer.invoke("storage:openDir"),
     /** Mostra dialog de seleção de pasta. */
     chooseDir: () => ipcRenderer.invoke("storage:chooseDir"),
+    /** Mostra dialog de seleção de arquivo único. Retorna o caminho completo ou null. */
+    chooseFile: () => ipcRenderer.invoke("storage:chooseFile"),
     /** Define nova pasta de mídia (com opção de mover conteúdo). */
     setFilesDir: (newDir, opts) => ipcRenderer.invoke("storage:setFilesDir", newDir, opts),
     /** Auto-limpeza FIFO ao ultrapassar maxBytes. */

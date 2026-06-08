@@ -4,6 +4,12 @@ import $liturgy from "@/helpers/Liturgy";
 import $media from "@/composables/useMedia";
 import $database from "@/helpers/Database";
 import $alert from "@/helpers/Alert";
+import $path from "@/helpers/Path";
+import $broadcast from "@/helpers/Broadcast";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
+import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
@@ -338,11 +344,97 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     window.open(valid, "_blank", "noopener,noreferrer");
   }
 
-  function openFile(item) {
-    if (Platform.isDesktop && Platform.api?.openPath) {
-      Platform.api.openPath(item.dir);
+  const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+  const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
+  const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
+
+  /**
+   * Persiste o payload de FILE_PROJECTION em sessionStorage para que janelas
+   * de projeção que abrirem depois do broadcast (e portanto perderam a mensagem)
+   * possam restaurar o estado ao montar.
+   */
+  function _persistFileProjection(payload) {
+    try {
+      localStorage.setItem("lj_file_projection", JSON.stringify(payload));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  /**
+   * Resolve caminho de arquivo para URL acessível pelo navegador.
+   * - URLs absolutas (http://, file://, etc) retornam como estão
+   * - Caminhos absolutos do sistema de arquivos (/) → file:// no desktop
+   * - Demais caminhos passam por $path.file() (relativos ao banco)
+   */
+  function _resolveFileUrl(dir) {
+    if (!dir) return "";
+    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) return dir;
+    if (Platform.isDesktop) {
+      // Caminho absoluto → louvorja://local/ (protocolo customizado que
+      // serve arquivos locais sem as restrições de file://)
+      // Unix: /Users/... → louvorja://local/Users/...
+      if (dir.startsWith("/")) return "louvorja://local" + dir;
+      // Windows: C:\... → louvorja://local/C:/...  (substitui \ por /)
+      if (/^[A-Za-z]:\\/.test(dir)) return "louvorja://local/" + dir.replace(/\\/g, "/");
+    }
+    return $path.file(dir);
+  }
+
+  async function openFile(item) {
+    const dir = item.dir || "";
+    const ext = dir.split(".").pop().toLowerCase();
+    const url = _resolveFileUrl(dir);
+
+    // Se o caminho não tem "/" nem protocolo, é um nome de arquivo sem caminho
+    // (ex: arrastado sem file.path) — não é possível localizá-lo
+    if (
+      !url ||
+      (!dir.includes("/") &&
+        !dir.includes("\\") &&
+        !/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir) &&
+        !dir.startsWith("/"))
+    ) {
+      $alert.error({ text: url, title: "modules.media.alerts.file_not_found" });
+      return;
+    }
+
+    if (IMAGE_EXTS.includes(ext)) {
+      // Inclui duração do fade no payload para evitar race cross-window
+      const fadeDur =
+        $userdata.get("options.file_projection.fade", true) !== false
+          ? $userdata.get("options.file_projection.fade_duration", 500) || 500
+          : 0;
+      const payload = { url, type: "image", title: item.item || "", fadeDuration: fadeDur };
+      _persistFileProjection(payload);
+
+      await openFileProjectionWindows().catch((e) => {
+        $alert.error(e);
+        console.error(e);
+      });
+      $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+    } else if (VIDEO_EXTS.includes(ext)) {
+      const fadeDur =
+        $userdata.get("options.file_projection.fade", true) !== false
+          ? $userdata.get("options.file_projection.fade_duration", 500) || 500
+          : 0;
+      const payload = { url, type: "video", title: item.item || "", fadeDuration: fadeDur };
+      _persistFileProjection(payload);
+      await openFileProjectionWindows().catch((e) => {
+        $alert.error(e);
+        console.error(e);
+      });
+      $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+      $media.openAudio({ url, title: item.item || "" });
+      $appdata.set("modules.media.config.video_file", true);
+    } else if (AUDIO_EXTS.includes(ext)) {
+      $media.openAudio({ url, title: item.item || "" });
     } else {
-      openUrl(item.dir);
+      if (Platform.isDesktop && Platform.api?.openPath) {
+        Platform.api.openPath(dir);
+      } else {
+        openUrl(dir);
+      }
     }
   }
 
@@ -350,18 +442,12 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     openUrl(form.value.url);
   }
 
-  /* ============== Browse arquivo/pasta ============== */
-  async function chooseFolder() {
-    if (Platform.isDesktop && Platform.api?.chooseFolder) {
-      const dir = await Platform.api.chooseFolder();
-      if (dir) form.value.dir = dir + (dir.endsWith("/") || dir.endsWith("\\") ? "" : "/");
-    } else {
-      alert(t("dialog.desktop_only"));
-    }
-  }
-
+  /* ============== Browse arquivo ============== */
   async function chooseFile() {
-    if (Platform.isDesktop && Platform.api?.chooseFile) {
+    if (Platform.isDesktop && Platform.api?.storage?.chooseFile) {
+      const file = await Platform.api.storage.chooseFile();
+      if (file) form.value.dir = file;
+    } else if (Platform.isDesktop && Platform.api?.chooseFile) {
       const file = await Platform.api.chooseFile();
       if (file) form.value.dir = file;
     } else {
@@ -369,7 +455,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       inp.type = "file";
       inp.onchange = (e) => {
         const f = e.target.files[0];
-        if (f) form.value.dir = f.name;
+        if (f) form.value.dir = f.path || f.name;
       };
       inp.click();
     }
@@ -403,6 +489,8 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
   async function _addDroppedFile(file, e) {
     const name = file.name;
+    // No Electron, file.path contém o caminho absoluto completo
+    const filePath = file.path || name;
     const ext = name.split(".").pop().toLowerCase();
     const textExts = ["txt", "rtf"];
 
@@ -412,13 +500,14 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         if (dtItem.webkitGetAsEntry) {
           const entry = dtItem.webkitGetAsEntry();
           if (entry && entry.isDirectory) {
+            const dirPath = file.path ? file.path + "/" : entry.name + "/";
             $liturgy.add(
               {
                 tipo: "arquivo",
                 item: entry.name,
-                subitem: "Pasta " + entry.name,
+                subitem: "Pasta " + (file.path || entry.name),
                 subtipo: "dir",
-                dir: entry.name + "/",
+                dir: dirPath,
                 dir_info: "E",
                 cor: DEFAULT_COLOR,
               },
@@ -451,9 +540,9 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         {
           tipo: "arquivo",
           item: name.replace(/\.[^.]+$/, ""),
-          subitem: "Arquivo " + name,
+          subitem: "Arquivo " + (filePath !== name ? filePath : name),
           subtipo: "arq",
-          dir: name,
+          dir: filePath,
           dir_info: "E",
           cor: DEFAULT_COLOR,
         },
@@ -520,7 +609,6 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     openUrl,
     openFile,
     openSite,
-    chooseFolder,
     chooseFile,
     onDragOver,
     onDragLeave,
