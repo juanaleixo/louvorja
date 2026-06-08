@@ -253,11 +253,31 @@ async function loadBibleChapter() {
 }
 
 function nextVerseRemote() {
+  const current = activeBible.value.verse || 1;
+  const total = activeBible.value.chapterVerses.length;
+  if (current < total) {
+    const newVerse = current + 1;
+    activeBible.value.verse = newVerse;
+    updateVerseReference(newVerse);
+  }
   fetch(`/api/bible?action=next&token=${token.value}`).catch(() => showSnackbar("Erro", "error"));
 }
 
 function prevVerseRemote() {
+  const current = activeBible.value.verse || 1;
+  if (current > 1) {
+    const newVerse = current - 1;
+    activeBible.value.verse = newVerse;
+    updateVerseReference(newVerse);
+  }
   fetch(`/api/bible?action=prev&token=${token.value}`).catch(() => showSnackbar("Erro", "error"));
+}
+
+function updateVerseReference(verse) {
+  const ref = activeBible.value.reference;
+  if (ref) {
+    activeBible.value.reference = ref.replace(/:(\d+)/, `:${verse}`);
+  }
 }
 
 async function closeBible() {

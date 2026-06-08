@@ -861,7 +861,6 @@ function restoreFormat() {
 
 // Ações da ribbon contextual "Configurar Bíblia" → executa localmente.
 useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload) => {
-  if (!show.value) return; // Só responde se a Bíblia está aberta
   switch (payload?.action) {
     case "clear":
       clean();
