@@ -454,6 +454,13 @@ export const RIBBON_PAGES = [
         title: "ribbon.groups.options",
         buttons: [
           {
+            id: "copy_liturgy",
+            icon: "mdi-content-copy",
+            label: "ribbon.btn.copy_liturgy",
+            action: "lit_copy",
+            size: "small",
+          },
+          {
             id: "mark_done",
             icon: "mdi-check-circle",
             label: "ribbon.btn.mark_done",

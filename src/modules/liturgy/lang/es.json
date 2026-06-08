@@ -153,5 +153,15 @@
     "music_choose_first": "Elija la música primero (clic en el ítem).",
     "scheduled_not_found": "No hay ítem programado para esta fecha en esta categoría.",
     "desktop_only": "Recurso disponible solo en la versión desktop."
+  },
+  "copy": {
+    "title": "Copiar Liturgia",
+    "description": "Seleccione el día de origen para copiar los ítems al día actual.",
+    "select_label": "Día de origen",
+    "cancel": "Cancelar",
+    "confirm": "Copiar",
+    "same_day": "El día de origen no puede ser el mismo que el día actual.",
+    "confirm_title": "Copiar Liturgia",
+    "confirm_text": "¿Desea copiar la liturgia de {source} y sobrescribir la liturgia de {target}?<br><b>¡Esta acción no puede ser deshecha!</b>"
   }
 }

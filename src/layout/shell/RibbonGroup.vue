@@ -21,6 +21,7 @@ defineProps({
   padding: var(--lj-space-2) var(--lj-space-3) 0;
   flex-shrink: 0;
   height: 100%;
+  width: fit-content;
 }
 
 .ribbon-group:last-child {

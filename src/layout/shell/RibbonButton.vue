@@ -87,9 +87,9 @@ defineEmits(["click"]);
   font-size: var(--lj-text-sm);
   text-align: center;
   line-height: 1.15;
-  word-break: break-word;
+  //word-break: keep-all;
   hyphens: auto;
-  max-width: 80px;
+  max-width: 100px;
   color: inherit;
   font-weight: var(--lj-weight-regular);
 }
@@ -99,10 +99,8 @@ defineEmits(["click"]);
   flex-direction: row;
   align-items: center;
   height: var(--lj-small-btn-height);
+  width: fit-content;
   padding: 0 var(--lj-space-3);
-  width: var(--lj-small-btn-width);
-  min-width: var(--lj-small-btn-width);
-  max-width: var(--lj-small-btn-width);
   gap: var(--lj-space-2);
   flex-shrink: 0;
 }
@@ -118,7 +116,5 @@ defineEmits(["click"]);
   text-align: left;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 </style>

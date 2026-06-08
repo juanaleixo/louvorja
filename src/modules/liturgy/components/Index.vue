@@ -63,7 +63,6 @@
       :save-item="saveItem"
       :confirm-remove="confirmRemove"
       :open-site="openSite"
-      :choose-folder="chooseFolder"
       :choose-file="chooseFile"
       :open-schedules-dialog="openSchedulesDialog"
     />
@@ -82,6 +81,34 @@
       :update-scheduled="updateScheduled"
       :remove-scheduled="removeScheduled"
     />
+
+    <v-dialog v-model="copyDialog" max-width="400">
+      <v-card>
+        <v-card-title>{{ t("copy.title") }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-3">{{ t("copy.description") }}</p>
+          <v-select
+            v-model="copySourceDay"
+            :items="copyDayOptions"
+            item-title="label"
+            item-value="value"
+            :label="t('copy.select_label')"
+            hide-details
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="copyDialog = false">
+            <v-icon icon="mdi-close" size="16" class="mr-1" />
+            {{ t("copy.cancel") }}
+          </v-btn>
+          <v-btn variant="flat" color="primary" @click="doCopyLiturgy">
+            <v-icon icon="mdi-content-copy" size="16" class="mr-1" />
+            {{ t("copy.confirm") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <MusicSearchSpotlight
       v-model="chooseMusicSearchOpen"
@@ -109,6 +136,8 @@ import LiturgyItemForm from "./LiturgyItemForm.vue";
 import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
 import type { LiturgyItemData, LiturgyMusicItem } from "../types";
+import $alert from "@/helpers/Alert";
+import $liturgy from "@/helpers/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -190,7 +219,6 @@ const {
   playMusic,
   openLyric,
   openSite,
-  chooseFolder,
   chooseFile,
   onDragOver,
   onDrop,
@@ -280,6 +308,10 @@ const dayLabels = computed(() => {
   return ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 });
 
+const copyDialog = ref(false);
+const copySourceDay = ref(0);
+const copyDayOptions = computed(() => dayLabels.value.map((label, i) => ({ label, value: i })));
+
 const todayIndex = computed(() => new Date().getDay());
 
 let _broadcastUnlisten: (() => void) | null = null;
@@ -301,6 +333,10 @@ function handleRibbonAction(action: string) {
     case "delete_selected":
       removeDone();
       break;
+    case "copy":
+      copySourceDay.value = activeDay.value;
+      copyDialog.value = true;
+      break;
     case "toggle_mark_on_access":
       toggleMarkOnAccess();
       break;
@@ -311,6 +347,26 @@ function handleRibbonAction(action: string) {
       toggleLock();
       break;
   }
+}
+
+function doCopyLiturgy() {
+  const source = copySourceDay.value;
+  const target = activeDay.value;
+  if (source === target) {
+    $alert.info(t("copy.same_day"));
+    return;
+  }
+  const sourceLabel = dayLabels.value[source];
+  const targetLabel = dayLabels.value[target];
+  const confirmText = t("copy.confirm_text")
+    .replace("{source}", sourceLabel)
+    .replace("{target}", targetLabel);
+  $alert.yesno({ title: t("copy.confirm_title"), text: confirmText }, (btn?: string) => {
+    if (btn !== "yes") return;
+    const items = $liturgy.list(source);
+    $liturgy.set(items, target);
+    copyDialog.value = false;
+  });
 }
 
 onMounted(async () => {
