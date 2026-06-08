@@ -21,18 +21,14 @@
         muted
       />
     </div>
-    <div v-else class="file-projection__empty">
-      <v-icon icon="mdi-image-off" size="64" class="text-muted" />
-      <p class="mt-4 text-muted">{{ $t("general.no_file_projection") }}</p>
-    </div>
+    <div v-else class="file-projection__empty"></div>
   </Transition>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { reactive, ref, onMounted, onBeforeUnmount } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import $userdata from "@/helpers/UserData";
 
 const fileProjection = reactive({
   active: false,

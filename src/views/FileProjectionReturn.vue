@@ -17,10 +17,7 @@
       />
     </div>
 
-    <div v-else class="return-empty">
-      <v-icon icon="mdi-image-off" size="48" class="text-muted" />
-      <p class="mt-3 text-muted">{{ $t("general.no_file_projection") }}</p>
-    </div>
+    <div v-else class="return-empty"></div>
   </div>
 </template>
 
