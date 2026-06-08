@@ -198,12 +198,73 @@ $storage.hydrate().then(async () => {
             case "liturgy-execute": {
               const item = Liturgy.get(data.id);
               if (item) {
-                // Marca como checked ao executar
                 Liturgy.toggleChecked(item.id);
+                switch (item.tipo) {
+                  case "musica":
+                    Media.open({ id_music: item.id_music, mode: data.tag });
+                    break;
+                  case "site": {
+                    const url = Liturgy.validateUrl(item.url);
+                    window.open(url, "_blank", "noopener,noreferrer");
+                    break;
+                  }
+                  case "itensagendados": {
+                    const sched = Liturgy.findScheduledForToday(item.id);
+                    if (sched && sched.arquivo) {
+                      const valid = Liturgy.validateUrl(sched.arquivo);
+                      window.open(valid, "_blank", "noopener,noreferrer");
+                    }
+                    break;
+                  }
+                  case "arquivo": {
+                    const dir = item.dir || "";
+                    const ext = dir.split(".").pop().toLowerCase();
+                    const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+                    const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
+                    const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
 
-                // Lógica de execução baseada no tipo
-                if (item.tipo === "musica") {
-                  Media.open({ id_music: item.id_music, mode: data.tag });
+                    let url;
+                    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) {
+                      url = dir;
+                    } else if (Platform.isDesktop) {
+                      if (dir.startsWith("/")) url = "louvorja://local" + dir;
+                      else if (/^[A-Za-z]:\\/.test(dir))
+                        url = "louvorja://local/" + dir.replace(/\\/g, "/");
+                      else url = Path.file(dir);
+                    } else {
+                      url = Path.file(dir);
+                    }
+
+                    if (!url) break;
+
+                    if (IMAGE_EXTS.includes(ext)) {
+                      const payload = { url, type: "image", title: item.item || "" };
+                      try {
+                        localStorage.setItem("lj_file_projection", JSON.stringify(payload));
+                      } catch (e) {
+                        /* ignore */
+                      }
+                      ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+                    } else if (VIDEO_EXTS.includes(ext)) {
+                      const payload = { url, type: "video", title: item.item || "" };
+                      try {
+                        localStorage.setItem("lj_file_projection", JSON.stringify(payload));
+                      } catch (e) {
+                        /* ignore */
+                      }
+                      ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+                      Media.openAudio({ url, title: item.item || "" });
+                      AppData.set("modules.media.config.video_file", true);
+                    } else if (AUDIO_EXTS.includes(ext)) {
+                      Media.openAudio({ url, title: item.item || "" });
+                    } else {
+                      const valid = Liturgy.validateUrl(dir);
+                      window.open(valid, "_blank", "noopener,noreferrer");
+                    }
+                    break;
+                  }
                 }
               }
               break;
