@@ -232,6 +232,7 @@ const LITURGY_ACTIONS = {
   lit_invert: "invert",
   lit_delete: "delete_selected",
   lit_copy: "copy",
+  lit_clear: "clear_day",
   lit_mark_done: "toggle_mark_on_access",
   lit_show_notes: "toggle_show_notes",
   lit_lock: "toggle_lock",

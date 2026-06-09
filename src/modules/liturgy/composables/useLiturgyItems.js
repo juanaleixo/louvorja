@@ -13,6 +13,14 @@ import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
+import {
+  ANOTACAO,
+  ARQUIVO,
+  CATEGORIA,
+  ITENS_AGENDADOS,
+  MUSICA,
+  SITE,
+} from "@/modules/liturgy/types";
 
 const TRANSLATIONS = { pt, es };
 
@@ -54,7 +62,7 @@ export const DEFAULT_FORM = () => ({
   dir_info: "E",
   url: "",
   musica: -1,
-  escolha: "0",
+  escolha: false,
   has_instrumental_music: false,
   subtipo: "",
 });
@@ -110,7 +118,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       arquivo: item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
       site: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
       musica: "mdi-music",
-      itensagendados: "mdi-calendar-multiselect",
+      itensAgendados: "mdi-calendar-multiselect",
       categoria: "mdi-format-section",
     };
     return map[item.tipo] || "mdi-circle-medium";
@@ -122,7 +130,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function subtitleFor(item) {
-    if (item.tipo === "musica" && item.escolha === "1") return t("placeholders.music_choose");
+    if (item.tipo === "musica" && item.escolha) return t("placeholders.music_choose");
     return item.subitem || "";
   }
 
@@ -182,15 +190,15 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   function onTypeChange() {
     if (form.value.tipo !== "musica") {
       form.value.musica = -1;
-      form.value.escolha = "0";
+      form.value.escolha = false;
     }
     if (form.value.tipo === "musica" && form.value.musica === -1) {
-      form.value.escolha = "1";
+      form.value.escolha = true;
     }
   }
 
   function setMusicChoice(later) {
-    form.value.escolha = later ? "1" : "0";
+    form.value.escolha = later;
     if (later) form.value.musica = -1;
   }
 
@@ -199,7 +207,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     if (m) {
       // form.value.item = m.name;
       form.value.has_instrumental_music = !!m.has_instrumental_music;
-      form.value.escolha = "0";
+      form.value.escolha = false;
     }
   }
 
@@ -215,44 +223,54 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       $alert?.warning?.({ text: t("dialog.choose_type") });
       return;
     }
-    if (f.tipo !== "itensagendados" && !String(f.item || "").trim()) {
+    if (f.tipo !== ITENS_AGENDADOS && !String(f.item || "").trim()) {
       $alert?.warning?.({ text: t("dialog.set_name") });
       return;
     }
-    if (f.tipo === "itensagendados" && !f.id) {
+    if (f.tipo === ITENS_AGENDADOS && !f.id) {
       $alert?.warning?.({ text: t("dialog.choose_scheduled") });
       return;
     }
 
     const built = { ...f };
-    if (f.tipo === "anotacao") {
-      built.subitem = f.subitem || "";
-    } else if (f.tipo === "site") {
-      built.url = $liturgy.validateUrl(f.url);
-      built.subitem = "Site " + built.url;
-    } else if (f.tipo === "arquivo") {
-      const isDir = f.dir.endsWith("/") || f.dir.endsWith("\\");
-      built.subtipo = isDir ? "dir" : "arq";
-      built.subitem = (isDir ? "Pasta " : "Arquivo ") + f.dir;
-    } else if (f.tipo === "musica") {
-      if (f.escolha === "1" || Number(f.musica) === -1) {
-        built.escolha = "1";
-        built.musica = -1;
-        built.subtipo = "escolha";
-        built.subitem = t("placeholders.music_choose");
-      } else {
-        const m = musicsList.value.find((x) => x.id_music === Number(f.musica));
-        built.escolha = "0";
-        built.subtipo = built.has_instrumental_music ? "ja" : "div";
-        built.subitem = t("data.music_prefix") + " " + (m?.name || `#${f.musica}`);
-        built.id_music = Number(f.musica);
+    switch (f.tipo) {
+      case ANOTACAO:
+        built.subitem = f.subitem || "";
+        break;
+      case SITE:
+        built.url = $liturgy.validateUrl(f.url);
+        built.subitem = "Site " + built.url;
+        break;
+      case ARQUIVO: {
+        const isDir = f.dir.endsWith("/") || f.dir.endsWith("\\");
+        built.subtipo = isDir ? "dir" : "arq";
+        built.subitem = (isDir ? "Pasta " : "Arquivo ") + f.dir;
+        break;
       }
-    } else if (f.tipo === "itensagendados") {
-      const c = scheduledCategories.value.find((x) => x.id === f.id);
-      built.item = c?.nome || "";
-      built.subitem = "";
-    } else if (f.tipo === "categoria") {
-      built.subitem = "";
+      case MUSICA: {
+        if (f.escolha || Number(f.musica) === -1) {
+          built.escolha = true;
+          built.musica = -1;
+          built.subtipo = "escolha";
+          built.subitem = t("placeholders.music_choose");
+        } else {
+          const m = musicsList.value.find((x) => x.id_music === Number(f.musica));
+          built.escolha = false;
+          built.subtipo = built.has_instrumental_music ? "ja" : "div";
+          built.subitem = t("data.music_prefix") + " " + (m?.name || `#${f.musica}`);
+          built.id_music = Number(f.musica);
+        }
+        break;
+      }
+      case ITENS_AGENDADOS: {
+        const c = scheduledCategories.value.find((x) => x.id === f.id);
+        built.item = c?.nome || "";
+        built.subitem = "";
+        break;
+      }
+      case CATEGORIA:
+        built.subitem = "";
+        break;
     }
 
     if (editIndex.value >= 0) {
@@ -295,23 +313,30 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
   /* ============== Execução do item ============== */
   function executeItem(item) {
-    if (item.tipo === "musica") {
-      playMusic(item, "sung");
-    } else if (item.tipo === "site") {
-      openUrl(item.url);
-    } else if (item.tipo === "arquivo") {
-      openFile(item);
-    } else if (item.tipo === "itensagendados") {
-      const sched = $liturgy.findScheduledForToday(item.id);
-      if (sched && sched.arquivo) openUrl(sched.arquivo);
-      else alert(t("dialog.scheduled_not_found"));
-    } else if (item.tipo === "anotacao") {
-      alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
+    switch (item.tipo) {
+      case MUSICA:
+        playMusic(item, "sung");
+        break;
+      case SITE:
+        openUrl(item.url);
+        break;
+      case ARQUIVO:
+        openFile(item);
+        break;
+      case ITENS_AGENDADOS: {
+        const sched = $liturgy.findScheduledForToday(item.id);
+        if (sched && sched.arquivo) openUrl(sched.arquivo);
+        else alert(t("dialog.scheduled_not_found"));
+        break;
+      }
+      case ANOTACAO:
+        alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
+        break;
     }
   }
 
   function playMusic(item, mode = "sung") {
-    if (item.escolha === "1" || !item.id_music) {
+    if (item.escolha || !item.id_music) {
       alert(t("dialog.music_choose_first"));
       return;
     }
@@ -503,7 +528,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
             const dirPath = file.path ? file.path + "/" : entry.name + "/";
             $liturgy.add(
               {
-                tipo: "arquivo",
+                tipo: ARQUIVO,
                 item: entry.name,
                 subitem: "Pasta " + (file.path || entry.name),
                 subtipo: "dir",
@@ -528,7 +553,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       });
       $liturgy.add(
         {
-          tipo: "anotacao",
+          tipo: ANOTACAO,
           item: name.replace(/\.[^.]+$/, ""),
           subitem: text.slice(0, 2000),
           cor: DEFAULT_COLOR,
@@ -538,7 +563,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     } else {
       $liturgy.add(
         {
-          tipo: "arquivo",
+          tipo: ARQUIVO,
           item: name.replace(/\.[^.]+$/, ""),
           subitem: "Arquivo " + (filePath !== name ? filePath : name),
           subtipo: "arq",

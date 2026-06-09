@@ -36,6 +36,74 @@ function _broadcastVideoState(currentTime?: number, isPaused?: boolean): void {
   });
 }
 
+function _loadAudioSrc(
+  audioUrl: string,
+  idCheck: string | number | null,
+  retryFn: (id: string | number) => void,
+): void {
+  if ($appdata.get("is_online") && $userdata.get("modules.media.lazy_load")) {
+    $appdata.set("modules.media.config.lazy", true);
+    _audio.setSrc(audioUrl, true);
+    $appdata.set("modules.media.loading", false);
+    _self.pause(false);
+    return;
+  }
+
+  $appdata.set("modules.media.config.lazy", false);
+  if (_audioXhr) {
+    try { _audioXhr.abort(); } catch (_) { /* ignore */ }
+    _audioXhr = null;
+  }
+  const request = new XMLHttpRequest();
+  _audioXhr = request;
+  try {
+    request.open("GET", audioUrl, true);
+  } catch (error) {
+    if (_audioXhr === request) _audioXhr = null;
+    $appdata.set("modules.media.loading", false);
+    _self.close(true);
+    $alert.error({ text: "modules.media.alerts.not_loaded", error }, function (a?: unknown) {
+      if (a) retryFn(idCheck as string | number);
+    });
+    return;
+  }
+
+  request.responseType = "blob";
+  request.onload = function (this: XMLHttpRequest) {
+    if (_audioXhr === request) _audioXhr = null;
+    if (_loadingId !== idCheck) return;
+    if (this.status == 200) {
+      _audio.setSrc(URL.createObjectURL(this.response as Blob), false);
+      _self.pause(false);
+    } else {
+      _self.close(true);
+      $alert.error(
+        { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
+        function (a?: unknown) {
+          if (a) retryFn(idCheck as string | number);
+        }
+      );
+    }
+  };
+  request.onerror = function () {
+    if (_audioXhr === request) _audioXhr = null;
+    if (_loadingId !== idCheck) return;
+    _self.close(true);
+    $alert.error(
+      { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
+      function (a?: unknown) {
+        if (a) retryFn(idCheck as string | number);
+      }
+    );
+  };
+  request.onabort = function () {
+    if (_audioXhr === request) _audioXhr = null;
+  };
+
+  request.send();
+  $appdata.set("modules.media.loading", false);
+}
+
 // Mantém $appdata sincronizado com o estado reativo de useSlides
 // (Player.vue, Footer.vue e media/Index.vue ainda leem de $appdata)
 watch(
@@ -245,74 +313,7 @@ const _self = {
 
       _slides.bindAudio(_audio);
 
-      if ($appdata.get("is_online") && $userdata.get("modules.media.lazy_load")) {
-        $appdata.set("modules.media.config.lazy", true);
-        _audio.setSrc(audioUrl, true);
-        $appdata.set("modules.media.loading", false);
-        this.pause(false);
-      } else {
-        $appdata.set("modules.media.config.lazy", false);
-        const self = this;
-        // Aborta o download anterior, se ainda em curso. Sem isso, trocar
-        // de música em sequência (Ctrl+→ rapidamente, por exemplo) deixava
-        // múltiplos XHR drenando bytes em paralelo até termo natural, com
-        // chance de race em onload sobrescrevendo a faixa correta.
-        if (_audioXhr) {
-          try { _audioXhr.abort(); } catch (_) { /* ignore */ }
-          _audioXhr = null;
-        }
-        let request = new XMLHttpRequest();
-        _audioXhr = request;
-        try {
-          request.open("GET", audioUrl, true);
-        } catch (error) {
-          if (_audioXhr === request) _audioXhr = null;
-          $appdata.set("modules.media.loading", false);
-          self.close(true);
-          $alert.error({ text: "modules.media.alerts.not_loaded", error }, function (a?: unknown) {
-            if (a) self.open(id_music as string | number);
-          });
-          return;
-        }
-
-        request.responseType = "blob";
-        request.onload = function (this: XMLHttpRequest) {
-          if (_audioXhr === request) _audioXhr = null;
-          if (_loadingId !== id_music) return;
-          if (this.status == 200) {
-            _audio.setSrc(URL.createObjectURL(this.response as Blob), false);
-            self.pause(false);
-          } else {
-            self.close(true);
-            $alert.error(
-              { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
-              function (a?: unknown) {
-                if (a) self.open(id_music as string | number);
-              }
-            );
-          }
-        };
-        request.onerror = function () {
-          if (_audioXhr === request) _audioXhr = null;
-          if (_loadingId !== id_music) return;
-          self.close(true);
-          $alert.error(
-            { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
-            function (a?: unknown) {
-              if (a) self.open(id_music as string | number);
-            }
-          );
-        };
-        request.onabort = function () {
-          // Limpamos a referência local; sem early-return em alert pois
-          // abort acontece quando o usuário muda de música — o novo download
-          // já foi disparado e cuida do estado de UI.
-          if (_audioXhr === request) _audioXhr = null;
-        };
-
-        request.send();
-        $appdata.set("modules.media.loading", false);
-      }
+      _loadAudioSrc(audioUrl, id_music, (id) => _self.open(id));
     } else {
       $appdata.set("modules.media.config.audio", "");
       $appdata.set("modules.media.loading", false);
@@ -469,67 +470,7 @@ const _self = {
     );
     $appdata.set("modules.media.config.audio", audioUrl);
 
-    if ($appdata.get("is_online") && $userdata.get("modules.media.lazy_load")) {
-      $appdata.set("modules.media.config.lazy", true);
-      _audio.setSrc(audioUrl, true);
-      $appdata.set("modules.media.loading", false);
-      this.pause(false);
-    } else {
-      $appdata.set("modules.media.config.lazy", false);
-      const self = this;
-      if (_audioXhr) {
-        try { _audioXhr.abort(); } catch (_) { /* ignore */ }
-        _audioXhr = null;
-      }
-      let request = new XMLHttpRequest();
-      _audioXhr = request;
-      try {
-        request.open("GET", audioUrl, true);
-      } catch (error) {
-        if (_audioXhr === request) _audioXhr = null;
-        $appdata.set("modules.media.loading", false);
-        self.close(true);
-        $alert.error({ text: "modules.media.alerts.not_loaded", error }, function (a?: unknown) {
-          if (a) self.openAudio(id_music as string | number);
-        });
-        return;
-      }
-
-      request.responseType = "blob";
-      request.onload = function (this: XMLHttpRequest) {
-        if (_audioXhr === request) _audioXhr = null;
-        if (_loadingId !== id_music) return;
-        if (this.status == 200) {
-          _audio.setSrc(URL.createObjectURL(this.response as Blob), false);
-          self.pause(false);
-        } else {
-          self.close(true);
-          $alert.error(
-            { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
-            function (a?: unknown) {
-              if (a) self.openAudio(id_music as string | number);
-            }
-          );
-        }
-      };
-      request.onerror = function () {
-        if (_audioXhr === request) _audioXhr = null;
-        if (_loadingId !== id_music) return;
-        self.close(true);
-        $alert.error(
-          { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
-          function (a?: unknown) {
-            if (a) self.openAudio(id_music as string | number);
-          }
-        );
-      };
-      request.onabort = function () {
-        if (_audioXhr === request) _audioXhr = null;
-      };
-
-      request.send();
-      $appdata.set("modules.media.loading", false);
-    }
+    _loadAudioSrc(audioUrl, id_music, (id) => _self.openAudio(id));
 
     this.minimize();
   },

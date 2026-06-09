@@ -23,12 +23,6 @@
     }
   },
   "components": {
-    "bible": {
-      "book": "Livro",
-      "chapter": "Capítulo",
-      "verses": "Versículo",
-      "empty_search": "Nenhum versículo encontrado para esta busca."
-    },
     "format_panel": {
       "text_section": "Texto",
       "reference_section": "Referência",
@@ -241,6 +235,14 @@
       "win_clock": "Relógio",
       "remote_control": "Controle Remoto"
     },
+    "module": {
+      "bible": {
+        "book": "Livro",
+        "chapter": "Capítulo",
+        "verses": "Versículo",
+        "empty_search": "Nenhum versículo encontrado para esta busca."
+      }
+    },
     "updates": {
       "title": "Atualizações",
       "app": "Atualização do app",
@@ -376,6 +378,17 @@
       "syncing": "Sincronizando..."
     }
   },
+  "import_export": {
+    "export": {
+      "action": "Exportar Liturgia",
+      "hint": "Baixa um arquivo .json com todos os dias da liturgia, anotações, itens agendados e categorias.",
+      "done": "Arquivo baixado!"
+    },
+    "import": {
+      "action": "Importar Liturgia",
+      "hint": "Carrega um arquivo .json (exportado da versão web/desktop) ou .ja (versão legada). Os itens serão adicionados ao dia ativo."
+    }
+  },
   "popup": {
     "close": "Fechar Janela"
   },
@@ -495,6 +508,7 @@
       "show_notes": "Exibir Painel de Anotações",
       "lock_items": "Bloquear Itens",
       "copy_liturgy": "Copiar Liturgia",
+      "clear_liturgy": "Limpar Liturgia",
       "bible_clear": "Limpar Texto",
       "bible_prev_verse": "Verso Anterior",
       "bible_next_verse": "Próximo Verso",

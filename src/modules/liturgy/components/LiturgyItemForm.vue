@@ -30,13 +30,13 @@
             <option value="anotacao">{{ t("types.anotacao") }}</option>
             <option value="arquivo">{{ t("types.arquivo") }}</option>
             <option value="categoria">{{ t("types.categoria") }}</option>
-            <option value="itensagendados">{{ t("types.itensagendados") }}</option>
+            <option value="itens-agendados">{{ t("types.itens-agendados") }}</option>
             <option value="musica">{{ t("types.musica") }}</option>
             <option value="site">{{ t("types.site") }}</option>
           </select>
         </div>
 
-        <div v-if="form.tipo !== 'itensagendados'" class="lit-field lit-field--grow">
+        <div v-if="form.tipo !== 'itens-agendados'" class="lit-field lit-field--grow">
           <label>{{ t("inputs.item_name") }}:</label>
           <input
             :value="form.item"
@@ -156,12 +156,12 @@
         <label class="lit-check">
           <input
             type="checkbox"
-            :checked="form.escolha === '1'"
+            :checked="form.escolha"
             @change="setMusicChoice(($event.target as HTMLInputElement).checked)"
           />
           <span>{{ t("inputs.music_choose_later") }}</span>
         </label>
-        <div v-if="form.escolha !== '1'" class="lit-field lit-field--inline mt-2">
+        <div v-if="!form.escolha" class="lit-field lit-field--inline mt-2">
           <label class="lit-label-inline">{{ t("inputs.music_select") }}:</label>
           <div class="lit-input-row lit-input-row--grow">
             <select
@@ -189,8 +189,8 @@
       </div>
 
       <!-- Painel ITENS AGENDADOS -->
-      <div v-if="form.tipo === 'itensagendados'" class="lit-panel">
-        <div class="lit-panel-title">{{ t("types.itensagendados") }}</div>
+      <div v-if="form.tipo === 'itens-agendados'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.itens-agendados") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.scheduled_category") }}</label>
           <div class="lit-input-row">

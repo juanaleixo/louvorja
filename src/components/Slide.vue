@@ -272,7 +272,7 @@ onUnmounted(() => {
 }
 
 .lj-slide__text--cover {
-  font-size: clamp(20px, calc(var(--lj-cover-size, 18) * 1cqh), 220px);
+  font-size: clamp(20px, calc(var(--lj-cover-size, 18) * 1cqh), 150px);
   letter-spacing: 0.02em;
 }
 

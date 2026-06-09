@@ -561,6 +561,17 @@
       </div>
 
       <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="mediaProjectReturn"
+            @change="setMedia('project_return', $event.target.checked)"
+          />
+          <span>{{ $t("options.player.project_return") }}</span>
+        </label>
+      </div>
+      <p class="opt-hint">{{ $t("options.player.project_return_hint") }}</p>
+      <div v-if="mediaProjectReturn" class="opt-row">
         <label class="opt-label" for="opt-file-return-monitor">
           {{ $t("options.slides.open_file_return_at") }}
         </label>
@@ -578,18 +589,6 @@
           </option>
         </select>
       </div>
-
-      <div class="opt-row">
-        <label class="opt-checkbox">
-          <input
-            type="checkbox"
-            :checked="mediaProjectReturn"
-            @change="setMedia('project_return', $event.target.checked)"
-          />
-          <span>{{ $t("options.player.project_return") }}</span>
-        </label>
-      </div>
-      <p class="opt-hint">{{ $t("options.player.project_return_hint") }}</p>
 
       <div class="opt-row">
         <label class="opt-checkbox">

@@ -224,7 +224,7 @@ const primaryHost = computed(() => {
 
 const baseUrl = computed(() => {
   if (!httpServer.value.running) return "";
-  const h = useHostname.value ? hostname.value : primaryHost.value;
+  const h = useHostname.value && hostname.value.trim() ? hostname.value.trim() : primaryHost.value;
   return `http://${h}:${httpServer.value.port}`;
 });
 

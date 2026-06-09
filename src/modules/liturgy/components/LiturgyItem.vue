@@ -65,10 +65,7 @@
       </button>
 
       <!-- Ações específicas de música -->
-      <div
-        v-if="element.tipo === 'musica' && element.escolha === '0'"
-        class="lit-card-music-actions"
-      >
+      <div v-if="element.tipo === 'musica' && !element.escolha" class="lit-card-music-actions">
         <v-tooltip location="top" :open-delay="700">
           <template #activator="{ props }">
             <button

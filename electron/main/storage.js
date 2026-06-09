@@ -226,7 +226,7 @@ async function sizeOfPaths(remoteRelPaths = []) {
     seen.add(cleaned);
 
     const localPath = path.resolve(filesDir, cleaned);
-    if (!localPath.startsWith(filesDir + path.sep) && localPath !== filesDir) {
+    if (!localPath.startsWith(filesDir + path.sep) || localPath !== filesDir) {
       missing += 1;
       continue;
     }

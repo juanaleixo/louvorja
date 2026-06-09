@@ -454,13 +454,6 @@ export const RIBBON_PAGES = [
         title: "ribbon.groups.options",
         buttons: [
           {
-            id: "copy_liturgy",
-            icon: "mdi-content-copy",
-            label: "ribbon.btn.copy_liturgy",
-            action: "lit_copy",
-            size: "small",
-          },
-          {
             id: "mark_done",
             icon: "mdi-check-circle",
             label: "ribbon.btn.mark_done",
@@ -480,6 +473,21 @@ export const RIBBON_PAGES = [
             label: "ribbon.btn.lock_items",
             action: "lit_lock",
             size: "small",
+          },
+          {
+            id: "copy_liturgy",
+            icon: "mdi-content-copy",
+            label: "ribbon.btn.copy_liturgy",
+            action: "lit_copy",
+            size: "small",
+          },
+          {
+            id: "clear_liturgy",
+            icon: "mdi-delete-outline",
+            label: "ribbon.btn.clear_liturgy",
+            action: "lit_clear",
+            size: "small",
+            color: "#e74c3c",
           },
         ],
       },

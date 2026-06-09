@@ -79,7 +79,7 @@ const TYPE_ICONS = {
   arquivo: "mdi-file-outline",
   site: "mdi-web",
   categoria: "mdi-folder-outline",
-  itensagendados: "mdi-calendar-clock",
+  itensAgendados: "mdi-calendar-clock",
 };
 
 const collapsed = ref(false);

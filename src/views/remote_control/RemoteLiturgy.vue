@@ -83,7 +83,7 @@ async function executeLiturgyItem(item) {
 }
 
 function isChooseLaterMusic(item) {
-  return item.tipo === "musica" && (item.escolha === "1" || !item.id_music);
+  return item.tipo === "musica" && (item.escolha || !item.id_music);
 }
 
 function openChooseLater(item) {

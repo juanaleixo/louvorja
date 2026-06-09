@@ -30,7 +30,7 @@
       :items="bibleData.books"
       item-title="name"
       item-value="id_bible_book"
-      :label="t('components.bible.book')"
+      :label="t('options.module.bible.book')"
       density="compact"
       variant="outlined"
       class="mb-3"
@@ -41,7 +41,7 @@
         <v-select
           v-model="bibleSelection.chapter"
           :items="bibleData.chapters"
-          :label="t('components.bible.chapter')"
+          :label="t('options.module.bible.chapter')"
           density="compact"
           variant="outlined"
           :disabled="!bibleSelection.book"
@@ -52,7 +52,7 @@
         <v-select
           v-model="bibleSelection.verse"
           :items="bibleData.verses"
-          :label="t('components.bible.verses')"
+          :label="t('options.module.bible.verses')"
           density="compact"
           variant="outlined"
           :disabled="!bibleSelection.chapter"

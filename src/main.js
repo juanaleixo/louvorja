@@ -208,7 +208,7 @@ $storage.hydrate().then(async () => {
                     window.open(url, "_blank", "noopener,noreferrer");
                     break;
                   }
-                  case "itensagendados": {
+                  case "itens-agendados": {
                     const sched = Liturgy.findScheduledForToday(item.id);
                     if (sched && sched.arquivo) {
                       const valid = Liturgy.validateUrl(sched.arquivo);

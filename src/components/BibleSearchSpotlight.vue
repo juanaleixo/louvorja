@@ -40,7 +40,7 @@
         </v-list>
 
         <div v-else-if="searchQuery && !loading" class="text-center pa-8 text-medium-emphasis">
-          {{ t("components.bible.empty_search") }}
+          {{ t("options.module.bible.empty_search") }}
         </div>
       </v-card-text>
     </v-card>

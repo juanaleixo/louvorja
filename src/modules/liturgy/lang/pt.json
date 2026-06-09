@@ -47,7 +47,7 @@
     "anotacao": "Anotação",
     "arquivo": "Arquivo",
     "categoria": "Categoria",
-    "itensagendados": "Itens Agendados",
+    "itens-agendados": "Itens Agendados",
     "musica": "Música",
     "site": "Site"
   },
@@ -163,5 +163,9 @@
     "same_day": "O dia de origem não pode ser o mesmo que o dia atual.",
     "confirm_title": "Copiar Liturgia",
     "confirm_text": "Deseja copiar a liturgia de <b>{source}</b> e sobrescrever a liturgia de <b>{target}</b>?<br><b>Esta ação não pode ser desfeita!<b>"
+  },
+  "clear": {
+    "confirm_title": "Limpar Liturgia",
+    "confirm_text": "Deseja limpar TODOS os itens da liturgia de <b>{day}</b>?<br><b>Esta ação não pode ser desfeita!</b>"
   }
 }

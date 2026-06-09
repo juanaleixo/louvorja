@@ -1,7 +1,7 @@
 .opt {
   font-family: var(--lj-font-shell);
   color: var(--lj-text);
-  max-width: 720px;
+  max-width: 800px;
 }
 
 .opt-section {
@@ -71,7 +71,7 @@
 }
 
 .opt-hint {
-  margin: -8px 0 var(--lj-space-3) 28px;
+  /*margin: -8px 0 var(--lj-space-3) 28px;*/
   font-size: var(--lj-text-sm);
   color: var(--lj-text-muted);
   line-height: 1.4;

@@ -368,6 +368,17 @@
       "syncing": "Sincronizando..."
     }
   },
+  "import_export": {
+    "export": {
+      "action": "Exportar Liturgia",
+      "hint": "Descarga un archivo .json con todos los días de la liturgia, notas, ítems programados y categorías.",
+      "done": "¡Archivo descargado!"
+    },
+    "import": {
+      "action": "Importar Liturgia",
+      "hint": "Carga un archivo .json (exportado de la versión web/desktop) o .ja (versión legada). Los ítems se agregarán al día activo."
+    }
+  },
   "popup": {
     "close": "Cerrar Ventana"
   },
@@ -488,6 +499,7 @@
       "show_notes": "Mostrar Panel de Anotaciones",
       "lock_items": "Bloquear Ítems",
       "copy_liturgy": "Copiar Liturgia",
+      "clear_liturgy": "Limpiar Liturgia",
       "bible_clear": "Limpiar Texto",
       "bible_prev_verse": "Verso Anterior",
       "bible_next_verse": "Siguiente Verso",

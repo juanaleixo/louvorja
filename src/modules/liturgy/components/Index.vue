@@ -228,7 +228,7 @@ const {
 
 const openItemDialogRoot = () => openItemDialog();
 const isChooseLaterMusic = (item: LiturgyItemData) =>
-  item.tipo === "musica" && (item.escolha === "1" || !item.id_music);
+  item.tipo === "musica" && (item.escolha || !item.id_music);
 
 async function openChooseLaterSearch(item: LiturgyItemData, mode = "sung") {
   chooseLaterItem.value = item;
@@ -250,7 +250,7 @@ function onChooseLaterMusicPicked(music: LiturgyMusicItem) {
     subitem: t("data.music_prefix") + " " + music.name,
     musica: id,
     id_music: id,
-    escolha: "0",
+    escolha: false,
     subtipo: hasInstrumental ? "ja" : "div",
     has_instrumental_music: hasInstrumental,
   };
@@ -337,6 +337,9 @@ function handleRibbonAction(action: string) {
       copySourceDay.value = activeDay.value;
       copyDialog.value = true;
       break;
+    case "clear_day":
+      clearDayDialog();
+      break;
     case "toggle_mark_on_access":
       toggleMarkOnAccess();
       break;
@@ -366,6 +369,15 @@ function doCopyLiturgy() {
     const items = $liturgy.list(source);
     $liturgy.set(items, target);
     copyDialog.value = false;
+  });
+}
+
+function clearDayDialog() {
+  const dayLabel = dayLabels.value[activeDay.value];
+  const confirmText = t("clear.confirm_text").replace("{day}", dayLabel);
+  $alert.yesno({ title: t("clear.confirm_title"), text: confirmText }, (btn?: string) => {
+    if (btn !== "yes") return;
+    $liturgy.clear(activeDay.value);
   });
 }
 

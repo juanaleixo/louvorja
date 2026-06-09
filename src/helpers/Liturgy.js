@@ -17,7 +17,7 @@ const KEY_LEGACY_WEEKDAY_NOTES = "modules.liturgy.weekday_notes";
 
 const DEFAULT_COLOR = "#4F0000";
 
-export const ITEM_TYPES = ["anotacao", "arquivo", "categoria", "itensagendados", "musica", "site"];
+export const ITEM_TYPES = ["anotacao", "arquivo", "categoria", "itens-agendados", "musica", "site"];
 
 function uid(prefix = "item_") {
   const d = new Date();
@@ -290,7 +290,7 @@ export default {
         item: name || `Música ${id_music}`,
         subitem: "Música " + (name || `#${id_music}`),
         musica: id_music,
-        escolha: "0",
+        escolha: false,
         subtipo: has_instrumental_music ? "ja" : "div",
         has_instrumental_music: !!has_instrumental_music,
         id_music,
@@ -307,7 +307,7 @@ export default {
         item: "Clique para escolher a música",
         subitem: "Clique para escolher a música",
         musica: "-1",
-        escolha: "1",
+        escolha: true,
         subtipo: "escolha",
         cor,
       },
@@ -317,7 +317,7 @@ export default {
 
   addScheduledItem(categoriaId, categoriaNome, cor = DEFAULT_COLOR, day) {
     return this.add(
-      { tipo: "itensagendados", item: categoriaNome, subitem: "", id: categoriaId, cor },
+      { tipo: "itens-agendados", item: categoriaNome, subitem: "", id: categoriaId, cor },
       day
     );
   },

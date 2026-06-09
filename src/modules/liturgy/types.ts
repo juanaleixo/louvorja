@@ -9,7 +9,7 @@ export interface LiturgyItemData {
   dir_info: string;
   url: string;
   musica: number;
-  escolha: string;
+  escolha: boolean;
   has_instrumental_music: boolean;
   subtipo: string;
   [key: string]: unknown;
@@ -31,3 +31,11 @@ export interface ScheduledItem {
   id: string | number;
   [key: string]: unknown;
 }
+
+export const ANOTACAO = "anotacao";
+export const ARQUIVO = "arquivo";
+export const CATEGORIA = "categoria";
+export const ITENS_AGENDADOS = "itens-agendados";
+export const MUSICA = "musica";
+export const SITE = "site";
+
