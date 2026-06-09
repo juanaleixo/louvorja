@@ -121,7 +121,8 @@ function executeItem(item) {
     try {
       $media.open({
         id_music: item.id_music,
-        mode: item.subtipo === "ja" ? "audio" : undefined,
+        //TODO criar uma opção noas configuraçÕes para o usuario escolher o modo de audio a ser executado (cantado, PB ou sem audio)
+        mode: item.subtipo === "ja" ? "audio" : "audio",
       });
     } catch (err) {
       console.error("[Liturgy] Falha ao abrir música:", err);

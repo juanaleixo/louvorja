@@ -130,7 +130,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function subtitleFor(item) {
-    if (item.tipo === "musica" && item.escolha) return t("placeholders.music_choose");
+    if (item.tipo === MUSICA && item.escolha) return t("placeholders.music_choose");
     return item.subitem || "";
   }
 
@@ -169,7 +169,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     menuOpen.value = false;
     if (!confirm(t("dialog.remove_done_confirm"))) return;
     const toRemove = items.value
-      .filter((i) => i.tipo !== "categoria" && $liturgy.isCheckedToday(i))
+      .filter((i) => i.tipo !== CATEGORIA && $liturgy.isCheckedToday(i))
       .map((i) => i.id);
     toRemove.forEach((id) => $liturgy.remove(id, activeDay.value));
     items.value = [...items.value];
@@ -188,11 +188,11 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function onTypeChange() {
-    if (form.value.tipo !== "musica") {
+    if (form.value.tipo !== MUSICA) {
       form.value.musica = -1;
       form.value.escolha = false;
     }
-    if (form.value.tipo === "musica" && form.value.musica === -1) {
+    if (form.value.tipo === MUSICA && form.value.musica === -1) {
       form.value.escolha = true;
     }
   }
@@ -205,7 +205,6 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   function onMusicChange() {
     const m = musicsList.value.find((x) => x.id_music === form.value.musica);
     if (m) {
-      // form.value.item = m.name;
       form.value.has_instrumental_music = !!m.has_instrumental_music;
       form.value.escolha = false;
     }

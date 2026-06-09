@@ -141,11 +141,18 @@ const allRows = computed<Row[]>(() => {
   return rows;
 });
 
+function normalize(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 const filteredRows = computed<Row[]>(() => {
-  const q = query.value.trim().toLowerCase();
+  const q = normalize(query.value);
   if (!q) return allRows.value;
   return allRows.value.filter(
-    (r) => r.name.toLowerCase().includes(q) || r.album.toLowerCase().includes(q)
+    (r) => normalize(r.name).includes(q) || normalize(r.album).includes(q)
   );
 });
 
