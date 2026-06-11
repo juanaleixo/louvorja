@@ -15,6 +15,11 @@
         autoplay
         muted
       />
+      <div
+        v-else-if="fileProjection.type === 'youtube'"
+        ref="ytContainer"
+        class="return-file-projection__youtube"
+      />
     </div>
 
     <div v-else class="return-empty"></div>
@@ -22,7 +27,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
@@ -31,23 +36,20 @@ const fileProjection = reactive({
   type: "",
   url: "",
   title: "",
-  fadeDuration: 500,
 });
 
 const videoRef = ref(null);
+const ytContainer = ref(null);
 const ready = ref(false);
 
-function _applyFade(ms) {
-  const dur = typeof ms === "number" ? ms : 500;
-  document.documentElement.style.setProperty("--file-fade-duration", `${dur}ms`);
-}
+let ytPlayer = null;
 
 function _activateProjection(p) {
   fileProjection.active = true;
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";
   fileProjection.title = p.title || "";
-  _applyFade(p.fadeDuration);
+  if (p.type === "youtube") nextTick(() => _initYoutube());
 }
 
 function _readPendingProjection() {
@@ -71,11 +73,12 @@ useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload) => {
 });
 
 useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
+  _destroyYoutube();
   fileProjection.active = false;
   try {
     localStorage.removeItem("lj_file_projection");
-  } catch (e) {
-    console.error(e);
+  } catch {
+    /* ignore */
   }
 });
 
@@ -84,18 +87,94 @@ useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload) => {
   const el = videoRef.value;
   if (!el) return;
   el.pause();
-  if (typeof payload.currentTime === "number") {
-    el.currentTime = payload.currentTime;
-  }
-  if (typeof payload.isPaused === "boolean" && !payload.isPaused) {
-    el.play().catch(() => {});
+  if (typeof payload.currentTime === "number") el.currentTime = payload.currentTime;
+  if (typeof payload.isPaused === "boolean" && !payload.isPaused) el.play().catch(() => {});
+});
+
+useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload) => {
+  if (!fileProjection.active || fileProjection.type !== "youtube") return;
+  if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+  try {
+    const diff = Math.abs(
+      ytPlayer.getCurrentTime() -
+        (typeof payload.currentTime === "number" ? payload.currentTime : 0)
+    );
+    if (diff > 1) ytPlayer.seekTo(payload.currentTime, true);
+    if (typeof payload.isPaused === "boolean") {
+      if (payload.isPaused) ytPlayer.pauseVideo();
+      else ytPlayer.playVideo();
+    }
+  } catch {
+    /* ignore */
   }
 });
+
+function _embedUrlToId(url) {
+  const m = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function _loadYtApi(cb) {
+  if (window.YT && window.YT.Player) {
+    setTimeout(() => cb(window.YT), 0);
+    return;
+  }
+  const prev = window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady = () => {
+    if (prev) prev();
+    cb(window.YT);
+  };
+  if (!document.querySelector('script[src*="iframe_api"]')) {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }
+}
+
+function _initYoutube() {
+  _destroyYoutube();
+  const id = _embedUrlToId(fileProjection.url);
+  if (!id) return;
+  if (!ytContainer.value) return;
+
+  _loadYtApi((YT) => {
+    if (!ytContainer.value) return;
+    ytPlayer = new YT.Player(ytContainer.value, {
+      height: "100%",
+      width: "100%",
+      videoId: id,
+      playerVars: {
+        autoplay: 1,
+        rel: 0,
+        controls: 0,
+        modestbranding: 1,
+        mute: 1,
+      },
+      events: {
+        onReady: () => {
+          if (ytPlayer) ytPlayer.playVideo();
+        },
+      },
+    });
+  });
+}
+
+function _destroyYoutube() {
+  if (ytPlayer) {
+    try {
+      ytPlayer.destroy();
+    } catch {
+      /* ignore */
+    }
+    ytPlayer = null;
+  }
+}
 
 function _onKey(e) {
   if (e.key === "Escape") {
     e.preventDefault();
     if (fileProjection.active) {
+      _destroyYoutube();
       fileProjection.active = false;
       return;
     }
@@ -118,6 +197,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  _destroyYoutube();
   window.removeEventListener("keydown", _onKey);
 });
 </script>
@@ -160,19 +240,9 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
 }
-
-.return-file-projection__label {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-family: Arial, sans-serif;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 4px 16px;
-  border-radius: 4px;
-  pointer-events: none;
+.return-file-projection__youtube {
+  width: 100%;
+  height: 100%;
 }
 
 .return-empty {

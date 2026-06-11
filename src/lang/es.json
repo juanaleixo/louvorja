@@ -323,7 +323,8 @@
       "fullscreen": "Mostrar en pantalla completa",
       "youtube_action": "Al ejecutar enlace de YouTube en la liturgia, abrir:",
       "action_video": "Vídeo",
-      "action_link": "Enlace en el navegador"
+      "action_link": "Enlace en el navegador",
+      "show_return": "Mostrar en la pantalla de retorno"
     },
     "player": {
       "title": "Reproductor de Audio/Vídeo",
@@ -410,7 +411,9 @@
       "ctx_clock": "Configurar Reloj",
       "ctx_stopwatch": "Configurar Cronómetro",
       "ctx_timer": "Configurar Temporizador",
-      "ctx_message_board": "Configurar Recados"
+      "ctx_message_board": "Configurar Recados",
+      "ctx_online_videos": "Vídeos On-line",
+      "ctx_custom_videos": "Meus Videos"
     },
     "groups": {
       "hymnal_adventist": "Himnario Adventista",
@@ -418,7 +421,7 @@
       "categories": "Músicas por Categorías",
       "user": "Usuario",
       "search": "Búsqueda",
-      "online_videos": "Internet",
+      "online_videos": "On-line",
       "general": "General",
       "church": "Iglesia",
       "draws": "Sorteador",
@@ -437,6 +440,7 @@
       "controls": "Controles",
       "format": "Formato",
       "actions": "Acciones",
+      "projection": "Proyección",
       "expanded_area": "Área Expandida",
       "file": "Archivo",
       "slides": "Diapositivas",
@@ -451,6 +455,14 @@
       "text_options": "Opciones de Texto",
       "replicate_text": "Replicar Formato de Texto"
     },
+    "fields": {
+      "monitor": "Monitor",
+      "return_monitor": "Monitor de Retorno",
+      "show_return": "Mostrar en la pantalla de retorno",
+      "same_window": "Misma ventana",
+      "primary": "Monitor Principal",
+      "secondary": "Monitor Secundario"
+    },
     "btn": {
       "hymnal": "Himnario Adventista",
       "bible": "Biblia Sagrada",
@@ -463,6 +475,13 @@
       "search_music": "Localizar Músicas",
       "online_videos": "Vídeos On-line",
       "online_personal": "Vídeos Personalizados",
+      "online_videos_personal_url": "Proyectar",
+      "online_videos_personal_url_placeholder": "URL de YouTube",
+      "online_videos_stop": "Detener Proyección",
+      "custom_videos": "Mis Videos",
+      "custom_videos_add": "Agregar",
+      "custom_videos_toggle_view": "Lista / Miniatura",
+      "custom_videos_stop": "Detener Proyección",
       "scheduled_items": "Ítems Programados",
       "timer": "Temporizador",
       "history": "Historial",

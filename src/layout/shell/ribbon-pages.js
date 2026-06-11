@@ -67,6 +67,19 @@ export const RIBBON_PAGES = [
         ],
       },
       {
+        id: "online_videos",
+        title: "ribbon.groups.online_videos",
+        buttons: [
+          {
+            id: "online_videos",
+            icon: "mdi-youtube",
+            label: "ribbon.btn.online_videos",
+            module: "online_videos",
+            color: "#e74c3c",
+          },
+        ],
+      },
+      {
         id: "user",
         title: "ribbon.groups.user",
         buttons: [
@@ -76,6 +89,13 @@ export const RIBBON_PAGES = [
             label: "ribbon.btn.personal",
             module: "collections",
             color: "#c0392b",
+          },
+          {
+            id: "custom_videos",
+            icon: "mdi-video-vintage",
+            label: "ribbon.btn.online_personal",
+            module: "custom_videos",
+            color: "#9b59b6",
           },
         ],
       },
@@ -109,15 +129,15 @@ export const RIBBON_PAGES = [
             id: "online_videos",
             icon: "mdi-youtube",
             label: "ribbon.btn.online_videos",
-            action: "online_videos",
+            module: "online_videos",
             color: "#e74c3c",
           },
           {
-            id: "online_personal",
-            icon: "mdi-link",
+            id: "custom_videos",
+            icon: "mdi-video-vintage",
             label: "ribbon.btn.online_personal",
-            action: "online_personal",
-            color: "#3498db",
+            module: "custom_videos",
+            color: "#9b59b6",
           },
         ],
       },
@@ -1289,6 +1309,127 @@ export const RIBBON_PAGES = [
       },
     ],
   },
+
+  // ========== Vídeos On-line (contextual) ==========
+  {
+    id: "ctx_online_videos",
+    title: "ribbon.pages.ctx_online_videos",
+    contextual: true,
+    activeOnModules: ["online_videos"],
+    defaultModule: null,
+    groups: [
+      {
+        id: "ctx_online_videos_actions",
+        title: "ribbon.groups.actions",
+        buttons: [
+          {
+            id: "online_videos_personal_url",
+            type: "action_input",
+            icon: "mdi-link",
+            label: "ribbon.btn.online_videos_personal_url",
+            placeholder: "ribbon.btn.online_videos_personal_url_placeholder",
+            action: "online_videos_personal_url",
+            color: "#3498db",
+          },
+          {
+            id: "online_videos_stop",
+            icon: "mdi-stop",
+            label: "ribbon.btn.online_videos_stop",
+            action: "online_videos_stop",
+            color: "#e74c3c",
+          },
+        ],
+      },
+    ],
+  },
+
+  // ========== Meus Vídeos (contextual) ==========
+  {
+    id: "ctx_custom_videos",
+    title: "ribbon.pages.ctx_custom_videos",
+    contextual: true,
+    activeOnModules: ["custom_videos"],
+    defaultModule: null,
+    groups: [
+      {
+        id: "ctx_custom_videos_actions",
+        title: "ribbon.groups.options",
+        buttons: [
+          {
+            id: "custom_videos_add",
+            icon: "mdi-plus",
+            label: "ribbon.btn.custom_videos_add",
+            action: "custom_videos_add",
+            color: "#27ae60",
+          },
+          {
+            id: "custom_videos_toggle_view",
+            icon: "mdi-grid-large",
+            label: "ribbon.btn.custom_videos_toggle_view",
+            action: "custom_videos_toggle_view",
+            color: "#7f8c8d",
+          },
+        ],
+      },
+      {
+        id: "ctx_custom_videos_actions",
+        title: "ribbon.groups.actions",
+        buttons: [
+          {
+            id: "custom_videos_personal_url",
+            type: "action_input",
+            icon: "mdi-link",
+            label: "ribbon.btn.online_videos_personal_url",
+            placeholder: "ribbon.btn.online_videos_personal_url_placeholder",
+            action: "custom_videos_personal_url",
+            color: "#3498db",
+          },
+          {
+            id: "custom_videos_stop",
+            icon: "mdi-stop",
+            label: "ribbon.btn.custom_videos_stop",
+            action: "custom_videos_stop",
+            color: "#e74c3c",
+          },
+        ],
+      },
+      {
+        id: "ctx_custom_videos_proj",
+        title: "ribbon.groups.projection",
+        buttons: [
+          {
+            id: "custom_videos_monitor",
+            type: "select",
+            label: "ribbon.fields.monitor",
+            feature: "videos",
+            options: [
+              { value: "", label: "ribbon.fields.same_window" },
+              { value: "primary", label: "ribbon.fields.primary" },
+              { value: "secondary", label: "ribbon.fields.secondary" },
+            ],
+          },
+          {
+            id: "custom_videos_show_return",
+            type: "checkbox",
+            label: "ribbon.fields.show_return",
+            optionKey: "options.video_show_return",
+          },
+          {
+            id: "custom_videos_return_monitor",
+            type: "select",
+            label: "ribbon.fields.return_monitor",
+            feature: "file_return",
+            dependsOn: "custom_videos_show_return",
+            options: [
+              { value: "", label: "ribbon.fields.same_window" },
+              { value: "primary", label: "ribbon.fields.primary" },
+              { value: "secondary", label: "ribbon.fields.secondary" },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 /**
@@ -1312,6 +1453,8 @@ export const MODULE_ICONS = {
   name_draw: "mdi-account-multiple",
   counter: "mdi-counter",
   message_board: "mdi-message-bulleted",
+  online_videos: "mdi-youtube",
+  custom_videos: "mdi-video-vintage",
   remote_control: "mdi-remote",
   theme: "mdi-palette",
   dev: "mdi-tools",

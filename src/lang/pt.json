@@ -333,7 +333,8 @@
       "fullscreen": "Exibir em tela cheia",
       "youtube_action": "Ao executar link do YouTube na liturgia, abrir:",
       "action_video": "Vídeo",
-      "action_link": "Link no navegador"
+      "action_link": "Link no navegador",
+      "show_return": "Exibir na tela de retorno"
     },
     "player": {
       "title": "Player de Áudio/Vídeo",
@@ -386,7 +387,7 @@
     },
     "import": {
       "action": "Importar Liturgia",
-      "hint": "Carrega um arquivo .json (exportado da versão web/desktop) ou .ja (versão legada). Os itens serão adicionados ao dia ativo."
+      "hint": "Carrega um arquivo .json (exportado da versão web/desktop) ou .ja (versão legada). Os itens serão restaurados conforme os dias do arquivo."
     }
   },
   "popup": {
@@ -419,7 +420,9 @@
       "ctx_name_draw": "Configurar Nomes",
       "ctx_clock": "Configurar Relógio",
       "ctx_stopwatch": "Configurar Cronômetro",
-      "ctx_message_board": "Configurar Recados"
+      "ctx_message_board": "Configurar Recados",
+      "ctx_online_videos": "Vídeos On-line",
+      "ctx_custom_videos": "Vídeos Personalizados"
     },
     "groups": {
       "hymnal_adventist": "Hinário Adventista",
@@ -427,7 +430,7 @@
       "categories": "Músicas por Categorias",
       "user": "Usuário",
       "search": "Busca",
-      "online_videos": "Internet",
+      "online_videos": "On-line",
       "general": "Geral",
       "church": "Igreja",
       "draws": "Sorteador",
@@ -446,6 +449,7 @@
       "controls": "Controles",
       "format": "Formatação",
       "actions": "Ações",
+      "projection": "Projeção",
       "expanded_area": "Área Expandida",
       "file": "Arquivo",
       "slides": "Slides",
@@ -460,6 +464,14 @@
       "text_options": "Opções de Texto",
       "replicate_text": "Replicar Formatação de Texto"
     },
+    "fields": {
+      "monitor": "Monitor",
+      "return_monitor": "Monitor de Retorno",
+      "show_return": "Exibir na tela de retorno",
+      "same_window": "Mesma janela",
+      "primary": "Monitor Principal",
+      "secondary": "Monitor Secundário"
+    },
     "btn": {
       "hymnal": "Hinário Adventista",
       "bible": "Bíblia Sagrada",
@@ -472,6 +484,13 @@
       "search_music": "Localizar Músicas",
       "online_videos": "Vídeos On-line",
       "online_personal": "Vídeos Personalizados",
+      "online_videos_personal_url": "Projetar",
+      "online_videos_personal_url_placeholder": "URL do YouTube",
+      "online_videos_stop": "Parar Projeção",
+      "custom_videos": "Meus Vídeos",
+      "custom_videos_add": "Adicionar",
+      "custom_videos_toggle_view": "Lista / Miniatura",
+      "custom_videos_stop": "Parar Projeção",
       "scheduled_items": "Itens Agendados",
       "timer": "Temporizador",
       "history": "Histórico",

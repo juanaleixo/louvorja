@@ -178,15 +178,49 @@ export async function openFileProjectionWindows(): Promise<void> {
   const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
   const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
 
-  // Projeção de arquivo — fallback para o monitor da projeção principal
-  const fileProjMonitor = prefs[FEATURE_FILE_PROJECTION] ?? prefs[FEATURE_PROJECTION] ?? null;
+  // Projeção de arquivo — fallback para monitor de vídeos, depois projeção principal
+  const fileProjMonitor = prefs[FEATURE_FILE_PROJECTION] ?? prefs["videos"] ?? prefs[FEATURE_PROJECTION] ?? null;
   if (fileProjMonitor != null) {
     await _open("/projection/file", FEATURE_FILE_PROJECTION, fileProjMonitor, fullscreen, alwaysOnTop);
   }
 
   // Retorno de arquivo — respeita a opção "Reproduzir na Tela de Retorno" do player
-  const openFileReturn = ($userdata.get("modules.media.project_return", false) as unknown) === true;
+  // ou "Exibir na tela de retorno" dos vídeos personalizados.
+  const openFileReturn =
+    ($userdata.get("modules.media.project_return", false) as unknown) === true ||
+    ($userdata.get("options.video_show_return", false) as unknown) === true;
   if (openFileReturn) {
+    await _open(
+      "/projection/file/return",
+      FEATURE_FILE_RETURN,
+      prefs[FEATURE_FILE_RETURN] ?? prefs[FEATURE_RETURN] ?? null,
+      fullscreen,
+      alwaysOnTop
+    );
+  }
+}
+
+/**
+ * Abre janelas de projeção para VÍDEOS ON-LINE (YouTube).
+ * Usa a feature "videos" diretamente, sem passar pelo fallback
+ * "file_projection", para não conflitar com a configuração do
+ * Player de Áudio/Vídeo (que pode estar em monitor diferente).
+ */
+export async function openVideoProjectionWindows(): Promise<void> {
+  const prefs = await _readPrefs();
+  const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
+  const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
+
+  // Usa feature "videos" sem fallback para file_projection
+  const videoMonitor = prefs["videos"] ?? prefs[FEATURE_PROJECTION] ?? null;
+  if (videoMonitor != null) {
+    await _open("/projection/file", FEATURE_FILE_PROJECTION, videoMonitor, fullscreen, alwaysOnTop);
+  }
+
+  // Retorno de vídeos — só a opção específica de vídeos, não a do player
+  const openVideoReturn =
+    ($userdata.get("options.video_show_return", false) as unknown) === true;
+  if (openVideoReturn) {
     await _open(
       "/projection/file/return",
       FEATURE_FILE_RETURN,
@@ -237,4 +271,4 @@ export async function closeProjectionWindows(): Promise<void> {
   ]);
 }
 
-export default { openProjectionWindows, closeProjectionWindows, openBibleWindow, openFileProjectionWindows };
+export default { openProjectionWindows, closeProjectionWindows, openBibleWindow, openFileProjectionWindows, openVideoProjectionWindows };

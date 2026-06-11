@@ -536,6 +536,34 @@
           <option value="link">{{ $t("options.videos.action_link") }}</option>
         </select>
       </div>
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="videoShowReturn"
+            @change="setUd('video_show_return', $event.target.checked)"
+          />
+          <span>{{ $t("options.videos.show_return") }}</span>
+        </label>
+      </div>
+      <div v-if="videoShowReturn" class="opt-row">
+        <label class="opt-label" for="opt-video-return-monitor">
+          {{ $t("options.slides.open_file_return_at") }}
+        </label>
+        <select
+          id="opt-video-return-monitor"
+          class="opt-select"
+          :value="getPref('file_return') ?? ''"
+          @change="setPref('file_return', $event.target.value)"
+        >
+          <option value="">{{ $t("options.slides.same_window") }}</option>
+          <option value="primary">{{ $t("options.monitors.primary") }}</option>
+          <option value="secondary">{{ $t("options.monitors.secondary") }}</option>
+          <option v-for="d in displays" :key="d.id" :value="d.id">
+            {{ d.label || `Monitor ${d.id}` }}
+          </option>
+        </select>
+      </div>
     </section>
 
     <!-- Player de Áudio/Vídeo -->
@@ -826,6 +854,7 @@ const mediaLazyLoad = computed(() => $userdata.get("modules.media.lazy_load", tr
 const mediaProjectReturn = computed(
   () => $userdata.get("modules.media.project_return", false) === true
 );
+const videoShowReturn = computed(() => $userdata.get("options.video_show_return", false) === true);
 
 function setMedia(key, value) {
   $userdata.set(`modules.media.${key}`, value);

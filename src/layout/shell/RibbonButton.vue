@@ -9,7 +9,7 @@
   >
     <v-icon
       :icon="icon"
-      :size="size === 'large' ? 32 : 16"
+      :size="iconSize"
       :style="iconColor ? { color: iconColor } : null"
       class="ribbon-btn-icon"
     />
@@ -18,7 +18,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from "vue";
+
+const props = defineProps({
   icon: { type: String, required: true },
   label: { type: String, required: true },
   size: { type: String, default: "large" },
@@ -28,6 +30,12 @@ defineProps({
 });
 
 defineEmits(["click"]);
+
+const iconSize = computed(() => {
+  if (props.size === "large") return 32;
+  if (props.size === "medium") return 24;
+  return 16;
+});
 </script>
 
 <style scoped>
@@ -92,6 +100,30 @@ defineEmits(["click"]);
   max-width: 100px;
   color: inherit;
   font-weight: var(--lj-weight-regular);
+}
+
+/* Botão médio horizontal — mais encorpado que small */
+.ribbon-btn--medium {
+  flex-direction: row;
+  align-items: center;
+  height: calc(var(--lj-small-btn-height) + 8px);
+  width: fit-content;
+  padding: 0 var(--lj-space-4);
+  gap: var(--lj-space-2);
+  flex-shrink: 0;
+}
+
+.ribbon-btn--medium .ribbon-btn-icon {
+  flex-shrink: 0;
+}
+
+.ribbon-btn--medium .ribbon-btn-label {
+  font-size: var(--lj-text-base);
+  white-space: nowrap;
+  font-weight: var(--lj-weight-regular);
+  text-align: left;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Botão pequeno horizontal — empilha em coluna no group */

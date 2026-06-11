@@ -1,0 +1,20 @@
+{
+  "title": "Vídeos On-line",
+  "collection": "Coletânea",
+  "personal": "URL Personalizada",
+  "personal_hint": "Cole uma URL do YouTube para projetar",
+  "project": "Projetar",
+  "stop": "Parar Projeção",
+  "projecting": "Projetando...",
+  "empty_collection": "Nenhum vídeo disponível na coletânea.",
+  "invalid_url": "URL do YouTube inválida. Verifique e tente novamente.",
+  "videos": {
+    "video_1": "Só o Amor",
+    "video_2": "Deus Proverá",
+    "video_3": "Lugar Secreto",
+    "video_4": "Águas Purificadoras",
+    "video_5": "Raridade",
+    "video_6": "Oceanos"
+  },
+  "actions": { "project": "Projetar", "stop": "Parar" }
+}

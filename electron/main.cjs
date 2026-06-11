@@ -159,8 +159,8 @@ app.whenReady().then(async () => {
   // file: precisa estar explícito em prod porque o Chromium trata file://
   // como origem null e NÃO casa com 'self'.
   const scriptSrc = isDev
-    ? "'self' 'unsafe-inline' 'unsafe-eval' louvorja: http://localhost:*"
-    : "'self' file: louvorja:";
+    ? "'self' 'unsafe-inline' 'unsafe-eval' louvorja: http://localhost:* https://www.youtube.com https://*.doubleclick.net https://www.google.com"
+    : "'self' file: louvorja: https://www.youtube.com https://*.doubleclick.net https://www.google.com";
   const styleSrc = isDev
     ? "'self' 'unsafe-inline' louvorja: http://localhost:* https://fonts.googleapis.com"
     : "'self' 'unsafe-inline' file: louvorja: https://fonts.googleapis.com";
@@ -173,9 +173,10 @@ app.whenReady().then(async () => {
           ` script-src ${scriptSrc};` +
           ` style-src ${styleSrc};` +
           " font-src 'self' data: file: louvorja: https://fonts.gstatic.com;" +
-          " img-src 'self' data: https: file: louvorja:" + (isDev ? " http://localhost:*" : "") + ";" +
-          " media-src 'self' blob: https: file: louvorja: http://localhost:*;" +
-          " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:*;" +
+           " img-src 'self' blob: data: https: file: louvorja:" + (isDev ? " http://localhost:*" : "") + " https://*.ytimg.com https://*.youtube.com;" +
+          " media-src 'self' blob: https: file: louvorja: http://localhost:* https://*.googlevideo.com;" +
+          " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com;" +
+          " frame-src https://www.youtube.com https://www.youtube-nocookie.com;" +
           " worker-src 'self' file: louvorja:" + (isDev ? " blob:" : "") + ";",
         ],
       },
