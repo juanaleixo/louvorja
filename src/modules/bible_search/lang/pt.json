@@ -1,0 +1,27 @@
+{
+  "title": "Busca Bíblica",
+  "ribbon": {
+    "results_count": "{n} resultado(s)",
+    "project": "Projetar",
+    "prev_result": "Anterior",
+    "next_result": "Próximo",
+    "go_bible": "Abrir na Bíblia",
+    "project_current": "Projetar atual",
+    "filter": {
+      "scope": "Escopo",
+      "all": "Toda a Bíblia",
+      "ot": "Antigo Testamento",
+      "nt": "Novo Testamento",
+      "books": "Selecionar Livros",
+      "version": "Versão",
+      "book_filter": "Filtrar livros...",
+      "select_all": "Todos",
+      "clear_all": "Nenhum",
+      "books_selected": "{n} livro(s) selecionado(s)",
+      "total_books": "Total: {n}"
+    }
+  },
+  "search": "Pesquisar",
+  "search_placeholder": "Digite um termo (ex: Jesus Curou)",
+  "empty_hint": "Nenhum versículo encontrado, tente um texto diferente"
+}

@@ -94,10 +94,90 @@
               <option v-for="opt in btn.options || []" :key="opt.value" :value="opt.value">
                 {{ $t(opt.label) }}
               </option>
-              <option v-for="d in displays" :key="d.id" :value="d.id">
-                {{ d.label || `Monitor ${d.id}` }}
+              <option
+                v-for="opt in btn.dynamicOptions ? dynamicSelectOptions[btn.dynamicOptions] : []"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
               </option>
+              <template v-if="btn.feature">
+                <option v-for="d in displays" :key="d.id" :value="d.id">
+                  {{ d.label || `Monitor ${d.id}` }}
+                </option>
+              </template>
             </select>
+          </div>
+          <div
+            v-else-if="btn.type === 'book_select'"
+            v-show="isDependencyMet(btn)"
+            ref="bookPickerTrigger"
+            class="ribbon-book-select"
+          >
+            <button class="ribbon-book-trigger" @click="toggleBookPicker">
+              <span class="ribbon-book-summary">{{ bookSelectSummary }}</span>
+              <v-icon icon="mdi-chevron-down" size="14" />
+            </button>
+            <Teleport to="body">
+              <div v-if="showBookPicker" class="ribbon-book-picker" @click.stop>
+                <input
+                  v-model="bookFilter"
+                  type="text"
+                  class="ribbon-book-picker-filter"
+                  :placeholder="tBook('ribbon.filter.book_filter')"
+                />
+                <div class="ribbon-book-picker-body">
+                  <div class="ribbon-book-picker-group">
+                    <div class="ribbon-book-picker-group-title">
+                      {{ tBook("ribbon.filter.ot") }}
+                    </div>
+                    <label
+                      v-for="book in filteredOtBooks"
+                      :key="book.id_bible_book"
+                      class="ribbon-book-picker-item"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="isBookSelected(book.id_bible_book)"
+                        @change="toggleBook(book.id_bible_book)"
+                      />
+                      <span>{{ book.name }}</span>
+                    </label>
+                  </div>
+                  <div class="ribbon-book-picker-group">
+                    <div class="ribbon-book-picker-group-title">
+                      {{ tBook("ribbon.filter.nt") }}
+                    </div>
+                    <label
+                      v-for="book in filteredNtBooks"
+                      :key="book.id_bible_book"
+                      class="ribbon-book-picker-item"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="isBookSelected(book.id_bible_book)"
+                        @change="toggleBook(book.id_bible_book)"
+                      />
+                      <span>{{ book.name }}</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="ribbon-book-picker-footer">
+                  <button class="ribbon-book-picker-action" @click="selectOtBooks">
+                    {{ tBook("ribbon.filter.ot") }}
+                  </button>
+                  <button class="ribbon-book-picker-action" @click="selectNtBooks">
+                    {{ tBook("ribbon.filter.nt") }}
+                  </button>
+                  <button class="ribbon-book-picker-action" @click="selectAllBooks">
+                    {{ tBook("ribbon.filter.select_all") }}
+                  </button>
+                  <button class="ribbon-book-picker-action" @click="clearAllBooks">
+                    {{ tBook("ribbon.filter.clear_all") }}
+                  </button>
+                </div>
+              </div>
+            </Teleport>
           </div>
           <label v-else-if="btn.type === 'checkbox'" class="ribbon-field-checkbox">
             <input
@@ -128,7 +208,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive } from "vue";
+import { ref, computed, watch, reactive, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import RibbonGroup from "./RibbonGroup.vue";
 import RibbonButton from "./RibbonButton.vue";
@@ -141,6 +221,7 @@ import { RIBBON_PAGES } from "./ribbon-pages.js";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $modules from "@/helpers/Modules";
+import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
@@ -153,12 +234,137 @@ const inputValues = reactive({});
 
 const { displays, setPreferred, getPreferred } = useDisplays();
 
+const dynamicSelectOptions = reactive({});
+
+async function loadDynamicOptions() {
+  const [versionData, bookData] = await Promise.all([
+    $database.get("pt_bible_version", { silent: true }),
+    $database.get("pt_bible_book", { silent: true }),
+  ]);
+  if (versionData?.length) {
+    dynamicSelectOptions.version = versionData.map((v) => ({
+      value: v.id_bible_version,
+      label: `${v.abbreviation} - ${v.name}`,
+    }));
+  }
+  if (bookData?.length) {
+    dynamicSelectOptions.books = bookData;
+  }
+}
+loadDynamicOptions();
+
+const bookFilter = ref("");
+const showBookPicker = ref(false);
+const bookPickerTrigger = ref(null);
+const allBooks = computed(() => dynamicSelectOptions.books || []);
+const filteredOtBooks = computed(() =>
+  allBooks.value.filter((b) => b.id_bible_book <= 39).filter((b) => filterBookName(b))
+);
+const filteredNtBooks = computed(() =>
+  allBooks.value.filter((b) => b.id_bible_book > 39).filter((b) => filterBookName(b))
+);
+const totalBooksCount = computed(() => allBooks.value.length);
+const bookSelectSummary = computed(() => {
+  const selected = getSelectedBooks();
+  if (!selected.length) return tBook("ribbon.filter.books");
+  if (selected.length === totalBooksCount.value) return tBook("ribbon.filter.select_all");
+  return tBook("ribbon.filter.books_selected", { n: selected.length });
+});
+function filterBookName(b) {
+  if (!bookFilter.value) return true;
+  const q = bookFilter.value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const name = (b.name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return name.includes(q);
+}
+function getSelectedBooks() {
+  return $userdata.get("modules.bible_search.books", []);
+}
+function isBookSelected(id) {
+  return getSelectedBooks().includes(id);
+}
+function toggleBook(id) {
+  const selected = getSelectedBooks().slice();
+  const idx = selected.indexOf(id);
+  if (idx >= 0) selected.splice(idx, 1);
+  else selected.push(id);
+  $userdata.set("modules.bible_search.books", selected);
+}
+function selectAllBooks() {
+  $userdata.set(
+    "modules.bible_search.books",
+    allBooks.value.map((b) => b.id_bible_book)
+  );
+}
+function clearAllBooks() {
+  $userdata.set("modules.bible_search.books", []);
+  bookFilter.value = "";
+}
+function selectOtBooks() {
+  $userdata.set(
+    "modules.bible_search.books",
+    allBooks.value.filter((b) => b.id_bible_book <= 39).map((b) => b.id_bible_book)
+  );
+}
+function selectNtBooks() {
+  $userdata.set(
+    "modules.bible_search.books",
+    allBooks.value.filter((b) => b.id_bible_book > 39).map((b) => b.id_bible_book)
+  );
+}
+function tBook(key, params) {
+  const modKey = `modules.bible_search.${key}`;
+  return params ? t(modKey, params) : t(modKey);
+}
+function toggleBookPicker() {
+  showBookPicker.value = !showBookPicker.value;
+  if (showBookPicker.value) {
+    bookFilter.value = "";
+    positionBookPicker();
+  }
+}
+function positionBookPicker() {
+  requestAnimationFrame(() => {
+    const trigger = bookPickerTrigger.value?.[0];
+    const picker = document.querySelector(".ribbon-book-picker");
+    if (!trigger || !picker) return;
+    const rect = trigger.getBoundingClientRect();
+    picker.style.top = rect.bottom + 4 + "px";
+    picker.style.left = Math.min(rect.left, window.innerWidth - 430) + "px";
+  });
+}
+watch(showBookPicker, (val) => {
+  if (val) positionBookPicker();
+});
+function onDocumentClick(e) {
+  if (showBookPicker.value) {
+    const triggerEl = bookPickerTrigger.value?.[0];
+    const picker = document.querySelector(".ribbon-book-picker");
+    if (triggerEl && !triggerEl.contains(e.target) && picker && !picker.contains(e.target)) {
+      showBookPicker.value = false;
+    }
+  }
+}
+const _onDocClick = onDocumentClick;
+onMounted(() => document.addEventListener("click", _onDocClick, true));
+onUnmounted(() => document.removeEventListener("click", _onDocClick, true));
+
 function getSelectValue(btn) {
+  if (btn.optionKey) return $userdata.get(btn.optionKey, btn.defaultValue ?? "");
   if (!btn.feature) return "";
   return getPreferred(btn.feature) ?? "";
 }
 
 function setSelectValue(btn, val) {
+  if (btn.optionKey) {
+    $userdata.set(btn.optionKey, val);
+    return;
+  }
   if (!btn.feature) return;
   if (val === "") setPreferred(btn.feature, null);
   else if (val === "primary" || val === "secondary") setPreferred(btn.feature, val);
@@ -176,6 +382,10 @@ function setCheckValue(btn, checked) {
 }
 
 function isDependencyMet(btn) {
+  if (btn.dependsOnOption) {
+    const val = $userdata.get(btn.dependsOnOption.path, "");
+    return val === btn.dependsOnOption.value;
+  }
   if (!btn.dependsOn) return true;
   const group = activeGroups.value?.find((g) => g.buttons.some((b) => b.id === btn.dependsOn));
   const depBtn = group?.buttons.find((b) => b.id === btn.dependsOn);
@@ -357,7 +567,7 @@ function executeButton(btn) {
   // message_board) sem precisar de tabela explícita.
   if (btn.action) {
     const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos)_(.+)$/
+      /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|hymnal|bible_search)_(.+)$/
     );
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
@@ -609,5 +819,131 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
 
 .ribbon-field-checkbox input {
   margin: 0;
+}
+
+.ribbon-book-select {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+  min-width: 200px;
+}
+.ribbon-book-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(var(--v-border-color), 0.4);
+  border-radius: 3px;
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+}
+.ribbon-book-trigger:hover {
+  border-color: var(--lj-navy);
+}
+.ribbon-book-summary {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ribbon-book-picker {
+  position: fixed;
+  z-index: 10000;
+  background: var(--lj-surface-bg);
+  border: 1px solid rgba(var(--v-border-color), 0.3);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  width: 420px;
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ribbon-book-picker-filter {
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.3);
+  background: transparent;
+  color: var(--lj-text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ribbon-book-picker-body {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+.ribbon-book-picker-group {
+  flex: 1;
+  padding: 8px;
+  min-width: 0;
+}
+.ribbon-book-picker-group + .ribbon-book-picker-group {
+  border-left: 1px solid rgba(var(--v-border-color), 0.2);
+}
+.ribbon-book-picker-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--lj-navy);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.25);
+}
+.ribbon-book-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+  cursor: pointer;
+  color: var(--lj-text);
+}
+.ribbon-book-picker-item:hover {
+  background: rgba(var(--v-border-color), 0.06);
+}
+.ribbon-book-picker-item input {
+  margin: 0;
+  flex-shrink: 0;
+}
+.ribbon-book-picker-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 1px solid rgba(var(--v-border-color), 0.2);
+}
+.ribbon-book-picker-count {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(var(--lj-on-surface-ch), 0.5);
+}
+.ribbon-book-picker-action {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid rgba(var(--v-border-color), 0.35);
+  border-radius: 3px;
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.ribbon-book-picker-action:hover {
+  border-color: var(--lj-navy);
 }
 </style>

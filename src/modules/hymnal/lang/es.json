@@ -12,5 +12,13 @@
   "data": {
     "records": "Registros totales",
     "not_found": "No se encontraron registros con los filtros seleccionados. Intente cambiar los filtros de búsqueda."
-  }
+  },
+  "select_music_first": "Seleccione un himno primero.",
+  "export_title": "Exportar Música",
+  "export_choose_version": "¿Qué versión desea exportar?",
+  "sing": "Cantada",
+  "playback": "Playback",
+  "export_error": "Error al exportar el archivo de audio.",
+  "export_not_found": "Datos de la música no encontrados.",
+  "export_no_file": "Archivo de audio no disponible para esta versión."
 }
