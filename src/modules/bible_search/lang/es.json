@@ -17,7 +17,8 @@
       "book_filter": "Filtrar libros...",
       "select_all": "Todos",
       "clear_all": "Ninguno",
-      "books_selected": "{n} libro(s) seleccionado(s)",
+      "book_selected": "{n} libro seleccionado",
+      "books_selected": "{n} libros seleccionados",
       "total_books": "Total: {n}"
     }
   },

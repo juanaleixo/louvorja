@@ -906,20 +906,9 @@ export const RIBBON_PAGES = [
       {
         id: "ctx_bs_filters",
         title: "ribbon.groups.filters",
-        buttons: [
-          {
-            id: "version_select",
-            type: "select",
-            label: "modules.bible_search.ribbon.filter.version",
-            optionKey: "modules.bible_search.version",
-            dynamicOptions: "version",
-          },
-          {
-            id: "book_select",
-            label: "ribbon.groups.filter.book",
-            type: "book_select",
-          },
-        ],
+        customCategory: "BookPicker",
+        modules: ["bible_search"],
+        buttons: [],
       },
       {
         id: "ctx_bs_format",

@@ -1,6 +1,7 @@
 export interface BibleVersion {
   id_bible_version: number;
-  title: string;
+  name: string;
+  abbreviation: string;
 }
 
 export interface BibleBook {

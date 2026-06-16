@@ -139,7 +139,7 @@ import RemoteBible from "./RemoteBible.vue";
 import RemoteLiturgy from "./RemoteLiturgy.vue";
 import RemoteSlides from "./RemoteSlides.vue";
 
-/** @typedef {import('@/types/Bible').ActiveBibleState} ActiveBibleState */
+/** @typedef {import('@modules/bible/types').ActiveBibleState} ActiveBibleState */
 
 const { t } = useI18n();
 const route = useRoute();

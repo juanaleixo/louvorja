@@ -102,6 +102,12 @@ const currentVerse = computed(() => {
   return results.value[selectedIndex.value] ?? null;
 });
 
+function byCanonicalOrder(a, b) {
+  if (a.id_bible_book !== b.id_bible_book) return a.id_bible_book - b.id_bible_book;
+  if (a.chapter !== b.chapter) return a.chapter - b.chapter;
+  return a.verse - b.verse;
+}
+
 function normalize(s) {
   return String(s)
     .normalize("NFD")
@@ -199,15 +205,17 @@ async function searchByReference(q) {
       },
     ];
   } else if (!verse) {
-    results.value = Object.entries(chapterData).map(([v, txt]) => ({
-      id_bible_book: book.id_bible_book,
-      id_bible_version: versionId,
-      book: book.name,
-      chapter,
-      verse: parseInt(v, 10),
-      reference: `${book.name} ${chapter}:${v}`,
-      text: txt,
-    }));
+    results.value = Object.entries(chapterData)
+      .map(([v, txt]) => ({
+        id_bible_book: book.id_bible_book,
+        id_bible_version: versionId,
+        book: book.name,
+        chapter,
+        verse: parseInt(v, 10),
+        reference: `${book.name} ${chapter}:${v}`,
+        text: txt,
+      }))
+      .sort(byCanonicalOrder);
   }
 }
 
@@ -258,7 +266,7 @@ async function searchByKeyword(q) {
     minMatchCharLength: 3,
   });
   const fuseResults = fuse.search(q);
-  results.value = fuseResults.map((r) => r.item);
+  results.value = fuseResults.map((r) => r.item).sort(byCanonicalOrder);
   console.log(
     `[BibleSearch] Search "${q}" found ${results.value.length} results in ${Date.now() - startTime}ms (corpus: ${allVerses.length} verses)`
   );

@@ -26,15 +26,9 @@
       </div>
 
       <div class="ribbon-tools">
-        <button
-          type="button"
-          class="ribbon-tool"
-          :title="$t('hotkeys.title')"
-          :aria-label="$t('hotkeys.title')"
-          @click="onOpenHotkeys"
-        >
-          <v-icon icon="mdi-help-circle-outline" size="16" aria-hidden="true" />
-        </button>
+        <div v-if="!Platform.isDesktop" class="ribbon-tools-web">
+          <ShellTools />
+        </div>
       </div>
     </div>
 
@@ -51,153 +45,95 @@
         :key="`${activePage}:${group.id}`"
         :title="$t(group.title)"
       >
-        <template v-for="btn in group.buttons" :key="`${activePage}:${group.id}:${btn.id}`">
-          <RibbonScreenButton
-            v-if="btn.type === 'screen'"
-            :feature="btn.feature"
-            :route="btn.route"
-            :icon="btn.icon"
-            :icon-color="btn.color"
-            :label="$t(btn.label)"
-            :size="btn.size || 'large'"
-            :testid="`ribbon-btn-${btn.id}`"
+        <template v-if="group.customCategory">
+          <component
+            :is="getCustomCategoryComponent(group)"
+            v-bind="getCustomComponentProps(group)"
           />
-          <div v-else-if="btn.type === 'action_input'" class="ribbon-action-input">
-            <input
-              v-model="inputValues[btn.id]"
-              type="text"
-              class="ribbon-action-input__field"
-              style="width: 300px"
-              :placeholder="$t(btn.placeholder || '')"
-              @keydown.enter.prevent="executeInputAction(btn)"
+        </template>
+        <template v-else>
+          <template v-for="btn in group.buttons" :key="`${activePage}:${group.id}:${btn.id}`">
+            <component
+              :is="getCustomButtonComponent(btn, group)"
+              v-if="btn.customButton"
+              v-bind="getCustomComponentProps(group, btn)"
             />
-            <RibbonButton
+            <RibbonScreenButton
+              v-else-if="btn.type === 'screen'"
+              :feature="btn.feature"
+              :route="btn.route"
               :icon="btn.icon"
               :icon-color="btn.color"
               :label="$t(btn.label)"
-              size="medium"
+              :size="btn.size || 'large'"
               :testid="`ribbon-btn-${btn.id}`"
-              @click="executeInputAction(btn)"
             />
-          </div>
-          <div
-            v-else-if="btn.type === 'select'"
-            v-show="isDependencyMet(btn)"
-            class="ribbon-field-wrap"
-          >
-            <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
-            <select
-              class="ribbon-field-select"
-              :value="getSelectValue(btn)"
-              @change="setSelectValue(btn, $event.target.value)"
+            <div v-else-if="btn.type === 'action_input'" class="ribbon-action-input">
+              <input
+                v-model="inputValues[btn.id]"
+                type="text"
+                class="ribbon-action-input__field"
+                style="width: 300px"
+                :placeholder="$t(btn.placeholder || '')"
+                @keydown.enter.prevent="executeInputAction(btn)"
+              />
+              <RibbonButton
+                :icon="btn.icon"
+                :icon-color="btn.color"
+                :label="$t(btn.label)"
+                size="medium"
+                :testid="`ribbon-btn-${btn.id}`"
+                @click="executeInputAction(btn)"
+              />
+            </div>
+            <div
+              v-else-if="btn.type === 'select'"
+              v-show="isDependencyMet(btn)"
+              class="ribbon-field-wrap"
             >
-              <option v-for="opt in btn.options || []" :key="opt.value" :value="opt.value">
-                {{ $t(opt.label) }}
-              </option>
-              <option
-                v-for="opt in btn.dynamicOptions ? dynamicSelectOptions[btn.dynamicOptions] : []"
-                :key="opt.value"
-                :value="opt.value"
+              <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
+              <select
+                class="ribbon-field-select"
+                :value="getSelectValue(btn)"
+                @change="setSelectValue(btn, $event.target.value)"
               >
-                {{ opt.label }}
-              </option>
-              <template v-if="btn.feature">
-                <option v-for="d in displays" :key="d.id" :value="d.id">
-                  {{ d.label || `Monitor ${d.id}` }}
+                <option v-for="opt in btn.options || []" :key="opt.value" :value="opt.value">
+                  {{ $t(opt.label) }}
                 </option>
-              </template>
-            </select>
-          </div>
-          <div
-            v-else-if="btn.type === 'book_select'"
-            v-show="isDependencyMet(btn)"
-            ref="bookPickerTrigger"
-            class="ribbon-book-select"
-          >
-            <button class="ribbon-book-trigger" @click="toggleBookPicker">
-              <span class="ribbon-book-summary">{{ bookSelectSummary }}</span>
-              <v-icon icon="mdi-chevron-down" size="14" />
-            </button>
-            <Teleport to="body">
-              <div v-if="showBookPicker" class="ribbon-book-picker" @click.stop>
-                <input
-                  v-model="bookFilter"
-                  type="text"
-                  class="ribbon-book-picker-filter"
-                  :placeholder="tBook('ribbon.filter.book_filter')"
-                />
-                <div class="ribbon-book-picker-body">
-                  <div class="ribbon-book-picker-group">
-                    <div class="ribbon-book-picker-group-title">
-                      {{ tBook("ribbon.filter.ot") }}
-                    </div>
-                    <label
-                      v-for="book in filteredOtBooks"
-                      :key="book.id_bible_book"
-                      class="ribbon-book-picker-item"
-                    >
-                      <input
-                        type="checkbox"
-                        :checked="isBookSelected(book.id_bible_book)"
-                        @change="toggleBook(book.id_bible_book)"
-                      />
-                      <span>{{ book.name }}</span>
-                    </label>
-                  </div>
-                  <div class="ribbon-book-picker-group">
-                    <div class="ribbon-book-picker-group-title">
-                      {{ tBook("ribbon.filter.nt") }}
-                    </div>
-                    <label
-                      v-for="book in filteredNtBooks"
-                      :key="book.id_bible_book"
-                      class="ribbon-book-picker-item"
-                    >
-                      <input
-                        type="checkbox"
-                        :checked="isBookSelected(book.id_bible_book)"
-                        @change="toggleBook(book.id_bible_book)"
-                      />
-                      <span>{{ book.name }}</span>
-                    </label>
-                  </div>
-                </div>
-                <div class="ribbon-book-picker-footer">
-                  <button class="ribbon-book-picker-action" @click="selectOtBooks">
-                    {{ tBook("ribbon.filter.ot") }}
-                  </button>
-                  <button class="ribbon-book-picker-action" @click="selectNtBooks">
-                    {{ tBook("ribbon.filter.nt") }}
-                  </button>
-                  <button class="ribbon-book-picker-action" @click="selectAllBooks">
-                    {{ tBook("ribbon.filter.select_all") }}
-                  </button>
-                  <button class="ribbon-book-picker-action" @click="clearAllBooks">
-                    {{ tBook("ribbon.filter.clear_all") }}
-                  </button>
-                </div>
-              </div>
-            </Teleport>
-          </div>
-          <label v-else-if="btn.type === 'checkbox'" class="ribbon-field-checkbox">
-            <input
-              type="checkbox"
-              :checked="getCheckValue(btn)"
-              @change="setCheckValue(btn, $event.target.checked)"
+                <option
+                  v-for="opt in btn.dynamicOptions ? dynamicSelectOptions[btn.dynamicOptions] : []"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+                <template v-if="btn.feature">
+                  <option v-for="d in displays" :key="d.id" :value="d.id">
+                    {{ d.label || `Monitor ${d.id}` }}
+                  </option>
+                </template>
+              </select>
+            </div>
+            <label v-else-if="btn.type === 'checkbox'" class="ribbon-field-checkbox">
+              <input
+                type="checkbox"
+                :checked="getCheckValue(btn)"
+                @change="setCheckValue(btn, $event.target.checked)"
+              />
+              <span>{{ $t(btn.label) }}</span>
+            </label>
+            <RibbonButton
+              v-else
+              :icon="btn.icon"
+              :icon-color="btn.color"
+              :label="$t(btn.label)"
+              :size="btn.size || 'large'"
+              :active="isButtonActive(btn)"
+              :hidden="!isButtonActive(btn)"
+              :testid="`ribbon-btn-${btn.id}`"
+              @click="executeButton(btn)"
             />
-            <span>{{ $t(btn.label) }}</span>
-          </label>
-          <RibbonButton
-            v-else
-            :icon="btn.icon"
-            :icon-color="btn.color"
-            :label="$t(btn.label)"
-            :size="btn.size || 'large'"
-            :active="isButtonActive(btn)"
-            :hidden="!isButtonActive(btn)"
-            :testid="`ribbon-btn-${btn.id}`"
-            @click="executeButton(btn)"
-          />
+          </template>
         </template>
       </RibbonGroup>
       <div v-if="activeGroups.length === 0" class="ribbon-empty">
@@ -208,16 +144,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, reactive, defineAsyncComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import RibbonGroup from "./RibbonGroup.vue";
 import RibbonButton from "./RibbonButton.vue";
 import RibbonScreenButton from "./RibbonScreenButton.vue";
 import AppMenuButton from "./AppMenuButton.vue";
+import ShellTools from "./ShellTools.vue";
 import { useShell } from "@/composables/useShell";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useDisplays } from "@/composables/useDisplays";
 import { RIBBON_PAGES } from "./ribbon-pages.js";
+import Platform from "@/helpers/Platform";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $modules from "@/helpers/Modules";
@@ -236,6 +174,23 @@ const { displays, setPreferred, getPreferred } = useDisplays();
 
 const dynamicSelectOptions = reactive({});
 
+const customComponents = {};
+//
+const moduleComponentGlob = import.meta.glob("/src/modules/*/components/*.vue");
+function resolveCustomComponent(moduleId, componentName) {
+  if (!moduleId || !componentName) return null;
+  const key = `/src/modules/${moduleId}/components/${componentName}.vue`;
+  const loader = moduleComponentGlob[key];
+  if (!loader) {
+    console.warn(`[RibbonBar] Component not found: ${key}`);
+    return null;
+  }
+  if (!customComponents[key]) {
+    customComponents[key] = defineAsyncComponent(loader);
+  }
+  return customComponents[key];
+}
+
 async function loadDynamicOptions() {
   const [versionData, bookData] = await Promise.all([
     $database.get("pt_bible_version", { silent: true }),
@@ -253,106 +208,26 @@ async function loadDynamicOptions() {
 }
 loadDynamicOptions();
 
-const bookFilter = ref("");
-const showBookPicker = ref(false);
-const bookPickerTrigger = ref(null);
-const allBooks = computed(() => dynamicSelectOptions.books || []);
-const filteredOtBooks = computed(() =>
-  allBooks.value.filter((b) => b.id_bible_book <= 39).filter((b) => filterBookName(b))
-);
-const filteredNtBooks = computed(() =>
-  allBooks.value.filter((b) => b.id_bible_book > 39).filter((b) => filterBookName(b))
-);
-const totalBooksCount = computed(() => allBooks.value.length);
-const bookSelectSummary = computed(() => {
-  const selected = getSelectedBooks();
-  if (!selected.length) return tBook("ribbon.filter.books");
-  if (selected.length === totalBooksCount.value) return tBook("ribbon.filter.select_all");
-  return tBook("ribbon.filter.books_selected", { n: selected.length });
-});
-function filterBookName(b) {
-  if (!bookFilter.value) return true;
-  const q = bookFilter.value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-  const name = (b.name || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-  return name.includes(q);
+function getModuleIdForGroup(group) {
+  if (group.modules?.length) return group.modules[0];
+  const page = RIBBON_PAGES.find((p) => p.id === activePage.value);
+  if (page?.activeOnModules?.length) return page.activeOnModules[0];
+  return page?.defaultModule || null;
 }
-function getSelectedBooks() {
-  return $userdata.get("modules.bible_search.books", []);
+function getCustomCategoryComponent(group) {
+  const modId = getModuleIdForGroup(group);
+  return resolveCustomComponent(modId, group.customCategory);
 }
-function isBookSelected(id) {
-  return getSelectedBooks().includes(id);
+function getCustomButtonComponent(btn, group) {
+  const modId = getModuleIdForGroup(group);
+  return resolveCustomComponent(modId, btn.customButton);
 }
-function toggleBook(id) {
-  const selected = getSelectedBooks().slice();
-  const idx = selected.indexOf(id);
-  if (idx >= 0) selected.splice(idx, 1);
-  else selected.push(id);
-  $userdata.set("modules.bible_search.books", selected);
+function getCustomComponentProps(group, btn) {
+  return {
+    module: getModuleIdForGroup(group),
+    config: btn || group,
+  };
 }
-function selectAllBooks() {
-  $userdata.set(
-    "modules.bible_search.books",
-    allBooks.value.map((b) => b.id_bible_book)
-  );
-}
-function clearAllBooks() {
-  $userdata.set("modules.bible_search.books", []);
-  bookFilter.value = "";
-}
-function selectOtBooks() {
-  $userdata.set(
-    "modules.bible_search.books",
-    allBooks.value.filter((b) => b.id_bible_book <= 39).map((b) => b.id_bible_book)
-  );
-}
-function selectNtBooks() {
-  $userdata.set(
-    "modules.bible_search.books",
-    allBooks.value.filter((b) => b.id_bible_book > 39).map((b) => b.id_bible_book)
-  );
-}
-function tBook(key, params) {
-  const modKey = `modules.bible_search.${key}`;
-  return params ? t(modKey, params) : t(modKey);
-}
-function toggleBookPicker() {
-  showBookPicker.value = !showBookPicker.value;
-  if (showBookPicker.value) {
-    bookFilter.value = "";
-    positionBookPicker();
-  }
-}
-function positionBookPicker() {
-  requestAnimationFrame(() => {
-    const trigger = bookPickerTrigger.value?.[0];
-    const picker = document.querySelector(".ribbon-book-picker");
-    if (!trigger || !picker) return;
-    const rect = trigger.getBoundingClientRect();
-    picker.style.top = rect.bottom + 4 + "px";
-    picker.style.left = Math.min(rect.left, window.innerWidth - 430) + "px";
-  });
-}
-watch(showBookPicker, (val) => {
-  if (val) positionBookPicker();
-});
-function onDocumentClick(e) {
-  if (showBookPicker.value) {
-    const triggerEl = bookPickerTrigger.value?.[0];
-    const picker = document.querySelector(".ribbon-book-picker");
-    if (triggerEl && !triggerEl.contains(e.target) && picker && !picker.contains(e.target)) {
-      showBookPicker.value = false;
-    }
-  }
-}
-const _onDocClick = onDocumentClick;
-onMounted(() => document.addEventListener("click", _onDocClick, true));
-onUnmounted(() => document.removeEventListener("click", _onDocClick, true));
 
 function getSelectValue(btn) {
   if (btn.optionKey) return $userdata.get(btn.optionKey, btn.defaultValue ?? "");
@@ -689,33 +564,17 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
   padding-right: var(--lj-space-2);
 }
 
-.ribbon-tool {
+.ribbon-tools-web {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--lj-fixed-btn-width);
-  height: 100%;
-  padding: 0 var(--lj-space-3);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--lj-tabs-color);
-  outline: none;
-  font-family: inherit;
-  font-size: var(--lj-text-base);
-  transition:
-    background var(--lj-transition-fast),
-    color var(--lj-transition-fast);
+  align-items: stretch;
 }
-
-.ribbon-tool:hover {
+.ribbon-tools-web .shell-tool {
+  height: 100%;
+  color: var(--lj-tabs-color);
+}
+.ribbon-tools-web .shell-tool:hover {
   background: var(--lj-tabs-hover-bg);
   color: var(--lj-tabs-color-hover);
-}
-
-.ribbon-tool--text {
-  gap: var(--lj-space-2);
-  padding: 0 var(--lj-space-4);
 }
 
 /* ============ Body ============ */
@@ -819,131 +678,5 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
 
 .ribbon-field-checkbox input {
   margin: 0;
-}
-
-.ribbon-book-select {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 4px 6px;
-  min-width: 200px;
-}
-.ribbon-book-trigger {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 8px;
-  border: 1px solid rgba(var(--v-border-color), 0.4);
-  border-radius: 3px;
-  background: var(--lj-surface-bg);
-  color: var(--lj-text);
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-  white-space: nowrap;
-}
-.ribbon-book-trigger:hover {
-  border-color: var(--lj-navy);
-}
-.ribbon-book-summary {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ribbon-book-picker {
-  position: fixed;
-  z-index: 10000;
-  background: var(--lj-surface-bg);
-  border: 1px solid rgba(var(--v-border-color), 0.3);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  width: 420px;
-  max-height: 380px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.ribbon-book-picker-filter {
-  height: 32px;
-  padding: 0 10px;
-  border: none;
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.3);
-  background: transparent;
-  color: var(--lj-text);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-}
-.ribbon-book-picker-body {
-  flex: 1;
-  display: flex;
-  gap: 0;
-  overflow-y: auto;
-  min-height: 0;
-}
-.ribbon-book-picker-group {
-  flex: 1;
-  padding: 8px;
-  min-width: 0;
-}
-.ribbon-book-picker-group + .ribbon-book-picker-group {
-  border-left: 1px solid rgba(var(--v-border-color), 0.2);
-}
-.ribbon-book-picker-group-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--lj-navy);
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.25);
-}
-.ribbon-book-picker-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 3px 0;
-  cursor: pointer;
-  color: var(--lj-text);
-}
-.ribbon-book-picker-item:hover {
-  background: rgba(var(--v-border-color), 0.06);
-}
-.ribbon-book-picker-item input {
-  margin: 0;
-  flex-shrink: 0;
-}
-.ribbon-book-picker-footer {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-top: 1px solid rgba(var(--v-border-color), 0.2);
-}
-.ribbon-book-picker-count {
-  flex: 1;
-  font-size: 11px;
-  color: rgba(var(--lj-on-surface-ch), 0.5);
-}
-.ribbon-book-picker-action {
-  height: 24px;
-  padding: 0 10px;
-  border: 1px solid rgba(var(--v-border-color), 0.35);
-  border-radius: 3px;
-  background: var(--lj-surface-bg);
-  color: var(--lj-text);
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-}
-.ribbon-book-picker-action:hover {
-  border-color: var(--lj-navy);
 }
 </style>

@@ -95,7 +95,7 @@ import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
 import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
 
-/** @typedef {import('@/types/Bible').ActiveBibleState} ActiveBibleState */
+/** @typedef {import('@modules/bible/types').ActiveBibleState} ActiveBibleState */
 
 const props = defineProps({
   token: String,

@@ -1,6 +1,6 @@
 <template>
   <div class="ribbon-group">
-    <div class="ribbon-group-content">
+    <div ref="contentRef" class="ribbon-group-content">
       <slot />
     </div>
     <div class="ribbon-group-label">{{ title }}</div>
@@ -8,8 +8,21 @@
 </template>
 
 <script setup>
+import { onMounted, ref } from "vue";
+
 defineProps({
   title: { type: String, required: true },
+});
+
+const contentRef = ref(null);
+
+onMounted(() => {
+  const el = contentRef.value;
+  if (!el) return;
+  // Verifica a largura em tempo de execução para não cortar o conteúdo
+  if (el.scrollWidth > el.clientWidth) {
+    el.style.minWidth = el.scrollWidth + "px";
+  }
 });
 </script>
 
@@ -32,7 +45,7 @@ defineProps({
   display: flex;
   flex-flow: column wrap;
   align-items: flex-start;
-  flex: 1;
+  flex: 0 0 auto;
   gap: var(--lj-space-1);
   padding: var(--lj-space-1) 0 0;
   min-height: 0;
@@ -46,6 +59,7 @@ defineProps({
 }
 
 .ribbon-group-label {
+  margin-top: auto;
   height: var(--lj-group-label-height);
   text-align: center;
   font-size: var(--lj-text-xs);
