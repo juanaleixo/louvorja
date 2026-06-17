@@ -442,7 +442,7 @@ function executeButton(btn) {
   // message_board) sem precisar de tabela explícita.
   if (btn.action) {
     const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|hymnal|bible_search)_(.+)$/
+      /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search)_(.+)$/
     );
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
