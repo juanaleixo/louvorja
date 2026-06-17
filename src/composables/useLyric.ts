@@ -1,66 +1,16 @@
 import { ref, computed, type Ref, type ComputedRef } from "vue";
 import $database from "@/helpers/Database";
 import $dev from "@/helpers/Dev";
-
-export interface LyricLine {
-  id?: number;
-  order: number;
-  lyric?: string;
-  time?: string;
-  instrumental_time?: string;
-  url_image?: string;
-  image_position?: string | number;
-  show_slide?: number;
-  [key: string]: unknown;
-}
-
-interface AlbumItem {
-  id_album: number | string;
-  name?: string;
-  track?: number;
-  url_image?: string;
-  order?: number;
-}
-
-export interface MusicData {
-  name?: string;
-  lyric?: Record<string, LyricLine>;
-  albums?: AlbumItem[];
-  url_image?: string;
-  image_position?: string | number;
-  url_music?: string;
-  url_instrumental_music?: string;
-  has_instrumental_music?: boolean;
-  [key: string]: unknown;
-}
-
-interface LyricConfig {
-  title: string;
-  subtitle: string;
-  track: number;
-  image: string;
-}
-
-export interface LyricOpenParams {
-  id_music: string | number;
-  id_album?: string | number | null;
-}
-
-interface LyricInstance {
-  data: Ref<MusicData | null>;
-  loading: Ref<boolean>;
-  id_music: Ref<string | number | null>;
-  id_album: Ref<string | number | null>;
-  config: ComputedRef<LyricConfig>;
-  lyric: ComputedRef<LyricLine[]>;
-  open: (params: LyricOpenParams) => Promise<boolean>;
-  close: () => void;
-}
+import {
+  Music,
+} from "@/types/Music";
+import { LyricConfig, LyricInstance, Lyric, LyricOpenParams } from "@/types/Lyric";
+import { Album } from "@/types/Album";
 
 let _shared: LyricInstance | null = null;
 
 function _create(): LyricInstance {
-  const data     = ref<MusicData | null>(null);
+  const data     = ref<Music | null>(null);
   const loading  = ref(false);
   const id_music = ref<string | number | null>(null);
   const id_album = ref<string | number | null>(null);
@@ -70,7 +20,7 @@ function _create(): LyricInstance {
     if (!d) return { title: "", subtitle: "", track: 0, image: "" };
 
     const albums = d.albums ?? [];
-    let album: AlbumItem | null = null;
+    let album: Album | null = null;
     if (id_album.value) {
       album = albums.find((a) => a.id_album == id_album.value) ?? null;
     } else if (albums.length === 1) {
@@ -87,7 +37,7 @@ function _create(): LyricInstance {
     };
   });
 
-  const lyric = computed<LyricLine[]>(() => {
+  const lyric = computed<Lyric[]>(() => {
     if (!data.value?.lyric) return [];
     return Object.values(data.value.lyric).slice().sort((a, b) => a.order - b.order);
   });
@@ -99,7 +49,7 @@ function _create(): LyricInstance {
     id_music.value = params.id_music ?? null;
     id_album.value = params.id_album ?? null;
 
-    const result = await $database.get<MusicData>(`music_${params.id_music}`);
+    const result = await $database.get<Music>(`music_${params.id_music}`);
     if (!result) {
       loading.value = false;
       return false;

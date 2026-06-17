@@ -17,7 +17,7 @@
     <div v-else class="liturgy-scroll">
       <draggable
         :model-value="items"
-        :item-key="(item: LiturgyItemData) => item.id"
+        :item-key="(item: LiturgyItem) => item.id"
         :disabled="locked"
         handle="button[data-handle='true']"
         tag="div"
@@ -55,8 +55,7 @@ import { useI18n } from "vue-i18n";
 import draggable from "vuedraggable";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import LiturgyItem from "./LiturgyItem.vue";
-import type { LiturgyItemData } from "../types";
+import { LiturgyItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -73,22 +72,22 @@ function _t(key: string, locale: string): string {
 
 withDefaults(
   defineProps<{
-    items: LiturgyItemData[];
+    items: LiturgyItem[];
     locked?: boolean;
     defaultColor?: string;
     totalDuration?: number;
-    isChecked: (item: LiturgyItemData) => boolean;
-    iconForItem: (item: LiturgyItemData) => string;
-    subtitleFor: (item: LiturgyItemData) => string;
-    onReorder: (items: LiturgyItemData[]) => void;
+    isChecked: (item: LiturgyItem) => boolean;
+    iconForItem: (item: LiturgyItem) => string;
+    subtitleFor: (item: LiturgyItem) => string;
+    onReorder: (items: LiturgyItem[]) => void;
     openItemDialog: (index?: number) => void;
     cloneItem: (index: number) => void;
     confirmRemove: (index?: number) => void;
-    executeItem: (item: LiturgyItemData) => void;
-    playMusic: (item: LiturgyItemData, mode: string) => void;
+    executeItem: (item: LiturgyItem) => void;
+    playMusic: (item: LiturgyItem, mode: string) => void;
     openLyric: (musica: number) => void;
     changeColor: (index: number) => void;
-    toggleChecked: (element: LiturgyItemData) => void;
+    toggleChecked: (element: LiturgyItem) => void;
   }>(),
   {
     locked: false,

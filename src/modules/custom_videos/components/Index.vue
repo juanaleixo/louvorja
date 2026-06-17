@@ -102,80 +102,101 @@
   </ModuleContainer>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
 import { openDB } from "idb";
+import type { IDBPDatabase } from "idb";
 import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { openVideoProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import $alert from "@/helpers/Alert";
+import { RibbonAction } from "@/types/Ribbon";
 
-const moduleContainer = ref(null);
-const t = (key) => moduleContainer.value?.t(key) || key;
+interface VideoItem {
+  id: string;
+  name: string;
+  url: string;
+  createdAt: string;
+}
+
+interface ThumbnailCache {
+  video_id: string;
+  blob: ArrayBuffer;
+  mime: string;
+}
+
+interface FileProjectionPayload {
+  url: string;
+  type: string;
+  title: string;
+}
 
 const DB_NAME = "louvorja_custom_videos";
 const DB_VERSION = 1;
 
-const videos = ref([]);
-const viewMode = ref("list");
-const projectingId = ref("");
-const thumbUrls = reactive({});
-const dialogOpen = ref(false);
-const editingId = ref(null);
-const formName = ref("");
-const formUrl = ref("");
+let db: IDBPDatabase | null = null;
 
-let db = null;
-let objectUrlIndex = {};
+const moduleContainer = ref<{ t(key: string): string } | null>(null);
+const t = (key: string): string => moduleContainer.value?.t(key) || key;
 
-async function getDb() {
+const videos = ref<VideoItem[]>([]);
+const viewMode = ref<string>("list");
+const projectingId = ref<string>("");
+const thumbUrls = reactive<Record<string, string>>({});
+const dialogOpen = ref<boolean>(false);
+const editingId = ref<string | null>(null);
+const formName = ref<string>("");
+const formUrl = ref<string>("");
+let objectUrlIndex: Record<string, string> = {};
+
+async function getDb(): Promise<IDBPDatabase> {
   if (db) return db;
   db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains("videos")) {
-        db.createObjectStore("videos", { keyPath: "id" });
+    upgrade(database) {
+      if (!database.objectStoreNames.contains("videos")) {
+        database.createObjectStore("videos", { keyPath: "id" });
       }
-      if (!db.objectStoreNames.contains("thumbnails")) {
-        db.createObjectStore("thumbnails", { keyPath: "video_id" });
+      if (!database.objectStoreNames.contains("thumbnails")) {
+        database.createObjectStore("thumbnails", { keyPath: "video_id" });
       }
     },
   });
   return db;
 }
 
-function newId() {
+function newId(): string {
   return `cv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function extractYoutubeId(url) {
+function extractYoutubeId(url: string): string | null {
   const m = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
   );
   return m ? m[1] : null;
 }
 
-function buildEmbedUrl(url) {
+function buildEmbedUrl(url: string): string | null {
   const id = extractYoutubeId(url);
   if (!id) return null;
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`;
 }
 
-async function loadVideos() {
+async function loadVideos(): Promise<void> {
   const d = await getDb();
-  const all = await d.getAll("videos");
+  const all: VideoItem[] = await d.getAll("videos");
   all.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   videos.value = all;
   await loadThumbnails(all);
 }
 
-async function saveVideoInternal(v) {
+async function saveVideoInternal(v: VideoItem): Promise<void> {
   const d = await getDb();
   await d.put("videos", v);
 }
 
-async function deleteVideoInternal(id) {
+async function deleteVideoInternal(id: string): Promise<void> {
   const d = await getDb();
   await d.delete("videos", id);
   await d.delete("thumbnails", id);
@@ -185,16 +206,14 @@ async function deleteVideoInternal(id) {
   }
 }
 
-// --- Thumbnail caching ---
-
-async function loadThumbnails(list) {
+async function loadThumbnails(list: VideoItem[]): Promise<void> {
   const d = await getDb();
   for (const v of list) {
     const id = v.id;
     const ytId = extractYoutubeId(v.url);
     if (!ytId) continue;
 
-    const cached = await d.get("thumbnails", id);
+    const cached: ThumbnailCache | undefined = await d.get("thumbnails", id);
     if (cached?.blob) {
       const blob = new Blob([cached.blob], { type: cached.mime || "image/jpeg" });
       thumbUrls[id] = URL.createObjectURL(blob);
@@ -206,7 +225,7 @@ async function loadThumbnails(list) {
   }
 }
 
-async function fetchAndCacheThumbnail(v, ytId) {
+async function fetchAndCacheThumbnail(v: VideoItem, ytId: string): Promise<void> {
   const urls = [
     `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`,
     `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
@@ -233,23 +252,21 @@ async function fetchAndCacheThumbnail(v, ytId) {
   }
 }
 
-// --- Add / Edit ---
-
-function openAdd() {
+function openAdd(): void {
   editingId.value = null;
   formName.value = "";
   formUrl.value = "";
   dialogOpen.value = true;
 }
 
-function openEdit(v) {
+function openEdit(v: VideoItem): void {
   editingId.value = v.id;
   formName.value = v.name;
   formUrl.value = v.url;
   dialogOpen.value = true;
 }
 
-async function saveVideo() {
+async function saveVideo(): Promise<void> {
   const name = formName.value.trim();
   const url = formUrl.value.trim();
   if (!name) {
@@ -275,7 +292,7 @@ async function saveVideo() {
       if (ytId) fetchAndCacheThumbnail(v, ytId);
     }
   } else {
-    const v = {
+    const v: VideoItem = {
       id: newId(),
       name,
       url,
@@ -289,15 +306,13 @@ async function saveVideo() {
   dialogOpen.value = false;
 }
 
-async function confirmDelete(v) {
+async function confirmDelete(v: VideoItem): Promise<void> {
   if (!confirm(t("confirm_delete"))) return;
   await deleteVideoInternal(v.id);
   videos.value = videos.value.filter((x) => x.id !== v.id);
 }
 
-// --- Projection ---
-
-async function projectVideo(v) {
+async function projectVideo(v: VideoItem): Promise<void> {
   const embedUrl = buildEmbedUrl(v.url);
   if (!embedUrl) {
     $alert.error({ text: "modules.custom_videos.invalid_url" });
@@ -305,7 +320,7 @@ async function projectVideo(v) {
   }
   projectingId.value = v.id;
 
-  const payload = { url: embedUrl, type: "youtube", title: v.name };
+  const payload: FileProjectionPayload = { url: embedUrl, type: "youtube", title: v.name };
   try {
     localStorage.setItem("lj_file_projection", JSON.stringify(payload));
   } catch {
@@ -316,7 +331,7 @@ async function projectVideo(v) {
   $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
 }
 
-async function stopProjection() {
+async function stopProjection(): Promise<void> {
   projectingId.value = "";
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
   try {
@@ -327,14 +342,14 @@ async function stopProjection() {
   await closeProjectionWindows();
 }
 
-async function projectUrl(rawUrl) {
+async function projectUrl(rawUrl: string): Promise<void> {
   const embedUrl = buildEmbedUrl(rawUrl);
   if (!embedUrl) {
     $alert.error({ text: "modules.custom_videos.invalid_url" });
     return;
   }
   projectingId.value = "__url__";
-  const payload = { url: embedUrl, type: "youtube", title: rawUrl };
+  const payload: FileProjectionPayload = { url: embedUrl, type: "youtube", title: rawUrl };
   try {
     localStorage.setItem("lj_file_projection", JSON.stringify(payload));
   } catch {
@@ -344,10 +359,8 @@ async function projectUrl(rawUrl) {
   $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
 }
 
-// --- Ribbon actions ---
-
-useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
-  const data = payload;
+useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
+  const data = payload as RibbonAction | null;
   if (data?.module !== "custom_videos") return;
   if (data.action === "add") {
     openAdd();
@@ -361,9 +374,7 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
   }
 });
 
-// --- Lifecycle ---
-
-function close() {
+function close(): void {
   if (projectingId.value) stopProjection();
 }
 

@@ -27,16 +27,18 @@
               onTypeChange();
             "
           >
-            <option :value="ANOTACAO">{{ t("types.anotacao") }}</option>
-            <option :value="ARQUIVO">{{ t("types.arquivo") }}</option>
-            <option :value="CATEGORIA">{{ t("types.categoria") }}</option>
-            <option :value="ITENS_AGENDADOS">{{ t("types.itens-agendados") }}</option>
-            <option :value="MUSICA">{{ t("types.musica") }}</option>
-            <option :value="SITE">{{ t("types.site") }}</option>
+            <option :value="LiturgyItemType.ANOTACAO">{{ t("types.anotacao") }}</option>
+            <option :value="LiturgyItemType.ARQUIVO">{{ t("types.arquivo") }}</option>
+            <option :value="LiturgyItemType.CATEGORIA">{{ t("types.categoria") }}</option>
+            <option :value="LiturgyItemType.ITENS_AGENDADOS">
+              {{ t("types.itens-agendados") }}
+            </option>
+            <option :value="LiturgyItemType.MUSICA">{{ t("types.musica") }}</option>
+            <option :value="LiturgyItemType.SITE">{{ t("types.site") }}</option>
           </select>
         </div>
 
-        <div v-if="form.tipo !== ITENS_AGENDADOS" class="lit-field lit-field--grow">
+        <div v-if="form.tipo !== LiturgyItemType.ITENS_AGENDADOS" class="lit-field lit-field--grow">
           <label>{{ t("inputs.item_name") }}:</label>
           <input
             :value="form.item"
@@ -92,7 +94,7 @@
       </div>
 
       <!-- Painel ANOTAÇÃO -->
-      <div v-if="form.tipo === ANOTACAO" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemType.ANOTACAO" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.anotacao") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.annotation") }}</label>
@@ -107,7 +109,7 @@
       </div>
 
       <!-- Painel SITE -->
-      <div v-if="form.tipo === SITE" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemType.SITE" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.site") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.url") }}</label>
@@ -128,7 +130,7 @@
       </div>
 
       <!-- Painel ARQUIVO -->
-      <div v-if="form.tipo === ARQUIVO" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemType.ARQUIVO" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.arquivo") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.file_path") }}</label>
@@ -152,7 +154,7 @@
       </div>
 
       <!-- Painel MÚSICA -->
-      <div v-if="form.tipo === MUSICA" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemType.MUSICA" class="lit-panel">
         <label class="lit-check">
           <input
             type="checkbox"
@@ -262,17 +264,8 @@ import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import Liturgy from "@/helpers/Liturgy";
 import LiturgyMusicSearch from "./LiturgyMusicSearch.vue";
-import {
-  ANOTACAO,
-  ARQUIVO,
-  CATEGORIA,
-  ITENS_AGENDADOS,
-  LiturgyItemData,
-  LiturgyMusicItem,
-  MUSICA,
-  ScheduledCategory,
-  SITE,
-} from "../types";
+import { LiturgyItemType } from "@/enums/Liturgy";
+import { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -291,7 +284,7 @@ const props = withDefaults(
   defineProps<{
     modelValue?: boolean;
     editIndex?: number;
-    form: LiturgyItemData;
+    form: LiturgyItem;
     colors?: string[];
     musicsList?: LiturgyMusicItem[];
     scheduledCategories?: ScheduledCategory[];

@@ -25,21 +25,25 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { Slide } from "@/types/Slide";
 
-const props = defineProps({
-  token: String,
-  slides: Array,
-  currentSlideIndex: Number,
-  currentTitle: String,
-});
+const props = defineProps<{
+  token?: string;
+  slides: Slide[];
+  currentSlideIndex: number;
+  currentTitle: string;
+}>();
 
-const emit = defineEmits(["show-snackbar", "update:current-slide-index"]);
+const emit = defineEmits<{
+  (e: "show-snackbar", message: string, type?: string): void;
+  (e: "update:current-slide-index", index: number): void;
+}>();
 
 const { t } = useI18n();
 
-function goToSlide(index) {
+function goToSlide(index: number): void {
   emit("update:current-slide-index", index);
   fetch(`/api/song-slides?action=go-to-slide&index=${index}&token=${props.token}`).catch(() =>
     emit("show-snackbar", "Erro ao trocar slide", "error")

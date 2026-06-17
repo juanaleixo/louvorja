@@ -89,36 +89,57 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
 import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
+import type {
+  ActiveBibleState,
+  Bible,
+  BibleBook,
+  BibleSearchResult,
+  BibleVerse,
+  BibleVersion,
+} from "@/types/Bible";
 
-/** @typedef {import('@modules/bible/types').ActiveBibleState} ActiveBibleState */
+interface FullBibleCache {
+  chapters: Record<string, Record<string, string>>;
+}
 
-const props = defineProps({
-  token: String,
-  /** @type {ActiveBibleState} */
-  activeBible: {
-    type: Object,
-    required: true,
-  },
-});
+interface LoadBibleChapterPayload {
+  bookId: string | number;
+  chapter: number;
+  verses?: number[];
+}
 
-const emit = defineEmits(["show-snackbar", "update:active-bible"]);
+const props = defineProps<{
+  token?: string;
+  activeBible: ActiveBibleState;
+}>();
+
+const emit = defineEmits<{
+  (e: "show-snackbar", message: string, type?: string): void;
+  (e: "update:active-bible", value: ActiveBibleState): void;
+}>();
 
 const { t, locale } = useI18n();
 
 const bibleSearchOpen = ref(false);
-const bibleData = ref({ versions: [], books: [], chapters: [], verses: [] });
-const bibleSelection = ref({ version: null, book: null, chapter: null, verse: null });
-const fullBible = ref(null);
+const bibleData = ref<Bible>({ versions: [], books: [], chapters: [], verses: [] });
+const bibleSelection = ref<BibleVerse>({
+  version: null,
+  book: null,
+  chapter: null,
+  verse: null,
+});
+const fullBible = ref<FullBibleCache | null>(null);
 
-async function loadBible() {
+async function loadBible(): Promise<void> {
   const lang = locale.value || "pt";
-  const params = await Database.get(`${lang}_params`);
-  if (params && params.bible_versions) {
+
+  const params = await Database.get<{ bible_versions: BibleVersion[] }>(`${lang}_params`);
+  if (params?.bible_versions) {
     bibleData.value.versions = params.bible_versions;
     const preferred = await getPreferredBibleVersion();
     if (preferred && bibleData.value.versions.find((v) => v.id_bible_version == preferred)) {
@@ -127,23 +148,20 @@ async function loadBible() {
       bibleSelection.value.version = bibleData.value.versions[0].id_bible_version;
     }
   } else {
-    const versions = await Database.get(`${lang}_bible_version`);
+    const versions = await Database.get<BibleVersion[]>(`${lang}_bible_version`);
     if (versions) {
-      bibleData.value.versions = versions.map((v) => ({
-        id_bible_version: v.id_bible_version,
-        title: v.name || v.title || v.abbreviation,
-      }));
+      bibleData.value.versions = versions;
       if (bibleData.value.versions.length > 0) {
         bibleSelection.value.version = bibleData.value.versions[0].id_bible_version;
       }
     }
   }
 
-  const books = await Database.get(`${lang}_bible_book`);
+  const books = await Database.get<BibleBook[]>(`${lang}_bible_book`);
   bibleData.value.books = books || [];
 }
 
-async function getPreferredBibleVersion() {
+async function getPreferredBibleVersion(): Promise<number | null> {
   try {
     const res = await fetch(`/api/user-data?path=id_bible_version&token=${props.token}`);
     if (res.ok) {
@@ -156,7 +174,7 @@ async function getPreferredBibleVersion() {
   return null;
 }
 
-async function onVersionSelect() {
+async function onVersionSelect(): Promise<void> {
   bibleSelection.value.book = null;
   bibleSelection.value.chapter = null;
   bibleSelection.value.verse = null;
@@ -164,27 +182,26 @@ async function onVersionSelect() {
   bibleData.value.verses = [];
 }
 
-async function onBookSelect(id) {
+async function onBookSelect(id: number | string | null): Promise<void> {
   if (!id) {
     bibleData.value.chapters = [];
     bibleData.value.verses = [];
     return;
   }
 
-  // Se recebemos um ID, garantimos que seja número
   const bookId = Number(id);
 
   bibleSelection.value.chapter = null;
   bibleSelection.value.verse = null;
 
   const book = bibleData.value.books.find((b) => b.id_bible_book === bookId);
-  if (book && book.chapters) {
+  if (book?.chapters) {
     bibleData.value.chapters = Array.from({ length: book.chapters }, (_, i) => i + 1);
   } else {
     const versionId = bibleSelection.value.version || (await getPreferredBibleVersion());
     const dbKey = versionId ? `bible_${versionId}_${bookId}` : `pt_bible_${bookId}`;
-    const full = await Database.get(dbKey);
-    if (full && full.chapters) {
+    const full = await Database.get<{ chapters?: Record<string, unknown> }>(dbKey);
+    if (full?.chapters) {
       const chapterKeys = Object.keys(full.chapters)
         .map(Number)
         .filter((n) => !isNaN(n));
@@ -195,7 +212,7 @@ async function onBookSelect(id) {
   bibleData.value.verses = [];
 }
 
-function onChapterSelect(num) {
+function onChapterSelect(num: number | null): void {
   if (!num) {
     bibleData.value.verses = [];
     return;
@@ -204,13 +221,13 @@ function onChapterSelect(num) {
   loadChapterVerses(num);
 }
 
-async function loadChapterVerses(num) {
+async function loadChapterVerses(num: number): Promise<void> {
   const bookId = Number(bibleSelection.value.book);
   const versionId = bibleSelection.value.version || (await getPreferredBibleVersion());
   if (!bookId || !versionId) return;
 
   const dbKey = `bible_${versionId}_${bookId}_${num}`;
-  const chapterData = await Database.get(dbKey);
+  const chapterData = await Database.get<Record<string, string>>(dbKey);
 
   if (chapterData) {
     const verseKeys = Object.keys(chapterData)
@@ -220,8 +237,7 @@ async function loadChapterVerses(num) {
     bibleData.value.verses = Array.from({ length: versesCount }, (_, i) => i + 1);
     fullBible.value = { chapters: { [num]: chapterData } };
 
-    // Sincroniza com o pai para mostrar a grade
-    const arr = [];
+    const arr: string[] = [];
     for (let i = 1; i <= versesCount; i++) {
       arr.push(chapterData[i] || chapterData[String(i)] || "");
     }
@@ -229,8 +245,7 @@ async function loadChapterVerses(num) {
     const book = bibleData.value.books.find((b) => b.id_bible_book === bookId);
     const reference = book ? `${book.name} ${num}` : `Capítulo ${num}`;
 
-    /** @type {ActiveBibleState} */
-    const newActive = {
+    emit("update:active-bible", {
       ...props.activeBible,
       active: true,
       reference,
@@ -238,34 +253,32 @@ async function loadChapterVerses(num) {
       bookId,
       chapter: num,
       versionId,
-    };
-    emit("update:active-bible", newActive);
+    } as ActiveBibleState);
   }
 }
 
-function onVerseSelect(num) {
+function onVerseSelect(num: number | null): void {
   if (!num) return;
   projectVerse();
 }
 
-function projectVerse() {
+function projectVerse(): void {
   if (!bibleSelection.value.book || !bibleSelection.value.chapter || !bibleSelection.value.verse)
     return;
 
   const book = bibleData.value.books.find((b) => b.id_bible_book === bibleSelection.value.book);
   if (!book || !fullBible.value) return;
 
-  const chapterData =
-    fullBible.value?.chapters?.[bibleSelection.value.chapter] ||
-    fullBible.value?.chapters?.[String(bibleSelection.value.chapter)];
+  const chapterData: Record<string, string> | undefined =
+    fullBible.value.chapters[bibleSelection.value.chapter] ||
+    fullBible.value.chapters[String(bibleSelection.value.chapter)];
   if (!chapterData) return;
 
-  const text =
+  const text: string =
     chapterData[bibleSelection.value.verse] || chapterData[String(bibleSelection.value.verse)];
   const reference = `${book.name} ${bibleSelection.value.chapter}:${bibleSelection.value.verse}`;
 
-  // Sincroniza com o pai para mostrar a grade
-  const arr = [];
+  const arr: string[] = [];
   if (chapterData) {
     const verseKeys = Object.keys(chapterData)
       .map(Number)
@@ -276,8 +289,7 @@ function projectVerse() {
     }
   }
 
-  /** @type {ActiveBibleState} */
-  const newActive = {
+  const newActive: ActiveBibleState = {
     ...props.activeBible,
     active: true,
     reference,
@@ -297,7 +309,7 @@ function projectVerse() {
       bibleSelection.value.verse
     }&token=${props.token}`
   )
-    .then((res) => {
+    .then((res: Response) => {
       if (!res.ok) emit("show-snackbar", "Erro ao projetar bíblia", "error");
     })
     .catch(() => emit("show-snackbar", "Erro de conexão", "error"));
@@ -305,38 +317,37 @@ function projectVerse() {
   emit("show-snackbar", reference);
 }
 
-async function onBibleSearchSelect(res) {
+async function onBibleSearchSelect(res: BibleSearchResult): Promise<void> {
+  const bookId = res.bookId ?? res.id_bible_book;
+
   try {
     const resProject = await fetch(
       `/api/bible?text=${encodeURIComponent(res.text)}&reference=${encodeURIComponent(
         res.reference
-      )}&bookId=${res.bookId}&chapter=${res.chapter}&verse=${res.verse}&token=${props.token}`
+      )}&bookId=${bookId}&chapter=${res.chapter}&verse=${res.verse}&token=${props.token}`
     );
     if (resProject.ok) {
       emit("show-snackbar", t("components.music_menu.execute") + ": " + res.reference);
 
-      // Atualiza localmente para carregar a grade imediatamente
-      if (res.bookId && res.chapter) {
-        bibleSelection.value.book = res.bookId;
+      if (bookId && res.chapter) {
+        bibleSelection.value.book = bookId;
         bibleSelection.value.chapter = res.chapter;
         bibleSelection.value.verse = res.verse || 1;
-        await onBookSelect(res.bookId);
+        await onBookSelect(bookId);
         bibleSelection.value.chapter = res.chapter;
         await loadChapterVerses(res.chapter);
 
-        /** @type {ActiveBibleState} */
-        const newActive = {
+        emit("update:active-bible", {
           ...props.activeBible,
           active: true,
           reference: res.reference,
-          bookId: res.bookId,
+          bookId,
           chapter: res.chapter,
           verse: res.verse || 1,
-        };
-        emit("update:active-bible", newActive);
+        } as ActiveBibleState);
       }
     } else {
-      const err = await resProject.json();
+      const err = (await resProject.json()) as { message?: string; error?: string };
       emit(
         "show-snackbar",
         "Erro: " + (err.message || err.error || resProject.statusText),
@@ -349,7 +360,7 @@ async function onBibleSearchSelect(res) {
   }
 }
 
-function goToVerse(num) {
+function goToVerse(num: number): void {
   if (!props.activeBible.bookId || !props.activeBible.chapter) return;
 
   const book = bibleData.value.books.find((b) => b.id_bible_book === props.activeBible.bookId);
@@ -364,17 +375,14 @@ function goToVerse(num) {
     }&chapter=${props.activeBible.chapter}&verse=${num}&token=${props.token}`
   ).catch(() => emit("show-snackbar", "Erro ao projetar bíblia", "error"));
 
-  /** @type {ActiveBibleState} */
-  const newActiveBible = {
+  emit("update:active-bible", {
     ...props.activeBible,
     active: true,
-    reference: reference,
+    reference,
     verse: num,
     bookId: props.activeBible.bookId,
     chapter: props.activeBible.chapter,
-  };
-
-  emit("update:active-bible", newActiveBible);
+  } as ActiveBibleState);
 }
 
 onMounted(() => {
@@ -382,20 +390,19 @@ onMounted(() => {
 });
 
 defineExpose({
-  loadBibleChapter: async (payload) => {
+  loadBibleChapter: async (payload: LoadBibleChapterPayload): Promise<void> => {
     if (payload.bookId && payload.chapter) {
       const bId = Number(payload.bookId);
       bibleSelection.value.book = bId;
       bibleSelection.value.chapter = payload.chapter;
       bibleSelection.value.verse = payload.verses?.[0] || 1;
 
-      // Carrega os metadados do livro para popular os seletores se necessário
       if (bibleData.value.books.length === 0) {
         await loadBible();
       }
 
       await onBookSelect(bId);
-      bibleSelection.value.chapter = payload.chapter; // Reseta pois onBookSelect limpa
+      bibleSelection.value.chapter = payload.chapter;
       await loadChapterVerses(payload.chapter);
     }
   },

@@ -37,24 +37,30 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { LiturgyItemType } from "@/enums/Liturgy";
+import { LiturgyItem } from "@/types/Liturgy";
 
-const props = defineProps({
-  token: String,
-});
+const props = defineProps<{
+  token?: string;
+}>();
 
-const emit = defineEmits(["show-snackbar", "update:tab", "open-choose-later"]);
+const emit = defineEmits<{
+  (e: "show-snackbar", message: string, type?: string): void;
+  (e: "update:tab", tab: string): void;
+  (e: "open-choose-later", item: LiturgyItem): void;
+}>();
 
 const { t } = useI18n();
-const liturgyItems = ref([]);
+const liturgyItems = ref<LiturgyItem[]>([]);
 
-async function fetchLiturgy() {
+async function fetchLiturgy(): Promise<void> {
   try {
     const res = await fetch(`/api/liturgy?token=${props.token}`);
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as { items?: LiturgyItem[] };
       liturgyItems.value = data.items || [];
     }
   } catch (e) {
@@ -62,7 +68,7 @@ async function fetchLiturgy() {
   }
 }
 
-async function executeLiturgyItem(item) {
+async function executeLiturgyItem(item: LiturgyItem): Promise<void> {
   if (isChooseLaterMusic(item)) {
     openChooseLater(item);
     return;
@@ -82,32 +88,32 @@ async function executeLiturgyItem(item) {
   }
 }
 
-function isChooseLaterMusic(item) {
+function isChooseLaterMusic(item: LiturgyItem): boolean {
   return item.tipo === "musica" && (item.escolha || !item.id_music);
 }
 
-function openChooseLater(item) {
+function openChooseLater(item: LiturgyItem): void {
   emit("open-choose-later", item);
 }
 
-function getLiturgyIcon(item) {
+function getLiturgyIcon(item: LiturgyItem): string {
   switch (item.tipo) {
-    case "musica":
+    case LiturgyItemType.MUSICA:
       return "mdi-music";
-    case "anotacao":
+    case LiturgyItemType.ANOTACAO:
       return "mdi-text-box-outline";
-    case "categoria":
+    case LiturgyItemType.CATEGORIA:
       return "mdi-tag-outline";
-    case "arquivo":
+    case LiturgyItemType.ARQUIVO:
       return "mdi-file-outline";
-    case "site":
+    case LiturgyItemType.SITE:
       return "mdi-web";
     default:
       return "mdi-format-list-bulleted";
   }
 }
 
-function isItemChecked(item) {
+function isItemChecked(item: LiturgyItem): boolean {
   if (!item.checked) return false;
   const d = new Date();
   const today = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;

@@ -135,9 +135,10 @@ import LiturgyNotesPanel from "./LiturgyNotesPanel.vue";
 import LiturgyItemForm from "./LiturgyItemForm.vue";
 import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
-import type { LiturgyItemData, LiturgyMusicItem } from "../types";
 import $alert from "@/helpers/Alert";
 import $liturgy from "@/helpers/Liturgy";
+import { LiturgyItem, LiturgyMusicItem } from "@/types/Liturgy";
+import { LiturgyItemType } from "@/enums/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -161,7 +162,7 @@ const module_ = computed(() => Modules.get("liturgy") as { show: boolean } | nul
 const persist = useLiturgyPersistence();
 const litItems = useLiturgyItems(persist.activeDay, persist.scheduledCategories);
 const chooseMusicSearchOpen = ref(false);
-const chooseLaterItem = ref<LiturgyItemData | null>(null);
+const chooseLaterItem = ref<LiturgyItem | null>(null);
 const chooseLaterMode = ref("sung");
 
 const {
@@ -227,10 +228,11 @@ const {
 } = litItems;
 
 const openItemDialogRoot = () => openItemDialog();
-const isChooseLaterMusic = (item: LiturgyItemData) =>
+const isChooseLaterMusic = (item: LiturgyItem) =>
   item.tipo === "musica" && (item.escolha || !item.id_music);
 
-async function openChooseLaterSearch(item: LiturgyItemData, mode = "sung") {
+async function openChooseLaterSearch(item: LiturgyItem, mode = "sung") {
+  console.log(item);
   chooseLaterItem.value = item;
   chooseLaterMode.value = mode;
   chooseMusicSearchOpen.value = true;
@@ -263,7 +265,7 @@ function onChooseLaterMusicPicked(music: LiturgyMusicItem) {
   }
 }
 
-const executeItemMaybeMark = (item: LiturgyItemData) => {
+const executeItemMaybeMark = (item: LiturgyItem) => {
   if (isChooseLaterMusic(item)) {
     openChooseLaterSearch(item);
     return;
@@ -275,7 +277,7 @@ const executeItemMaybeMark = (item: LiturgyItemData) => {
   }
 };
 
-const playMusicMaybeChoose = (item: LiturgyItemData, mode: string) => {
+const playMusicMaybeChoose = (item: LiturgyItem, mode: string) => {
   if (isChooseLaterMusic(item)) {
     openChooseLaterSearch(item, mode);
     return;
@@ -283,7 +285,7 @@ const playMusicMaybeChoose = (item: LiturgyItemData, mode: string) => {
   playMusic(item, mode);
 };
 
-const openLyricMaybeChoose = (target: LiturgyItemData | number) => {
+const openLyricMaybeChoose = (target: LiturgyItem | number) => {
   const item =
     typeof target === "object"
       ? target
@@ -297,9 +299,7 @@ const openLyricMaybeChoose = (target: LiturgyItemData | number) => {
 
 const colors = COLORS;
 const defaultColor = DEFAULT_COLOR;
-const safeItems = computed(
-  (): LiturgyItemData[] => (items.value as LiturgyItemData[] | null) ?? []
-);
+const safeItems = computed((): LiturgyItem[] => (items.value as LiturgyItem[] | null) ?? []);
 
 const dayLabels = computed(() => {
   if (locale.value === "es") {
@@ -388,7 +388,7 @@ onMounted(async () => {
       Modules.open("liturgy");
       nextTick(() => {
         openItemDialog();
-        form.value.tipo = "anotacao";
+        form.value.tipo = LiturgyItemType.ANOTACAO;
       });
     } else if (data?.type === BROADCAST_TYPE.LITURGY_RIBBON_ACTION) {
       const action = (data?.payload as { action?: string } | undefined)?.action;

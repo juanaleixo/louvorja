@@ -175,7 +175,7 @@
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import type { LiturgyItemData } from "../types";
+import { LiturgyItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -192,13 +192,13 @@ function _t(key: string, locale: string): string {
 
 withDefaults(
   defineProps<{
-    element: LiturgyItemData;
+    element: LiturgyItem;
     index: number;
     locked?: boolean;
     defaultColor?: string;
-    isChecked: (item: LiturgyItemData) => boolean;
-    iconFor: (item: LiturgyItemData) => string;
-    subtitleFor: (item: LiturgyItemData) => string;
+    isChecked: (item: LiturgyItem) => boolean;
+    iconFor: (item: LiturgyItem) => string;
+    subtitleFor: (item: LiturgyItem) => string;
   }>(),
   { locked: false, defaultColor: "#00004F" }
 );
@@ -207,11 +207,11 @@ defineEmits<{
   edit: [index: number];
   clone: [index: number];
   "confirm-remove": [index: number];
-  execute: [item: LiturgyItemData];
-  "play-music": [item: LiturgyItemData, mode: string];
+  execute: [item: LiturgyItem];
+  "play-music": [item: LiturgyItem, mode: string];
   "open-lyric": [musica: number];
   "change-color": [index: number];
-  "toggle-checked": [element: LiturgyItemData];
+  "toggle-checked": [element: LiturgyItem];
 }>();
 
 const { locale } = useI18n();

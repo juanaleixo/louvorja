@@ -75,7 +75,7 @@ import { ref, computed, reactive, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
-import type { BibleVersion, BibleBook } from "@/modules/bible/types";
+import type { BibleVersion, BibleBook } from "@/types/Bible";
 import { BOOKS_OT, BOOKS_NT } from "@/modules/bible/constants";
 
 const { t } = useI18n();

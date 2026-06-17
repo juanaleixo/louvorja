@@ -16,7 +16,7 @@
         v-for="m in musicResults"
         :key="m.id_music"
         :title="m.name"
-        :subtitle="m.album_name"
+        :subtitle="m.albums_names"
         hover
       >
         <template #append>
@@ -65,32 +65,34 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
 import Strings from "@/helpers/Strings";
+import { MusicAlbum, MusicItem } from "@/types/Music";
+import { ChooseLaterItem } from "@/types/Liturgy";
 
-const props = defineProps({
-  token: String,
-  chooseLaterMode: Boolean,
-  chooseLaterItem: Object,
-});
+const props = defineProps<{
+  token?: string;
+  chooseLaterMode?: boolean;
+  chooseLaterItem?: ChooseLaterItem | null;
+}>();
 
-const emit = defineEmits([
-  "show-snackbar",
-  "update:tab",
-  "update:choose-later-mode",
-  "update:choose-later-item",
-]);
+const emit = defineEmits<{
+  (e: "show-snackbar", message: string, type?: string): void;
+  (e: "update:tab", tab: string): void;
+  (e: "update:choose-later-mode", value: boolean): void;
+  (e: "update:choose-later-item", value: ChooseLaterItem | null): void;
+}>();
 
 const { t, locale } = useI18n();
-const musicSearch = ref("");
-const musicResults = ref([]);
-const loadingMusics = ref(false);
-let allMusics = [];
+const musicSearch = ref<string>("");
+const musicResults = ref<MusicItem[]>([]);
+const loadingMusics = ref<boolean>(false);
+let allMusics: MusicItem[] = [];
 
-async function onMusicSearch() {
+async function onMusicSearch(): Promise<void> {
   if (!musicSearch.value || musicSearch.value.length < 2) {
     musicResults.value = [];
     return;
@@ -98,21 +100,20 @@ async function onMusicSearch() {
   loadingMusics.value = true;
   if (allMusics.length === 0) {
     const lang = locale.value || "pt";
-    allMusics = (await Database.get(`${lang}_musics`)) || [];
+    allMusics = (await Database.get<MusicItem[]>(`${lang}_musics`)) || [];
   }
-
   const q = Strings.clean(musicSearch.value);
   musicResults.value = allMusics
     .filter(
-      (m) =>
+      (m: MusicItem) =>
         Strings.clean(m.name).includes(q) ||
-        (m.album_name && Strings.clean(m.album_name).includes(q))
+        (m.albums_names && Strings.clean(m.albums_names).includes(q))
     )
     .slice(0, 20);
   loadingMusics.value = false;
 }
 
-async function openMusic(music, tag = 3) {
+async function openMusic(music: MusicAlbum, tag: number = 3): Promise<void> {
   try {
     const idLiturgy = props.chooseLaterItem?.id || "";
 
@@ -128,7 +129,7 @@ async function openMusic(music, tag = 3) {
       emit("show-snackbar", t("components.music_menu.execute") + ": " + music.name);
       emit("update:tab", "slides");
     } else {
-      const err = await res.json();
+      const err = (await res.json()) as { message?: string; error?: string };
       emit("show-snackbar", "Erro: " + (err.message || err.error || res.statusText), "error");
     }
   } catch (e) {

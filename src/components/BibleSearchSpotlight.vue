@@ -47,7 +47,7 @@
   </v-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
@@ -55,37 +55,40 @@ import UserData from "@/helpers/UserData";
 import Modules from "@/helpers/Modules";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import type { BibleBook, BibleSearchResult, BibleVersePayload } from "@/types/Bible";
 
-const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-});
+const props = defineProps<{
+  modelValue: boolean;
+}>();
 
-const emit = defineEmits(["update:modelValue", "select"]);
+const emit = defineEmits<{
+  (e: "update:modelValue", value: boolean): void;
+  (e: "select", result: BibleSearchResult): void;
+}>();
 
 const { t, locale } = useI18n();
 const moduleId = "bible";
 
 const model = computed({
   get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val),
+  set: (val: boolean) => emit("update:modelValue", val),
 });
 
-const searchQuery = ref("");
-const results = ref([]);
-const loading = ref(false);
-const books = ref([]);
-let searchTimeout = null;
+const searchQuery = ref<string>("");
+const results = ref<BibleSearchResult[]>([]);
+const loading = ref<boolean>(false);
+const books = ref<BibleBook[] | null>(null);
+let _booksLang = "";
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-async function loadBooks() {
+async function loadBooks(): Promise<void> {
   const lang = locale.value === "es" ? "es" : "pt";
-  // Evitar carregar livros se já estiver carregando ou se já tiver livros e não mudou o idioma
-  const cacheKey = `bible_books_${lang}`;
-  if (books.value && books.value._lang === lang) return;
+  if (books.value && _booksLang === lang) return;
 
   try {
-    const data = await Database.get(`${lang}_bible_book`);
+    const data = await Database.get<BibleBook[]>(`${lang}_bible_book`);
     if (data) {
-      data._lang = lang;
+      _booksLang = lang;
       books.value = data;
     }
   } catch (e) {
@@ -93,14 +96,13 @@ async function loadBooks() {
   }
 }
 
-async function onSearch() {
+async function onSearch(): Promise<void> {
   if (searchTimeout) clearTimeout(searchTimeout);
   if (!searchQuery.value) {
     results.value = [];
     return;
   }
 
-  // Se a busca for curta (1-2 letras), não fazemos nada ou limpamos
   if (searchQuery.value.trim().length < 2) {
     results.value = [];
     return;
@@ -109,17 +111,17 @@ async function onSearch() {
   searchTimeout = setTimeout(async () => {
     loading.value = true;
     try {
-      const savedVersion = UserData.get(`modules.${moduleId}.id_bible_version`);
+      const savedVersion = UserData.get<number>(`modules.${moduleId}.id_bible_version`);
       await performSearch(savedVersion);
     } finally {
       loading.value = false;
     }
-  }, 500); // Aumentado para 500ms para ser mais conservador
+  }, 500);
 }
 
-async function performSearch(preferredVersionId = null) {
+async function performSearch(preferredVersionId: number | null = null): Promise<void> {
   const lang = locale.value === "es" ? "es" : "pt";
-  if (!books.value || books.value._lang !== lang) await loadBooks();
+  if (!books.value || _booksLang !== lang) await loadBooks();
   if (!books.value) {
     results.value = [];
     return;
@@ -127,8 +129,7 @@ async function performSearch(preferredVersionId = null) {
 
   const query = searchQuery.value.trim();
 
-  // Normalizar para busca (sem acentos, lowercase)
-  const normalize = (s) =>
+  const normalize = (s: string): string =>
     s
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -136,39 +137,39 @@ async function performSearch(preferredVersionId = null) {
 
   const queryNorm = normalize(query);
 
-  // 1. Tentar parser de referência (Ex: João 3:16 ou Joao 3 16 ou 1 Jo 2 3)
   const refMatch = query.match(/^(\d?\s*[a-zA-Z\s]+?)\s+(\d+)(?:[\s:]+(\d+))?$/);
   if (refMatch) {
     const bookSearch = normalize(refMatch[1].replace(/\s+/g, ""));
     const chapter = parseInt(refMatch[2], 10);
     const verse = refMatch[3] ? parseInt(refMatch[3], 10) : null;
 
-    const book = books.value.find((b) => {
+    const book = books.value.find((b: BibleBook) => {
       const bName = normalize(b.name).replace(/\s+/g, "");
-      const bAbbr = normalize(b.abbreviation).replace(/\s+/g, "");
+      const bAbbr = normalize(b.abbreviation || "").replace(/\s+/g, "");
       return bName.includes(bookSearch) || bAbbr === bookSearch;
     });
 
     if (book) {
-      // Tentar carregar a versão preferida primeiro, senão a versão 1
       let versionId = preferredVersionId || 1;
       let bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-      let verses = await Database.get(bibleFile, { silent: true });
+      let verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
 
       if (!verses && versionId != 1) {
         versionId = 1;
         bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-        verses = await Database.get(bibleFile, { silent: true });
+        verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
       }
 
       if (!verses) {
-        // Se ainda não encontrou, tenta carregar o índice de versões e pega a primeira disponível
         try {
-          const versions = await Database.get(`${lang}_bible_version`, { silent: true });
+          const versions = await Database.get<{ id_bible_version: number }[]>(
+            `${lang}_bible_version`,
+            { silent: true }
+          );
           if (versions && versions.length > 0) {
             versionId = versions[0].id_bible_version;
             bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-            verses = await Database.get(bibleFile, { silent: true });
+            verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
           }
         } catch (e) {
           console.error("[BibleSearchSpotlight] Erro ao carregar versões:", e);
@@ -177,7 +178,6 @@ async function performSearch(preferredVersionId = null) {
 
       if (verses) {
         if (verse && verses[verse]) {
-          // Versículo específico
           results.value = [
             {
               id_bible_book: book.id_bible_book,
@@ -191,7 +191,6 @@ async function performSearch(preferredVersionId = null) {
           ];
           return;
         } else if (!verse) {
-          // Mostrar o primeiro versículo do capítulo se não houver versículo específico
           results.value = [
             {
               id_bible_book: book.id_bible_book,
@@ -209,32 +208,34 @@ async function performSearch(preferredVersionId = null) {
     }
   }
 
-  // 2. Busca por nome do livro apenas
   const bookOnlySearch = queryNorm.replace(/\s+/g, "");
-  const bookOnly = (books.value || []).find((b) => {
+  const bookOnly = (books.value || []).find((b: BibleBook) => {
     const bName = normalize(b.name).replace(/\s+/g, "");
-    const bAbbr = normalize(b.abbreviation).replace(/\s+/g, "");
+    const bAbbr = normalize(b.abbreviation || "").replace(/\s+/g, "");
     return bName === bookOnlySearch || bAbbr === bookOnlySearch;
   });
 
   if (bookOnly) {
     let versionId = preferredVersionId || 1;
     let bibleFile = `bible_${versionId}_${bookOnly.id_bible_book}_1`;
-    let verses = await Database.get(bibleFile, { silent: true });
+    let verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
 
     if (!verses && versionId != 1) {
       versionId = 1;
       bibleFile = `bible_${versionId}_${bookOnly.id_bible_book}_1`;
-      verses = await Database.get(bibleFile, { silent: true });
+      verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
     }
 
     if (!verses) {
       try {
-        const versions = await Database.get(`${lang}_bible_version`, { silent: true });
+        const versions = await Database.get<{ id_bible_version: number }[]>(
+          `${lang}_bible_version`,
+          { silent: true }
+        );
         if (versions && versions.length > 0) {
           versionId = versions[0].id_bible_version;
           bibleFile = `bible_${versionId}_${bookOnly.id_bible_book}_1`;
-          verses = await Database.get(bibleFile, { silent: true });
+          verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
         }
       } catch (e) {
         console.error("[BibleSearchSpotlight] Erro ao carregar versões:", e);
@@ -258,15 +259,15 @@ async function performSearch(preferredVersionId = null) {
   results.value = [];
 }
 
-function onEnter() {
+function onEnter(): void {
   if (results.value.length > 0) {
     selectResult(results.value[0]);
   }
 }
 
-async function selectResult(res) {
-  if (res && res.text && res.reference) {
-    const payload = {
+async function selectResult(res: BibleSearchResult): Promise<void> {
+  if (res.text && res.reference) {
+    const payload: BibleVersePayload = {
       text: res.text,
       reference: res.reference,
       bookId: res.id_bible_book,
@@ -274,29 +275,24 @@ async function selectResult(res) {
       verses: [res.verse],
       active: true,
     };
-    // 1. Garante que a janela de projeção esteja aberta ou em abertura
+
     await ProjectionWindows.openBibleWindow();
 
-    // 2. Envia o versículo.
     Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, payload);
-
-    // 3. Torna o módulo bíblia ativo para que a tela mude para ele
     Modules.open("bible");
-
-    // 4. Força a Ribbon a selecionar a aba "Configurar Bíblia" (ctx_bible)
     Broadcast.send(BROADCAST_TYPE.RIBBON_SELECT_PAGE, { pageId: "ctx_bible" });
   }
   emit("select", res);
   model.value = false;
 }
 
-function truncate(text, n) {
+function truncate(text: string | null | undefined, n: number): string {
   if (!text) return "";
   const clean = String(text).replace(/<[^>]+>/g, "");
-  return clean.length > n ? clean.slice(0, n).trim() + "…" : clean;
+  return clean.length > n ? clean.slice(0, n).trim() + "\u2026" : clean;
 }
 
-watch(model, (val) => {
+watch(model, (val: boolean) => {
   if (val) {
     searchQuery.value = "";
     results.value = [];

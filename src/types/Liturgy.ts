@@ -1,6 +1,11 @@
-export interface LiturgyItemData {
-  id: number | null;
-  tipo: string;
+import { LiturgyItemType } from "@/enums/Liturgy";
+
+export interface LiturgyItem {
+  id: string;
+  tipo: LiturgyItemType;
+  subtipo: string;
+  id_music?: number;
+  musica: number;
   item: string;
   subitem: string;
   cor: string;
@@ -8,12 +13,11 @@ export interface LiturgyItemData {
   dir: string;
   dir_info: string;
   url: string;
-  musica: number;
   escolha: boolean;
   has_instrumental_music: boolean;
-  subtipo: string;
-  [key: string]: unknown;
+  checked?: string;
 }
+// escolha: "0";
 
 export interface LiturgyMusicItem {
   id_music: number | string;
@@ -32,10 +36,6 @@ export interface ScheduledItem {
   [key: string]: unknown;
 }
 
-export const ANOTACAO = "anotacao";
-export const ARQUIVO = "arquivo";
-export const CATEGORIA = "categoria";
-export const ITENS_AGENDADOS = "itens-agendados";
-export const MUSICA = "musica";
-export const SITE = "site";
-
+export interface ChooseLaterItem {
+  id: string;
+}

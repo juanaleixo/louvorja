@@ -38,7 +38,7 @@
   </ModuleContainer>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
@@ -46,13 +46,25 @@ import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import $alert from "@/helpers/Alert";
+import { RibbonAction } from "@/types/Ribbon";
 
-const moduleContainer = ref(null);
-const t = (key) => moduleContainer.value?.t(key) || key;
+interface VideoItem {
+  title: string;
+  url: string;
+}
 
-const projectingUrl = ref("");
+interface FileProjectionPayload {
+  url: string;
+  type: string;
+  title: string;
+}
 
-const DEFAULT_VIDEOS = [
+const moduleContainer = ref<{ t(key: string): string } | null>(null);
+const t = (key: string): string => moduleContainer.value?.t(key) || key;
+
+const projectingUrl = ref<string>("");
+
+const DEFAULT_VIDEOS: VideoItem[] = [
   {
     title: "Vitória (Adoradores 5) [Ao Vivo]",
     url: "https://www.youtube.com/watch?v=nlNluQp7cFI",
@@ -67,27 +79,22 @@ const DEFAULT_VIDEOS = [
   },
 ];
 
-const collection = ref(
-  DEFAULT_VIDEOS.map((v, i) => ({
-    ...v,
-    title: v.title,
-  }))
-);
+const collection = ref<VideoItem[]>(DEFAULT_VIDEOS.map((v) => ({ ...v })));
 
-function extractYoutubeId(url) {
+function extractYoutubeId(url: string): string | null {
   const m = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
   );
   return m ? m[1] : null;
 }
 
-function buildEmbedUrl(url) {
+function buildEmbedUrl(url: string): string | null {
   const id = extractYoutubeId(url);
   if (!id) return null;
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`;
 }
 
-async function projectVideo(video) {
+async function projectVideo(video: VideoItem): Promise<void> {
   const embedUrl = buildEmbedUrl(video.url);
   if (!embedUrl) {
     $alert.error({ text: "modules.online_videos.invalid_url" });
@@ -96,7 +103,7 @@ async function projectVideo(video) {
   await doProject(embedUrl, video.title);
 }
 
-async function projectUrl(rawUrl) {
+async function projectUrl(rawUrl: string): Promise<void> {
   const embedUrl = buildEmbedUrl(rawUrl);
   if (!embedUrl) {
     $alert.error({ text: "modules.online_videos.invalid_url" });
@@ -105,10 +112,10 @@ async function projectUrl(rawUrl) {
   await doProject(embedUrl, rawUrl);
 }
 
-async function doProject(url, title) {
+async function doProject(url: string, title: string): Promise<void> {
   projectingUrl.value = url;
 
-  const payload = { url, type: "youtube", title: title || "" };
+  const payload: FileProjectionPayload = { url, type: "youtube", title: title || "" };
 
   try {
     localStorage.setItem("lj_file_projection", JSON.stringify(payload));
@@ -120,7 +127,7 @@ async function doProject(url, title) {
   $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
 }
 
-async function stopProjection() {
+async function stopProjection(): Promise<void> {
   projectingUrl.value = "";
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
   try {
@@ -131,8 +138,8 @@ async function stopProjection() {
   await closeProjectionWindows();
 }
 
-useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
-  const data = payload;
+useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
+  const data = payload as RibbonAction | null;
   if (data?.module !== "online_videos") return;
   if (data.action === "personal_url") {
     const url = data.payload?.url;
@@ -142,7 +149,7 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
   }
 });
 
-function close() {
+function close(): void {
   if (projectingUrl.value) stopProjection();
 }
 </script>

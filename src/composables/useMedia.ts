@@ -13,11 +13,12 @@ import { useAudioPlayback } from "@/composables/useAudioPlayback";
 import { useSlides } from "@/composables/useSlides";
 import type { Slide } from "@/composables/useSlides";
 import { useLyric } from "@/composables/useLyric";
-import type { MusicData, LyricLine, LyricOpenParams } from "@/composables/useLyric";
 import { useAlbum } from "@/composables/useAlbum";
 import { openProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import { Music } from "@/types/Music";
+import { Lyric, LyricOpenParams } from "@/types/Lyric";
 
-const _audio  = useAudioPlayback();
+const _audio = useAudioPlayback();
 const _slides = useSlides();
 const _lyric  = useLyric();
 const _album  = useAlbum();
@@ -162,7 +163,7 @@ export interface MediaOpenParams {
   title?: string;
 }
 
-function _buildSlidesFrom(data: MusicData): Slide[] {
+function _buildSlidesFrom(data: Music): Slide[] {
   let prev_image: string | undefined = data?.url_image as string | undefined;
   let prev_image_position: string | number | undefined = data?.image_position;
 
@@ -175,7 +176,7 @@ function _buildSlidesFrom(data: MusicData): Slide[] {
       url_image:            data?.url_image as string | undefined,
       image_position:       data?.image_position,
     },
-    ...Object.values((data?.lyric as Record<string, LyricLine>) || {})
+    ...Object.values((data?.lyric as Record<string, Lyric>) || {})
       .filter((lyric) => lyric.show_slide === 1)
       .sort((a, b) => a.order - b.order)
       .map((lyric) => {
@@ -262,7 +263,7 @@ const _self = {
     _loadingId = id_music ?? null;
     $appdata.set("modules.media.loading", true);
 
-    let data = await $database.get<MusicData>(`music_${id_music}`);
+    let data = await $database.get<Music>(`music_${id_music}`);
     if (data == null || _loadingId !== id_music) {
       this.close(true);
       return;
@@ -444,7 +445,7 @@ const _self = {
     _loadingId = id_music ?? null;
     $appdata.set("modules.media.loading", true);
 
-    let data = await $database.get<MusicData>(`music_${id_music}`);
+    let data = await $database.get<Music>(`music_${id_music}`);
     if (data == null || _loadingId !== id_music) {
       this.close(true);
       return;

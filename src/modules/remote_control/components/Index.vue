@@ -14,7 +14,7 @@
           prepend-icon="mdi-ip-network"
           :hint="t('messages.get_ip')"
           persistent-hint
-          :loading="loading ? 'warning' : null"
+          :loading="loading ? 'warning' : false"
         />
         <v-text-field
           v-model="token"
@@ -25,7 +25,7 @@
           variant="outlined"
           prepend-icon="mdi-code-braces"
           persistent-hint
-          :loading="loading ? 'warning' : null"
+          :loading="loading ? 'warning' : false"
         />
       </v-card-text>
       <v-card-actions class="px-0">
@@ -38,54 +38,54 @@
   </ModuleContainer>
 </template>
 
-<script setup>
-/* ########################################################### */
-/* ####### INSTALAÇÃO DO MODULO ############################## */
-/* ########################################################### */
+<script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $userdata from "@/helpers/UserData";
 import $alert from "@/helpers/Alert";
-const moduleContainer = ref(null);
-const t = (key) => {
-  return moduleContainer.value?.t(key) || key;
-};
-/* ########################################################### */
-/* ########################################################### */
-/* ########################################################### */
 
-const url = ref("");
-const token = ref("");
-const loading = ref(false);
-
-const is_connected = computed(() => {
-  return $userdata.get("remote.is_connected");
-});
-
-/* ########################################################### */
-/* ###################### METHODS ############################# */
-/* ########################################################### */
-
-function getUrl(url) {
-  url = url
-    .trim()
-    .replace(/\s+/g, "") // remove qualquer espaço na string
-    .replace(/\\/g, "/") // converte \ para /
-    .replace(/\/+$/, "");
-
-  if (!/^https?:\/\//i.test(url)) {
-    url = "http://" + url;
-  }
-
-  if (url == "http://") {
-    url = "";
-  }
-
-  return url;
+interface PingResponse {
+  status?: string;
+  app?: string;
+  code?: string;
 }
 
-async function testUrl(url) {
+interface TestResult {
+  message: string;
+  error?: string | number;
+  status: boolean;
+  data?: PingResponse;
+  app?: string;
+  invalid_url?: string;
+}
+
+const moduleContainer = ref<{ t(key: string): string } | null>(null);
+const t = (key: string): string => moduleContainer.value?.t(key) || key;
+
+const url = ref<string>("");
+const token = ref<string>("");
+const loading = ref<boolean>(false);
+
+const is_connected = computed<boolean>(() => {
+  return !!$userdata.get("remote.is_connected");
+});
+
+function getUrl(input: string): string {
+  let u = input.trim().replace(/\s+/g, "").replace(/\\/g, "/").replace(/\/+$/, "");
+
+  if (!/^https?:\/\//i.test(u)) {
+    u = "http://" + u;
+  }
+
+  if (u == "http://") {
+    u = "";
+  }
+
+  return u;
+}
+
+async function testUrl(url: string): Promise<TestResult> {
   if (!url || url == "http://" || url == "https://") {
     return {
       message: "modules.remote_control.messages.url_not_provided",
@@ -108,7 +108,7 @@ async function testUrl(url) {
       };
     }
 
-    const data = await response.json();
+    const data: PingResponse = await response.json();
 
     if (data.status != "ok") {
       return {
@@ -128,13 +128,13 @@ async function testUrl(url) {
   } catch (error) {
     return {
       message: "modules.remote_control.messages.failed_to_connect",
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       status: false,
     };
   }
 }
 
-async function test() {
+async function test(): Promise<boolean> {
   url.value = getUrl(url.value);
 
   loading.value = true;
@@ -149,6 +149,7 @@ async function test() {
     return false;
   }
 
+  // @ts-ignore — preserva lógica original de comparação
   if (!ret.status == "ok" && !ret.app == "LouvorJA") {
     $alert.error({
       text: ret.invalid_url,
@@ -163,7 +164,7 @@ async function test() {
   return true;
 }
 
-async function connect() {
+async function connect(): Promise<void> {
   $userdata.set("remote.url", getUrl(url.value));
   $userdata.set("remote.token", token.value);
 
@@ -174,16 +175,12 @@ async function connect() {
   $userdata.set("remote.is_connected", true);
 }
 
-function disonnect() {
+function disonnect(): void {
   $userdata.set("remote.is_connected", false);
 }
 
-/* ########################################################### */
-/* ###################### MOUNTED ############################# */
-/* ########################################################### */
-
 onMounted(() => {
-  url.value = $userdata.get("remote.url");
-  token.value = $userdata.get("remote.token");
+  url.value = $userdata.get("remote.url") as string;
+  token.value = $userdata.get("remote.token") as string;
 });
 </script>

@@ -29,7 +29,7 @@
             </button>
           </div>
           <ul class="lit-schedules-cats">
-            <li v-if="scheduledCategories.length === 0" class="lit-hint pa-2">
+            <li v-if="scheduledCategories?.length === 0" class="lit-hint pa-2">
               {{ t("schedules.no_categories") }}
             </li>
             <li
@@ -92,7 +92,7 @@
               <div class="col-file">{{ t("schedules.file") }}</div>
               <div class="col-actions"></div>
             </div>
-            <div v-if="categoryItems.length === 0" class="lit-empty">
+            <div v-if="categoryItems?.length === 0" class="lit-empty">
               {{ t("schedules.no_items") }}
             </div>
             <div v-for="it in categoryItems" :key="it.id" class="lit-schedules-row">
@@ -149,8 +149,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-
-import type { ScheduledCategory, ScheduledItem } from "../types";
+import { ScheduledCategory, ScheduledItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
