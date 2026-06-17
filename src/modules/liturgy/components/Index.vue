@@ -137,7 +137,7 @@ import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
 import $alert from "@/helpers/Alert";
 import $liturgy from "@/helpers/Liturgy";
-import { LiturgyItem, LiturgyMusicItem } from "@/types/Liturgy";
+import type { LiturgyItem, LiturgyMusicItem } from "@/types/Liturgy";
 import { LiturgyItemType } from "@/enums/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
@@ -232,7 +232,6 @@ const isChooseLaterMusic = (item: LiturgyItem) =>
   item.tipo === "musica" && (item.escolha || !item.id_music);
 
 async function openChooseLaterSearch(item: LiturgyItem, mode = "sung") {
-  console.log(item);
   chooseLaterItem.value = item;
   chooseLaterMode.value = mode;
   chooseMusicSearchOpen.value = true;

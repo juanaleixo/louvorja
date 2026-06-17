@@ -16,7 +16,7 @@ import { useLyric } from "@/composables/useLyric";
 import { useAlbum } from "@/composables/useAlbum";
 import { openProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import { Music } from "@/types/Music";
-import { Lyric, LyricOpenParams } from "@/types/Lyric";
+import { LyricOpenParams } from "@/types/Lyric";
 
 const _audio = useAudioPlayback();
 const _slides = useSlides();
@@ -176,7 +176,7 @@ function _buildSlidesFrom(data: Music): Slide[] {
       url_image:            data?.url_image as string | undefined,
       image_position:       data?.image_position,
     },
-    ...Object.values((data?.lyric as Record<string, Lyric>) || {})
+    ...(data?.lyric || [])
       .filter((lyric) => lyric.show_slide === 1)
       .sort((a, b) => a.order - b.order)
       .map((lyric) => {
@@ -264,12 +264,13 @@ const _self = {
     $appdata.set("modules.media.loading", true);
 
     let data = await $database.get<Music>(`music_${id_music}`);
+    console.log(data);
     if (data == null || _loadingId !== id_music) {
       this.close(true);
       return;
     }
     $appdata.set("modules.media.data", data);
-    $history.add(id_music, data.name, data.has_instrumental_music);
+    $history.add(id_music, data.name, !!data.url_instrumental_music);
 
     $appdata.set("modules.media.id_music", id_music);
     $appdata.set("modules.media.id_album", id_album);

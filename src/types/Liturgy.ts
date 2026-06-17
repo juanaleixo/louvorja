@@ -17,7 +17,6 @@ export interface LiturgyItem {
   has_instrumental_music: boolean;
   checked?: string;
 }
-// escolha: "0";
 
 export interface LiturgyMusicItem {
   id_music: number | string;

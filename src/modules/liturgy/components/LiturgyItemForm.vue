@@ -265,7 +265,7 @@ import es from "../lang/es.json";
 import Liturgy from "@/helpers/Liturgy";
 import LiturgyMusicSearch from "./LiturgyMusicSearch.vue";
 import { LiturgyItemType } from "@/enums/Liturgy";
-import { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
+import type { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 

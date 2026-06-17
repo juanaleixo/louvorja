@@ -4,10 +4,10 @@ import { Album, AlbumItem } from "@/types/Album";
 export interface Music {
   id_music: number;
   name: string;
-  duration?: string;
+  duration: string;
   instrumental_duration?: string;
-  url_image?: string;
   image_position?: string | number;
+  url_image?: string;
   url_music?: string;
   url_instrumental_music?: string;
   lyric?: Lyric[];

@@ -175,7 +175,7 @@
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import { LiturgyItem } from "@/types/Liturgy";
+import type { LiturgyItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 

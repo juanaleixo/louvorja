@@ -71,7 +71,7 @@ import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
 import Strings from "@/helpers/Strings";
 import { MusicAlbum, MusicItem } from "@/types/Music";
-import { ChooseLaterItem } from "@/types/Liturgy";
+import type { ChooseLaterItem } from "@/types/Liturgy";
 
 const props = defineProps<{
   token?: string;
