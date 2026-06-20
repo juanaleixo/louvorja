@@ -4,21 +4,31 @@ Sistema de apresentação de letras de músicas e conteúdo bíblico para uso em
 
 ## Stack
 
-- **Vue 3** + Composition API
+- **Vue 3.5** + Composition API
 - **Vuetify 4** (UI + temas claro/escuro) — travado em `~4.0.6` estável; ver `docs/adr/0001-vuetify-versao-estavel.md`
-- **Pinia** (estado global) — migrado de Vuex 4
-- **Vue Router 5**
+- **Pinia 3** (estado global) — migrado de Vuex 4
+- **Vue Router 5** (`5.0.6` exata)
 - **Vue I18n 11** (PT/ES)
+- **TypeScript 6**
 - **Vite 7** (build)
 - **vuedraggable** (drag-and-drop)
 - **basic-ftp** (download de coletâneas)
 - **vue-fullscreen** (projeção fullscreen)
 - **Electron 41** (desktop nativo)
 - **electron-updater** (auto-update via GitHub releases)
+- **electron-builder** (empacotamento NSIS/DMG/AppImage)
 - **express** (servidor HTTP embarcado)
 - **fuse.js** (busca fuzzy)
 - **idb** (IndexedDB para coleções personalizadas)
 - **jszip** (export/import de slides)
+- **vitest** + **Playwright** (testes unitários e e2e)
+- **husky** + **lint-staged** (git hooks)
+- **sass** (compilador SCSS do Vuetify)
+- **@mdi/font** (ícones Material Design)
+- **webfontloader** (carregamento de fontes web)
+- **fs-extra** (utilitários de arquivo no Electron main)
+- **vue-country-flag-next** (bandeiras de países)
+- **vue-json-pretty** (visualização JSON)
 
 ## Estrutura
 
@@ -103,7 +113,8 @@ src/
 │   ├── SljaConverter.js     # Conversão de slides .slja
 │   ├── Storage.ts           # Wrapper localStorage/sessionStorage
 │   ├── Strings.ts           # Limpeza e ordenação UTF-8
-│   └── UserData.ts          # Preferências do usuário (Pinia + persistência)
+│   ├── UserData.ts          # Preferências do usuário (Pinia + persistência)
+│   └── __tests__/           # Testes unitários de helpers puros
 ├── lang/                    # Traduções globais (pt.json, es.json)
 ├── layout/                  # Componentes de layout da shell
 │   ├── Alert.vue
@@ -126,16 +137,21 @@ src/
 │       ├── AppMenuTransmitir.vue
 │       ├── AppMenuSincronizar.vue
 │       ├── AppMenuSobre.vue
-│       └── AppMenuAtualizacoes.vue
+│       ├── AppMenuAtualizacoes.vue
+│       ├── AppMenuImportExport.vue
+│       ├── ShellTools.vue
+│       └── ribbon-pages.js
 ├── modules/                 # Módulos do sistema
 │   ├── album/
 │   ├── animation/           # Loader de animejs (development)
 │   ├── base_module/         # Template para criar módulos (development)
 │   ├── bible/
+│   ├── bible_search/        # Busca bíblica por palavra-chave
 │   ├── clock/
 │   ├── collections/
 │   ├── counter/
 │   ├── custom_collections/  # Coleções personalizadas (IndexedDB)
+│   ├── custom_videos/       # Vídeos do YouTube salvos pelo usuário
 │   ├── doxology/            # WIP — esboço inicial
 │   ├── draw/
 │   ├── favorites/
@@ -145,8 +161,10 @@ src/
 │   ├── lyric/
 │   ├── media/
 │   ├── message_board/
+│   ├── music_search/        # Busca rápida de músicas
 │   ├── musics/
 │   ├── name_draw/
+│   ├── online_videos/       # Coleção de vídeos online para projeção
 │   ├── remote_control/
 │   ├── slide_editor/
 │   ├── stopwatch/
@@ -453,10 +471,20 @@ npm run prebuild             # Pré-build (valida manifests dos módulos)
 npm run typecheck            # TypeScript type-check
 npm run lint                 # ESLint
 npm run format               # Prettier
+npm run format:check         # Prettier check (CI)
 npm run electron:dev         # Desenvolvimento desktop (Electron)
 npm run electron:build       # Build instalável (win/mac/linux)
+npm run electron:build:win   # Build somente Windows
+npm run electron:build:mac   # Build somente macOS
+npm run electron:build:linux # Build somente Linux
 npm run electron:start       # Inicia Electron buildado
-npm run test:e2e             # Testes end-to-end
+npm run test                 # Testes unitários (vitest)
+npm run test:watch           # Testes em modo watch
+npm run test:ui              # Testes com interface Vite UI
+npm run test:e2e             # Testes end-to-end (Playwright)
+npm run test:visual          # Testes visuais (Percy)
+npm run coverage             # Cobertura de código
+npm run serve                # Preview do build de produção
 npm run validate:manifests   # Valida manifest.json de todos os módulos
 ```
 
