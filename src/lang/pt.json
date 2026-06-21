@@ -420,6 +420,7 @@
       "ctx_name_draw": "Configurar Nomes",
       "ctx_clock": "Configurar Relógio",
       "ctx_stopwatch": "Configurar Cronômetro",
+      "ctx_timer": "Configurar Temporizador",
       "ctx_message_board": "Configurar Recados",
       "ctx_online_videos": "Vídeos On-line",
       "ctx_custom_videos": "Vídeos Personalizados"
@@ -494,7 +495,6 @@
       "counter_reset": "Zerar",
       "custom_videos": "Meus Vídeos",
       "custom_videos_add": "Adicionar",
-      "custom_videos_stop": "Parar Projeção",
       "custom_videos_toggle_view": "Lista / Miniatura",
       "delete_selected": "Apagar Selecionados",
       "diverse": "Coletâneas Diversas",
@@ -567,7 +567,6 @@
       "online_videos": "Vídeos On-line",
       "online_videos_personal_url": "Projetar",
       "online_videos_personal_url_placeholder": "URL do YouTube",
-      "online_videos_stop": "Parar Projeção",
       "personal": "Colet. Personalizadas",
       "play_all": "Tocar Todas",
       "playback": "Playback",
@@ -582,6 +581,7 @@
       "show_notes": "Exibir Painel de Anotações",
       "sing": "Cantado",
       "slide_editor": "Editor de Músicas",
+      "stop_projection": "Parar Projeção",
       "stopwatch": "Cronômetro",
       "stopwatch_reset": "Reiniciar",
       "stopwatch_toggle": "Iniciar/Pausar",
@@ -684,6 +684,7 @@
       "close": "Fechar"
     },
     "playing": "Reproduzindo",
+    "playing_youtube": "Reproduzindo do YouTube",
     "player": {
       "first": "Primeiro slide",
       "prev": "Slide anterior",

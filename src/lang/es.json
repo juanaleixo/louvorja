@@ -85,7 +85,17 @@
         "fill": "Expandir",
         "contain": "Ajustar",
         "cover": "Rellenar"
-      }
+      },
+      "font": "Fuente",
+      "color": "Color",
+      "size": "Tamaño de la fuente",
+      "image": "Imagen de fondo",
+      "transparency": "Transparencia",
+      "adjust": "Ajuste de imagen",
+      "border": "Borde",
+      "vertical": "Alineación vertical",
+      "horizontal": "Alineación horizontal",
+      "alert_color": "Color de alerta"
     }
   },
   "alert": {
@@ -485,7 +495,6 @@
       "counter_reset": "Resetear",
       "custom_videos": "Mis Videos",
       "custom_videos_add": "Agregar",
-      "custom_videos_stop": "Detener Proyección",
       "custom_videos_toggle_view": "Lista / Miniatura",
       "delete_selected": "Eliminar Seleccionados",
       "diverse": "Colecciones Diversas",
@@ -558,7 +567,6 @@
       "online_videos": "Vídeos On-line",
       "online_videos_personal_url": "Proyectar",
       "online_videos_personal_url_placeholder": "URL de YouTube",
-      "online_videos_stop": "Detener Proyección",
       "personal": "Colec. Personalizadas",
       "play_all": "Tocar Todas",
       "playback": "Playback",
@@ -574,6 +582,7 @@
       "sing": "Cantado",
       "slide_editor": "Editor de Músicas",
       "stopwatch": "Cronómetro",
+      "stop_projection": "Detener Proyección",
       "stopwatch_reset": "Reiniciar",
       "stopwatch_toggle": "Iniciar/Pausar",
       "theme": "Tema",
@@ -675,6 +684,7 @@
       "close": "Cerrar"
     },
     "playing": "Reproduciendo",
+    "playing_youtube": "Reproduciendo de YouTube",
     "player": {
       "first": "Primera diapositiva",
       "prev": "Diapositiva anterior",
