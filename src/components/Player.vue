@@ -51,6 +51,7 @@ import PlayerProgress from "@/components/PlayerProgress.vue";
 import PlayerGauge from "@/components/PlayerGauge.vue";
 import PlayerActions from "@/components/PlayerActions.vue";
 import { usePlayerState } from "@/composables/usePlayerState";
+import { MediaConfig } from "@/types/Media";
 
 withDefaults(defineProps<{ location?: string }>(), { location: "" });
 
@@ -74,13 +75,6 @@ const {
 
 const { progress, currentTime, duration, buffered, isPaused, volume } = audio;
 
-interface MediaConfig {
-  audio?: unknown;
-  slide_index?: number;
-  last_slide?: number;
-  mode?: string;
-  is_youtube?: boolean;
-}
 const mediaLoading = computed(() => !!media.value?.loading);
 const mediaMinimized = computed(() => !!media.value?.minimized);
 const mediaConfig = computed((): MediaConfig => (media.value?.config as MediaConfig) ?? {});

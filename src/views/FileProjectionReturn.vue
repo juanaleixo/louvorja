@@ -32,75 +32,13 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
 import Media from "@/composables/useMedia";
-
-interface FileProjectionState {
-  active: boolean;
-  type: string;
-  url: string;
-  title: string;
-}
-
-interface FileProjectionPayload {
-  url?: string;
-  type?: string;
-  title?: string;
-  [key: string]: unknown;
-}
-
-interface VideoStatePayload {
-  currentTime?: number;
-  isPaused?: boolean;
-}
-
-interface YouTubeControlPayload {
-  action: string;
-  value?: number;
-}
-
-interface YouTubeStatePayload {
-  currentTime: number;
-  isPaused: boolean;
-  duration: number;
-}
-
-interface YTPlayer {
-  playVideo(): void;
-  pauseVideo(): void;
-  seekTo(seconds: number, allowSeekAhead: boolean): void;
-  getCurrentTime(): number;
-  getDuration(): number;
-  getPlayerState(): number;
-  setVolume(volume: number): void;
-  unMute?(): void;
-  destroy(): void;
-}
-
-interface YTPlayerOptions {
-  height: string;
-  width: string;
-  videoId: string;
-  playerVars: {
-    autoplay: number;
-    mute: number;
-    rel: number;
-    controls: number;
-    modestbranding: number;
-  };
-  events: {
-    onReady: () => void;
-    onStateChange: (e: { data: number }) => void;
-  };
-}
-
-interface YTAPI {
-  Player: {
-    new (element: HTMLElement | null, options: YTPlayerOptions): YTPlayer;
-  };
-  PlayerState: {
-    PLAYING: number;
-    ENDED: number;
-  };
-}
+import {
+  FileProjectionState,
+  VideoMediaState,
+  YouTubeControlPayload,
+  YTAPI,
+  YTPlayer,
+} from "@/types/Media";
 
 function getYT(): YTAPI | null {
   return (window as unknown as { YT?: YTAPI }).YT ?? null;
@@ -123,7 +61,7 @@ let _ytInitializing = false;
 
 const _YT_SYNC_INTERVAL = 500;
 
-function _activateProjection(p: FileProjectionPayload): void {
+function _activateProjection(p: FileProjectionState): void {
   fileProjection.active = true;
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";
@@ -136,7 +74,7 @@ function _readPendingProjection(): void {
   try {
     const stored = localStorage.getItem("lj_file_projection");
     if (stored) {
-      const p: FileProjectionPayload = JSON.parse(stored);
+      const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
       localStorage.removeItem("lj_file_projection");
     }
@@ -148,7 +86,7 @@ _readPendingProjection();
 setTimeout(_readPendingProjection, 500);
 
 useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
-  _activateProjection((payload || {}) as FileProjectionPayload);
+  _activateProjection((payload || {}) as FileProjectionState);
 });
 
 useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
@@ -165,7 +103,7 @@ useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload: unknown) => {
   if (!fileProjection.active || fileProjection.type !== "video") return;
   const el = videoRef.value;
   if (!el) return;
-  const data = payload as VideoStatePayload;
+  const data = payload as VideoMediaState;
   el.pause();
   if (typeof data.currentTime === "number") el.currentTime = data.currentTime;
   if (typeof data.isPaused === "boolean" && !data.isPaused) el.play().catch(() => {});
@@ -174,7 +112,7 @@ useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload: unknown) => {
 useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload: unknown) => {
   if (!fileProjection.active || fileProjection.type !== "youtube") return;
   if (!ytPlayer || !ytPlayer.getCurrentTime) return;
-  const data = payload as VideoStatePayload;
+  const data = payload as VideoMediaState;
   try {
     const diff = Math.abs(
       ytPlayer.getCurrentTime() - (typeof data.currentTime === "number" ? data.currentTime : 0)
@@ -282,7 +220,7 @@ function _broadcastYtState(): void {
       currentTime: ytPlayer.getCurrentTime(),
       isPaused: ytPlayer.getPlayerState() !== yt.PlayerState.PLAYING,
       duration: ytPlayer.getDuration() || 0,
-    } as YouTubeStatePayload);
+    } as VideoMediaState);
   } catch {
     /* ignore */
   }
