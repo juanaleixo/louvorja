@@ -22,7 +22,7 @@
             size="x-small"
             variant="tonal"
             color="primary"
-            :disabled="!!projectingId"
+            :disabled="projectingId == v.id"
             @click="projectVideo(v)"
           >
             {{ t("project") }}
@@ -56,16 +56,6 @@
             <v-btn size="x-small" variant="text" icon="mdi-delete" @click.stop="confirmDelete(v)" />
           </div>
         </div>
-      </div>
-
-      <!-- Projecting bar -->
-      <div v-if="projectingId" class="cv-projecting-bar">
-        <v-icon icon="mdi-youtube" size="18" color="#e74c3c" />
-        <span class="cv-projecting-label">{{ t("projecting") }}</span>
-        <v-spacer />
-        <v-btn size="small" variant="tonal" color="error" @click="stopProjection">
-          {{ t("stop") }}
-        </v-btn>
       </div>
     </div>
 
@@ -108,11 +98,11 @@ import { openDB } from "idb";
 import type { IDBPDatabase } from "idb";
 import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
-import { openVideoProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import $alert from "@/helpers/Alert";
 import { RibbonAction } from "@/types/Ribbon";
+import Media from "@/composables/useMedia";
 
 interface VideoItem {
   id: string;
@@ -125,12 +115,6 @@ interface ThumbnailCache {
   video_id: string;
   blob: ArrayBuffer;
   mime: string;
-}
-
-interface FileProjectionPayload {
-  url: string;
-  type: string;
-  title: string;
 }
 
 const DB_NAME = "louvorja_custom_videos";
@@ -319,27 +303,12 @@ async function projectVideo(v: VideoItem): Promise<void> {
     return;
   }
   projectingId.value = v.id;
-
-  const payload: FileProjectionPayload = { url: embedUrl, type: "youtube", title: v.name };
-  try {
-    localStorage.setItem("lj_file_projection", JSON.stringify(payload));
-  } catch {
-    /* ignore */
-  }
-
-  await openVideoProjectionWindows();
-  $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+  await Media.openYouTube(embedUrl, v.name);
 }
 
 async function stopProjection(): Promise<void> {
   projectingId.value = "";
-  $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
-  try {
-    localStorage.removeItem("lj_file_projection");
-  } catch {
-    /* ignore */
-  }
-  await closeProjectionWindows();
+  Media.close(true);
 }
 
 async function projectUrl(rawUrl: string): Promise<void> {
@@ -349,14 +318,7 @@ async function projectUrl(rawUrl: string): Promise<void> {
     return;
   }
   projectingId.value = "__url__";
-  const payload: FileProjectionPayload = { url: embedUrl, type: "youtube", title: rawUrl };
-  try {
-    localStorage.setItem("lj_file_projection", JSON.stringify(payload));
-  } catch {
-    /* ignore */
-  }
-  await openVideoProjectionWindows();
-  $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+  await Media.openYouTube(embedUrl, rawUrl);
 }
 
 useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
@@ -528,21 +490,5 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   padding: 0 4px 4px;
-}
-
-/* Projecting bar */
-.cv-projecting-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(231, 76, 60, 0.08);
-  border: 1px solid rgba(231, 76, 60, 0.2);
-}
-
-.cv-projecting-label {
-  font-size: 13px;
-  font-weight: 500;
 }
 </style>

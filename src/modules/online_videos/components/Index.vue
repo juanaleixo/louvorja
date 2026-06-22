@@ -25,15 +25,6 @@
           </v-btn>
         </div>
       </div>
-
-      <div v-if="projectingUrl" class="ov-projecting-bar">
-        <v-icon icon="mdi-youtube" size="18" color="#e74c3c" />
-        <span class="ov-projecting-label">{{ t("projecting") }}</span>
-        <v-spacer />
-        <v-btn size="small" variant="tonal" color="error" @click="stopProjection">
-          {{ t("stop") }}
-        </v-btn>
-      </div>
     </div>
   </ModuleContainer>
 </template>
@@ -42,21 +33,15 @@
 import { ref } from "vue";
 import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
-import { openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import $alert from "@/helpers/Alert";
 import { RibbonAction } from "@/types/Ribbon";
+import Media from "@/composables/useMedia";
 
 interface VideoItem {
   title: string;
   url: string;
-}
-
-interface FileProjectionPayload {
-  url: string;
-  type: string;
-  title: string;
 }
 
 const moduleContainer = ref<{ t(key: string): string } | null>(null);
@@ -100,7 +85,8 @@ async function projectVideo(video: VideoItem): Promise<void> {
     $alert.error({ text: "modules.online_videos.invalid_url" });
     return;
   }
-  await doProject(embedUrl, video.title);
+  projectingUrl.value = video.url;
+  await Media.openYouTube(embedUrl, video.title);
 }
 
 async function projectUrl(rawUrl: string): Promise<void> {
@@ -109,33 +95,13 @@ async function projectUrl(rawUrl: string): Promise<void> {
     $alert.error({ text: "modules.online_videos.invalid_url" });
     return;
   }
-  await doProject(embedUrl, rawUrl);
-}
-
-async function doProject(url: string, title: string): Promise<void> {
-  projectingUrl.value = url;
-
-  const payload: FileProjectionPayload = { url, type: "youtube", title: title || "" };
-
-  try {
-    localStorage.setItem("lj_file_projection", JSON.stringify(payload));
-  } catch {
-    /* ignore */
-  }
-
-  await openFileProjectionWindows();
-  $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+  projectingUrl.value = rawUrl;
+  await Media.openYouTube(embedUrl, rawUrl);
 }
 
 async function stopProjection(): Promise<void> {
   projectingUrl.value = "";
-  $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
-  try {
-    localStorage.removeItem("lj_file_projection");
-  } catch {
-    /* ignore */
-  }
-  await closeProjectionWindows();
+  Media.close(true);
 }
 
 useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
@@ -202,18 +168,5 @@ function close(): void {
   font-size: 12px;
   color: rgba(var(--lj-on-surface-ch), 0.5);
   padding: 12px 0;
-}
-.ov-projecting-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(231, 76, 60, 0.08);
-  border: 1px solid rgba(231, 76, 60, 0.2);
-}
-.ov-projecting-label {
-  font-size: 13px;
-  font-weight: 500;
 }
 </style>

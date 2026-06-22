@@ -13,7 +13,7 @@ import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import { LiturgyItemType } from "@/enums/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS = { pt, es };
 
@@ -46,7 +46,7 @@ export const DEFAULT_COLOR = "#00004F";
 
 export const DEFAULT_FORM = () => ({
   id: "",
-  tipo: LiturgyItemType.ANOTACAO,
+  tipo: LiturgyItemTypeEnum.ANOTACAO,
   item: "",
   subitem: "",
   cor: DEFAULT_COLOR,
@@ -123,7 +123,8 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function subtitleFor(item) {
-    if (item.tipo === LiturgyItemType.MUSICA && item.escolha) return t("placeholders.music_choose");
+    if (item.tipo === LiturgyItemTypeEnum.MUSICA && item.escolha)
+      return t("placeholders.music_choose");
     return item.subitem || "";
   }
 
@@ -162,7 +163,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     menuOpen.value = false;
     if (!confirm(t("dialog.remove_done_confirm"))) return;
     const toRemove = items.value
-      .filter((i) => i.tipo !== LiturgyItemType.CATEGORIA && $liturgy.isCheckedToday(i))
+      .filter((i) => i.tipo !== LiturgyItemTypeEnum.CATEGORIA && $liturgy.isCheckedToday(i))
       .map((i) => i.id);
     toRemove.forEach((id) => $liturgy.remove(id, activeDay.value));
     items.value = [...items.value];
@@ -181,11 +182,11 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function onTypeChange() {
-    if (form.value.tipo !== LiturgyItemType.MUSICA) {
+    if (form.value.tipo !== LiturgyItemTypeEnum.MUSICA) {
       form.value.musica = -1;
       form.value.escolha = false;
     }
-    if (form.value.tipo === LiturgyItemType.MUSICA && form.value.musica === -1) {
+    if (form.value.tipo === LiturgyItemTypeEnum.MUSICA && form.value.musica === -1) {
       form.value.escolha = true;
     }
   }
@@ -215,31 +216,31 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       $alert?.warning?.({ text: t("dialog.choose_type") });
       return;
     }
-    if (f.tipo !== LiturgyItemType.ITENS_AGENDADOS && !String(f.item || "").trim()) {
+    if (f.tipo !== LiturgyItemTypeEnum.ITENS_AGENDADOS && !String(f.item || "").trim()) {
       $alert?.warning?.({ text: t("dialog.set_name") });
       return;
     }
-    if (f.tipo === LiturgyItemType.ITENS_AGENDADOS && !f.id) {
+    if (f.tipo === LiturgyItemTypeEnum.ITENS_AGENDADOS && !f.id) {
       $alert?.warning?.({ text: t("dialog.choose_scheduled") });
       return;
     }
 
     const built = { ...f };
     switch (f.tipo) {
-      case LiturgyItemType.ANOTACAO:
+      case LiturgyItemTypeEnum.ANOTACAO:
         built.subitem = f.subitem || "";
         break;
-      case LiturgyItemType.SITE:
+      case LiturgyItemTypeEnum.SITE:
         built.url = $liturgy.validateUrl(f.url);
         built.subitem = "Site " + built.url;
         break;
-      case LiturgyItemType.ARQUIVO: {
+      case LiturgyItemTypeEnum.ARQUIVO: {
         const isDir = f.dir.endsWith("/") || f.dir.endsWith("\\");
         built.subtipo = isDir ? "dir" : "arq";
         built.subitem = (isDir ? "Pasta " : "Arquivo ") + f.dir;
         break;
       }
-      case LiturgyItemType.MUSICA: {
+      case LiturgyItemTypeEnum.MUSICA: {
         if (f.escolha || Number(f.musica) === -1) {
           built.escolha = true;
           built.musica = -1;
@@ -254,13 +255,13 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         }
         break;
       }
-      case LiturgyItemType.ITENS_AGENDADOS: {
+      case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
         const c = scheduledCategories.value.find((x) => x.id === f.id);
         built.item = c?.nome || "";
         built.subitem = "";
         break;
       }
-      case LiturgyItemType.CATEGORIA:
+      case LiturgyItemTypeEnum.CATEGORIA:
         built.subitem = "";
         break;
     }
@@ -306,22 +307,22 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   /* ============== Execução do item ============== */
   function executeItem(item) {
     switch (item.tipo) {
-      case LiturgyItemType.MUSICA:
+      case LiturgyItemTypeEnum.MUSICA:
         playMusic(item, "sung");
         break;
-      case LiturgyItemType.SITE:
+      case LiturgyItemTypeEnum.SITE:
         openUrl(item.url);
         break;
-      case LiturgyItemType.ARQUIVO:
+      case LiturgyItemTypeEnum.ARQUIVO:
         openFile(item);
         break;
-      case LiturgyItemType.ITENS_AGENDADOS: {
+      case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
         const sched = $liturgy.findScheduledForToday(item.id);
         if (sched && sched.arquivo) openUrl(sched.arquivo);
         else alert(t("dialog.scheduled_not_found"));
         break;
       }
-      case LiturgyItemType.ANOTACAO:
+      case LiturgyItemTypeEnum.ANOTACAO:
         alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
         break;
     }
@@ -520,7 +521,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
             const dirPath = file.path ? file.path + "/" : entry.name + "/";
             $liturgy.add(
               {
-                tipo: LiturgyItemType.ARQUIVO,
+                tipo: LiturgyItemTypeEnum.ARQUIVO,
                 item: entry.name,
                 subitem: "Pasta " + (file.path || entry.name),
                 subtipo: "dir",
@@ -545,7 +546,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       });
       $liturgy.add(
         {
-          tipo: LiturgyItemType.ANOTACAO,
+          tipo: LiturgyItemTypeEnum.ANOTACAO,
           item: name.replace(/\.[^.]+$/, ""),
           subitem: text.slice(0, 2000),
           cor: DEFAULT_COLOR,
@@ -555,7 +556,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     } else {
       $liturgy.add(
         {
-          tipo: LiturgyItemType.ARQUIVO,
+          tipo: LiturgyItemTypeEnum.ARQUIVO,
           item: name.replace(/\.[^.]+$/, ""),
           subitem: "Arquivo " + (filePath !== name ? filePath : name),
           subtipo: "arq",

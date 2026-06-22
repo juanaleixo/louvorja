@@ -40,8 +40,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { LiturgyItemType } from "@/enums/Liturgy";
 import type { LiturgyItem } from "@/types/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const props = defineProps<{
   token?: string;
@@ -98,15 +98,15 @@ function openChooseLater(item: LiturgyItem): void {
 
 function getLiturgyIcon(item: LiturgyItem): string {
   switch (item.tipo) {
-    case LiturgyItemType.MUSICA:
+    case LiturgyItemTypeEnum.MUSICA:
       return "mdi-music";
-    case LiturgyItemType.ANOTACAO:
+    case LiturgyItemTypeEnum.ANOTACAO:
       return "mdi-text-box-outline";
-    case LiturgyItemType.CATEGORIA:
+    case LiturgyItemTypeEnum.CATEGORIA:
       return "mdi-tag-outline";
-    case LiturgyItemType.ARQUIVO:
+    case LiturgyItemTypeEnum.ARQUIVO:
       return "mdi-file-outline";
-    case LiturgyItemType.SITE:
+    case LiturgyItemTypeEnum.SITE:
       return "mdi-web";
     default:
       return "mdi-format-list-bulleted";

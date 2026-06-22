@@ -27,7 +27,7 @@
         @update:model-value="onReorder"
       >
         <template #item="{ element, index }">
-          <LiturgyItem
+          <LiturgyItemComponent
             :element="element"
             :index="index"
             :locked="locked"
@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import draggable from "vuedraggable";
+import LiturgyItemComponent from "./LiturgyItem.vue";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";

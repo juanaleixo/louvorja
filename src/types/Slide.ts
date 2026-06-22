@@ -1,4 +1,4 @@
 export interface Slide {
-  lyric?: string;
-  name?: string;
+  lyric?: string
+  name?: string
 }

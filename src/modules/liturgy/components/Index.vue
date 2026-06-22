@@ -138,7 +138,7 @@ import LiturgySchedules from "./LiturgySchedules.vue";
 import $alert from "@/helpers/Alert";
 import $liturgy from "@/helpers/Liturgy";
 import type { LiturgyItem, LiturgyMusicItem } from "@/types/Liturgy";
-import { LiturgyItemType } from "@/enums/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -387,7 +387,7 @@ onMounted(async () => {
       Modules.open("liturgy");
       nextTick(() => {
         openItemDialog();
-        form.value.tipo = LiturgyItemType.ANOTACAO;
+        form.value.tipo = LiturgyItemTypeEnum.ANOTACAO;
       });
     } else if (data?.type === BROADCAST_TYPE.LITURGY_RIBBON_ACTION) {
       const action = (data?.payload as { action?: string } | undefined)?.action;
