@@ -1,7 +1,6 @@
 .opt {
   font-family: var(--lj-font-shell);
   color: var(--lj-text);
-  max-width: 800px;
 }
 
 .opt-section {

@@ -35,7 +35,7 @@
               :aria-label="$t('alert.close')"
               @click="close"
             >
-              <v-icon icon="mdi-arrow-left" size="20" />
+              <v-icon :icon="ICONS.ACTIONS.CLOSE" size="20" />
             </button>
             <span class="app-menu-header-title">
               {{ activeItem?.label ? $t(activeItem.label) : $t("shell.appmenu") }}
@@ -91,6 +91,7 @@ import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
 import $modules from "@/helpers/Modules";
 import Platform from "@/helpers/Platform";
+import { ICONS } from "@/constants/Icons";
 
 // Detecta macOS via Platform (Electron) ou navigator (web fallback) —
 // usado para ajustar o header da AppMenu (não sobrepor traffic lights)
@@ -239,7 +240,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 .app-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 100;
   background: var(--lj-black-alpha-40);
   font-family: var(--lj-font-shell);
 }
@@ -271,8 +272,6 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 }
 
 .app-menu-back {
-  width: 40px;
-  height: 40px;
   border-radius: 50%;
   border: none;
   background: var(--lj-white-alpha-10);

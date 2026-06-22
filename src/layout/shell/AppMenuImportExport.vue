@@ -52,14 +52,64 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import $liturgy from "@/helpers/Liturgy";
 import SljaConverter from "@/helpers/SljaConverter";
+import { LiturgyItem } from "@/types/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
-const { parseIniWithSections } = SljaConverter;
+/* ---- Tipos ---- */
 
-const DELPHI_NAMED_COLORS = {
+interface LjaSection {
+  [key: string]: any;
+}
+
+interface LjaSections {
+  [key: string]: LjaSection;
+}
+
+interface DayItemsMap {
+  [day: number]: LiturgyItem[];
+}
+
+interface DayNotes {
+  [day: number]: string;
+}
+
+interface LiturgyExportPayload {
+  version: number;
+  type: string;
+  exported_at: string;
+  data: {
+    days: DayItemsMap;
+    day_notes: DayNotes;
+    scheduled_categories: unknown[];
+    scheduled_items: unknown[];
+  };
+}
+
+interface LiturgyImportPayload {
+  version: number;
+  type: string;
+  exported_at: string;
+  data: {
+    days?: Record<string, LiturgyItem[]>;
+    day_notes?: Record<string, string>;
+    scheduled_categories?: unknown[];
+    scheduled_items?: unknown[];
+  };
+}
+
+interface ImportResult {
+  ok: boolean;
+  msg: string;
+  details?: string[];
+}
+
+/* ---- Delphi color map ---- */
+
+const DELPHI_NAMED_COLORS: Record<string, string> = {
   clBlack: "#000000",
   clMaroon: "#800000",
   clGreen: "#008000",
@@ -78,13 +128,17 @@ const DELPHI_NAMED_COLORS = {
   clWhite: "#FFFFFF",
 };
 
-const fileInput = ref(null);
-const exporting = ref(false);
-const exportDone = ref(false);
-const importing = ref(false);
-const importResult = ref(null);
+/* ---- Estado ---- */
 
-function delphiColorToWeb(delphi) {
+const fileInput = ref<HTMLInputElement | null>(null);
+const exporting = ref<boolean>(false);
+const exportDone = ref<boolean>(false);
+const importing = ref<boolean>(false);
+const importResult = ref<ImportResult | null>(null);
+
+/* ---- Helpers ---- */
+
+function delphiColorToWeb(delphi: string | null | undefined): string {
   if (!delphi) return "#4F0000";
   if (delphi.startsWith("$")) {
     const hex = delphi.slice(1);
@@ -96,23 +150,12 @@ function delphiColorToWeb(delphi) {
   return DELPHI_NAMED_COLORS[delphi] || delphi;
 }
 
-function mapLjaTipo(tipo) {
-  const map = {
-    musica: "musica",
-    anotacao: "anotacao",
-    arquivo: "arquivo",
-    site: "site",
-    categoria: "categoria",
-    itensAgendados: "itens-agendados",
-  };
-  return map[tipo] || "anotacao";
-}
-
-function parseLja(text) {
-  const sections = parseIniWithSections(text);
+function parseLja(text: string): DayItemsMap {
+  const { parseIniWithSections } = SljaConverter;
+  const sections = parseIniWithSections(text) as LjaSections;
   const geral = sections["Geral"] || {};
-  const days = {};
-  const seen = new Set();
+  const days: DayItemsMap = {};
+  const seen = new Set<string>();
 
   for (let dayIdx = 0; dayIdx <= 6; dayIdx++) {
     const groupKey = String(dayIdx + 1);
@@ -121,9 +164,9 @@ function parseLja(text) {
 
     const itemIds = keysStr
       .split(";")
-      .map((s) => s.trim())
+      .map((s: string) => s.trim())
       .filter(Boolean);
-    const dayItems = [];
+    const dayItems: LiturgyItem[] = [];
 
     for (const id of itemIds) {
       if (seen.has(id)) continue;
@@ -132,9 +175,9 @@ function parseLja(text) {
       const raw = sections[id];
       if (!raw) continue;
 
-      const tipo = mapLjaTipo(raw.tipo);
-      const item = {
-        id: Number(id.replace(/\D/g, "")) || Date.now() + dayItems.length,
+      const tipo = LiturgyItemTypeEnum.fromString(raw.tipo)!!;
+      const item: LiturgyItem = {
+        id: Number(id.replace(/\D/g, "")).toString() || (Date.now() + dayItems.length).toString(),
         tipo,
         item: raw.item || "",
         subitem: raw.subitem || "",
@@ -148,6 +191,7 @@ function parseLja(text) {
         escolha: raw.escolha === "1",
         subtipo: raw.subtipo || "",
         checked: raw.checked || "",
+        has_instrumental_music: raw.has_instrumental_music,
       };
       dayItems.push(item);
     }
@@ -160,30 +204,35 @@ function parseLja(text) {
   return days;
 }
 
-async function doExport() {
+/* ---- Export ---- */
+
+async function doExport(): Promise<void> {
   exporting.value = true;
   exportDone.value = false;
   importResult.value = null;
 
   try {
-    const days = {};
-    const dayNotes = {};
+    const days: DayItemsMap = {};
+    const dayNotes: DayNotes = {};
     for (let d = 0; d <= 6; d++) {
-      const list = $liturgy.list(d);
+      const list: LiturgyItem[] = $liturgy.list(d) ?? [];
       if (list.length > 0) days[d] = list;
-      const note = $liturgy.getDayNote(d);
+      const note: string = $liturgy.getDayNote(d) ?? "";
       if (note) dayNotes[d] = note;
     }
 
-    const payload = {
+    const scheduledCategories: unknown[] = $liturgy.scheduledCategories() ?? [];
+    const scheduledItems: unknown[] = $liturgy.scheduledItems() ?? [];
+
+    const payload: LiturgyExportPayload = {
       version: 1,
       type: "louvorja-liturgy",
       exported_at: new Date().toISOString(),
       data: {
         days,
         day_notes: dayNotes,
-        scheduled_categories: $liturgy.scheduledCategories(),
-        scheduled_items: $liturgy.scheduledItems(),
+        scheduled_categories: scheduledCategories,
+        scheduled_items: scheduledItems,
       },
     };
 
@@ -209,12 +258,15 @@ async function doExport() {
   }
 }
 
-function pickFile() {
+function pickFile(): void {
   fileInput.value?.click();
 }
 
-async function onFileSelected(e) {
-  const file = e.target.files?.[0];
+/* ---- Import ---- */
+
+async function onFileSelected(e: Event): Promise<void> {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
   if (!file) return;
 
   importing.value = true;
@@ -222,7 +274,7 @@ async function onFileSelected(e) {
 
   try {
     const buf = await file.arrayBuffer();
-    let text;
+    let text: string;
     try {
       text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
     } catch {
@@ -251,7 +303,7 @@ async function onFileSelected(e) {
       return;
     }
 
-    const parsed = JSON.parse(text);
+    const parsed: LiturgyImportPayload = JSON.parse(text);
     if (parsed?.type !== "louvorja-liturgy" || !parsed?.data) {
       importResult.value = {
         ok: false,
@@ -259,7 +311,6 @@ async function onFileSelected(e) {
       };
       return;
     }
-    const activeDay = $liturgy.getActiveDay();
     const dayData = parsed.data.days;
     if (dayData && typeof dayData === "object") {
       for (const [dayStr, dayItems] of Object.entries(dayData)) {
@@ -286,7 +337,7 @@ async function onFileSelected(e) {
     importResult.value = { ok: false, msg: "Erro ao importar arquivo." };
   } finally {
     importing.value = false;
-    e.target.value = "";
+    target.value = "";
   }
 }
 </script>
