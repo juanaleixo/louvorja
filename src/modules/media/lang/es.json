@@ -13,7 +13,12 @@
     "instrumental": "Pista",
     "no_audio": "Sin Audio",
     "lyric": "Letra de la Canción",
-    "track": "Pista"
+    "track": "Pista",
+    "video_quality": "Calidad",
+    "channel": "Canal",
+    "post_date": "Fecha de publicación",
+    "views": "Visualizaciones",
+    "video_link": "Enlace del video"
   },
   "inputs": {
     "lazy_load": "Carga Dinámica",

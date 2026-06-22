@@ -1,6 +1,7 @@
 {
   "title": "Liturgia",
   "ribbon": {
+    "title_ctx": "Configurar Liturgia",
     "add": "Adicionar",
     "items": "Itens",
     "options": "Opções",

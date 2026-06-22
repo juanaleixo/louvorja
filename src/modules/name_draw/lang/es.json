@@ -8,5 +8,8 @@
     "fullscreen": "Pantalla completa",
     "apply": "Aplicar"
   },
-  "data": { "drawn": "Sorteados", "remaining": "Restantes" }
+  "data": { "drawn": "Sorteados", "remaining": "Restantes" },
+  "ribbon": {
+    "title_ctx": "Configurar Nombres"
+  }
 }

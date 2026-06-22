@@ -2,7 +2,7 @@
   <div class="ribbon">
     <!-- Linha de tabs -->
     <div class="ribbon-tabs-row">
-      <AppMenuButton class="ribbon-app-menu" />
+      <AppMenu class="ribbon-app-menu" />
 
       <div class="ribbon-tabs" role="tablist" :aria-label="$t('shell.ribbon_nav')">
         <button
@@ -130,6 +130,7 @@
               :size="btn.size || 'large'"
               :active="isButtonActive(btn)"
               :hidden="!isButtonActive(btn)"
+              :disabled="btn.disabled"
               :testid="`ribbon-btn-${btn.id}`"
               @click="executeButton(btn)"
             />
@@ -149,23 +150,24 @@ import { useI18n } from "vue-i18n";
 import RibbonGroup from "./RibbonGroup.vue";
 import RibbonButton from "./RibbonButton.vue";
 import RibbonScreenButton from "./RibbonScreenButton.vue";
-import AppMenuButton from "./AppMenuButton.vue";
+import AppMenu from "./AppMenu.vue";
 import ShellTools from "./ShellTools.vue";
 import { useShell } from "@/composables/useShell";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useDisplays } from "@/composables/useDisplays";
-import { RIBBON_PAGES } from "./ribbon-pages.js";
 import Platform from "@/helpers/Platform";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $modules from "@/helpers/Modules";
+import $alert from "@/helpers/Alert";
 import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { getRibbonModules } from "@/config/module";
 
 const { t } = useI18n();
 const shell = useShell();
-
+const modules = getRibbonModules;
 const activePage = ref("collections");
 
 const inputValues = reactive({});
@@ -175,7 +177,7 @@ const { displays, setPreferred, getPreferred } = useDisplays();
 const dynamicSelectOptions = reactive({});
 
 const customComponents = {};
-//
+
 const moduleComponentGlob = import.meta.glob("/src/modules/*/components/*.vue");
 function resolveCustomComponent(moduleId, componentName) {
   if (!moduleId || !componentName) return null;
@@ -210,7 +212,7 @@ loadDynamicOptions();
 
 function getModuleIdForGroup(group) {
   if (group.modules?.length) return group.modules[0];
-  const page = RIBBON_PAGES.find((p) => p.id === activePage.value);
+  const page = modules.find((p) => p.id === activePage.value);
   if (page?.activeOnModules?.length) return page.activeOnModules[0];
   return page?.defaultModule || null;
 }
@@ -291,7 +293,7 @@ const openModuleIds = computed(() => {
 });
 
 const visiblePages = computed(() =>
-  RIBBON_PAGES.filter((p) => {
+  modules.filter((p) => {
     if (!p.contextual) return true;
     if (!activeModuleId.value) return false;
 
@@ -299,16 +301,14 @@ const visiblePages = computed(() =>
   })
 );
 
-const activePageObj = computed(() => RIBBON_PAGES.find((p) => p.id === activePage.value));
+const activePageObj = computed(() => modules.find((p) => p.id === activePage.value));
 const activeGroups = computed(() => activePageObj.value?.groups || []);
 const isContextualActive = computed(() => !!activePageObj.value?.contextual);
 
 function selectContextualPageForModule(moduleId) {
   if (!moduleId) return;
 
-  const ctxPage = RIBBON_PAGES.find(
-    (p) => p.contextual && (p.activeOnModules || []).includes(moduleId)
-  );
+  const ctxPage = modules.find((p) => p.contextual && (p.activeOnModules || []).includes(moduleId));
 
   if (ctxPage) {
     activePage.value = ctxPage.id;
@@ -333,7 +333,7 @@ watch(activeModuleId, (moduleId) => {
 
 function selectPage(id) {
   activePage.value = id;
-  const page = RIBBON_PAGES.find((p) => p.id === id);
+  const page = modules.find((p) => p.id === id);
   if (page?.defaultModule) $modules.open(page.defaultModule);
 }
 
@@ -406,8 +406,13 @@ function executeButton(btn) {
     // Marca qual botão originou a abertura — evita destacar todos os botões
     // que mapeiam ao mesmo módulo (collections "Diversas" vs "Personalizadas",
     // stopwatch "de Culto" vs "Cronômetro", etc).
-    $appdata.set(`modules.${btn.module}.last_btn`, btn.id);
+    if (!$modules.check(btn.module)) {
+      console.error(`[RibbonBar] Module "${btn.module}" not available`);
+      $alert.error(`shell.not_implemented`);
+      return;
+    }
     $modules.open(btn.module);
+    $appdata.set(`modules.${btn.module}.last_btn`, btn.id);
     return;
   }
   if (btn.action === "search_music") {

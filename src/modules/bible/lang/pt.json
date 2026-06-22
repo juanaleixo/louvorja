@@ -1,5 +1,8 @@
 {
   "title": "Bíblia",
+  "ribbon": {
+    "title_ctx": "Configurar Bíblia"
+  },
   "version": "Versão",
   "book": "Livro",
   "chapter": "Capítulo",

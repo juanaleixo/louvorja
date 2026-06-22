@@ -5,6 +5,7 @@
     :class="[`ribbon-btn--${size}`, { 'ribbon-btn--active': active }]"
     :title="label"
     :data-testid="testid"
+    :disabled="disabled"
     @click="$emit('click', $event)"
   >
     <v-icon
@@ -25,6 +26,7 @@ const props = defineProps({
   label: { type: String, required: true },
   size: { type: String, default: "large" },
   active: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
   iconColor: { type: String, default: null },
   testid: { type: String, default: null },
 });

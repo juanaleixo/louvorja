@@ -406,24 +406,7 @@
       "collections_online": "Coletâneas On-line",
       "bible": "Bíblia",
       "utilities": "Utilitários",
-      "favorites": "Favoritos",
-      "ctx_hymnal": "Configurar Hinos",
-      "ctx_liturgy": "Configurar Liturgia",
-      "ctx_bible": "Configurar Bíblia",
-      "ctx_slide_editor": "Editor de Músicas",
-      "ctx_slide_editor_file": "Arquivo",
-      "ctx_slide_editor_slides": "Slides",
-      "ctx_slide_editor_audio": "Áudio/Gravação",
-      "ctx_slide_editor_view": "Visualização",
-      "ctx_counter": "Configurar Contador",
-      "ctx_draw": "Configurar Sorteio",
-      "ctx_name_draw": "Configurar Nomes",
-      "ctx_clock": "Configurar Relógio",
-      "ctx_stopwatch": "Configurar Cronômetro",
-      "ctx_timer": "Configurar Temporizador",
-      "ctx_message_board": "Configurar Recados",
-      "ctx_online_videos": "Vídeos On-line",
-      "ctx_custom_videos": "Vídeos Personalizados"
+      "favorites": "Favoritos"
     },
     "groups": {
       "hymnal_adventist": "Hinário Adventista",
@@ -663,6 +646,7 @@
     "ribbon_nav": "Navegação da Ribbon",
     "no_modules_open": "Nenhum módulo aberto",
     "empty_ribbon_page": "Selecione uma aba",
+    "not_implemented": "Não implementado",
     "appmenu_content_placeholder": "Selecione uma opção do menu para configurar.",
     "appmenu_items": {
       "about": "Sobre...",

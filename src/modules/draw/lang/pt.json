@@ -2,5 +2,8 @@
   "title": "Sorteio",
   "inputs": { "min": "Mínimo", "max": "Máximo" },
   "actions": { "draw": "Sortear", "reset": "Reiniciar", "fullscreen": "Tela cheia" },
-  "data": { "drawn": "Números sorteados", "remaining": "Restantes" }
+  "data": { "drawn": "Números sorteados", "remaining": "Restantes" },
+  "ribbon": {
+    "title_ctx": "Configurar Sorteio"
+  }
 }

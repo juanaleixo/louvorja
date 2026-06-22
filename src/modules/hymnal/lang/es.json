@@ -20,5 +20,8 @@
   "playback": "Playback",
   "export_error": "Error al exportar el archivo de audio.",
   "export_not_found": "Datos de la música no encontrados.",
-  "export_no_file": "Archivo de audio no disponible para esta versión."
+  "export_no_file": "Archivo de audio no disponible para esta versión.",
+  "ribbon": {
+    "title_ctx": "Configurar Himnos"
+  }
 }

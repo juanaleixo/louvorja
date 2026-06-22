@@ -16,5 +16,8 @@
     "video_5": "Raridad",
     "video_6": "Océanos"
   },
-  "actions": { "project": "Proyectar", "stop": "Detener" }
+  "actions": { "project": "Proyectar", "stop": "Detener" },
+  "ribbon": {
+    "title_ctx": "Vídeos On-line"
+  }
 }

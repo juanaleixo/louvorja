@@ -16,10 +16,12 @@ defineProps({
 
 const contentRef = ref(null);
 
+//Verificação da largura dos menus para não cortar o conteúdo
 onMounted(() => {
   const el = contentRef.value;
   if (!el) return;
-  // Verifica a largura em tempo de execução para não cortar o conteúdo
+  const anyVisible = Array.from(el.children).some((child) => !child.hasAttribute("hidden"));
+  if (!anyVisible) return;
   if (el.scrollWidth > el.clientWidth) {
     el.style.minWidth = el.scrollWidth + "px";
   }
@@ -54,8 +56,9 @@ onMounted(() => {
      overflow: hidden previne sobreposição visual com o label do grupo
      se o conteúdo tentar estourar. */
   max-height: calc(var(--lj-ribbon-body-height) - var(--lj-group-label-height) - 8px);
+  min-width: 50px;
   overflow: hidden;
-  align-content: flex-start;
+  align-content: center;
 }
 
 .ribbon-group-label {

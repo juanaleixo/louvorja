@@ -1,0 +1,14 @@
+export enum LiturgyItemTypeEnum {
+  ANOTACAO = "anotacao",
+  ARQUIVO = "arquivo",
+  CATEGORIA = "categoria",
+  ITENS_AGENDADOS = "itens-agendados",
+  MUSICA = "musica",
+  SITE = "site",
+}
+
+export namespace LiturgyItemTypeEnum {
+  export function fromString(value: string): LiturgyItemTypeEnum | undefined {
+    return Object.values(LiturgyItemTypeEnum).find((v) => v === value) as LiturgyItemTypeEnum;
+  }
+}

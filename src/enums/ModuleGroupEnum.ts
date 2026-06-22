@@ -1,0 +1,16 @@
+export enum ModuleGroupEnum {
+  ALBUMS = "albums",
+  HYMNAL = "hymnal",
+  CATEGORIES = "categories",
+  ONLINE_VIDEOS = "online_videos",
+  USER = "user",
+  SEARCH = "search",
+  BIBLE_GENERAL = "bible_general",
+  CHURCH = "church",
+  DRAWS = "draws",
+  TIME = "time",
+  TEXTS = "texts",
+  FAVORITES_LIST = "favorites_list",
+  REMOTE = "remote",
+  THEME = "theme",
+}

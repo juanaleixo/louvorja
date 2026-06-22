@@ -20,5 +20,8 @@
   "playback": "Playback",
   "export_error": "Erro ao exportar o arquivo de áudio.",
   "export_not_found": "Dados da música não encontrados.",
-  "export_no_file": "Arquivo de áudio não disponível para esta versão."
+  "export_no_file": "Arquivo de áudio não disponível para esta versão.",
+  "ribbon": {
+    "title_ctx": "Configurar Hinos"
+  }
 }

@@ -1,5 +1,8 @@
 {
   "title": "Reloj",
+  "ribbon": {
+    "title_ctx": "Configurar Reloj"
+  },
   "actions": {
     "toggle_format": "Alternar 12h/24h",
     "toggle_seconds": "Mostrar/ocultar segundos",

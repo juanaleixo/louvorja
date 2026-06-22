@@ -1,5 +1,12 @@
 {
   "title": "Editor de Músicas",
+  "ribbon": {
+    "title_ctx": "Editor de Músicas",
+    "title_ctx_file": "Arquivo",
+    "title_ctx_slides": "Slides",
+    "title_ctx_audio": "Áudio/Gravação",
+    "title_ctx_view": "Visualização"
+  },
   "tabs": {
     "file": "Arquivo",
     "slides": "Slides",

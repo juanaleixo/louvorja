@@ -19,5 +19,8 @@
   "invalid_url": "URL de YouTube inválida.",
   "save": "Guardar",
   "cancel": "Cancelar",
-  "name_required": "Ingresa un nombre para el video."
+  "name_required": "Ingresa un nombre para el video.",
+  "ribbon": {
+    "title_ctx": "Vídeos Personalizados"
+  }
 }
