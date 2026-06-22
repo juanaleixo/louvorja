@@ -37,6 +37,7 @@ const FEATURE_BIBLE      = "bible";    // /projection/bible
 const FEATURE_BIBLE_RETURN = "bible_return"; // /projection/bible/return
 const FEATURE_FILE_PROJECTION = "file_projection"; // /projection/file
 const FEATURE_FILE_RETURN = "file_return"; // /projection/file/return
+const FEATURE_ONLINE_VIDEO = "online_video"; // feature para vídeos on-line (YouTube)
 
 const _openWebWindows: Record<string, Window | null> = {};
 
@@ -179,7 +180,7 @@ export async function openFileProjectionWindows(): Promise<void> {
   const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
 
   // Projeção de arquivo — fallback para monitor de vídeos, depois projeção principal
-  const fileProjMonitor = prefs[FEATURE_FILE_PROJECTION] ?? prefs["videos"] ?? prefs[FEATURE_PROJECTION] ?? null;
+  const fileProjMonitor = prefs[FEATURE_FILE_PROJECTION] ?? prefs[FEATURE_ONLINE_VIDEO] ?? prefs[FEATURE_PROJECTION] ?? null;
   if (fileProjMonitor != null) {
     await _open("/projection/file", FEATURE_FILE_PROJECTION, fileProjMonitor, fullscreen, alwaysOnTop);
   }
@@ -202,7 +203,7 @@ export async function openFileProjectionWindows(): Promise<void> {
 
 /**
  * Abre janelas de projeção para VÍDEOS ON-LINE (YouTube).
- * Usa a feature "videos" diretamente, sem passar pelo fallback
+ * Usa a feature "online_video" diretamente, sem passar pelo fallback
  * "file_projection", para não conflitar com a configuração do
  * Player de Áudio/Vídeo (que pode estar em monitor diferente).
  */
@@ -211,8 +212,8 @@ export async function openVideoProjectionWindows(): Promise<void> {
   const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
   const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
 
-  // Usa feature "videos" sem fallback para file_projection
-  const videoMonitor = prefs["videos"] ?? prefs[FEATURE_PROJECTION] ?? null;
+  // Usa feature "online_video" sem fallback para file_projection
+  const videoMonitor = prefs[FEATURE_ONLINE_VIDEO] ?? prefs[FEATURE_PROJECTION] ?? null;
   if (videoMonitor != null) {
     await _open("/projection/file", FEATURE_FILE_PROJECTION, videoMonitor, fullscreen, alwaysOnTop);
   }

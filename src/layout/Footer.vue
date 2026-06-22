@@ -2,16 +2,24 @@
   <footer id="footer-bar" class="footer" :class="{ 'footer--player': hasPlayer }">
     <!-- Modo Player Delphi-style -->
     <div v-if="hasPlayer" class="player">
-      <div class="player-title">
-        <v-icon icon="mdi-music" size="14" class="player-title-icon" />
+      <div class="player-title" :class="{ 'player-title--youtube': isYouTube }">
+        <v-icon
+          :icon="isYouTube ? 'mdi-youtube' : 'mdi-music'"
+          size="14"
+          class="player-title-icon"
+          :color="isYouTube ? '#fff' : undefined"
+        />
         <span class="player-title-text lj-u-truncate">
-          {{ $t("shell.playing") }}: {{ playerTitle }}
+          <template v-if="isYouTube">{{ $t("shell.playing_youtube") }}:</template>
+          <template v-else>{{ $t("shell.playing") }}:</template>
+          {{ playerTitle }}
         </span>
       </div>
 
       <div class="player-row">
         <div class="player-controls">
           <button
+            v-if="hasSlides"
             type="button"
             class="player-btn"
             :title="$t('shell.player.first')"
@@ -21,6 +29,7 @@
             <v-icon icon="mdi-skip-previous" size="22" />
           </button>
           <button
+            v-if="hasSlides"
             type="button"
             class="player-btn"
             :title="$t('shell.player.prev')"
@@ -32,6 +41,15 @@
           <button
             v-if="hasAudio"
             type="button"
+            class="player-btn"
+            :title="$t('shell.player.rewind')"
+            @click="rewind()"
+          >
+            <v-icon icon="mdi-rewind-10" size="20" />
+          </button>
+          <button
+            v-if="hasAudio"
+            type="button"
             class="player-btn player-btn--primary"
             :title="isPaused ? $t('shell.player.play') : $t('shell.player.pause')"
             @click="togglePlay"
@@ -39,6 +57,16 @@
             <v-icon :icon="isPaused ? 'mdi-play' : 'mdi-pause'" size="24" />
           </button>
           <button
+            v-if="hasAudio"
+            type="button"
+            class="player-btn"
+            :title="$t('shell.player.forward')"
+            @click="forward()"
+          >
+            <v-icon icon="mdi-fast-forward-10" size="20" />
+          </button>
+          <button
+            v-if="hasSlides"
             type="button"
             class="player-btn"
             :title="$t('shell.player.next')"
@@ -48,6 +76,7 @@
             <v-icon icon="mdi-chevron-right" size="22" />
           </button>
           <button
+            v-if="hasSlides"
             type="button"
             class="player-btn"
             :title="$t('shell.player.last')"
@@ -75,7 +104,9 @@
             <span class="player-time-sep">/</span>
             {{ shortTime(duration) }}
           </span>
-          <span class="player-counter">{{ slideIndex + 1 }} / {{ totalSlides }}</span>
+          <span v-if="hasSlides" class="player-counter">
+            {{ slideIndex + 1 }} / {{ totalSlides }}
+          </span>
           <button
             type="button"
             class="player-btn player-btn--small"
@@ -137,8 +168,23 @@ const hasPlayer = computed(() => {
 
 const hasAudio = computed(() => {
   const url = media.value?.config?.audio;
-  return typeof url === "string" && url !== "";
+  const isYT = media.value?.config?.is_youtube;
+  const isVF = media.value?.config?.video_file;
+  return (typeof url === "string" && url !== "") || !!isYT || !!isVF;
 });
+
+const hasSlides = computed(() => {
+  console.log(media.value);
+  if (
+    media.value?.config?.is_youtube ||
+    media.value?.config?.video_file ||
+    media.value?.config?.audio_only
+  )
+    return false;
+  return (Number(media.value?.config?.last_slide) || 0) > 0;
+});
+
+const isYouTube = computed(() => !!media.value?.config?.is_youtube);
 
 const isPaused = computed(() => media.value?.config?.is_paused !== false);
 const isMute = computed(() => Number(media.value?.config?.volume) <= 0);
@@ -174,6 +220,8 @@ const slideText = computed(() => {
 const shortTime = (t) => DateTime.shortTime(t);
 const firstSlide = () => Media.firstSlide();
 const prevSlide = () => Media.prevSlide();
+const rewind = () => Media.advanceTime(-10);
+const forward = () => Media.advanceTime(10);
 const nextSlide = () => Media.nextSlide();
 const lastSlide = () => Media.lastSlide();
 const closeMedia = () => Media.close();
@@ -186,7 +234,7 @@ function togglePlay() {
 }
 
 function onTimelineClick(e) {
-  if (!hasAudio.value || !duration.value) return;
+  if (!duration.value) return;
   const rect = e.currentTarget.getBoundingClientRect();
   const ratio = (e.clientX - rect.left) / rect.width;
   const time = duration.value * Math.max(0, Math.min(1, ratio));
@@ -255,6 +303,15 @@ onMounted(loadDBVersion);
 
 .player-title-text {
   letter-spacing: 0.02em;
+}
+
+.player-title--youtube {
+  background: #c0392b;
+  color: #fff;
+}
+
+.player-title--youtube .player-title-icon {
+  opacity: 1;
 }
 
 .player-row {

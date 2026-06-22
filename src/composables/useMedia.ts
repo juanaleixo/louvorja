@@ -14,7 +14,7 @@ import { useSlides } from "@/composables/useSlides";
 import type { Slide } from "@/composables/useSlides";
 import { useLyric } from "@/composables/useLyric";
 import { useAlbum } from "@/composables/useAlbum";
-import { openProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import { openProjectionWindows, openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import { Music } from "@/types/Music";
 import { LyricOpenParams } from "@/types/Lyric";
 
@@ -29,12 +29,19 @@ let _loadingId: string | number | null = null;
 // drenando bytes da rede e ocupando handlers).
 let _audioXhr: XMLHttpRequest | null = null;
 
+// YouTube mode
+let _ytUnlisten: (() => void) | null = null;
+
 function _broadcastVideoState(currentTime?: number, isPaused?: boolean): void {
   if (!$appdata.get("modules.media.config.video_file")) return;
   $broadcast.send(BROADCAST_TYPE.VIDEO_STATE, {
     currentTime: currentTime ?? _audio.currentTime.value,
     isPaused: isPaused ?? _audio.isPaused.value,
   });
+}
+
+function _isYouTube(): boolean {
+  return !!$appdata.get("modules.media.config.is_youtube");
 }
 
 function _loadAudioSrc(
@@ -334,6 +341,37 @@ const _self = {
   },
 
   close(force = false): void {
+    if (_isYouTube()) {
+      if (!force) {
+        const key = "modules.media.alerts.close";
+        const self = this;
+        $alert.yesno({title: key}, function (btn?: string) {
+          if (btn == "yes") self.close(true);
+        });
+        return;
+      }
+
+      if (_ytUnlisten) {
+        _ytUnlisten();
+        _ytUnlisten = null;
+      }
+
+      try {
+        localStorage.removeItem("lj_file_projection");
+      } catch {
+        /* ignore */
+      }
+
+      this.clearVariables();
+      $appdata.set("modules.media.show", false);
+      $appdata.set("modules.media.minimized", false);
+      $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
+      closeProjectionWindows().catch((e) => {
+        console.warn("[Media] closeProjectionWindows falhou:", e);
+      });
+      return;
+    }
+
     if (!force) {
       const self = this;
       const key = $appdata.get("modules.media.config.audio_only")
@@ -477,6 +515,57 @@ const _self = {
     this.minimize();
   },
 
+  async openYouTube(url: string, title: string): Promise<void> {
+    $dev.write("open youtube", { url, title });
+
+    if (_isYouTube()) this.close(true);
+
+    _audio.stop();
+    this.clearVariables();
+
+    $appdata.set("modules.media.show", true);
+    $appdata.set("modules.media.config.title", title);
+    $appdata.set("modules.media.config.is_youtube", true);
+    $appdata.set("modules.media.config.youtube_url", url);
+    $appdata.set("modules.media.config.is_paused", false);
+    $appdata.set("modules.media.config.audio", "");
+    $appdata.set("modules.media.config.audio_only", false);
+    $appdata.set("modules.media.config.mode", "audio");
+    $appdata.set("modules.media.loading", false);
+
+    _audio.currentTime.value = 0;
+    _audio.duration.value = 0;
+    _audio.isPaused.value = false;
+    _audio.progress.value = 0;
+
+    this.minimize();
+
+    try {
+      localStorage.setItem("lj_file_projection", JSON.stringify({ url, type: "youtube", title }));
+    } catch {
+      /* ignore */
+    }
+
+    await openFileProjectionWindows();
+
+    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type: "youtube", title });
+
+    _ytUnlisten = $broadcast.listen((msg) => {
+      if (msg.type !== BROADCAST_TYPE.YOUTUBE_STATE) return;
+      const p = msg.payload as Record<string, unknown>;
+      if (!p) return;
+      _audio.currentTime.value = typeof p.currentTime === "number" ? p.currentTime : _audio.currentTime.value;
+      _audio.duration.value = typeof p.duration === "number" ? p.duration : _audio.duration.value;
+      _audio.isPaused.value = typeof p.isPaused === "boolean" ? p.isPaused : _audio.isPaused.value;
+      _audio.progress.value = _audio.duration.value > 0 ? (_audio.currentTime.value / _audio.duration.value) * 100 : 0;
+
+      $appdata.set("modules.media.config.current_time", _audio.currentTime.value);
+      $appdata.set("modules.media.config.duration", _audio.duration.value);
+      $appdata.set("modules.media.config.is_paused", _audio.isPaused.value);
+      $appdata.set("modules.media.config.progress", _audio.progress.value);
+    });
+  },
+
   clearVariables(): void {
     _slides.reset();
     _audio.reset();
@@ -496,6 +585,7 @@ const _self = {
     $appdata.set("modules.media.config.is_fading", false);
     $appdata.set("modules.media.config.audio_only", false);
     $appdata.set("modules.media.config.video_file", false);
+    $appdata.set("modules.media.config.is_youtube", false);
   },
 
   minimize(): void {
@@ -537,12 +627,19 @@ const _self = {
   },
 
   goToTime(time: number): void {
-    _audio.seekTo(time);
-    _broadcastVideoState(time);
+    if (_isYouTube()) {
+      $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "seekTo", value: time });
+    } else {
+      _audio.seekTo(time);
+      _broadcastVideoState(time);
+    }
   },
 
   advanceTime(time = 10): void {
-    if (_audio.duration.value > 0 && $appdata.get("modules.media.config.audio") != "") {
+    if (_isYouTube()) {
+      const newTime = Math.max(0, _audio.currentTime.value + time);
+      $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "seekTo", value: newTime });
+    } else if (_audio.duration.value > 0 && $appdata.get("modules.media.config.audio") != "") {
       _audio.advanceTime(time);
       _broadcastVideoState();
     }
@@ -553,6 +650,20 @@ const _self = {
   },
 
   pause(bool = true, callback?: () => void): void {
+    if (_isYouTube()) {
+      if (bool) {
+        $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "pause" });
+        $appdata.set("modules.media.config.is_paused", true);
+        _audio.isPaused.value = true;
+      } else {
+        $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "play" });
+        $appdata.set("modules.media.config.is_paused", false);
+        _audio.isPaused.value = false;
+      }
+      if (callback) callback();
+      return;
+    }
+
     const fade_audio = $userdata.get("modules.media.fade_audio", false);
     const isVideo = $appdata.get("modules.media.config.video_file");
 
@@ -598,6 +709,9 @@ const _self = {
   setVolume(val: number): void {
     _audio.setVolume(val);
     $appdata.set("modules.media.config.volume", val);
+    if (_isYouTube()) {
+      $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "setVolume", value: val });
+    }
   },
 
   toogleVolume(): void {

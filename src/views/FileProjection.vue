@@ -23,28 +23,104 @@
   <div v-else class="file-projection__empty"></div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
+import Media from "@/composables/useMedia";
 
-const fileProjection = reactive({
+interface FileProjectionState {
+  active: boolean;
+  type: string;
+  url: string;
+  title: string;
+}
+
+interface FileProjectionPayload {
+  url?: string;
+  type?: string;
+  title?: string;
+  [key: string]: unknown;
+}
+
+interface VideoStatePayload {
+  currentTime?: number;
+  isPaused?: boolean;
+}
+
+interface YouTubeControlPayload {
+  action: string;
+  value?: number;
+}
+
+interface YouTubeStatePayload {
+  currentTime: number;
+  isPaused: boolean;
+  duration: number;
+}
+
+interface YTPlayer {
+  playVideo(): void;
+  pauseVideo(): void;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getCurrentTime(): number;
+  getDuration(): number;
+  getPlayerState(): number;
+  setVolume(volume: number): void;
+  unMute?(): void;
+  mute?(): void;
+  destroy(): void;
+}
+
+interface YTPlayerOptions {
+  height: string;
+  width: string;
+  videoId: string;
+  playerVars: {
+    autoplay: number;
+    mute: number;
+    rel: number;
+    controls: number;
+    modestbranding: number;
+  };
+  events: {
+    onReady: () => void;
+    onStateChange: (e: { data: number }) => void;
+  };
+}
+
+interface YTAPI {
+  Player: {
+    new (element: HTMLElement | null, options: YTPlayerOptions): YTPlayer;
+  };
+  PlayerState: {
+    PLAYING: number;
+    ENDED: number;
+  };
+}
+
+function getYT(): YTAPI | null {
+  return (window as unknown as { YT?: YTAPI }).YT ?? null;
+}
+
+const fileProjection = reactive<FileProjectionState>({
   active: false,
   type: "",
   url: "",
   title: "",
 });
 
-const videoRef = ref(null);
-const ytContainer = ref(null);
+const videoRef = ref<HTMLVideoElement | null>(null);
+const ytContainer = ref<HTMLDivElement | null>(null);
 
-let ytPlayer = null;
-let ytSyncTimer = null;
+let ytPlayer: YTPlayer | null = null;
+let ytSyncTimer: ReturnType<typeof setInterval> | null = null;
+let _ytInitializing = false;
 
 const _YT_SYNC_INTERVAL = 500;
 
-function _activateProjection(p) {
+function _activateProjection(p: FileProjectionPayload): void {
   fileProjection.active = true;
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";
@@ -52,12 +128,12 @@ function _activateProjection(p) {
   if (p.type === "youtube") nextTick(() => _initYoutube());
 }
 
-function _readPendingProjection() {
+function _readPendingProjection(): void {
   if (fileProjection.active) return;
   try {
     const stored = localStorage.getItem("lj_file_projection");
     if (stored) {
-      const p = JSON.parse(stored);
+      const p: FileProjectionPayload = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
       localStorage.removeItem("lj_file_projection");
     }
@@ -68,8 +144,8 @@ function _readPendingProjection() {
 _readPendingProjection();
 setTimeout(_readPendingProjection, 500);
 
-useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload) => {
-  _activateProjection(payload || {});
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
+  _activateProjection((payload || {}) as FileProjectionPayload);
 });
 
 useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
@@ -82,26 +158,27 @@ useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
   }
 });
 
-useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload) => {
+useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload: unknown) => {
   if (!fileProjection.active || fileProjection.type !== "video") return;
   const el = videoRef.value;
   if (!el) return;
+  const data = payload as VideoStatePayload;
   el.pause();
-  if (typeof payload.currentTime === "number") el.currentTime = payload.currentTime;
-  if (typeof payload.isPaused === "boolean" && !payload.isPaused) el.play().catch(() => {});
+  if (typeof data.currentTime === "number") el.currentTime = data.currentTime;
+  if (typeof data.isPaused === "boolean" && !data.isPaused) el.play().catch(() => {});
 });
 
-useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload) => {
+useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload: unknown) => {
   if (!fileProjection.active || fileProjection.type !== "youtube") return;
   if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+  const data = payload as VideoStatePayload;
   try {
     const diff = Math.abs(
-      ytPlayer.getCurrentTime() -
-        (typeof payload.currentTime === "number" ? payload.currentTime : 0)
+      ytPlayer.getCurrentTime() - (typeof data.currentTime === "number" ? data.currentTime : 0)
     );
-    if (diff > 1) ytPlayer.seekTo(payload.currentTime, true);
-    if (typeof payload.isPaused === "boolean") {
-      if (payload.isPaused) ytPlayer.pauseVideo();
+    if (diff > 1) ytPlayer.seekTo(data.currentTime as number, true);
+    if (typeof data.isPaused === "boolean") {
+      if (data.isPaused) ytPlayer.pauseVideo();
       else ytPlayer.playVideo();
     }
   } catch {
@@ -109,20 +186,39 @@ useBroadcastListener(BROADCAST_TYPE.VIDEO_STATE, (payload) => {
   }
 });
 
-function _embedUrlToId(url) {
+useBroadcastListener(BROADCAST_TYPE.YOUTUBE_CONTROL, (payload: unknown) => {
+  if (!fileProjection.active || fileProjection.type !== "youtube") return;
+  if (!ytPlayer) return;
+  const data = payload as YouTubeControlPayload;
+  try {
+    if (data.action === "play") ytPlayer.playVideo();
+    else if (data.action === "pause") ytPlayer.pauseVideo();
+    else if (data.action === "seekTo" && typeof data.value === "number")
+      ytPlayer.seekTo(data.value, true);
+    else if (data.action === "setVolume" && typeof data.value === "number")
+      ytPlayer.setVolume(data.value);
+  } catch {
+    /* ignore */
+  }
+});
+
+function _embedUrlToId(url: string): string | null {
   const m = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
 }
 
-function _loadYtApi(cb) {
-  if (window.YT && window.YT.Player) {
-    setTimeout(() => cb(window.YT), 0);
+function _loadYtApi(cb: (YT: YTAPI) => void): void {
+  const yt = getYT();
+  if (yt?.Player) {
+    setTimeout(() => cb(yt), 0);
     return;
   }
-  const prev = window.onYouTubeIframeAPIReady;
-  window.onYouTubeIframeAPIReady = () => {
+  const prev = (window as unknown as { onYouTubeIframeAPIReady?: () => void })
+    .onYouTubeIframeAPIReady;
+  (window as unknown as { onYouTubeIframeAPIReady: () => void }).onYouTubeIframeAPIReady = () => {
     if (prev) prev();
-    cb(window.YT);
+    const ytLoaded = getYT();
+    if (ytLoaded) setTimeout(() => cb(ytLoaded), 0);
   };
   if (!document.querySelector('script[src*="iframe_api"]')) {
     const tag = document.createElement("script");
@@ -131,13 +227,15 @@ function _loadYtApi(cb) {
   }
 }
 
-function _initYoutube() {
+function _initYoutube(): void {
+  if (_ytInitializing) return;
+  _ytInitializing = true;
   _destroyYoutube();
   const id = _embedUrlToId(fileProjection.url);
   if (!id) return;
   if (!ytContainer.value) return;
 
-  _loadYtApi((YT) => {
+  _loadYtApi((YT: YTAPI) => {
     if (!ytContainer.value) return;
     ytPlayer = new YT.Player(ytContainer.value, {
       height: "100%",
@@ -145,21 +243,38 @@ function _initYoutube() {
       videoId: id,
       playerVars: {
         autoplay: 1,
+        mute: 1,
         rel: 0,
         controls: 0,
         modestbranding: 1,
       },
       events: {
         onReady: () => {
+          _ytInitializing = false;
           if (ytPlayer) ytPlayer.playVideo();
-          _startSyncBroadcast();
+          setTimeout(() => {
+            if (ytPlayer && typeof ytPlayer.unMute === "function") {
+              ytPlayer.unMute();
+            }
+          }, 500);
+          _broadcastYtState();
+          _startYtSync();
+        },
+        onStateChange: (e: { data: number }) => {
+          _broadcastYtState();
+          const yt = getYT();
+          if (e.data === yt?.PlayerState.ENDED) {
+            Broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
+            Media.close(true);
+          }
         },
       },
     });
   });
 }
 
-function _destroyYoutube() {
+function _destroyYoutube(): void {
+  _ytInitializing = false;
   if (ytSyncTimer) {
     clearInterval(ytSyncTimer);
     ytSyncTimer = null;
@@ -174,22 +289,29 @@ function _destroyYoutube() {
   }
 }
 
-function _startSyncBroadcast() {
+function _broadcastYtState(): void {
+  if (!ytPlayer || !ytPlayer.getCurrentTime || !fileProjection.active) return;
+  const yt = getYT();
+  if (!yt) return;
+  try {
+    Broadcast.send(BROADCAST_TYPE.YOUTUBE_STATE, {
+      currentTime: ytPlayer.getCurrentTime(),
+      isPaused: ytPlayer.getPlayerState() !== yt.PlayerState.PLAYING,
+      duration: ytPlayer.getDuration() || 0,
+    } as YouTubeStatePayload);
+  } catch {
+    /* ignore */
+  }
+}
+
+function _startYtSync(): void {
   if (ytSyncTimer) clearInterval(ytSyncTimer);
   ytSyncTimer = setInterval(() => {
-    if (!ytPlayer || !ytPlayer.getCurrentTime || !fileProjection.active) return;
-    try {
-      Broadcast.send(BROADCAST_TYPE.VIDEO_STATE, {
-        currentTime: ytPlayer.getCurrentTime(),
-        isPaused: ytPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING,
-      });
-    } catch {
-      /* ignore */
-    }
+    _broadcastYtState();
   }, _YT_SYNC_INTERVAL);
 }
 
-function _onKey(e) {
+function _onKey(e: KeyboardEvent): void {
   if (e.key === "Escape") {
     e.preventDefault();
     if (fileProjection.active) {

@@ -9,7 +9,7 @@ export interface ElectronDisplay {
   isInternal?: boolean;
 }
 
-type DisplayPrefs = Record<string, number | string>;
+type DisplayPrefs = Record<string, number | string | null>;
 
 /**
  * useDisplays — composable que mantém lista reativa de monitores disponíveis.
@@ -20,7 +20,7 @@ type DisplayPrefs = Record<string, number | string>;
  *   - "musicas"  : monitor da projeção principal
  *   - "operador" : monitor da grade de slides
  *   - "retorno"  : monitor do stage display
- *   - "videos"   : monitor de vídeos on-line
+ *   - "online_video" : monitor de vídeos on-line
  *   - "biblia"   : monitor da bíblia
  */
 export function useDisplays(): {
@@ -52,7 +52,7 @@ export function useDisplays(): {
     }
   }
 
-  async function setPreferred(feature: string, displayId: number | string): Promise<void> {
+  async function setPreferred(feature: string, displayId: number | string | null): Promise<void> {
     if (!Platform.displays) return;
     try {
       await Platform.displays.setPreferred(feature, displayId);

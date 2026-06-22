@@ -142,6 +142,16 @@ export const BROADCAST_TYPE = Object.freeze({
    *  tem seu próprio Pinia store.
    *  Payload: { path: string, value: unknown, _src?: string } */
   USERDATA_PATCH: "userdata:patch",
+
+  // ─── YouTube projection bidirectional sync ────────────────────────────────
+
+  /** Estado atual do YouTube na projeção (broadcast da janela de projeção para
+   *  o módulo). Payload: { currentTime: number, isPaused: boolean, duration: number } */
+  YOUTUBE_STATE: "youtube_state",
+
+  /** Comando de controle enviado do módulo para a janela de projeção.
+   *  Payload: { action: "play" | "pause" | "seekTo" | "setVolume", value?: number } */
+  YOUTUBE_CONTROL: "youtube_control",
 } as const);
 
 export type BroadcastTypeValue = (typeof BROADCAST_TYPE)[keyof typeof BROADCAST_TYPE];

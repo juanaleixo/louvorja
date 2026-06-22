@@ -124,6 +124,9 @@ function createWindow() {
 // Lifecycle da Electron app
 // ---------------------------------------------------------------------------
 
+// Permite autoplay de vídeos (YouTube embarcado) sem gesto do usuário
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
 app.whenReady().then(async () => {
   // Limpa Service Workers herdados de execuções anteriores em modo PWA/dev.
   // Em prod desktop o app é file:// e não usa SW, mas se o usuário já abriu
@@ -175,7 +178,7 @@ app.whenReady().then(async () => {
           " font-src 'self' data: file: louvorja: https://fonts.gstatic.com;" +
            " img-src 'self' blob: data: https: file: louvorja:" + (isDev ? " http://localhost:*" : "") + " https://*.ytimg.com https://*.youtube.com;" +
           " media-src 'self' blob: https: file: louvorja: http://localhost:* https://*.googlevideo.com;" +
-          " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com;" +
+           " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com;" +
           " frame-src https://www.youtube.com https://www.youtube-nocookie.com;" +
           " worker-src 'self' file: louvorja:" + (isDev ? " blob:" : "") + ";",
         ],
