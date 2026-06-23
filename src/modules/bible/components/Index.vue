@@ -55,6 +55,52 @@
       </div>
     </template>
 
+    <!-- Quick nav overlay -->
+    <div v-if="quickNav.state.value !== 'idle'" class="quicknav-overlay">
+      <div class="quicknav-card">
+        <div class="quicknav-steps">
+          <div :class="['quicknav-step', { current: quickNav.activeStep.value === 0 }]">
+            <span class="quicknav-step-num">1</span>
+            <span>{{ t("quicknav.step_book") }}</span>
+          </div>
+          <div class="quicknav-arrow">→</div>
+          <div :class="['quicknav-step', { current: quickNav.activeStep.value === 1 }]">
+            <span class="quicknav-step-num">2</span>
+            <span>{{ t("quicknav.step_chapter") }}</span>
+          </div>
+          <div class="quicknav-arrow">→</div>
+          <div :class="['quicknav-step', { current: quickNav.activeStep.value === 2 }]">
+            <span class="quicknav-step-num">3</span>
+            <span>{{ t("quicknav.step_verse") }}</span>
+          </div>
+        </div>
+        <div class="quicknav-display">
+          <div class="quicknav-hint">
+            <template v-if="quickNav.activeStep.value === 0">
+              {{ t("quicknav.hint_book") }}
+            </template>
+            <template v-else-if="quickNav.activeStep.value === 1">
+              {{ t("quicknav.hint_chapter") }}
+            </template>
+            <template v-else>{{ t("quicknav.hint_verse") }}</template>
+          </div>
+          <div class="quicknav-buffer">
+            <span class="quicknav-text">{{ quickNav.buffer.value || "—" }}</span>
+            <span class="quicknav-cursor">|</span>
+          </div>
+          <div class="quicknav-preview">{{ quickNav.feedback.value || " " }}</div>
+          <div class="quicknav-footer">
+            <span v-if="quickNav.activeStep.value === 0" v-html="t('quicknav.foot_book')" />
+            <span v-else-if="quickNav.activeStep.value === 1" v-html="t('quicknav.foot_chapter')" />
+            <span v-else v-html="t('quicknav.foot_verse')" />
+          </div>
+        </div>
+        <button class="quicknav-close" @click="quickNav.reset()">
+          <v-icon size="18">mdi-close</v-icon>
+        </button>
+      </div>
+    </div>
+
     <div v-if="!compact" class="bible-layout">
       <!-- Coluna Formatar -->
       <div v-if="show_format" class="bible-col bible-col--format">
@@ -277,8 +323,8 @@
   </ModuleContainer>
 </template>
 
-<script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
+<script setup lang="ts">
+import { ref, reactive, computed, watch, onMounted, onUnmounted, type Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDisplay } from "vuetify";
 import manifest from "../manifest.json";
@@ -296,35 +342,45 @@ import Database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import { scrollToElement } from "@/helpers/Dom";
+import type {
+  BibleSelection,
+  BibleSelectionData,
+  BibleHistoryEntry,
+  BibleBook,
+  BibleVersion,
+} from "@/types/Bible";
+import { ModuleState } from "@/types/Module";
+import { useBibleQuickNav } from "@/composables/useBibleQuickNav";
 
 const HISTORY_MAX = 30;
 
 const { t: i18nT, locale } = useI18n();
 const { width } = useDisplay();
 const moduleId = manifest.id;
-const module_ = computed(() => Modules.get(moduleId));
+
+const module_ = computed(() => Modules.get(moduleId) as ModuleState | undefined);
 const show = computed(() => module_.value?.show);
 
-const loading = ref(false);
-const loading_book = ref(false);
-const loading_verses = ref(false);
-const lang = ref(null);
-const last_verse = ref(1);
-const last_bible_file = ref(null);
-const versions = ref([]);
-const books = ref([]);
-const verses = ref({});
-const verse_filter = ref("");
-const history_selected = ref(null);
+const loading: Ref<boolean> = ref(false);
+const loading_book: Ref<boolean> = ref(false);
+const loading_verses: Ref<boolean> = ref(false);
+const lang: Ref<string | null> = ref(null);
+const last_verse: Ref<number> = ref(1);
+const last_bible_file: Ref<string | null> = ref(null);
+const versions: Ref<BibleVersion[]> = ref([]);
+const books: Ref<BibleBook[]> = ref([]);
+const verses: Ref<Record<string, string>> = ref({});
+const verse_filter: Ref<string> = ref("");
+const history_selected: Ref<number | null> = ref(null);
 
 const show_history = computed({
-  get: () => UserData.get(`modules.${moduleId}.show_history`, true),
-  set: (v) => UserData.set(`modules.${moduleId}.show_history`, v),
+  get: () => UserData.get(`modules.${moduleId}.show_history`, true) as boolean,
+  set: (v: boolean) => UserData.set(`modules.${moduleId}.show_history`, v),
 });
 
 const show_format = computed({
-  get: () => UserData.get(`modules.${moduleId}.show_format`, false),
-  set: (v) => UserData.set(`modules.${moduleId}.show_format`, v),
+  get: () => UserData.get(`modules.${moduleId}.show_format`, false) as boolean,
+  set: (v: boolean) => UserData.set(`modules.${moduleId}.show_format`, v),
 });
 
 const FONT_OPTIONS = [
@@ -339,7 +395,7 @@ const FONT_OPTIONS = [
 
 // Proxy reativo para campos de customization (lê/escreve em UserData
 // e dispara broadcast para a janela de projeção atualizar em tempo real).
-const fmt = new Proxy(
+const fmt = new Proxy<Record<string, any>>(
   {},
   {
     get(_, key) {
@@ -353,9 +409,11 @@ const fmt = new Proxy(
   }
 );
 
-const history = computed(() => UserData.get(`modules.${moduleId}.history`, []));
+const history = computed<BibleHistoryEntry[]>(
+  () => UserData.get(`modules.${moduleId}.history`, []) || []
+);
 
-const bible = reactive({
+const bible = reactive<BibleSelection>({
   id_bible_version: null,
   id_bible_book: null,
   version: null,
@@ -364,7 +422,7 @@ const bible = reactive({
   verses: [],
 });
 
-const select_bible = reactive({
+const select_bible = reactive<BibleSelectionData>({
   id_bible_version: null,
   id_bible_book: null,
   version: null,
@@ -375,13 +433,32 @@ const select_bible = reactive({
   text: null,
 });
 
-const t = (text) => i18nT(`modules.${moduleId}.${text}`);
+const t = (text: string): string => i18nT(`modules.${moduleId}.${text}`);
 
 const book = computed(() => books.value.find((b) => b.id_bible_book == bible.id_bible_book));
 const version = computed(() =>
   versions.value.find((b) => b.id_bible_version == bible.id_bible_version)
 );
 const chapters = computed(() => book.value?.chapters);
+
+const quickNav = useBibleQuickNav({
+  active: show,
+  books: books as Ref<BibleBook[]>,
+  chapters,
+  verses,
+  onSelectBook: async (id: number) => {
+    await selBook(id);
+  },
+  onSelectChapter: async (ch: number) => {
+    await selChapter(ch);
+  },
+  onSelectVerse: (num: number) => {
+    selVerse(null, num);
+  },
+  onProject: () => {
+    /* selVerse already broadcasts; this is just Enter confirmation */
+  },
+});
 
 const versions_list = computed(() =>
   versions.value.map((v) => ({
@@ -393,8 +470,8 @@ const versions_list = computed(() =>
 const compact = computed(() => width.value <= 750);
 
 const bible_verses = computed({
-  get: () => bible.verses,
-  set: (value) => {
+  get: (): number[] => bible.verses,
+  set: (value: number[]) => {
     if (value.length === 0) {
       clean();
       return;
@@ -404,7 +481,7 @@ const bible_verses = computed({
     } else {
       const added = value.filter((v) => !bible.verses.includes(v));
       const removed = bible.verses.filter((v) => !value.includes(v));
-      const event = { ctrlKey: true };
+      const event = { ctrlKey: true } as MouseEvent;
       if (added.length > 0) {
         selVerse(event, added[0]);
       } else if (removed.length > 0) {
@@ -465,7 +542,7 @@ const _hotkeyClean = () => {
 // o componente nunca desmonta. Resultado: ArrowLeft/Right consumidas pelo
 // Bible mesmo com a janela do media em foco. Agora seguem o show do módulo.
 let _hotkeysRegistered = false;
-function _registerBibleHotkeys() {
+function _registerBibleHotkeys(): void {
   if (_hotkeysRegistered) return;
   Hotkeys.register("ArrowLeft", _hotkeyPrev, {
     context: "bible",
@@ -487,7 +564,7 @@ function _registerBibleHotkeys() {
   });
   _hotkeysRegistered = true;
 }
-function _unregisterBibleHotkeys() {
+function _unregisterBibleHotkeys(): void {
   if (!_hotkeysRegistered) return;
   Hotkeys.unregister("ArrowLeft", _hotkeyPrev);
   Hotkeys.unregister("ArrowRight", _hotkeyNext);
@@ -512,16 +589,16 @@ onUnmounted(() => {
   _unregisterBibleHotkeys();
 });
 
-function send(param, value) {
+function send(param: string, value: unknown): void {
   AppData.set(`modules.${moduleId}.data.${param}`, value);
 }
 
-async function loadData() {
+async function loadData(): Promise<void> {
   loading.value = true;
 
   if (books.value.length <= 0) {
     loading_book.value = true;
-    books.value = await Database.get(`${locale.value}_bible_book`);
+    books.value = (await Database.get(`${locale.value}_bible_book`)) as BibleBook[];
     if (!bible.id_bible_book) {
       await selBook(books.value[0].id_bible_book);
     }
@@ -529,7 +606,7 @@ async function loadData() {
   }
 
   if (versions.value.length <= 0) {
-    versions.value = await Database.get(`${locale.value}_bible_version`);
+    versions.value = (await Database.get(`${locale.value}_bible_version`)) as BibleVersion[];
     if (!bible.id_bible_version) {
       await selVersion(versions.value[0].id_bible_version);
     }
@@ -539,7 +616,7 @@ async function loadData() {
   if (bible_file !== last_bible_file.value) {
     loading_verses.value = true;
     verses.value = {};
-    verses.value = await Database.get(bible_file);
+    verses.value = (await Database.get(bible_file)) as Record<string, string>;
     last_bible_file.value = bible_file;
     loading_verses.value = false;
   }
@@ -556,23 +633,23 @@ async function loadData() {
   loading.value = false;
 }
 
-async function selVersion(id_bible_version) {
+async function selVersion(id_bible_version: number | null): Promise<void> {
   if (id_bible_version) bible.id_bible_version = id_bible_version;
-  bible.version = version.value?.abbreviation;
+  bible.version = version.value?.abbreviation ?? null;
   bible.verses = [];
   last_verse.value = 1;
   await loadData();
 }
 
-async function selBook(id_bible_book) {
+async function selBook(id_bible_book: number): Promise<void> {
   if (id_bible_book) bible.id_bible_book = id_bible_book;
-  bible.book = book.value.name;
+  bible.book = book.value?.name ?? null;
   bible.verses = [];
   last_verse.value = 1;
   if (!bible.chapter) {
     selChapter(1);
-  } else if (bible.chapter > book.value.chapters) {
-    selChapter(book.value.chapters);
+  } else if (bible.chapter > (book.value?.chapters ?? 0)) {
+    selChapter(book.value?.chapters ?? 1);
   } else {
     await loadData();
   }
@@ -580,7 +657,7 @@ async function selBook(id_bible_book) {
   scrollToElement(document.getElementById(`listBook_${id_bible_book}`));
 }
 
-async function selChapter(chapter) {
+async function selChapter(chapter: number): Promise<void> {
   if (chapter) bible.chapter = chapter;
   bible.verses = [];
   last_verse.value = 1;
@@ -589,7 +666,7 @@ async function selChapter(chapter) {
   scrollToElement(document.getElementById(`listChapter_${chapter}`));
 }
 
-async function selVerse(event, num) {
+async function selVerse(event: MouseEvent | null, num: number | string): Promise<void> {
   if (event) {
     try {
       event.preventDefault();
@@ -598,7 +675,7 @@ async function selVerse(event, num) {
     }
   }
 
-  num = parseInt(num, 10);
+  num = parseInt(String(num), 10);
   if (isNaN(num)) return;
 
   if (event?.ctrlKey) {
@@ -635,13 +712,13 @@ async function selVerse(event, num) {
   const max_v = Math.max(0, ...Object.keys(verses.value).map(Number));
   if (num < max_v) {
     const next_v = num + 1;
-    next_text = verses.value[next_v];
+    next_text = verses.value[String(next_v)];
     next_reference = `${bible.book} ${bible.chapter}:${next_v}`;
-  } else if (bible.chapter < book.value.chapters) {
+  } else if ((bible.chapter ?? 0) < (book.value?.chapters ?? 0)) {
     // Tenta pegar do cache se já tivermos carregado o próximo capítulo em algum momento,
     // ou apenas indica o próximo capítulo. Como carregar é async,
     // o ideal seria ter um cache ou carregar antecipadamente.
-    next_reference = `${bible.book} ${bible.chapter + 1}:1`;
+    next_reference = `${bible.book} ${(bible.chapter ?? 0) + 1}:1`;
   }
 
   Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
@@ -658,9 +735,9 @@ async function selVerse(event, num) {
   scrollToElement(document.getElementById(`listVerse_${last_verse.value}`));
 }
 
-function pushHistory(data) {
+function pushHistory(data: BibleSelectionData): void {
   if (!data?.scriptural_reference || !data?.text) return;
-  const entry = {
+  const entry: BibleHistoryEntry = {
     id_bible_version: data.id_bible_version,
     id_bible_book: data.id_bible_book,
     version: data.version,
@@ -671,14 +748,14 @@ function pushHistory(data) {
     text: data.text,
     opened_at: Date.now(),
   };
-  const list = (UserData.get(`modules.${moduleId}.history`, []) || []).filter(
-    (h) => h.scriptural_reference !== entry.scriptural_reference
-  );
+  const list = (
+    (UserData.get(`modules.${moduleId}.history`, []) || []) as BibleHistoryEntry[]
+  ).filter((h) => h.scriptural_reference !== entry.scriptural_reference);
   list.unshift(entry);
   UserData.set(`modules.${moduleId}.history`, list.slice(0, HISTORY_MAX));
 }
 
-async function loadHistoryEntry(entry) {
+async function loadHistoryEntry(entry: BibleHistoryEntry): Promise<void> {
   if (!entry) return;
   if (entry.id_bible_version && entry.id_bible_version !== bible.id_bible_version) {
     await selVersion(entry.id_bible_version);
@@ -692,27 +769,29 @@ async function loadHistoryEntry(entry) {
   if (entry.verses?.length) {
     bible.verses = [];
     for (const v of entry.verses) {
-      selVerse({ ctrlKey: true }, v);
+      selVerse({ ctrlKey: true } as MouseEvent, v);
     }
   }
 }
 
-function removeHistoryEntry() {
+function removeHistoryEntry(): void {
   const idx = history_selected.value;
   if (idx === null || idx === undefined) return;
-  const list = [...(UserData.get(`modules.${moduleId}.history`, []) || [])];
+  const list = [
+    ...((UserData.get(`modules.${moduleId}.history`, []) || []) as BibleHistoryEntry[]),
+  ];
   list.splice(idx, 1);
   UserData.set(`modules.${moduleId}.history`, list);
   history_selected.value = null;
 }
 
-function truncate(text, n) {
+function truncate(text: string | null | undefined, n: number): string {
   if (!text) return "";
   const clean = String(text).replace(/<[^>]+>/g, "");
   return clean.length > n ? clean.slice(0, n).trim() + "…" : clean;
 }
 
-async function prevVerse() {
+async function prevVerse(): Promise<void> {
   if (select_bible?.id_bible_version) await selVersion(select_bible.id_bible_version);
   if (select_bible?.id_bible_book) await selBook(select_bible.id_bible_book);
   if (select_bible?.chapter) await selChapter(select_bible.chapter);
@@ -720,11 +799,11 @@ async function prevVerse() {
     let verse = Math.min(...select_bible.verses.filter((n) => n > 0));
     if (verse > 1) {
       verse--;
-    } else if (select_bible.chapter > 1) {
-      await selChapter(select_bible.chapter - 1);
+    } else if ((select_bible.chapter ?? 0) > 1) {
+      await selChapter((select_bible.chapter ?? 0) - 1);
       verse = Math.max(0, ...Object.keys(verses.value).map(Number));
     } else {
-      let bookIndex = books.value.findIndex((b) => b.id_bible_book == bible.id_bible_book);
+      const bookIndex = books.value.findIndex((b) => b.id_bible_book == bible.id_bible_book);
       const bk = bookIndex > 0 ? books.value[bookIndex - 1] : books.value[books.value.length - 1];
       await selBook(bk.id_bible_book);
       await selChapter(bk.chapters);
@@ -734,21 +813,21 @@ async function prevVerse() {
   }
 }
 
-async function nextVerse() {
+async function nextVerse(): Promise<void> {
   if (select_bible?.id_bible_version) await selVersion(select_bible.id_bible_version);
   if (select_bible?.id_bible_book) await selBook(select_bible.id_bible_book);
   if (select_bible?.chapter) await selChapter(select_bible.chapter);
   if (select_bible?.verses && select_bible.verses.length > 0) {
     let verse = Math.max(...select_bible.verses);
     const max_verse = Math.max(0, ...Object.keys(verses.value).map(Number));
-    const max_chapter = book.value.chapters;
+    const max_chapter = book.value?.chapters ?? 0;
     if (verse < max_verse) {
       verse++;
-    } else if (select_bible.chapter < max_chapter) {
-      await selChapter(select_bible.chapter + 1);
+    } else if ((select_bible.chapter ?? 0) < max_chapter) {
+      await selChapter((select_bible.chapter ?? 0) + 1);
       verse = 1;
     } else {
-      let bookIndex = books.value.findIndex((b) => b.id_bible_book == bible.id_bible_book);
+      const bookIndex = books.value.findIndex((b) => b.id_bible_book == bible.id_bible_book);
       const bk = bookIndex < books.value.length - 1 ? books.value[bookIndex + 1] : books.value[0];
       await selBook(bk.id_bible_book);
       await selChapter(1);
@@ -769,25 +848,25 @@ const versesList = computed(() => {
 });
 
 const filteredVerses = computed(() => {
-  if (!verses.value) return {};
+  if (!verses.value) return {} as Record<string, string>;
   const term = (verse_filter.value || "").trim().toLowerCase();
   if (!term) return verses.value;
-  const match = (text) =>
+  const match = (text: string): boolean =>
     String(text || "")
       .replace(/<[^>]+>/g, "")
       .toLowerCase()
       .includes(term);
-  const out = {};
+  const out: Record<string, string> = {};
   for (const [num, text] of Object.entries(verses.value)) {
     if (term === String(num) || match(text)) out[num] = text;
   }
   return out;
 });
 
-function numbersInterval(numbers) {
+function numbersInterval(numbers: number[]): string {
   if (!numbers || numbers.length === 0) return "";
   numbers.sort((a, b) => a - b);
-  let result = [];
+  const result: string[] = [];
   let start = numbers[0];
   let end = numbers[0];
   for (let i = 1; i < numbers.length; i++) {
@@ -803,7 +882,7 @@ function numbersInterval(numbers) {
   return result.join(", ");
 }
 
-function scripturalReference(data) {
+function scripturalReference(data: BibleSelection): string {
   const verses_interval = numbersInterval(data.verses);
   if (!data.book || !data.version) return "";
   return (
@@ -815,23 +894,23 @@ function scripturalReference(data) {
   ).trim();
 }
 
-function getSelectedVerses(keys) {
+function getSelectedVerses(keys: number[]): string {
   keys.sort((a, b) => a - b);
   let result = "";
-  let previousKey = null;
+  let previousKey: number | null = null;
   keys.forEach((key) => {
     if (previousKey !== null && key - previousKey > 1) {
       result += " [...] ";
     } else if (result) {
       result += " ";
     }
-    result += verses.value[key];
+    result += verses.value[String(key)];
     previousKey = key;
   });
   return result;
 }
 
-function clean() {
+function clean(): void {
   bible.verses = [];
   Object.assign(select_bible, {
     id_bible_version: null,
@@ -847,20 +926,20 @@ function clean() {
   ProjectionWindows.closeProjectionWindows();
 }
 
-function close() {
+function close(): void {
   clean();
 }
 
-function restoreFormat() {
-  const customization = manifest.customization || {};
+function restoreFormat(): void {
+  const customization = (manifest as any).customization || {};
   for (const [key, def] of Object.entries(customization)) {
-    UserData.set(`modules.${moduleId}.${key}`, def?.default ?? null);
+    UserData.set(`modules.${moduleId}.${key}`, (def as any)?.default ?? null);
   }
   Broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, { key: "*", value: null });
 }
 
 // Ações da ribbon contextual "Configurar Bíblia" → executa localmente.
-useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload) => {
+useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
   switch (payload?.action) {
     case "clear":
       clean();
@@ -881,7 +960,7 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload) => {
 });
 
 // Sincroniza o estado interno se um versículo for emitido por outro componente (ex: Spotlight).
-useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
+useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload: any) => {
   if (!payload || !payload.text) return;
   if (
     payload.text !== select_bible.text ||
@@ -907,10 +986,10 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
     const max_v = Math.max(0, ...Object.keys(verses.value).map(Number));
     if (num < max_v) {
       const next_v = num + 1;
-      next_text = verses.value[next_v];
+      next_text = verses.value[String(next_v)];
       next_reference = `${bible.book} ${bible.chapter}:${next_v}`;
-    } else if (bible.chapter < (book.value?.chapters || 0)) {
-      next_reference = `${bible.book} ${bible.chapter + 1}:1`;
+    } else if ((bible.chapter ?? 0) < (book.value?.chapters || 0)) {
+      next_reference = `${bible.book} ${(bible.chapter ?? 0) + 1}:1`;
     }
 
     Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
@@ -1005,74 +1084,6 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.bible-col__group-title {
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--lj-text-muted, #666);
-  background: var(--lj-surface-bg-soft, #eee);
-  padding: 4px 6px;
-  margin: 8px -10px 6px;
-  border-top: 1px solid var(--lj-surface-border);
-  border-bottom: 1px solid var(--lj-surface-border);
-}
-
-.bible-col__group-title:first-child {
-  margin-top: 0;
-}
-
-.bible-col__group-title--alt {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 12px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  padding: 8px 0 4px;
-  margin: 6px 0 4px;
-  font-weight: 600;
-  color: inherit;
-}
-
-.bible-format-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 6px;
-}
-
-.bible-format-label {
-  font-size: 11px;
-  color: var(--lj-text-muted, #666);
-}
-
-.bible-format-input {
-  font-size: 12px;
-  padding: 4px 6px;
-  border: 1px solid var(--lj-surface-border);
-  border-radius: 3px;
-  background: var(--lj-surface-bg);
-  color: inherit;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.bible-format-input--narrow {
-  width: 70px;
-}
-
-.bible-format-color {
-  width: 100%;
-  height: 26px;
-  padding: 0;
-  border: 1px solid var(--lj-surface-border);
-  border-radius: 3px;
-  cursor: pointer;
-  background: transparent;
-}
-
 .bible-verses-list {
   display: flex;
   flex-direction: column;
@@ -1095,11 +1106,6 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
 
 .bible-verse:hover {
   background: rgba(0, 0, 0, 0.92);
-}
-
-.bible-verse--active {
-  background: rgba(33, 150, 243, 0.85);
-  color: #fff;
 }
 
 .bible-verse__num {
@@ -1156,11 +1162,6 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.bible-history-item--selected {
-  background: rgba(33, 150, 243, 0.55);
-  color: #fff;
-}
-
 .bible-history-item__ref {
   font-weight: 600;
   font-size: 12px;
@@ -1181,5 +1182,155 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   padding: 8px;
   border-top: 1px solid var(--lj-surface-border);
   flex-shrink: 0;
+}
+
+/* Overlay de navegação rápida */
+.quicknav-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+.quicknav-card {
+  position: relative;
+  width: 480px;
+  max-width: 90vw;
+  background: var(--lj-surface-bg, #1e1e1e);
+  border: 1px solid var(--lj-surface-border, #444);
+  border-radius: 16px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+.quicknav-steps {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.quicknav-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lj-text-muted, #888);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+.quicknav-step.current {
+  color: #fff;
+  background: var(--lj-primary, #1976d2);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
+}
+.quicknav-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  background: currentColor;
+  color: var(--lj-surface-bg, #1e1e1e);
+}
+.quicknav-step.current .quicknav-step-num {
+  background: #fff;
+  color: var(--lj-primary, #1976d2);
+}
+.quicknav-arrow {
+  font-size: 16px;
+  color: var(--lj-text-muted, #555);
+  font-weight: 300;
+}
+.quicknav-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.quicknav-hint {
+  font-size: 15px;
+  color: var(--lj-text-muted, #888);
+  letter-spacing: 0.3px;
+}
+.quicknav-buffer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  min-height: 56px;
+  font-variant-numeric: tabular-nums;
+}
+.quicknav-preview {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--lj-text-muted, #999);
+  min-height: 20px;
+  text-align: center;
+}
+.quicknav-text {
+  color: var(--lj-text, #eee);
+}
+.quicknav-text:empty::before {
+  content: "—";
+  color: var(--lj-text-muted, #555);
+}
+.quicknav-cursor {
+  display: inline-block;
+  width: 3px;
+  margin-left: 4px;
+  animation: quicknav-blink 1s step-end infinite;
+}
+@keyframes quicknav-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.quicknav-footer {
+  font-size: 13px;
+  color: var(--lj-text-muted, #666);
+}
+.quicknav-footer kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-family: inherit;
+  background: var(--lj-surface-border, #333);
+  border-radius: 4px;
+  border: 1px solid var(--lj-text-muted, #555);
+  margin: 0 2px;
+}
+.quicknav-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--lj-text-muted, #888);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+.quicknav-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--lj-text, #eee);
 }
 </style>

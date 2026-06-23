@@ -48,5 +48,16 @@
     "image": "Imagen",
     "transparency": "Transparencia",
     "adjust": "Ajuste"
+  },
+  "quicknav": {
+    "step_book": "Libro",
+    "step_chapter": "Capítulo",
+    "step_verse": "Versículo",
+    "hint_book": "Escriba la abreviatura del libro",
+    "hint_chapter": "Escriba el número del capítulo",
+    "hint_verse": "Escriba el número del versículo",
+    "foot_book": "Ej: <kbd>gn</kbd> para Génesis",
+    "foot_chapter": "Espacio confirma &middot; Backspace vuelve al libro",
+    "foot_verse": "<kbd>Enter</kbd> proyecta &middot; <kbd>Esc</kbd> cancela"
   }
 }

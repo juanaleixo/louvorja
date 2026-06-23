@@ -16,6 +16,7 @@ export interface BibleBook {
   name: string
   abbreviation?: string
   chapters: number
+  color?: string
 }
 
 export interface BibleVerse {
@@ -53,4 +54,33 @@ export interface ActiveBibleState {
   verse: number | null
   chapterVerses: string[]
   versionId: number | null
+}
+
+export interface BibleSelection {
+  id_bible_version: number | null
+  id_bible_book: number | null
+  version: string | null
+  book: string | null
+  chapter: number | null
+  verses: number[]
+}
+
+export interface BibleSelectionData extends BibleSelection {
+  scriptural_reference: string | null
+  text: string | null
+}
+
+export interface BibleHistoryEntry extends BibleSelection {
+  scriptural_reference: string | null;
+  text: string | null;
+  opened_at: number;
+}
+
+export interface BibleConfig {
+  background: string
+  textColor: string
+  referenceColor: string
+  textFontSize: number
+  referenceFontSize: number
+  fontFamily: string
 }
