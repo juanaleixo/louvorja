@@ -771,6 +771,21 @@ ipcMain.handle("storage:chooseFile", async (event) => {
   return result.filePaths[0];
 });
 
+/** Abre diálogo para selecionar uma imagem de fundo com filtro de tipos. */
+ipcMain.handle("storage:chooseImage", async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(win, {
+    properties: ["openFile"],
+    filters: [
+      { name: "Imagens", extensions: ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"] },
+      { name: "Todos os arquivos", extensions: ["*"] },
+    ],
+    title: "Selecionar imagem de fundo",
+  });
+  if (result.canceled || !result.filePaths?.length) return null;
+  return result.filePaths[0];
+});
+
 /**
  * Verifica quais dos arquivos remotos JÁ ESTÃO no disco. Usado para
  * mostrar o indicador "✓ baixado / ⬇ online" nas listas de música.

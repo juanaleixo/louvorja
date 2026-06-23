@@ -20,7 +20,7 @@ export interface ModuleCategory {
 }
 
 export interface ModuleGroup {
-  page: string;
+  category: string;
   id: string;
   title: string;
 }
@@ -28,4 +28,11 @@ export interface ModuleGroup {
 export interface ModuleRibbon {
   module: Module;
   contextualPages: RibbonPage[];
-};
+}
+
+export interface ModuleState {
+  id: string;
+  show?: boolean;
+  minimized?: boolean;
+  config?: Record<string, any>;
+}

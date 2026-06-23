@@ -39,6 +39,7 @@ const FieldSelect = defineAsyncComponent(
   () => import("@/components/format-fields/FieldSelect.vue")
 );
 const FieldText = defineAsyncComponent(() => import("@/components/format-fields/FieldText.vue"));
+const FieldImage = defineAsyncComponent(() => import("@/components/format-fields/FieldImage.vue"));
 const FieldBoolean = defineAsyncComponent(
   () => import("@/components/format-fields/FieldBoolean.vue")
 );
@@ -53,7 +54,7 @@ const TYPE_TO_COMPONENT = {
   "h-align": FieldSelect,
   "v-align": FieldSelect,
   "object-fit": FieldSelect,
-  image: FieldText,
+  image: FieldImage,
   boolean: FieldBoolean,
 };
 
