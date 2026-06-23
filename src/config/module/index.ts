@@ -1,6 +1,6 @@
 import type { RibbonPage, RibbonGroup, RibbonButton } from "@/types/Ribbon"
 import { Module, ModuleRibbon } from "@/types/Module";
-import { groupByPage, groups } from "@/config/module/ribbon/groups";
+import { groupBycategory, groups } from "@/config/module/ribbon/groups";
 
 const modules = import.meta.glob<ModuleRibbon>("./modules/*.ts", {
   eager: true,
@@ -33,7 +33,7 @@ function buttonsForGroup(groupId: string): RibbonButton[] {
 
 export function buildRibbonPages(): RibbonPage[] {
   const pages: RibbonPage[] = []
-  const groupsByPage = groupByPage(groups)
+  const groupsByPage = groupBycategory(groups);
 
   for (const [pageId, pageGroups] of groupsByPage) {
     const groups: RibbonGroup[] = []
