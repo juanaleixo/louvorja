@@ -50,7 +50,8 @@
     "categoria": "Categoría",
     "itens-agendados": "Ítems Programados",
     "musica": "Música",
-    "site": "Sitio"
+    "site": "Sitio",
+    "video-online": "Vídeo Online"
   },
   "inputs": {
     "type": "Tipo",
@@ -71,7 +72,10 @@
     "scheduled_pick": "-- seleccione una categoría --",
     "scheduled_empty": "Ninguna categoría creada. Use el botón de configuración para crear.",
     "category_hint": "Las categorías sirven como separadores visuales entre secciones de la liturgia.",
-    "duration_min": "Duración (min)"
+    "duration_min": "Duración (min)",
+    "video_select": "Vídeo",
+    "video_pick": "-- seleccione un vídeo --",
+    "video_url_or_select": "URL del vídeo o seleccione uno guardado"
   },
   "data": {
     "empty": "Liturgia vacía",
@@ -117,6 +121,9 @@
     "show_lyric": "Mostrar letra",
     "show_lyric_text": "Mostrar letra (texto)",
     "no_audio": "Slides sin audio"
+  },
+  "video": {
+    "play": "Reproducir vídeo"
   },
   "music_search": {
     "title": "Búsqueda de Músicas",

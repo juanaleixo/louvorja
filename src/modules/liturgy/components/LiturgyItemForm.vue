@@ -34,6 +34,7 @@
               {{ t("types.itens-agendados") }}
             </option>
             <option :value="LiturgyItemTypeEnum.MUSICA">{{ t("types.musica") }}</option>
+            <option :value="LiturgyItemTypeEnum.VIDEO_ONLINE">{{ t("types.video-online") }}</option>
             <option :value="LiturgyItemTypeEnum.SITE">{{ t("types.site") }}</option>
           </select>
         </div>
@@ -226,6 +227,27 @@
         </div>
       </div>
 
+      <!-- Painel VÍDEO ON-LINE -->
+      <div v-if="form.tipo === 'video-online'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.video-online") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.video_select") }}</label>
+          <select
+            :value="form.url"
+            class="lit-select lit-select--full"
+            @change="onVideoPicked($event)"
+          >
+            <option value="">{{ t("inputs.video_pick") }}</option>
+            <option v-for="v in videosList" :key="v.id" :value="v.url">
+              {{ v.name }}
+            </option>
+          </select>
+        </div>
+        <div v-if="!videosList?.length" class="lit-hint mt-2">
+          {{ t("inputs.video_empty") }}
+        </div>
+      </div>
+
       <!-- CATEGORIA -->
       <div v-if="form.tipo === 'categoria'" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.categoria") }}</div>
@@ -291,6 +313,7 @@ const props = withDefaults(
     colors?: string[];
     musicsList?: LiturgyMusicItem[];
     scheduledCategories?: ScheduledCategory[];
+    videosList?: { id: string; name: string; url: string }[];
     setFormField: (key: string, value: unknown) => void;
     onTypeChange: () => void;
     onMusicChange: () => void;
@@ -308,6 +331,7 @@ const props = withDefaults(
     colors: () => [],
     musicsList: () => [],
     scheduledCategories: () => [],
+    videosList: () => [],
   }
 );
 
@@ -331,6 +355,16 @@ function onMusicPicked(music: LiturgyMusicItem) {
   if (!Number.isFinite(id)) return;
   props.setFormField("musica", id);
   props.onMusicChange();
+}
+
+function onVideoPicked(e: Event) {
+  const select = e.target as HTMLSelectElement;
+  const url = select.value;
+  props.setFormField("url", url);
+  if (url) {
+    const video = props.videosList?.find((v) => v.url === url);
+    if (video) props.setFormField("item", video.name);
+  }
 }
 </script>
 

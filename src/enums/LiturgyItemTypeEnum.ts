@@ -5,6 +5,7 @@ export enum LiturgyItemTypeEnum {
   ITENS_AGENDADOS = "itens-agendados",
   MUSICA = "musica",
   SITE = "site",
+  VIDEO_ONLINE = "video-online",
 }
 
 export namespace LiturgyItemTypeEnum {

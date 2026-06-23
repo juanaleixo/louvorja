@@ -65,6 +65,7 @@
       :open-site="openSite"
       :choose-file="chooseFile"
       :open-schedules-dialog="openSchedulesDialog"
+      :videos-list="videosCache"
     />
 
     <LiturgySchedules
@@ -225,6 +226,8 @@ const {
   onDrop,
   loadMusicsList,
   setFormField,
+  videosCache,
+  loadVideosList,
 } = litItems;
 
 const openItemDialogRoot = () => openItemDialog();
@@ -382,6 +385,7 @@ function clearDayDialog() {
 
 onMounted(async () => {
   await loadMusicsList();
+  await loadVideosList();
   _broadcastUnlisten = Broadcast.listen((data) => {
     if (data?.type === BROADCAST_TYPE.LITURGY_NEW_ANNOTATION) {
       Modules.open("liturgy");

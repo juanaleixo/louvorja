@@ -4,25 +4,30 @@
       <div class="ov-section">
         <div class="ov-section-title">{{ t("collection") }}</div>
         <div v-if="!collection.length" class="ov-empty">{{ t("empty_collection") }}</div>
-        <div
-          v-for="(video, i) in collection"
-          :key="i"
-          class="ov-video"
-          :class="{ 'ov-video--active': projectingUrl === video.url }"
-        >
-          <div class="ov-video-info">
-            <v-icon icon="mdi-youtube" size="20" color="#e74c3c" />
-            <span class="ov-video-title">{{ video.title }}</span>
-          </div>
-          <v-btn
-            size="small"
-            variant="tonal"
-            color="primary"
-            :disabled="!!projectingUrl"
+        <div class="ov-grid">
+          <div
+            v-for="(video, i) in collection"
+            :key="i"
+            class="ov-card"
+            :class="{ 'ov-card--active': projectingUrl === video.url }"
             @click="projectVideo(video)"
           >
-            {{ t("project") }}
-          </v-btn>
+            <div class="ov-card-thumb">
+              <img
+                v-if="videoThumb(video.url)"
+                :src="videoThumb(video.url)"
+                alt=""
+                loading="lazy"
+              />
+              <div v-else class="ov-card-thumb-fallback">
+                <v-icon icon="mdi-youtube" size="32" color="#e74c3c" />
+              </div>
+              <div class="ov-card-play">
+                <v-icon icon="mdi-play-circle" size="28" color="#fff" />
+              </div>
+            </div>
+            <div class="ov-card-title">{{ video.title }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -71,6 +76,11 @@ function extractYoutubeId(url: string): string | null {
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
   );
   return m ? m[1] : null;
+}
+
+function videoThumb(url: string): string {
+  const id = extractYoutubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
 }
 
 function buildEmbedUrl(url: string): string | null {
@@ -137,32 +147,67 @@ function close(): void {
   color: rgba(var(--lj-on-surface-ch), 0.6);
   margin-bottom: 8px;
 }
-.ov-video {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  transition: background 0.15s;
+.ov-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
 }
-.ov-video:hover {
-  background: rgba(var(--lj-on-surface-ch), 0.05);
-}
-.ov-video--active {
-  background: rgba(231, 76, 60, 0.1);
-}
-.ov-video-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-.ov-video-title {
-  font-size: 13px;
-  white-space: nowrap;
+.ov-card {
+  border-radius: 6px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  background: rgba(var(--lj-on-surface-ch), 0.04);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.ov-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.ov-card--active {
+  outline: 2px solid #e74c3c;
+}
+.ov-card-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.ov-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ov-card-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ov-card-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background: rgba(0, 0, 0, 0.35);
+}
+.ov-card:hover .ov-card-play {
+  opacity: 1;
+}
+.ov-card-title {
+  font-size: 12px;
+  padding: 6px 8px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .ov-empty {
   font-size: 12px;

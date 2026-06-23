@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { openDB } from "idb";
 import $liturgy from "@/helpers/Liturgy";
 import $media from "@/composables/useMedia";
 import $database from "@/helpers/Database";
@@ -107,12 +108,14 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
   function iconForItem(item) {
     const map = {
-      anotacao: "mdi-note-text-outline",
-      arquivo: item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
-      site: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
-      musica: "mdi-music",
-      itensAgendados: "mdi-calendar-multiselect",
-      categoria: "mdi-format-section",
+      [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
+      [LiturgyItemTypeEnum.ARQUIVO]:
+        item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
+      [LiturgyItemTypeEnum.SITE]: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
+      [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
+      [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
+      [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
+      [LiturgyItemTypeEnum.CATEGORIA]: "mdi-format-section",
     };
     return map[item.tipo] || "mdi-circle-medium";
   }
@@ -185,6 +188,10 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     if (form.value.tipo !== LiturgyItemTypeEnum.MUSICA) {
       form.value.musica = -1;
       form.value.escolha = false;
+    }
+    if (form.value.tipo !== LiturgyItemTypeEnum.VIDEO_ONLINE) {
+      form.value.url = "";
+      form.value.subitem = "";
     }
     if (form.value.tipo === LiturgyItemTypeEnum.MUSICA && form.value.musica === -1) {
       form.value.escolha = true;
@@ -261,6 +268,11 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         built.subitem = "";
         break;
       }
+      case LiturgyItemTypeEnum.VIDEO_ONLINE:
+        console.log(built);
+        built.url = f.url || "";
+        built.subitem = "URL: " + built.url;
+        break;
       case LiturgyItemTypeEnum.CATEGORIA:
         built.subitem = "";
         break;
@@ -311,7 +323,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         playMusic(item, "sung");
         break;
       case LiturgyItemTypeEnum.SITE:
-        openUrl(item.url);
+        executeSite(item);
         break;
       case LiturgyItemTypeEnum.ARQUIVO:
         openFile(item);
@@ -322,6 +334,9 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         else alert(t("dialog.scheduled_not_found"));
         break;
       }
+      case LiturgyItemTypeEnum.VIDEO_ONLINE:
+        executeOnlineVideo(item);
+        break;
       case LiturgyItemTypeEnum.ANOTACAO:
         alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
         break;
@@ -360,6 +375,46 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     if (!url) return;
     const valid = $liturgy.validateUrl(url);
     window.open(valid, "_blank", "noopener,noreferrer");
+  }
+
+  function extractYoutubeId(url) {
+    const m = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
+    );
+    return m ? m[1] : null;
+  }
+
+  function buildEmbedUrl(url) {
+    const id = extractYoutubeId(url);
+    if (!id) return null;
+    return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`;
+  }
+
+  function executeSite(item) {
+    const url = item.url || "";
+    if (!url) return;
+
+    if (isYoutube(url) && $userdata.get("options.youtube_action", "video") === "video") {
+      const embedUrl = buildEmbedUrl(url);
+      if (embedUrl) {
+        $media.openYouTube(embedUrl, item.item || "");
+        return;
+      }
+    }
+
+    openUrl(url);
+  }
+
+  function executeOnlineVideo(item) {
+    const url = item.url || "";
+    if (!url) return;
+
+    const embedUrl = buildEmbedUrl(url);
+    if (!embedUrl) {
+      $alert.error({ text: "modules.custom_videos.invalid_url" });
+      return;
+    }
+    $media.openYouTube(embedUrl, item.item || item.subitem || url);
   }
 
   const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
@@ -579,6 +634,44 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     }
   }
 
+  const videosCache = ref([]);
+
+  const ONLINE_VIDEO_DEFAULTS = [
+    {
+      title: "Vitória (Adoradores 5) [Ao Vivo]",
+      url: "https://www.youtube.com/watch?v=nlNluQp7cFI",
+    },
+    { title: "Além do Rio - Arautos do Rei", url: "https://www.youtube.com/watch?v=AmcX_HLy6b0" },
+    { title: "Só o Começo - Vocal Livre", url: "https://www.youtube.com/watch?v=XktoQTwHSK4" },
+  ];
+
+  async function loadVideosList() {
+    let all = [];
+    try {
+      const db = await openDB("louvorja_custom_videos", 1, {
+        upgrade(database) {
+          if (!database.objectStoreNames.contains("videos")) {
+            database.createObjectStore("videos", { keyPath: "id" });
+          }
+        },
+      });
+      all = await db.getAll("videos");
+      all.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+    } catch {
+      all = [];
+    }
+    // Mescla com os defaults do módulo online_videos (evita duplicatas por URL)
+    //TODO remover esse trecho quando implementar a biblioteca de coletanea online
+    const seen = new Set(all.map((v) => v.url));
+    for (const def of ONLINE_VIDEO_DEFAULTS) {
+      if (!seen.has(def.url)) {
+        all.push({ id: def.url, name: def.title, url: def.url });
+        seen.add(def.url);
+      }
+    }
+    videosCache.value = all;
+  }
+
   function setFormField(field, value) {
     form.value[field] = value;
   }
@@ -596,6 +689,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     editIndex,
     form,
     musicsCache,
+    videosCache,
     isDraggingOver,
     menuOpen,
     items,
@@ -632,6 +726,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     onDragLeave,
     onDrop,
     loadMusicsList,
+    loadVideosList,
     setFormField,
     toggleMenuOpen,
     closeMenu,

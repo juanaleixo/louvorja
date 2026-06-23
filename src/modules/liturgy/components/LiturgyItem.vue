@@ -127,6 +127,19 @@
         </v-tooltip>
       </div>
 
+      <!-- Ação de vídeo on-line -->
+      <div v-if="element.tipo === 'video-online'" class="lit-card-music-actions">
+        <v-tooltip location="top" :open-delay="700">
+          <template #activator="{ props }">
+            <button v-bind="props" class="lit-music-btn" @click.stop="$emit('execute', element)">
+              <v-icon icon="mdi-play-circle" size="20" color="#e74c3c" />
+            </button>
+          </template>
+
+          {{ t("video.play") }}
+        </v-tooltip>
+      </div>
+
       <!-- Ações: editar + reordenar (sem X — exclusão pelo ribbon "Apagar Selecionados") -->
       <div class="lit-card-end">
         <v-tooltip v-if="!locked" location="top" :open-delay="500">

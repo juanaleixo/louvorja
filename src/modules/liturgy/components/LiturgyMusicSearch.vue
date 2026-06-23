@@ -265,7 +265,7 @@ function selectRow(row: Row) {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: rgba(var(--lj-on-surface-ch), 0.06);
+  background: var(--lj-gray-50);
   text-align: left;
   padding: 8px 12px;
   font-weight: 500;

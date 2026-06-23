@@ -126,7 +126,7 @@ const moduleContainer = ref<{ t(key: string): string } | null>(null);
 const t = (key: string): string => moduleContainer.value?.t(key) || key;
 
 const videos = ref<VideoItem[]>([]);
-const viewMode = ref<string>("list");
+const viewMode = ref<string>("grid");
 const projectingId = ref<string>("");
 const thumbUrls = reactive<Record<string, string>>({});
 const dialogOpen = ref<boolean>(false);
