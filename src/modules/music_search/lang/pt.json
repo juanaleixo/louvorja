@@ -1,0 +1,26 @@
+{
+  "title": "Buscar Música",
+  "search_placeholder": "Digite o nome da música...",
+  "search": "Buscar",
+  "music": "Música",
+  "album": "Álbum",
+  "duration": "Duração",
+  "actions": "Ações",
+  "no_results": "Nenhuma música encontrada.",
+  "searching": "Buscando...",
+  "results_count": "{n} resultado(s)",
+  "audiofile": "Arquivo de Áudio",
+  "filter_name": "Título",
+  "filter_album": "Álbum",
+  "filter_lyric": "Letra",
+  "filter_custom": "Personalizadas",
+  "filter_no_custom": "Banco",
+  "ribbon": {
+    "search_music": "Buscar Música",
+    "search_music_desc": "Abre a busca rápida de músicas"
+  },
+  "cmd": {
+    "placeholder": "Buscar música...",
+    "search": "Buscar música"
+  }
+}

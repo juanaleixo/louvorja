@@ -1,4 +1,5 @@
 {
-    "title": "Contador",
-    "text": "PORTUGUES"
+  "title": "Contador",
+  "ribbon": { "title_ctx": "Configurar Contador" },
+  "actions": { "reset": "Zerar" }
 }

@@ -1,61 +1,778 @@
 {
-    "app": {
-        "name": "Louvor JA"
+  "app": {
+    "name": "Louvor JA"
+  },
+  "modules": {
+    "liturgy": {
+      "name": "Liturgia",
+      "empty": "Nenhum item na liturgia de hoje."
     },
-    "modules": {
-        "invalid": {
-            "title": "#Erro#"
-        }
-    },
-    "module_group": {
-        "musics": {
-            "title": "Músicas"
-        },
-        "bible": {
-            "title": "Bíblia"
-        },
-        "utilities": {
-            "title": "Utilitários"
-        }
-    },
-    "components": {
-        "letterpagination": {
-            "all": "Todas"
-        },
-        "datatable": {
-            "alerts": {
-                "not_found": "Não foi possível localizar o arquivo para exibir essas informações!"
-            }
-        },
-        "inputs": {
-            "search": "Buscar"
-        },
-        "customization": {
-            "restore": "Restaurar",
-            "restore_configs": "Restaurar Configurações",
-            "restore_dialog": "Deseja restaurar as configurações?",
-            "fit": {
-                "none": "Nenhum",
-                "fill": "Ampliar",
-                "contain": "Ajustar",
-                "cover": "Preencher"
-            }
-        }
-    },
-    "alert": {
-        "close": "Fechar",
-        "yes": "Sim",
-        "no": "Não",
-        "wait": "Aguarde..."
-    },
-    "popup": {
-        "close": "Fechar Janela"
-    },
-    "messages": {
-        "file_database_not_found": "Arquivo de dados não encontrado!",
-        "developer_mode_enabled": "Modo DESENVOLVEDOR ativado!",
-        "developer_mode_disabled": "Modo DESENVOLVEDOR desativado!",
-        "error_import_module": "Erro ao importar módulo",
-        "misconfigured_module": "Este módulo está mal configurado. O id informado no manifest.json deve ter o mesmo nome da pasta onde está localizado!"
+    "invalid": {
+      "title": "#Erro#"
     }
+  },
+  "module_group": {
+    "musics": {
+      "title": "Músicas"
+    },
+    "bible": {
+      "title": "Bíblia"
+    },
+    "utilities": {
+      "title": "Utilitários"
+    }
+  },
+  "components": {
+    "format_panel": {
+      "text_section": "Texto",
+      "reference_section": "Referência",
+      "background_section": "Fundo",
+      "layout_section": "Layout",
+      "other_section": "Outros",
+      "align_start": "Início",
+      "align_center": "Centro",
+      "align_end": "Fim",
+      "fit_cover": "Preencher",
+      "fit_contain": "Ajustar",
+      "fit_fill": "Esticar",
+      "fit_none": "Original",
+      "date_long": "Domingo, 06 de Maio de 2026",
+      "date_medium": "06 de Maio de 2026",
+      "date_short": "06/05/2026",
+      "date_weekday": "Domingo, 06 de Maio",
+      "date_month_year": "Maio de 2026",
+      "date_weekday_only": "Domingo",
+      "time_12h": "12 horas",
+      "time_24h": "24 horas",
+      "time_hms": "hh:mm:ss",
+      "time_hm": "hh:mm"
+    },
+    "letterpagination": {
+      "all": "Todas"
+    },
+    "datatable": {
+      "alerts": {
+        "not_found": "Não foi possível localizar o arquivo para exibir essas informações!"
+      }
+    },
+    "inputs": {
+      "search": "Buscar"
+    },
+    "music_search": {
+      "placeholder": "Digite o nome da música...",
+      "empty": "Digite para localizar uma música.",
+      "empty_search": "Nenhuma música encontrada para esta busca.",
+      "album": "Coletânea",
+      "music": "Música",
+      "select": "Selecionar",
+      "results": "resultados"
+    },
+    "music_menu": {
+      "add_to": "Adicionar em",
+      "add_to_favorites": "Adicionar aos Favoritos",
+      "remove_from_favorites": "Remover dos Favoritos",
+      "add_to_liturgy": "Adicionar à Liturgia",
+      "execute": "Executar",
+      "file_sing": "Arquivo Cantado",
+      "file_playback": "Arquivo Playback"
+    },
+    "customization": {
+      "restore": "Restaurar",
+      "restore_configs": "Restaurar Configurações",
+      "restore_dialog": "Deseja restaurar as configurações?",
+      "fit": {
+        "none": "Nenhum",
+        "fill": "Ampliar",
+        "contain": "Ajustar",
+        "cover": "Preencher"
+      },
+      "font": "Fonte",
+      "color": "Cor",
+      "size": "Tamanho da fonte",
+      "image": "Imagem de fundo",
+      "transparency": "Transparência",
+      "adjust": "Ajuste da imagem",
+      "border": "Borda",
+      "vertical": "Alinhamento vertical",
+      "horizontal": "Alinhamento horizontal",
+      "alert_color": "Cor do alerta"
+    }
+  },
+  "alert": {
+    "close": "Fechar",
+    "yes": "Sim",
+    "no": "Não",
+    "wait": "Aguarde...",
+    "migrating": "Migrando dados..."
+  },
+  "actions": {
+    "close": "Fechar",
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "add": "Adicionar",
+    "copy": "Copiar",
+    "clone": "Duplicar",
+    "open": "Abrir",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior"
+  },
+  "options": {
+    "general": {
+      "title": "Geral",
+      "theme": "Aparência do programa:",
+      "language": "Idioma:",
+      "start_with_os": "Iniciar com o sistema operacional",
+      "themes": {
+        "light": "Claro",
+        "darkblue": "Azul-escuro",
+        "blue": "Azul",
+        "green": "Verde",
+        "orange": "Laranja",
+        "purple": "Roxo",
+        "pink": "Rosa",
+        "black": "Preto",
+        "dark": "Escuro"
+      }
+    },
+    "bible": {
+      "title": "Bíblia Sagrada",
+      "open_at": "Abrir no monitor:",
+      "version": "Versão"
+    },
+    "monitors": {
+      "title": "Monitores",
+      "identify": "Identificar Monitores",
+      "no_displays": "Nenhum monitor adicional disponível (modo web ou monitor único).",
+      "primary": "Tela principal",
+      "secondary": "Tela de retorno",
+      "primary_short": "Principal",
+      "use_default": "Usar padrão"
+    },
+    "slides": {
+      "title": "Slides de Músicas",
+      "open_at": "Abrir no monitor:",
+      "alignment": "Alinhamento da letra:",
+      "align_top": "Topo",
+      "align_center": "Centro",
+      "align_bottom": "Rodapé",
+      "fullscreen": "Exibir em tela cheia",
+      "always_on_top": "Exibir músicas sempre em primeiro plano",
+      "open_operator": "Abrir Tela do Operador",
+      "open_return": "Abrir Tela de Retorno",
+      "open_file_at": "Projetar arquivos em:",
+      "open_file_return_at": "Retorno de arquivos em:",
+      "none": "Nenhum",
+      "show_title": "Exibir título da música no primeiro slide",
+      "minimize_on_start": "Tela de Controle Minimizada",
+      "same_window": "Mesma janela",
+      "text_size": "Tamanho do texto:",
+      "custom_text_format": "Formatação de texto personalizada",
+      "title_color": "Cor Título:",
+      "text_color": "Texto:",
+      "repeat_color": "Texto Repet.:",
+      "aux_color": "Texto Aux.:",
+      "text_bg_transparent": "Fundo de Texto Transparente",
+      "title_size": "Tam. Título:",
+      "text_size_label": "Texto:",
+      "aux_size": "Texto Aux.:",
+      "restore": "Restaurar",
+      "custom_background": "Fundo personalizado",
+      "bg_transparent": "Fundo Transparente",
+      "bg_color": "Cor Fundo:",
+      "bg_image": "Imagem:",
+      "bg_image_placeholder": "Caminho da imagem…",
+      "bg_position": "Posição:",
+      "pos_center": "Centro",
+      "pos_cover": "Preencher",
+      "pos_contain": "Ajustar",
+      "pos_stretch": "Esticar",
+      "pos_tile": "Lado a lado",
+      "affect_external": "Formatação de texto e fundo personalizados afetam slides externos",
+      "custom_return_text_format": "Formatação de texto do retorno personalizada",
+      "text_case": "Estilo da letra:",
+      "case_normal": "Normal",
+      "case_capitalize": "Capitalizada",
+      "case_uppercase": "MAIÚSCULA"
+    },
+    "background": {
+      "title": "Imagem de Fundo",
+      "color": "Cor do Fundo:"
+    },
+    "transmission": {
+      "title": "Transmissão",
+      "desktop_only": "Disponível apenas na versão desktop.",
+      "shortcuts_title": "Atalhos",
+      "http_server": "Servidor",
+      "server_running": "Rodando na porta {port}",
+      "server_stopped": "Servidor desligado",
+      "start_server": "Ligar",
+      "stop_server": "Desligar",
+      "auto_start": "Ligar automaticamente ao iniciar",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "open_window": "Abrir",
+      "global_shortcuts": "Atalhos globais (system-wide)",
+      "global_shortcuts_hint": "Atalhos respondem mesmo com outra janela em foco.",
+      "urls_section": "URLs de transmissão",
+      "urls_hint": "Use estas URLs como Browser Source no software de transmissão (OBS, vMix, etc.) ou em qualquer celular/computador na mesma rede.",
+      "token_label": "Token",
+      "token_reset": "Gerar novo",
+      "local_windows": "Janelas locais",
+      "local_windows_hint": "Abrir uma das views como janela do app — útil em monitor secundário no mesmo computador.",
+      "use_hostname": "Usar nome da máquina em vez do IP",
+      "use_hostname_hint": "As URLs usarão http://{hostname}:{port} em vez de http://{ip}:{port} — útil quando o IP muda (DHCP).",
+      "win_music": "Música — Transmissão",
+      "win_return": "Música — Retorno",
+      "win_bible": "Bíblia — Transmissão",
+      "win_bible_return": "Bíblia — Retorno",
+      "win_projection": "Projeção",
+      "win_operator": "Operador",
+      "win_clock": "Relógio",
+      "remote_control": "Controle Remoto"
+    },
+    "module": {
+      "bible": {
+        "book": "Livro",
+        "chapter": "Capítulo",
+        "verses": "Versículo",
+        "empty_search": "Nenhum versículo encontrado para esta busca."
+      }
+    },
+    "updates": {
+      "title": "Atualizações",
+      "app": "Atualização do app",
+      "database": "Banco de dados",
+      "check": "Verificar",
+      "download": "Baixar",
+      "install": "Instalar e reiniciar",
+      "apply": "Atualizar agora",
+      "clear_cache": "Limpar cache",
+      "app_idle": "Pronto para verificar atualizações.",
+      "app_checking": "Verificando…",
+      "app_available": "Versão {version} disponível.",
+      "app_up_to_date": "Você está com a versão mais recente.",
+      "app_downloading": "Baixando atualização…",
+      "app_downloaded": "Atualização baixada — pronta para instalar.",
+      "app_error": "Erro ao verificar atualização.",
+      "db_idle": "Pronto para verificar.",
+      "db_checking": "Verificando…",
+      "db_available": "Nova versão {version} do banco disponível.",
+      "db_up_to_date": "Banco atualizado.",
+      "db_error": "Não foi possível verificar.",
+      "cache_cleared": "Cache limpo."
+    },
+    "collections_download": {
+      "title": "Download de Coletâneas",
+      "desktop_only": "Disponível apenas na versão desktop.",
+      "connection": "Conexão",
+      "check_connection": "Verificar conexão",
+      "checking": "Verificando…",
+      "connected": "Conectado",
+      "disconnected": "Sem conexão",
+      "available": "Coletâneas disponíveis",
+      "albums": "álbuns",
+      "select_all": "Selecionar todas",
+      "clear": "Limpar seleção",
+      "start": "Baixar selecionados",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "save_done_albums": "{n} álbum(ns) removido(s) do disco.",
+      "save_done_hymnal": "Hinário removido do disco.",
+      "save_done_both": "{n} álbum(ns) e o hinário removidos do disco.",
+      "save_nothing": "Nada a remover do disco.",
+      "cancel": "Cancelar",
+      "progress": "{done} de {total} ({percent}%)",
+      "hint": "Selecione álbuns para baixar capas, MP3s e imagens das músicas para uso offline.",
+      "loading": "Carregando coletâneas…",
+      "preparing": "Preparando lista de arquivos… ({done}/{total})",
+      "collect_failed": "Falha ao coletar lista de arquivos.",
+      "no_files": "Nenhum arquivo encontrado para os álbuns selecionados.",
+      "already_up_to_date": "Todos os arquivos selecionados já estão no disco.",
+      "completed": "Concluído: {downloaded} baixados, {failed} falharam.",
+      "cancelled": "Download cancelado.",
+      "failed": "{n} falha(s) durante o download.",
+      "no_connection_hint": "Sem conexão FTP no momento — o app vai tentar reconectar ao iniciar o download.",
+      "hymnal": "Hinário Adventista",
+      "songs": "hinos",
+      "refresh_catalog": "Atualizar coletâneas",
+      "last_update": "Atualizado às {time}",
+      "scanning_cache": "Verificando arquivos já baixados… ({done}/{total})",
+      "disk_usage": "Uso em disco (coletâneas baixadas)",
+      "disk_usage_loading": "Calculando uso em disco…",
+      "disk_usage_detail": "{size} · {files} arquivo(s) · {albums} álbum(ns) completo(s){hymnal}",
+      "disk_usage_hymnal": " · hinário"
+    },
+    "storage": {
+      "title": "Armazenamento",
+      "folder": "Pasta de mídia",
+      "open_folder": "Abrir pasta",
+      "change_folder": "Alterar pasta…",
+      "media_size": "Mídia (mp3, imagens)",
+      "cache_size": "Cache do banco",
+      "total": "Total",
+      "auto_cache": "Salvar automaticamente ao reproduzir",
+      "auto_cache_hint": "Quando ligado, músicas tocadas online ficam disponíveis offline depois.",
+      "quota": "Limite de espaço",
+      "no_limit": "Sem limite",
+      "quota_hint": "Quando atingir o limite, os arquivos mais antigos são removidos automaticamente.",
+      "clear_cache": "Limpar cache do banco",
+      "clear_files": "Limpar mídia (mp3/imagens)",
+      "refresh": "Recarregar",
+      "clear_cache_confirm": "Limpar todo o cache de banco? O programa vai baixar tudo de novo na próxima abertura.",
+      "clear_files_confirm": "Apagar TODOS os arquivos de mídia baixados? Esta ação não pode ser desfeita.",
+      "move_confirm": "Mover o conteúdo atual para a nova pasta?",
+      "change_failed": "Falha ao alterar a pasta de mídia."
+    },
+    "videos": {
+      "title": "Vídeos On-line",
+      "fullscreen": "Exibir em tela cheia",
+      "youtube_action": "Ao executar link do YouTube na liturgia, abrir:",
+      "action_video": "Vídeo",
+      "action_link": "Link no navegador",
+      "show_return": "Exibir na tela de retorno"
+    },
+    "player": {
+      "title": "Player de Áudio/Vídeo",
+      "fade_audio": "Aplicar fade ao iniciar/parar áudio",
+      "fade_audio_hint": "Quando ativado, o áudio aumenta gradualmente ao tocar e diminui antes de parar. Por padrão desligado para resposta imediata.",
+      "lazy_load": "Carregar áudios sob demanda",
+      "project_return": "Reproduzir na tela de retorno",
+      "project_return_hint": "Quando ativado, a imagem ou vídeo também é exibida na tela de retorno (stage display)."
+    },
+    "file_projection": {
+      "title": "Projeção de Arquivos",
+      "fade": "Usar fade ao abrir/fechar projeção",
+      "fade_duration": "Duração do fade"
+    }
+  },
+  "about": {
+    "tagline": "Sistema de apresentação para cultos e eventos religiosos",
+    "version": "Versão",
+    "build": "Build",
+    "platform": "Plataforma",
+    "credits": "Desenvolvido com ❤ para a comunidade Adventista."
+  },
+  "remote_control": {
+    "tabs": {
+      "slides": "Slides"
+    },
+    "bible": {
+      "clear_screen": "Limpar a Tela",
+      "close_projection": "Encerrar Projeção",
+      "screen_cleaned": "Tela da Bíblia limpa",
+      "projection_closed": "Projeção da Bíblia encerrada"
+    },
+    "slides": {
+      "close_projection": "Fechar Projeção",
+      "projection_closed": "Projeção encerrada",
+      "error_change": "Erro ao trocar slide"
+    },
+    "errors": {
+      "generic": "Erro"
+    },
+    "sync": {
+      "syncing": "Sincronizando..."
+    }
+  },
+  "import_export": {
+    "export": {
+      "action": "Exportar Liturgia",
+      "hint": "Baixa um arquivo .json com todos os dias da liturgia, anotações, itens agendados e categorias.",
+      "done": "Arquivo baixado!"
+    },
+    "import": {
+      "action": "Importar Liturgia",
+      "hint": "Carrega um arquivo .json (exportado da versão web/desktop) ou .ja (versão legada). Os itens serão restaurados conforme os dias do arquivo."
+    }
+  },
+  "popup": {
+    "close": "Fechar Janela"
+  },
+  "messages": {
+    "file_database_not_found": "Arquivo de dados não encontrado!",
+    "developer_mode_enabled": "Modo DESENVOLVEDOR ativado!",
+    "developer_mode_disabled": "Modo DESENVOLVEDOR desativado!",
+    "error_import_module": "Erro ao importar módulo",
+    "misconfigured_module": "Este módulo está mal configurado. O id informado no manifest.json deve ter o mesmo nome da pasta onde está localizado!"
+  },
+  "ribbon": {
+    "pages": {
+      "collections": "Coletâneas",
+      "collections_online": "Coletâneas On-line",
+      "bible": "Bíblia",
+      "utilities": "Utilitários",
+      "favorites": "Favoritos"
+    },
+    "groups": {
+      "hymnal_adventist": "Hinário Adventista",
+      "albums": "Álbuns",
+      "categories": "Músicas por Categorias",
+      "user": "Usuário",
+      "search": "Busca",
+      "online_videos": "On-line",
+      "general": "Geral",
+      "church": "Igreja",
+      "draws": "Sorteador",
+      "time": "Tempo",
+      "texts": "Textos",
+      "favorites": "Favoritos",
+      "info": "Informações",
+      "slide": "Slide",
+      "audio_file": "Arquivo de Áudio",
+      "export": "Exportar",
+      "error": "Erro",
+      "add": "Adicionar",
+      "items": "Itens",
+      "delete": "Apagar",
+      "options": "Opções",
+      "controls": "Controles",
+      "format": "Formatação",
+      "filters": "Filtros",
+      "actions": "Ações",
+      "projection": "Projeção",
+      "expanded_area": "Área Expandida",
+      "file": "Arquivo",
+      "slides": "Slides",
+      "audio_recording": "Áudio/Gravação",
+      "view": "Visualização",
+      "slide_controls": "Controles de Slides",
+      "recording": "Gravação",
+      "background": "Fundo",
+      "replicate_bg": "Replicar Fundo",
+      "main_text": "Texto Principal",
+      "aux_text": "Texto Auxiliar",
+      "text_options": "Opções de Texto",
+      "replicate_text": "Replicar Formatação de Texto"
+    },
+    "fields": {
+      "monitor": "Monitor",
+      "return_monitor": "Monitor de Retorno",
+      "show_return": "Exibir na tela de retorno",
+      "same_window": "Mesma janela",
+      "primary": "Monitor Principal",
+      "secondary": "Monitor Secundário"
+    },
+    "btn": {
+      "add_item": "Adicionar Item",
+      "bible": "Bíblia Sagrada",
+      "bible_clear": "Limpar Texto",
+      "bible_format": "Formatar",
+      "bible_next_verse": "Próximo Verso",
+      "bible_prev_verse": "Verso Anterior",
+      "bible_restore": "Restaurar",
+      "check_all": "Marcar Todos",
+      "clear_liturgy": "Limpar Liturgia",
+      "clock": "Relógio",
+      "clock_24h": "12h / 24h",
+      "clock_seconds": "Segundos",
+      "collections": "Coletâneas",
+      "copy_liturgy": "Copiar Liturgia",
+      "counter": "Contador",
+      "counter_decrement": "Decrementar",
+      "counter_increment": "Incrementar",
+      "counter_reset": "Zerar",
+      "custom_videos": "Meus Vídeos",
+      "custom_videos_add": "Adicionar",
+      "custom_videos_toggle_view": "Lista / Miniatura",
+      "delete_selected": "Apagar Selecionados",
+      "diverse": "Coletâneas Diversas",
+      "downloads": "Downloads",
+      "doxology": "Doxologia",
+      "draw": "Números",
+      "draw_action": "Sortear",
+      "draw_reset": "Reiniciar",
+      "dynamic_text": "Texto Dinâmico",
+      "editor_audio_attach": "Áudio",
+      "editor_audio_remove": "Remover Áudio",
+      "editor_aux_color": "Cor do Texto",
+      "editor_aux_size": "Tamanho",
+      "editor_bg_color": "Cor do Fundo",
+      "editor_bg_transparent": "Fundo Transparente",
+      "editor_duplicate_slide": "Duplicar",
+      "editor_first": "Primeiro",
+      "editor_image_position": "Posição",
+      "editor_image_remove": "Remover Imagem",
+      "editor_image_set": "Imagem",
+      "editor_import_txt": "Importar TXT",
+      "editor_last": "Último",
+      "editor_merge_next": "Mesclar Próx.",
+      "editor_new": "Nova",
+      "editor_new_slide": "Novo Slide",
+      "editor_next": "Próximo",
+      "editor_open": "Abrir",
+      "editor_play_pause": "Reproduzir",
+      "editor_prev": "Anterior",
+      "editor_project": "Projetar",
+      "editor_record_advance": "Gravar e Avançar",
+      "editor_record_clear": "Remover gravações",
+      "editor_record_retroactive": "Gravar Retroativo",
+      "editor_record_start": "Gravar Início",
+      "editor_remove_slide": "Excluir",
+      "editor_replicate_bg_after": "Todos Seguintes",
+      "editor_replicate_bg_all": "Todos Slides",
+      "editor_replicate_bg_next": "Slide Seguinte",
+      "editor_replicate_text_after": "Todos Seguintes",
+      "editor_replicate_text_all": "Todos Slides",
+      "editor_replicate_text_next": "Slide Seguinte",
+      "editor_save": "Salvar",
+      "editor_save_as": "Salvar como",
+      "editor_split_slide": "Dividir",
+      "editor_text_color": "Cor do Texto",
+      "editor_text_size": "Tamanho",
+      "editor_view_4_3": "4:3",
+      "editor_view_16_9": "16:9",
+      "editor_view_full": "Tela Cheia",
+      "export_music": "Exportar Música",
+      "favorites": "Favoritos",
+      "format": "Formatar",
+      "history": "Histórico",
+      "hymnal": "Hinário Adventista",
+      "interactive_text": "Texto Interativo",
+      "invert_selection": "Inverter Seleção",
+      "ja_musics": "JA/Min. Música",
+      "kids": "Músicas Infantis",
+      "liturgy": "Liturgia",
+      "lock_items": "Bloquear Itens",
+      "lyric": "Letra",
+      "mark_done": "Marcar como Concluído",
+      "message_board": "Painel Dinâmico",
+      "message_board_clear": "Limpar Painel",
+      "musics": "Músicas",
+      "name_draw": "Nomes",
+      "name_draw_action": "Sortear Nome",
+      "no_audio": "Sem Áudio",
+      "online_personal": "Vídeos Personalizados",
+      "online_videos": "Vídeos On-line",
+      "online_videos_personal_url": "Projetar",
+      "online_videos_personal_url_placeholder": "URL do YouTube",
+      "personal": "Colet. Personalizadas",
+      "play_all": "Tocar Todas",
+      "playback": "Playback",
+      "project": "Projetar",
+      "report_error": "Reportar Erro",
+      "reset": "Reiniciar",
+      "restore": "Restaurar",
+      "scheduled_items": "Itens Agendados",
+      "search": "Pesquisar",
+      "search_music": "Localizar Músicas",
+      "sequence": "Em Sequência",
+      "show_notes": "Exibir Painel de Anotações",
+      "sing": "Cantado",
+      "slide_editor": "Editor de Músicas",
+      "stop_projection": "Parar Projeção",
+      "stopwatch": "Cronômetro",
+      "stopwatch_reset": "Reiniciar",
+      "stopwatch_toggle": "Iniciar/Pausar",
+      "theme": "Tema",
+      "timer": "Temporizador",
+      "toggle": "Iniciar/Pausar",
+      "transmission": "Transmissão",
+      "uncheck_all": "Desmarcar Todos",
+      "update": "Atualizar"
+    }
+  },
+  "shell": {
+    "search_placeholder": "Buscar hino, música, versículo...",
+    "toggle_sidebar": "Mostrar/ocultar menu",
+    "toggle_liturgy": "Mostrar/ocultar liturgia",
+    "toggle_theme": "Alternar tema",
+    "settings": "Configurações",
+    "favorites": "Favoritos",
+    "history": "Histórico",
+    "remote_connected": "Conectado remotamente",
+    "live": "AO VIVO",
+    "start_live": "Iniciar modo culto",
+    "exit_live": "Sair do modo culto",
+    "hymn_number": "N° hino",
+    "bible_ref_placeholder": "Ex: João 3:16",
+    "liturgy": "Liturgia",
+    "projection": "Projetar",
+    "next_slide": "próximo",
+    "prev_slide": "anterior",
+    "liturgy_title": "Liturgia",
+    "edit_liturgy": "Editar liturgia",
+    "liturgy_empty": "Nenhum item na liturgia",
+    "add_item": "Adicionar",
+    "no_results": "Nenhum resultado encontrado",
+    "navigate": "navegar",
+    "execute": "executar",
+    "close": "fechar",
+    "results": "resultados",
+    "load_more": "Carregar mais",
+    "cat": {
+      "action": "Ações",
+      "module": "Módulos",
+      "music": "Músicas",
+      "hymn": "Hinos",
+      "bible": "Versículos",
+      "favorite": "Favoritos",
+      "recent": "Recentes"
+    },
+    "cmd": {
+      "open_liturgy": "Abrir Liturgia",
+      "open_bible": "Abrir Bíblia",
+      "open_hymnal": "Abrir Hinário",
+      "open_musics": "Abrir Músicas",
+      "open_favorites": "Abrir Favoritos",
+      "open_history": "Abrir Histórico",
+      "open_slide_editor": "Editor de Slides",
+      "close_media": "Fechar música atual",
+      "next_slide": "Próximo slide",
+      "prev_slide": "Slide anterior",
+      "toggle_theme": "Alternar tema claro/escuro",
+      "open_projection": "Abrir tela de projeção",
+      "open_operator": "Abrir operador (grade de slides)",
+      "toggle_live": "Iniciar/sair modo culto"
+    },
+    "live_active": "MODO CULTO ATIVO",
+    "appmenu": "Menu",
+    "about": "Sobre",
+    "transmission": "Transmissão",
+    "downloads": "Downloads",
+    "check_update": "Verificar atualizações",
+    "feedback": "Enviar feedback",
+    "help": "Ajuda",
+    "dev_mode": "Modo desenvolvedor",
+    "quick_search": "Busca rápida (Ctrl+K)",
+    "quick_search_short": "Busca Rápida",
+    "bible_quick_search": "Busca bíblica rápida (Ctrl+B)",
+    "bible_quick_search_short": "Busca Bíblica",
+    "open_modules": "Módulos abertos",
+    "ribbon_nav": "Navegação da Ribbon",
+    "no_modules_open": "Nenhum módulo aberto",
+    "empty_ribbon_page": "Selecione uma aba",
+    "not_implemented": "Não implementado",
+    "appmenu_content_placeholder": "Selecione uma opção do menu para configurar.",
+    "appmenu_items": {
+      "about": "Sobre...",
+      "settings": "Opções",
+      "transmission": "Transmitir",
+      "remote_control": "Controle Remoto",
+      "import_export": "Importar/Exportar",
+      "sync": "Sincronizar Arquivos",
+      "feedback": "Enviar Feedback",
+      "check_update": "Procurar Atualizações",
+      "albums": "Ativar/Desativar Álbuns",
+      "donate": "Faça sua Doação",
+      "exit": "Sair"
+    },
+    "window": {
+      "minimize": "Minimizar",
+      "maximize": "Maximizar",
+      "restore": "Restaurar",
+      "close": "Fechar"
+    },
+    "playing": "Reproduzindo",
+    "playing_youtube": "Reproduzindo do YouTube",
+    "player": {
+      "first": "Primeiro slide",
+      "prev": "Slide anterior",
+      "play": "Reproduzir",
+      "pause": "Pausar",
+      "next": "Próximo slide",
+      "last": "Último slide",
+      "close": "Fechar música",
+      "maximize": "Restaurar janela",
+      "fullscreen": "Tela cheia"
+    },
+    "version": "versão {v}",
+    "operator_label": "Operador de slides",
+    "operator_slide_label": "Slide {n} de {total}",
+    "operator_waiting": "Aguardando música...",
+    "operator_hint": "← → navegar · Enter apresentar",
+    "proj_return_next": "PRÓX",
+    "proj_windows": "Abrir janelas de projeção",
+    "proj_open_projection": "Abrir projeção (tela cheia)",
+    "proj_open_return": "Abrir retorno (operador)",
+    "proj_open_operator": "Abrir grade do operador"
+  },
+  "formatacao": {
+    "title": "Formatação",
+    "menu": "Formatação",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "restore": "Restaurar padrão",
+    "restore_confirm": "Restaurar formatação padrão deste item? As alterações atuais serão perdidas.",
+    "empty": "Selecione um item à esquerda para configurar a formatação.",
+    "slides_title": "Slides de Música",
+    "slides_hint": "Aplica-se a todas as músicas: Projeção, Retorno e Operador.",
+    "section": {
+      "cover": "Capa",
+      "lyric": "Letra",
+      "next": "Próximo slide (Retorno)",
+      "font_bg": "Fonte e fundo",
+      "behavior": "Comportamento"
+    },
+    "field": {
+      "color": "Cor da letra",
+      "size": "Tamanho (% da tela)",
+      "font": "Fonte",
+      "bg_color": "Cor de fundo",
+      "progress_color": "Cor da barra de progresso",
+      "show_progress": "Mostrar barra de progresso",
+      "show_title_first_slide": "Mostrar título da música no primeiro slide",
+      "text_align": "Alinhamento vertical",
+      "align_top": "Topo",
+      "align_center": "Centro",
+      "align_bottom": "Rodapé"
+    },
+    "profiles": "Perfis",
+    "profile_save": "Salvar como perfil…",
+    "profile_name_prompt": "Nome do perfil:",
+    "profile_load_confirm": "Carregar este perfil substitui a formatação atual. Continuar?",
+    "profile_delete_confirm": "Excluir este perfil?",
+    "export": "Exportar (.json)",
+    "import": "Importar (.json)",
+    "import_error": "Falha ao importar: arquivo inválido."
+  },
+  "customization": {
+    "alert_color": "Cor de alerta",
+    "hour_cycle": "Formato de hora",
+    "time_format": "Formato"
+  },
+  "hotkeys": {
+    "title": "Atalhos de Teclado",
+    "groups": {
+      "general": "Geral",
+      "navigation": "Navegação de slides",
+      "media": "Player",
+      "liturgy": "Liturgia",
+      "bible": "Bíblia",
+      "system": "Sistema"
+    },
+    "esc": "Encerrar projeções ativas",
+    "f1": "Mostrar atalhos de teclado",
+    "f5": "Recarregar módulo ativo",
+    "f8": "Ativar/desativar modo culto",
+    "ctrl_w": "Fechar módulo ativo",
+    "ctrl_f": "Focar campo de busca",
+    "ctrl_space": "Abrir busca rápida",
+    "ctrl_b": "Abrir busca bíblica rápida",
+    "ctrl_m": "Abrir busca de músicas",
+    "ctrl_k": "Abrir paleta de comandos",
+    "ctrl_n": "Novo item (liturgia ativa)",
+    "ctrl_shift_n": "Nova anotação na liturgia",
+    "ctrl_up": "Slide anterior",
+    "ctrl_down": "Próximo slide",
+    "ctrl_pageup": "Slide anterior",
+    "ctrl_pagedown": "Próximo slide",
+    "ctrl_left": "Música anterior",
+    "ctrl_right": "Próxima música",
+    "home": "Primeiro slide",
+    "end": "Último slide",
+    "space": "Pausar/retomar reprodução",
+    "pause": "Pausar/retomar reprodução",
+    "ctrl_shift_f2": "Limpar cache e recarregar dados",
+    "ctrl_alt_d": "Alternar modo desenvolvedor",
+    "prev_slide": "Slide anterior",
+    "next_slide": "Próximo slide",
+    "bible_prev_verse": "Versículo anterior",
+    "bible_next_verse": "Próximo versículo",
+    "bible_clear": "Limpar versículo selecionado"
+  }
 }

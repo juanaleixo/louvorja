@@ -1,20 +1,26 @@
 {
-    "title": "Reloj",
-    "customization": {
-        "background": "Fondo",
-        "color": "Color",
-        "image": "Imagen",
-        "transparency": "Transparencia",
-        "adjust": "Ajustar",
-        "align": "Alineacion",
-        "font": "Fuente",
-        "text": "Texto",
-        "window": "Ventana",
-        "vertical": "Vertical",
-        "horizontal": "Horizontal",
-        "border": "Borde",
-        "size": "Tamano",
-        "hour_cycle": "Ciclo de Horas",
-        "time_format": "Formato de Hora"
-    }
+  "title": "Reloj",
+  "ribbon": {
+    "title_ctx": "Configurar Reloj"
+  },
+  "actions": {
+    "toggle_format": "Alternar 12h/24h",
+    "toggle_seconds": "Mostrar/ocultar segundos",
+    "fullscreen": "Abrir en pantalla completa"
+  },
+  "customization": {
+    "font": "Fuente",
+    "color": "Color",
+    "size": "Tamaño",
+    "border": "Bordes",
+    "vertical": "Vertical",
+    "horizontal": "Horizontal",
+    "image": "Imagen de Fondo",
+    "transparency": "Transparencia",
+    "adjust": "Ajuste de Imagen",
+    "hour_cycle": "Formato del Reloj",
+    "time_format": "Formato de Hora",
+    "show_date": "Mostrar fecha",
+    "date_format": "Formato de Fecha"
+  }
 }

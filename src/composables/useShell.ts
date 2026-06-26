@@ -1,0 +1,31 @@
+import { reactive, readonly } from "vue";
+
+interface ShellActions {
+  openCommandPalette: () => void;
+  openHotkeysCheatsheet: () => void;
+  openMusicSearch: () => void;
+  openBibleSearch: () => void;
+}
+
+const _state = reactive<ShellActions>({
+  openCommandPalette: () => {
+    window.dispatchEvent(new CustomEvent("louvorja:open-command-palette"));
+  },
+  openHotkeysCheatsheet: () => {
+    window.dispatchEvent(new CustomEvent("louvorja:open-hotkeys"));
+  },
+  openMusicSearch: () => {
+    window.dispatchEvent(new CustomEvent("louvorja:open-music-search"));
+  },
+  openBibleSearch: () => {
+    window.dispatchEvent(new CustomEvent("louvorja:open-bible-search"));
+  },
+});
+
+export function registerShell(actions: Partial<ShellActions>): void {
+  Object.assign(_state, actions);
+}
+
+export function useShell(): Readonly<ShellActions> {
+  return readonly(_state);
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Temporizador de culto",
+  "mode": { "up": "Progresivo", "down": "Regresivo" },
+  "actions": {
+    "start": "Iniciar",
+    "pause": "Pausar",
+    "reset": "Reiniciar",
+    "set": "Definir tiempo"
+  },
+  "alarm": { "done": "¡Tiempo agotado!" },
+  "ribbon": {
+    "title_ctx": "Configurar Temporizador",
+    "toggle": "Iniciar/Pausar",
+    "reset": "Reiniciar"
+  }
+}

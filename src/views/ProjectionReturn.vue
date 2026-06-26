@@ -1,0 +1,290 @@
+<template>
+  <div class="return-root" :class="{ 'return-root--ready': ready }">
+    <!-- Slide atual ocupa quase toda a tela (alClient) -->
+    <div class="return-current">
+      <!-- Progresso total da música (barra no topo) -->
+      <div v-if="slideStyle.cfg.value.show_progress_bar" class="return-track-progress-bar">
+        <div
+          class="return-track-progress-fill"
+          :style="{ width: progress + '%', background: slideStyle.cfg.value.progress_color }"
+        />
+      </div>
+
+      <!-- Imagem de fundo do slide atual -->
+      <div
+        v-if="(slide && slide.url_image) || slideStyle.cfg.value.background_image"
+        :key="slide?.url_image || slideStyle.cfg.value.background_image"
+        class="return-bg"
+        :style="slideStyle.bgStyle(slide)"
+      />
+
+      <div class="return-current-text">
+        <div
+          v-if="slide && (slide.lyric || slide.name)"
+          class="return-text"
+          :class="{ 'return-text--cover': isCover }"
+          :style="textStyle"
+          v-html="slide.lyric || slide.name"
+        />
+      </div>
+
+      <!-- Título da música no topo -->
+      <div v-if="title" class="return-title">{{ title }}</div>
+
+      <!-- Barra de progresso fina no rodapé do painel atual -->
+      <div v-if="slideStyle.cfg.value.show_progress_bar" class="return-progress-bar">
+        <div
+          class="return-progress-fill"
+          :style="{ width: slideProgress + '%', background: slideStyle.cfg.value.progress_color }"
+        />
+      </div>
+    </div>
+
+    <!-- Painel fixo no rodapé com próximo slide + contador (alBottom Delphi) -->
+    <div class="return-bottom">
+      <div class="return-bottom-grid">
+        <div>
+          <span class="return-next-label">{{ t("shell.proj_return_next") }}</span>
+        </div>
+        <div class="return-next-text">
+          <span
+            class="return-next-content"
+            :style="{
+              ...slideStyle.nextStyle(nextSlide),
+              textTransform: slideStyle.textTransform.value,
+            }"
+            v-html="nextSlide?.lyric || nextSlide?.name || '—'"
+          />
+        </div>
+        <div class="return-counter">{{ slideIndex + 1 }} / {{ totalSlides || 0 }}</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
+import { useProjectionState } from "@/composables/useProjectionState";
+import { useSlideStyle } from "@/composables/useSlideStyle";
+
+const { t } = useI18n();
+const { slide, isCover, progress, slideProgress, title, slideIndex, totalSlides, nextSlide } =
+  useProjectionState();
+const slideStyle = useSlideStyle();
+
+const ready = ref(false);
+
+// Reusa coverStyle / lyricStyle do composable, com tamanhos menores
+// para o stage display (Return é menor que Projection fullscreen).
+const textStyle = computed(() => {
+  const base = isCover.value
+    ? slideStyle.coverStyle(slide.value)
+    : slideStyle.lyricStyle(slide.value);
+  // Ajuste para o painel de retorno (font menor, mantém cores e família).
+  return {
+    ...base,
+    fontSize: `clamp(24px, ${isCover.value ? 14 : 11}vh, 160px)`,
+    textTransform: slideStyle.textTransform.value,
+  };
+});
+
+function _onKey(e) {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    window.close();
+  }
+}
+
+onMounted(() => {
+  document.body.style.margin = "0";
+  document.body.style.overflow = "hidden";
+  document.body.style.background = "#293329";
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      ready.value = true;
+    });
+  });
+
+  window.addEventListener("keydown", _onKey);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", _onKey);
+});
+</script>
+
+<style scoped>
+.return-root,
+.return-root :deep(*) {
+  cursor: none;
+}
+
+.return-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #293329;
+  font-family: var(--lj-font-projection);
+  opacity: 0;
+  transition: opacity 120ms linear;
+  box-sizing: border-box;
+  padding: 24px 24px; /* área segura nas bordas */
+}
+.return-root--ready {
+  opacity: 1;
+}
+
+/* Painel atual (alClient) */
+.return-current {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #1a201a;
+}
+
+.return-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+}
+
+.return-current-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.return-text {
+  text-align: center;
+  line-height: 1.3;
+  text-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.9),
+    0 0 40px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.01em;
+  max-width: 92vw;
+  color: #fff;
+}
+
+.return-text--cover {
+  letter-spacing: 0.02em;
+}
+
+.return-title {
+  position: absolute;
+  top: 20px;
+  left: 15px;
+  right: 16px;
+  font-size: 1.7rem;
+  font-weight: 500;
+  color: #efb400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.return-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.return-progress-fill {
+  height: 100%;
+  background: #efb400;
+  transition: width 0.12s linear;
+}
+
+.return-track-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  z-index: 2;
+}
+
+.return-track-progress-fill {
+  height: 100%;
+  background: #efb400;
+  transition: width 0.25s linear;
+}
+
+/* Painel inferior (alBottom Delphi: 39px) com próximo slide */
+.return-bottom {
+  flex: 0 0 auto;
+  height: 18vh;
+  min-height: 90px;
+  width: 100%;
+  background: linear-gradient(180deg, #1d251d, #131b13);
+  border-top: 2px solid #efb400;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px;
+}
+
+.return-bottom-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  width: 100%;
+  align-items: center;
+}
+
+.return-next-text {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow: hidden;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.return-next-label {
+  font-size: 2vh;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #efb400;
+  background: rgba(239, 180, 0, 0.12);
+  border: 1px solid rgba(239, 180, 0, 0.4);
+  padding: 5px 5px 0 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.return-next-content {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  line-height: 1.35;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+}
+
+.return-counter {
+  font-size: clamp(20px, 7vh, 70px);
+  font-weight: 700;
+  color: #efb400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  padding-left: 12px;
+  border-left: 3px solid rgba(239, 180, 0, 0.3);
+  align-self: center;
+}
+</style>

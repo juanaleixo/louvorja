@@ -1,0 +1,12 @@
+{
+  "id": "remote_control",
+  "name": "Controle Remoto",
+  "description": "Conecta na aplicação desktop para fazer o acionamento remoto das músicas.",
+  "category": null,
+  "showInMainMenu": true,
+  "icon": "mdi-remote",
+  "dependencies": [],
+  "moduleOptions": {
+    "size": "small"
+  }
+}

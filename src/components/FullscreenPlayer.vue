@@ -1,5 +1,11 @@
 <template>
+  <!-- Só renderiza quando o navegador está REALMENTE em fullscreen.
+       Antes, se o flag config.fullscreen ficasse true mas o requestFullscreen()
+       não entrasse de fato (ex.: chamado fora de gesto do usuário), este
+       overlay se sobrepunha ao preview inline e mostrava um Player duplicado
+       sobre o do rodapé. -->
   <div
+    v-if="actuallyFullscreen"
     class="position-absolute w-100 h-100 top-0 left-0"
     style="z-index: 9999"
     @mousemove="mouseMove"
@@ -17,58 +23,65 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import LPlayer from "@/components/Player.vue";
 
-export default {
-  name: "FullscreenPlayerComponent",
-  components: {
-    LPlayer,
-  },
-  data() {
-    return {
-      visible: false,
-      start_timer: true,
-      timeout: null,
-    };
-  },
-  methods: {
-    mouseMove() {
-      if (!this.start_timer) {
-        return;
-      }
-      this.showChild();
-      this.startHideTimer();
-    },
-    mouseEnter() {
-      this.start_timer = false;
-      clearTimeout(this.timeout);
-    },
-    mouseLeave() {
-      this.start_timer = true;
-      this.startHideTimer();
-    },
-    showChild() {
-      this.visible = true; // Torna a div filho visível
-      clearTimeout(this.timeout); // Cancela qualquer temporizador ativo
-    },
-    startHideTimer() {
-      clearTimeout(this.timeout); // Cancela qualquer temporizador anterior
-      this.timeout = setTimeout(() => {
-        this.visible = false; // Oculta a div filho após um tempo
-      }, 1000);
-    },
-  },
-  beforeUnmount() {
-    clearTimeout(this.timeout); // Limpa o temporizador ao destruir o componente
-  },
-};
+const visible = ref(false);
+const start_timer = ref(true);
+const actuallyFullscreen = ref(false);
+let timeout = null;
+
+function _syncFullscreen() {
+  actuallyFullscreen.value = !!document.fullscreenElement;
+}
+
+onMounted(() => {
+  _syncFullscreen();
+  document.addEventListener("fullscreenchange", _syncFullscreen);
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(timeout);
+  document.removeEventListener("fullscreenchange", _syncFullscreen);
+});
+
+function mouseMove() {
+  if (!start_timer.value) return;
+  showChild();
+  startHideTimer();
+}
+
+function mouseEnter() {
+  start_timer.value = false;
+  clearTimeout(timeout);
+}
+
+function mouseLeave() {
+  start_timer.value = true;
+  startHideTimer();
+}
+
+function showChild() {
+  visible.value = true;
+  clearTimeout(timeout);
+}
+
+function startHideTimer() {
+  clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    visible.value = false;
+  }, 1000);
+}
 </script>
 
 <style scoped>
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  /* Subida/descida do player em fullscreen — antes 0.3s, agora 0.15s pra UX */
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 .slide-up-enter-from,
 .slide-up-leave-to {

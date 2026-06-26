@@ -1,0 +1,731 @@
+import { watch } from "vue";
+import $dev from "@/helpers/Dev";
+import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
+import $datetime from "@/helpers/DateTime";
+import $path from "@/helpers/Path";
+import $alert from "@/helpers/Alert";
+import $modules from "@/helpers/Modules";
+import $database from "@/helpers/Database";
+import $history from "@/helpers/History";
+import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import { useAudioPlayback } from "@/composables/useAudioPlayback";
+import { useSlides } from "@/composables/useSlides";
+import type { Slide } from "@/composables/useSlides";
+import { useLyric } from "@/composables/useLyric";
+import { useAlbum } from "@/composables/useAlbum";
+import { openProjectionWindows, openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import { Music } from "@/types/Music";
+import { LyricOpenParams } from "@/types/Lyric";
+
+const _audio = useAudioPlayback();
+const _slides = useSlides();
+const _lyric  = useLyric();
+const _album  = useAlbum();
+let _loadingId: string | number | null = null;
+// XHR atual de download de áudio — abortado ao trocar de música rapidamente
+// para liberar conexão e evitar callbacks de respostas obsoletas (mesmo que
+// o early-return pelo _loadingId já as ignore, a request continuava
+// drenando bytes da rede e ocupando handlers).
+let _audioXhr: XMLHttpRequest | null = null;
+
+// YouTube mode
+let _ytUnlisten: (() => void) | null = null;
+
+function _broadcastVideoState(currentTime?: number, isPaused?: boolean): void {
+  if (!$appdata.get("modules.media.config.video_file")) return;
+  $broadcast.send(BROADCAST_TYPE.VIDEO_STATE, {
+    currentTime: currentTime ?? _audio.currentTime.value,
+    isPaused: isPaused ?? _audio.isPaused.value,
+  });
+}
+
+function _isYouTube(): boolean {
+  return !!$appdata.get("modules.media.config.is_youtube");
+}
+
+function _loadAudioSrc(
+  audioUrl: string,
+  idCheck: string | number | null,
+  retryFn: (id: string | number) => void,
+): void {
+  if ($appdata.get("is_online") && $userdata.get("modules.media.lazy_load")) {
+    $appdata.set("modules.media.config.lazy", true);
+    _audio.setSrc(audioUrl, true);
+    $appdata.set("modules.media.loading", false);
+    _self.pause(false);
+    return;
+  }
+
+  $appdata.set("modules.media.config.lazy", false);
+  if (_audioXhr) {
+    try { _audioXhr.abort(); } catch (_) { /* ignore */ }
+    _audioXhr = null;
+  }
+  const request = new XMLHttpRequest();
+  _audioXhr = request;
+  try {
+    request.open("GET", audioUrl, true);
+  } catch (error) {
+    if (_audioXhr === request) _audioXhr = null;
+    $appdata.set("modules.media.loading", false);
+    _self.close(true);
+    $alert.error({ text: "modules.media.alerts.not_loaded", error }, function (a?: unknown) {
+      if (a) retryFn(idCheck as string | number);
+    });
+    return;
+  }
+
+  request.responseType = "blob";
+  request.onload = function (this: XMLHttpRequest) {
+    if (_audioXhr === request) _audioXhr = null;
+    if (_loadingId !== idCheck) return;
+    if (this.status == 200) {
+      _audio.setSrc(URL.createObjectURL(this.response as Blob), false);
+      _self.pause(false);
+    } else {
+      _self.close(true);
+      $alert.error(
+        { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
+        function (a?: unknown) {
+          if (a) retryFn(idCheck as string | number);
+        }
+      );
+    }
+  };
+  request.onerror = function () {
+    if (_audioXhr === request) _audioXhr = null;
+    if (_loadingId !== idCheck) return;
+    _self.close(true);
+    $alert.error(
+      { text: "modules.media.alerts.not_loaded", error: request.statusText || "" },
+      function (a?: unknown) {
+        if (a) retryFn(idCheck as string | number);
+      }
+    );
+  };
+  request.onabort = function () {
+    if (_audioXhr === request) _audioXhr = null;
+  };
+
+  request.send();
+  $appdata.set("modules.media.loading", false);
+}
+
+// Mantém $appdata sincronizado com o estado reativo de useSlides
+// (Player.vue, Footer.vue e media/Index.vue ainda leem de $appdata)
+watch(
+  _slides.slideIndex,
+  (si) => {
+    $appdata.set("modules.media.config.slide_index", si);
+  },
+  { flush: "sync" }
+);
+watch(
+  _slides.slideProgress,
+  (sp) => {
+    $appdata.set("modules.media.config.slide_progress", sp);
+  },
+  { flush: "sync" }
+);
+watch(
+  _slides.totalSlides,
+  (n) => {
+    $appdata.set("modules.media.config.last_slide", n);
+  },
+  { flush: "sync" }
+);
+
+// Throttle para evitar sobrecarga de broadcasts de sincronia de vídeo
+let _lastVideoSync = 0;
+const _VIDEO_SYNC_INTERVAL = 500; // ms entre broadcasts de sincronia
+
+// Callback de timeUpdate: mantém $appdata de timing e fecha ao fim da música.
+_audio.onTimeUpdate((ct, d) => {
+  $appdata.set("modules.media.config.current_time", ct);
+  $appdata.set("modules.media.config.duration", d);
+  $appdata.set("modules.media.config.progress", _audio.progress.value);
+  $appdata.set("modules.media.config.buffered", _audio.buffered.value);
+
+  if (!_audio.isPaused.value && ct >= d && d > 0) {
+    _self.close(true);
+  }
+
+  // Sincronia contínua de vídeo: broadcast periódico para manter o <video>
+  // das janelas de projeção sincronizado com o <audio> oculto.
+  const now = Date.now();
+  if (!$appdata.get("modules.media.config.is_paused") && now - _lastVideoSync >= _VIDEO_SYNC_INTERVAL) {
+    _lastVideoSync = now;
+    _broadcastVideoState();
+  }
+
+});
+
+export interface MediaOpenParams {
+  id_music?: string | number;
+  id_album?: string | number | null;
+  mode?: "audio" | "instrumental" | "no_audio";
+  minimized?: boolean;
+  url?: string;
+  title?: string;
+}
+
+function _buildSlidesFrom(data: Music): Slide[] {
+  let prev_image: string | undefined = data?.url_image as string | undefined;
+  let prev_image_position: string | number | undefined = data?.image_position;
+
+  return [
+    {
+      lyric:                data?.name,
+      cover:                true,
+      time:                 "00:00:00",
+      instrumental_time:    "00:00:00",
+      url_image:            data?.url_image as string | undefined,
+      image_position:       data?.image_position,
+    },
+    ...(data?.lyric || [])
+      .filter((lyric) => lyric.show_slide === 1)
+      .sort((a, b) => a.order - b.order)
+      .map((lyric) => {
+        if (lyric.url_image) {
+          prev_image          = lyric.url_image as string;
+          prev_image_position = lyric.image_position;
+        }
+        return {
+          ...lyric,
+          cover:          false,
+          lyric:          lyric.lyric ? lyric.lyric.replace(/[\r\n]+/g, "<br>") : "",
+          url_image:      prev_image,
+          image_position: prev_image_position,
+        };
+      }),
+  ];
+}
+
+const _self = {
+  async open(params: MediaOpenParams | string | number): Promise<void> {
+    if (typeof params != "object") {
+      params = { id_music: params };
+    }
+
+    $dev.write("open media", params);
+
+    // Conexão remota está ativada? Se sim, abre do programa desktop
+    if ($userdata.get("remote.is_connected")) {
+      const tag = params.mode == "audio" ? 1 : params.mode == "instrumental" ? 2 : 3;
+
+      const url =
+        $userdata.get("remote.url") +
+        "/api/open-song?id=" +
+        params.id_music +
+        "&tag=" +
+        tag +
+        "&token=" +
+        $userdata.get("remote.token");
+
+      $alert.info("modules.media.alerts.open_remote");
+      try {
+        const response = await fetch(url, { method: "GET", mode: "cors" });
+        const ret = await response.json();
+        if (ret.status != "ok") {
+          $alert.error({
+            text:
+              ret.code == "INVALID_TOKEN"
+                ? "modules.remote_control.messages.invalid_token"
+                : "modules.remote_control.messages.error",
+            error: ret.code,
+          });
+        }
+      } catch (error) {
+        $alert.error({ text: "modules.media.alerts.open_remote_error", error });
+      }
+      return;
+    }
+
+    // Crossfade: se há audio tocando, faz fade out antes de carregar a nova música
+    const _existingAudio = _audio.getElement();
+    if (
+      !_existingAudio.paused &&
+      _existingAudio.src &&
+      $userdata.get("modules.media.fade_audio", false)
+    ) {
+      await new Promise<void>((resolve) => {
+        _audio.fadeOut(() => {
+          _audio.stop();
+          resolve();
+        });
+      });
+    } else {
+      _audio.stop();
+    }
+
+    this.clearVariables();
+
+    const id_music = params.id_music;
+    const minimizeOnStart = $userdata.get("options.minimize_on_start", false);
+    const minimized = params.minimized !== undefined ? params.minimized : minimizeOnStart;
+    const id_album  = params.id_album  ? params.id_album  : null;
+    let mode: string = params.mode ? params.mode : "no_audio";
+
+    _loadingId = id_music ?? null;
+    $appdata.set("modules.media.loading", true);
+
+    let data = await $database.get<Music>(`music_${id_music}`);
+    console.log(data);
+    if (data == null || _loadingId !== id_music) {
+      this.close(true);
+      return;
+    }
+    $appdata.set("modules.media.data", data);
+    $history.add(id_music, data.name, !!data.url_instrumental_music);
+
+    $appdata.set("modules.media.id_music", id_music);
+    $appdata.set("modules.media.id_album", id_album);
+    $appdata.set("modules.media.config.title", data.name);
+    this.setAlbumInfo(id_album);
+
+    const slidesArray = _buildSlidesFrom(data);
+    let timesArray: number[] = [];
+
+    if (mode == "audio" || mode == "instrumental") {
+      timesArray = slidesArray.map((item) =>
+        $datetime.toNumber(mode == "audio" ? item.time : item.instrumental_time)
+      );
+    }
+
+    _slides.setSlides(slidesArray, timesArray, data.name ?? "");
+
+    $broadcast.send(BROADCAST_TYPE.SLIDES_DATA, {
+      slides:      slidesArray,
+      title:       data.name,
+      slide_index: 0,
+    });
+
+    if (minimized) {
+      this.minimize();
+    } else {
+      this.maximize();
+    }
+
+    if (mode == "audio" || mode == "instrumental") {
+      const volume = $appdata.get("modules.media.config.volume");
+      _audio.setVolume(volume as number);
+      _audio.getElement().currentTime = 0;
+      $appdata.set("modules.media.config.is_paused", true);
+
+      const audioUrl = $path.file(
+        mode == "audio"
+          ? (data.url_music as string)
+          : (data.url_instrumental_music as string)
+      );
+      $appdata.set("modules.media.config.audio", audioUrl);
+
+      _slides.bindAudio(_audio);
+
+      _loadAudioSrc(audioUrl, id_music, (id) => _self.open(id));
+    } else {
+      $appdata.set("modules.media.config.audio", "");
+      $appdata.set("modules.media.loading", false);
+      // Modo sem áudio: broadcast imediato do slide de capa para a projeção
+      _slides.broadcastSlide();
+    }
+
+    $appdata.set("modules.media.config.mode", mode);
+
+    // Replica fmMusica + fmMusicaRetorno + fmMusicaOperador do Delphi:
+    // ao iniciar uma música, abre as janelas auxiliares conforme
+    // configurado em "Configurações → Slides de Músicas".
+    openProjectionWindows().catch((e) => {
+      console.warn("[Media] openProjectionWindows falhou:", e);
+    });
+  },
+
+  close(force = false): void {
+    if (_isYouTube()) {
+      if (!force) {
+        const key = "modules.media.alerts.close";
+        const self = this;
+        $alert.yesno({title: key}, function (btn?: string) {
+          if (btn == "yes") self.close(true);
+        });
+        return;
+      }
+
+      if (_ytUnlisten) {
+        _ytUnlisten();
+        _ytUnlisten = null;
+      }
+
+      try {
+        localStorage.removeItem("lj_file_projection");
+      } catch {
+        /* ignore */
+      }
+
+      this.clearVariables();
+      $appdata.set("modules.media.show", false);
+      $appdata.set("modules.media.minimized", false);
+      $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
+      closeProjectionWindows().catch((e) => {
+        console.warn("[Media] closeProjectionWindows falhou:", e);
+      });
+      return;
+    }
+
+    if (!force) {
+      const self = this;
+      const key = $appdata.get("modules.media.config.audio_only")
+        ? "modules.media.alerts.close_audio"
+        : "modules.media.alerts.close";
+      $alert.yesno({title: key}, function (btn?: string) {
+        if (btn == "yes") self.close(true);
+      });
+      return;
+    }
+
+    _audio.stop();
+    this.clearVariables();
+    $appdata.set("modules.media.show", false);
+    $appdata.set("modules.media.minimized", false);
+
+    // Reseta o estado de slides — sem isso o `useSlides.slides` retém o
+    // último array, e qualquer janela/cliente que reabra fica vendo a
+    // música anterior.
+    _slides.reset();
+
+    // Avisa janelas locais (Projection, ProjectionReturn) e clients
+    // remotos (SSE) para limparem a tela. Sem este broadcast, OBS continua
+    // mostrando a letra mesmo depois de fechar a música.
+    $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
+
+    // Fecha janelas auxiliares (espelha o fmMusica.Close do Delphi).
+    closeProjectionWindows().catch((e) => {
+      console.warn("[Media] closeProjectionWindows falhou:", e);
+    });
+  },
+
+  async openLyric(params?: LyricOpenParams | string | number | null): Promise<void> {
+    if (params == null || params == undefined) {
+      params = {
+        id_music: $appdata.get("modules.media.id_music") as string | number,
+        id_album: $appdata.get("modules.media.id_album") as string | number | null,
+      };
+    } else if (typeof params != "object") {
+      params = { id_music: params };
+    }
+
+    const ok = await _lyric.open(params as LyricOpenParams);
+    if (!ok) {
+      this.closeLyric();
+      return;
+    }
+
+    $appdata.set("modules.lyric.show", true);
+  },
+
+  closeLyric(): void {
+    _lyric.close();
+    $appdata.set("modules.lyric.show", false);
+  },
+
+  async openAlbum(id_album: string | number): Promise<void> {
+    const { redirect } = await _album.open(id_album);
+    if (redirect) $modules.open(redirect);
+  },
+
+  closeAlbum(): void {
+    _album.close();
+  },
+
+  async openAudio(params: MediaOpenParams | string | number): Promise<void> {
+    if (typeof params != "object") {
+      params = { id_music: params };
+    }
+    $dev.write("open audio", params);
+
+    _audio.stop();
+    this.clearVariables();
+
+    const mode = params.mode || "audio";
+
+    // Modo URL direta (ex: arquivo de áudio da liturgia) — pula busca no banco
+    if (params.url) {
+      _loadingId = null;
+      $appdata.set("modules.media.loading", true);
+      $appdata.set("modules.media.config.title", params.title || "");
+      $appdata.set("modules.media.config.mode", mode);
+      $appdata.set("modules.media.config.is_paused", true);
+      $appdata.set("modules.media.config.slide_index", 0);
+      $appdata.set("modules.media.config.last_slide", 1);
+      $appdata.set("modules.media.config.audio_only", true);
+
+      const audioUrl = params.url;
+      $appdata.set("modules.media.config.audio", audioUrl);
+
+      const self = this;
+      _audio.getElement().onerror = function () {
+        _audio.getElement().onerror = null;
+        self.close(true);
+        $alert.error("modules.media.alerts.file_not_found");
+      };
+
+      const volume = $appdata.get("modules.media.config.volume");
+      _audio.setVolume(volume as number);
+      _audio.getElement().currentTime = 0;
+
+      _audio.setSrc(audioUrl, true);
+      $appdata.set("modules.media.loading", false);
+      this.pause(false);
+      this.minimize();
+      return;
+    }
+
+    const id_music = params.id_music;
+    _loadingId = id_music ?? null;
+    $appdata.set("modules.media.loading", true);
+
+    let data = await $database.get<Music>(`music_${id_music}`);
+    if (data == null || _loadingId !== id_music) {
+      this.close(true);
+      return;
+    }
+
+    $appdata.set("modules.media.data", data);
+    $appdata.set("modules.media.id_music", id_music);
+    $appdata.set("modules.media.config.title", data.name);
+    $appdata.set("modules.media.config.mode", mode);
+    $appdata.set("modules.media.config.is_paused", true);
+    $appdata.set("modules.media.config.slide_index", 0);
+    $appdata.set("modules.media.config.last_slide", 1);
+    $appdata.set("modules.media.config.audio_only", true);
+
+    const volume = $appdata.get("modules.media.config.volume");
+    _audio.setVolume(volume as number);
+    _audio.getElement().currentTime = 0;
+
+    const audioUrl = $path.file(
+      mode == "instrumental"
+        ? (data.url_instrumental_music as string)
+        : (data.url_music as string)
+    );
+    $appdata.set("modules.media.config.audio", audioUrl);
+
+    _loadAudioSrc(audioUrl, id_music, (id) => _self.openAudio(id));
+
+    this.minimize();
+  },
+
+  async openYouTube(url: string, title: string): Promise<void> {
+    $dev.write("open youtube", { url, title });
+
+    if (_isYouTube()) this.close(true);
+
+    _audio.stop();
+    this.clearVariables();
+
+    $appdata.set("modules.media.show", true);
+    $appdata.set("modules.media.config.title", title);
+    $appdata.set("modules.media.config.is_youtube", true);
+    $appdata.set("modules.media.config.youtube_url", url);
+    $appdata.set("modules.media.config.is_paused", false);
+    $appdata.set("modules.media.config.audio", "");
+    $appdata.set("modules.media.config.audio_only", false);
+    $appdata.set("modules.media.config.mode", "audio");
+    $appdata.set("modules.media.loading", false);
+
+    _audio.currentTime.value = 0;
+    _audio.duration.value = 0;
+    _audio.isPaused.value = false;
+    _audio.progress.value = 0;
+
+    this.minimize();
+
+    try {
+      localStorage.setItem("lj_file_projection", JSON.stringify({ url, type: "youtube", title }));
+    } catch {
+      /* ignore */
+    }
+
+    await openFileProjectionWindows();
+
+    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type: "youtube", title });
+
+    _ytUnlisten = $broadcast.listen((msg) => {
+      if (msg.type !== BROADCAST_TYPE.YOUTUBE_STATE) return;
+      const p = msg.payload as Record<string, unknown>;
+      if (!p) return;
+      _audio.currentTime.value = typeof p.currentTime === "number" ? p.currentTime : _audio.currentTime.value;
+      _audio.duration.value = typeof p.duration === "number" ? p.duration : _audio.duration.value;
+      _audio.isPaused.value = typeof p.isPaused === "boolean" ? p.isPaused : _audio.isPaused.value;
+      _audio.progress.value = _audio.duration.value > 0 ? (_audio.currentTime.value / _audio.duration.value) * 100 : 0;
+
+      $appdata.set("modules.media.config.current_time", _audio.currentTime.value);
+      $appdata.set("modules.media.config.duration", _audio.duration.value);
+      $appdata.set("modules.media.config.is_paused", _audio.isPaused.value);
+      $appdata.set("modules.media.config.progress", _audio.progress.value);
+    });
+  },
+
+  clearVariables(): void {
+    _slides.reset();
+    _audio.reset();
+    $appdata.set("modules.media.data", {});
+    $appdata.set("modules.media.id_music", null);
+    $appdata.set("modules.media.config.title", "");
+    $appdata.set("modules.media.config.subtitle", "");
+    $appdata.set("modules.media.config.track", 0);
+    $appdata.set("modules.media.config.image", "");
+    $appdata.set("modules.media.config.audio", "");
+    $appdata.set("modules.media.config.lazy", false);
+    $appdata.set("modules.media.config.current_time", 0);
+    $appdata.set("modules.media.config.duration", 0);
+    $appdata.set("modules.media.config.progress", 0);
+    $appdata.set("modules.media.config.volume", 100);
+    $appdata.set("modules.media.config.is_paused", false);
+    $appdata.set("modules.media.config.is_fading", false);
+    $appdata.set("modules.media.config.audio_only", false);
+    $appdata.set("modules.media.config.video_file", false);
+    $appdata.set("modules.media.config.is_youtube", false);
+  },
+
+  minimize(): void {
+    $appdata.set("modules.media.show", false);
+    $appdata.set("modules.media.minimized", true);
+  },
+
+  maximize(): void {
+    $appdata.set("modules.media.show", true);
+    $appdata.set("modules.media.minimized", false);
+  },
+
+  isMinimized(): boolean {
+    return $appdata.get("modules.media.minimized", false) as boolean;
+  },
+
+  isLoading(): boolean {
+    return $appdata.get("modules.media.loading", false) as boolean;
+  },
+
+  config(): unknown {
+    return $appdata.get("modules.media.config");
+  },
+
+  slides(): Slide[] {
+    return _slides.slides.value;
+  },
+
+  slide(): Slide | null {
+    return _slides.slide.value;
+  },
+
+  broadcastSlide(): void {
+    _slides.broadcastSlide();
+  },
+
+  goToSlide(index: number): void {
+    _slides.goToSlide(index);
+  },
+
+  goToTime(time: number): void {
+    if (_isYouTube()) {
+      $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "seekTo", value: time });
+    } else {
+      _audio.seekTo(time);
+      _broadcastVideoState(time);
+    }
+  },
+
+  advanceTime(time = 10): void {
+    if (_isYouTube()) {
+      const newTime = Math.max(0, _audio.currentTime.value + time);
+      $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "seekTo", value: newTime });
+    } else if (_audio.duration.value > 0 && $appdata.get("modules.media.config.audio") != "") {
+      _audio.advanceTime(time);
+      _broadcastVideoState();
+    }
+  },
+
+  play(): void {
+    this.pause(false);
+  },
+
+  pause(bool = true, callback?: () => void): void {
+    if (_isYouTube()) {
+      if (bool) {
+        $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "pause" });
+        $appdata.set("modules.media.config.is_paused", true);
+        _audio.isPaused.value = true;
+      } else {
+        $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "play" });
+        $appdata.set("modules.media.config.is_paused", false);
+        _audio.isPaused.value = false;
+      }
+      if (callback) callback();
+      return;
+    }
+
+    const fade_audio = $userdata.get("modules.media.fade_audio", false);
+    const isVideo = $appdata.get("modules.media.config.video_file");
+
+    if (bool) {
+      if (fade_audio && !isVideo) {
+        _audio.fadeOut(() => {
+          _audio.pause(callback);
+          $appdata.set("modules.media.config.is_paused", true);
+          $appdata.set("modules.media.config.is_fading", false);
+        });
+      } else {
+        _audio.pause(callback);
+        $appdata.set("modules.media.config.is_paused", true);
+      }
+      _broadcastVideoState();
+    } else {
+      const self = this;
+      _audio.play((e) => {
+        $alert.error({ text: "modules.media.alerts.not_loaded", error: e || "" }, function (a?: unknown) {
+          if (a) self.open($appdata.get("modules.media.id_music") as string | number);
+        });
+      });
+      if (fade_audio && !isVideo) {
+        _audio.fadeIn($appdata.get("modules.media.config.volume") as number, () => {
+          $appdata.set("modules.media.config.is_fading", false);
+          if (callback) callback();
+        });
+        $appdata.set("modules.media.config.is_fading", true);
+      } else {
+        _audio.setVolume($appdata.get("modules.media.config.volume") as number);
+        if (callback) callback();
+      }
+      $appdata.set("modules.media.config.is_paused", false);
+      _broadcastVideoState();
+    }
+  },
+
+  firstSlide(): void { _slides.goFirst(); },
+  prevSlide():  void { _slides.goPrev();  },
+  nextSlide():  void { _slides.goNext();  },
+  lastSlide():  void { _slides.goLast();  },
+
+  setVolume(val: number): void {
+    _audio.setVolume(val);
+    $appdata.set("modules.media.config.volume", val);
+    if (_isYouTube()) {
+      $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "setVolume", value: val });
+    }
+  },
+
+  toogleVolume(): void {
+    const volume = $appdata.get("modules.media.config.volume") as number;
+    this.setVolume(volume < 100 ? 100 : 0);
+  },
+
+  fullscreen(value = true): void {
+    $appdata.set("modules.media.config.fullscreen", value);
+  },
+
+  setAlbumInfo(id_album: string | number | null, module = "media"): void {
+    _album.setAlbumInfo(id_album, module);
+  },
+};
+
+export default _self;

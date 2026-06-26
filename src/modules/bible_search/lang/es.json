@@ -1,0 +1,28 @@
+{
+  "title": "Búsqueda Bíblica",
+  "ribbon": {
+    "results_count": "{n} resultado(s)",
+    "project": "Proyectar",
+    "prev_result": "Anterior",
+    "next_result": "Siguiente",
+    "go_bible": "Abrir en la Biblia",
+    "project_current": "Proyectar actual",
+    "filter": {
+      "scope": "Ámbito",
+      "all": "Toda la Biblia",
+      "ot": "Antiguo Testamento",
+      "nt": "Nuevo Testamento",
+      "books": "Seleccionar Libros",
+      "version": "Versión",
+      "book_filter": "Filtrar libros...",
+      "select_all": "Todos",
+      "clear_all": "Ninguno",
+      "book_selected": "{n} libro seleccionado",
+      "books_selected": "{n} libros seleccionados",
+      "total_books": "Total: {n}"
+    }
+  },
+  "search": "Buscar",
+  "search_placeholder": "Escriba un término (ej: Jesús sanó)",
+  "empty_hint": "Ningún versículo encontrado, intente con otro texto"
+}

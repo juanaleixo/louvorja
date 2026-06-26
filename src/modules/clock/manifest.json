@@ -1,7 +1,7 @@
 {
   "id": "clock",
   "name": "Relógio",
-  "description": "Relógio",
+  "description": "Relógio digital com data e hora.",
   "category": "utilities",
   "icon": "mdi-clock-outline",
   "customization": {
@@ -58,12 +58,25 @@
     "hour_cycle": {
       "type": "select",
       "label": "customization.hour_cycle",
-      "default": "24h"
+      "default": "24h",
+      "options": ["12h", "24h"]
     },
     "time_format": {
       "type": "select",
       "label": "customization.time_format",
-      "default": "hh:mm:ss"
+      "default": "hh:mm:ss",
+      "options": ["hh:mm:ss", "hh:mm"]
+    },
+    "show_date": {
+      "type": "boolean",
+      "label": "customization.show_date",
+      "default": true
+    },
+    "date_format": {
+      "type": "select",
+      "label": "customization.date_format",
+      "default": "long",
+      "options": ["long", "medium", "short", "weekday", "month_year", "weekday_only"]
     }
   }
 }

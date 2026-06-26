@@ -1,22 +1,97 @@
-import { createRouter, createWebHistory } from "vue-router";
-import Main from "@/views/Main.vue"; // Importando um componente de exemplo
+import { createRouter, createWebHashHistory, createWebHistory } from "vue-router";
 import Popup from "@/views/Popup.vue";
 
 const routes = [
   {
     path: "/",
-    name: "Main",
-    component: Main,
+    name: "Shell",
+    component: () => import("@/views/Shell.vue"),
   },
   {
     path: "/popup",
     name: "Popup",
     component: Popup,
   },
+  {
+    path: "/projection",
+    name: "Projection",
+    component: () => import("@/views/Projection.vue"),
+  },
+  {
+    path: "/projection/return",
+    name: "ProjectionReturn",
+    component: () => import("@/views/ProjectionReturn.vue"),
+  },
+  {
+    path: "/obs",
+    name: "Obs",
+    component: () => import("@/views/Obs.vue"),
+  },
+  {
+    path: "/clock",
+    name: "Clock",
+    component: () => import("@/views/Clock.vue"),
+  },
+  {
+    path: "/operator",
+    name: "Operator",
+    component: () => import("@/views/Operator.vue"),
+  },
+  {
+    path: "/obs/bible",
+    name: "ObsBible",
+    component: () => import("@/views/ObsBible.vue"),
+  },
+  {
+    path: "/remote",
+    name: "RemoteControl",
+    component: () => import("@views/remote_control/RemoteControl.vue"),
+  },
+  {
+    path: "/projection/bible",
+    name: "ProjectionBible",
+    component: () => import("@/views/ProjectionBible.vue"),
+  },
+  {
+    path: "/projection/bible/return",
+    name: "ProjectionBibleReturn",
+    component: () => import("@/views/ProjectionBibleReturn.vue"),
+  },
+  {
+    path: "/projection/module",
+    name: "ModuleProjection",
+    component: () => import("@/views/ModuleProjection.vue"),
+  },
+  {
+    path: "/projection/file",
+    name: "FileProjection",
+    component: () => import("@/views/FileProjection.vue"),
+  },
+  {
+    path: "/projection/file/return",
+    name: "FileProjectionReturn",
+    component: () => import("@/views/FileProjectionReturn.vue"),
+  },
 ];
 
+// Em Electron prod o app é servido via file:// (legacy) ou louvorja://app
+// (atual) — vue-router NÃO consegue usar history mode em ambos (não há
+// servidor pra reescrever rotas), então cai pra hash mode. No web/PWA
+// (http/https) mantém history (URLs limpas).
+//
+// Quando o servidor HTTP embarcado serve a SPA para clientes remotos
+// (OBS, celular), `spa.js` injeta `window.LJ_HASH_ROUTING=true` antes do
+// bundle Vue carregar. Isso força hash mode também ali, porque o build
+// desktop usa `base: "./"` e rotas profundas (`/obs/bible`) quebrariam a
+// resolução de assets relativos. Com hash, todos os caminhos servem `/`.
+const useHashHistory =
+  typeof window !== "undefined" &&
+  (["file:", "louvorja:"].includes(window.location.protocol) || window.LJ_HASH_ROUTING === true);
+
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL ?? "/"),
+  history: useHashHistory
+    ? createWebHashHistory()
+    : createWebHistory(import.meta.env.BASE_URL ?? "/"),
   routes,
 });
 

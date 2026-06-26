@@ -1,60 +1,66 @@
 <template>
   <div class="w-100 h-100" style="background: #000">
-    <component v-if="module" :is="loadModuleComponent()" />
+    <component :is="loadModuleComponent()" v-if="module" />
   </div>
 </template>
 
-<script>
-import { defineAsyncComponent } from "vue";
+<script setup>
+import { ref, computed, onMounted, defineAsyncComponent } from "vue";
+import AppData from "@/helpers/AppData";
+import Alert from "@/helpers/Alert";
 
-export default {
-  name: "PopupPage",
-  data: () => ({
-    message: null,
-  }),
-  computed: {
-    module() {
-      return this.$appdata.get("popup_module");
-    },
-  },
-  methods: {
-    loadModuleComponent() {
-      return defineAsyncComponent(() => {
-        // Try to load from modules interface directory
-        return import(
-          `@/modules/core/${this.module}/interface/Popup.vue`
-        ).catch(() => {
-          // Try to load from CUSTOM module interface directory
-          return import(`@/modules/${this.module}/interface/Popup.vue`).catch(
-            (e) => {
-              this.$alert.error({
-                text: "messages.error_import_module",
-                error: e,
-              });
+const message = ref(null);
+const module = computed(() => AppData.get("popup_module"));
 
-              return null;
-            }
-          );
-        });
+// Inicializa popup_module a partir da query string (?module=X). Necessário porque
+// cada janela Electron tem seu próprio Pinia store e $appdata não é compartilhado
+// entre opener e popup. postMessage continua suportado para troca dinâmica.
+function readModuleFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("module");
+  } catch (_) {
+    return null;
+  }
+}
+
+function loadModuleComponent() {
+  return defineAsyncComponent(() => {
+    return import(`@/modules/${module.value}/components/Popup.vue`).catch((e) => {
+      Alert.error({
+        text: "messages.error_import_module",
+        error: e,
       });
-    },
-  },
-  mounted() {
-    this.$appdata.set("is_popup", true);
-    window.addEventListener("message", (event) => {
-      if (event.origin === window.location.origin) {
-        this.message = event.data;
-        if (event.data.param) {
-          this.$appdata.set(event.data.param, event.data.value);
-        }
+      return null;
+    });
+  });
+}
+
+onMounted(() => {
+  AppData.set("is_popup", true);
+
+  const initialModule = readModuleFromUrl();
+  if (initialModule) AppData.set("popup_module", initialModule);
+
+  window.addEventListener("message", (event) => {
+    if (event.origin === window.location.origin) {
+      message.value = event.data;
+      if (event.data?.param) {
+        AppData.set(event.data.param, event.data.value);
       }
-    });
+    }
+  });
 
-    window.opener.postMessage("mounted", window.location.origin);
+  window.opener?.postMessage("mounted", window.location.origin);
 
-    window.addEventListener("beforeunload", () => {
-      window.opener?.postMessage("closed", window.location.origin);
-    });
-  },
-};
+  window.addEventListener("beforeunload", () => {
+    window.opener?.postMessage("closed", window.location.origin);
+  });
+
+  // ESC fecha a janela popup. Window.vue interna também escuta ESC e emite close,
+  // mas isso só some com o v-dialog — a janela do browser ficaria vazia.
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") window.close();
+  });
+});
 </script>

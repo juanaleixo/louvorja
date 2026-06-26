@@ -1,0 +1,11 @@
+{
+  "title": "Temporizador",
+  "mode": { "up": "Progressivo", "down": "Regressivo" },
+  "actions": { "start": "Iniciar", "pause": "Pausar", "reset": "Zerar", "set": "Definir tempo" },
+  "alarm": { "done": "Tempo esgotado!" },
+  "ribbon": {
+    "title_ctx": "Configurar Temporizador",
+    "toggle": "Iniciar/Pausar",
+    "reset": "Reiniciar"
+  }
+}

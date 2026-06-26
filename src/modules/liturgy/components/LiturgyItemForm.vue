@@ -1,0 +1,682 @@
+<template>
+  <v-dialog
+    :model-value="modelValue"
+    max-width="640"
+    persistent
+    @update:model-value="$emit('update:modelValue', $event)"
+    @keydown.escape="$emit('update:modelValue', false)"
+  >
+    <v-card class="lit-dialog">
+      <div class="lit-dialog-title">
+        <v-icon :icon="editIndex!! >= 0 ? 'mdi-pencil' : 'mdi-plus'" size="18" />
+        <span>{{ editIndex!! >= 0 ? t("dialog.edit_title") : t("dialog.add_title") }}</span>
+        <v-spacer />
+        <button class="lit-card-action" @click="$emit('update:modelValue', false)">
+          <v-icon icon="mdi-close" size="14" />
+        </button>
+      </div>
+
+      <div class="lit-dialog-header">
+        <div class="lit-field">
+          <label>{{ t("inputs.type") }}:</label>
+          <select
+            :value="form.tipo"
+            class="lit-select"
+            @change="
+              setFormField('tipo', inputVal($event));
+              onTypeChange();
+            "
+          >
+            <option :value="LiturgyItemTypeEnum.ANOTACAO">{{ t("types.anotacao") }}</option>
+            <option :value="LiturgyItemTypeEnum.ARQUIVO">{{ t("types.arquivo") }}</option>
+            <option :value="LiturgyItemTypeEnum.CATEGORIA">{{ t("types.categoria") }}</option>
+            <option :value="LiturgyItemTypeEnum.ITENS_AGENDADOS">
+              {{ t("types.itens-agendados") }}
+            </option>
+            <option :value="LiturgyItemTypeEnum.MUSICA">{{ t("types.musica") }}</option>
+            <option :value="LiturgyItemTypeEnum.VIDEO_ONLINE">{{ t("types.video-online") }}</option>
+            <option :value="LiturgyItemTypeEnum.SITE">{{ t("types.site") }}</option>
+          </select>
+        </div>
+
+        <div
+          v-if="form.tipo !== LiturgyItemTypeEnum.ITENS_AGENDADOS"
+          class="lit-field lit-field--grow"
+        >
+          <label>{{ t("inputs.item_name") }}:</label>
+          <input
+            :value="form.item"
+            type="text"
+            class="lit-input"
+            data-testid="item-name"
+            :placeholder="t('inputs.item_name_placeholder')"
+            @input="setFormField('item', inputVal($event))"
+          />
+        </div>
+
+        <div class="lit-field lit-field--color">
+          <label>{{ t("inputs.color") }}:</label>
+          <div class="lit-color-picker">
+            <input
+              :value="form.cor"
+              type="color"
+              class="lit-color-input"
+              :aria-label="t('inputs.color')"
+              @input="setFormField('cor', inputVal($event))"
+            />
+            <button
+              type="button"
+              class="lit-color-toggle"
+              :title="t('inputs.color')"
+              @click.stop="presetsOpen = !presetsOpen"
+            >
+              <v-icon icon="mdi-menu-down" size="14" />
+            </button>
+            <div v-if="presetsOpen" class="lit-color-presets" @click="presetsOpen = false">
+              <span
+                v-for="c in colors"
+                :key="c"
+                class="lit-color-preset"
+                :class="{ 'is-active': form.cor?.toLowerCase() === c.toLowerCase() }"
+                :style="{ background: c }"
+                @click="setFormField('cor', c)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="lit-field lit-field--small">
+          <label>{{ t("inputs.duration_min") }}:</label>
+          <input
+            :value="form.duration"
+            type="number"
+            min="0"
+            class="lit-input lit-input--small"
+            @input="setFormField('duration', inputNum($event))"
+          />
+        </div>
+      </div>
+
+      <!-- Painel ANOTAÇÃO -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.ANOTACAO" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.anotacao") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.annotation") }}</label>
+          <textarea
+            :value="form.subitem"
+            rows="4"
+            class="lit-input"
+            :placeholder="t('inputs.annotation_placeholder')"
+            @input="setFormField('subitem', inputVal($event))"
+          />
+        </div>
+      </div>
+
+      <!-- Painel SITE -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.SITE" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.site") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.url") }}</label>
+          <div class="lit-input-row">
+            <input
+              :value="form.url"
+              type="text"
+              class="lit-input"
+              placeholder="https://"
+              @input="setFormField('url', inputVal($event))"
+              @blur="setFormField('url', Liturgy.validateUrl(form.url))"
+            />
+            <button class="lit-btn lit-btn--ghost" :title="t('actions.open')" @click="openSite">
+              <v-icon icon="mdi-open-in-new" size="14" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel ARQUIVO -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.ARQUIVO" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.arquivo") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.file_path") }}</label>
+          <div class="lit-input-row">
+            <input
+              :value="form.dir"
+              type="text"
+              class="lit-input"
+              :placeholder="t('inputs.file_path_placeholder')"
+              @input="setFormField('dir', inputVal($event))"
+            />
+            <button
+              class="lit-btn lit-btn--ghost"
+              :title="t('actions.choose_file')"
+              @click="chooseFile"
+            >
+              <v-icon icon="mdi-file-outline" size="14" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel MÚSICA -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.MUSICA" class="lit-panel">
+        <label class="lit-check">
+          <input
+            type="checkbox"
+            :checked="form.escolha"
+            @change="setMusicChoice(($event.target as HTMLInputElement).checked)"
+          />
+          <span>{{ t("inputs.music_choose_later") }}</span>
+        </label>
+        <div v-if="!form.escolha" class="lit-field lit-field--inline mt-2">
+          <label class="lit-label-inline">{{ t("inputs.music_select") }}:</label>
+          <div class="lit-input-row lit-input-row--grow">
+            <select
+              :value="form.musica"
+              class="lit-select lit-select--full"
+              @change="
+                setFormField('musica', inputNum($event));
+                onMusicChange();
+              "
+            >
+              <option value="-1">{{ t("inputs.music_pick") }}</option>
+              <option v-for="m in musicsList" :key="m.id_music" :value="m.id_music">
+                {{ m.name }}
+              </option>
+            </select>
+            <button
+              class="lit-btn lit-btn--ghost"
+              :title="t('music_search.title')"
+              @click="searchOpen = true"
+            >
+              <v-icon icon="mdi-magnify" size="16" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel ITENS AGENDADOS -->
+      <div v-if="form.tipo === 'itens-agendados'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.itens-agendados") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.scheduled_category") }}</label>
+          <div class="lit-input-row">
+            <select
+              :value="form.id"
+              class="lit-select lit-select--full"
+              @change="
+                setFormField('id', inputVal($event));
+                onScheduledCategoryChange();
+              "
+            >
+              <option value="">{{ t("inputs.scheduled_pick") }}</option>
+              <option v-for="c in scheduledCategories" :key="c.id" :value="c.id">
+                {{ c.nome }}
+              </option>
+            </select>
+            <button
+              class="lit-btn lit-btn--ghost"
+              :title="t('actions.scheduled_manage')"
+              @click="openSchedulesDialog"
+            >
+              <v-icon icon="mdi-cog-outline" size="14" />
+            </button>
+          </div>
+        </div>
+        <div v-if="scheduledCategories?.length === 0" class="lit-hint">
+          {{ t("inputs.scheduled_empty") }}
+        </div>
+      </div>
+
+      <!-- Painel VÍDEO ON-LINE -->
+      <div v-if="form.tipo === 'video-online'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.video-online") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.video_select") }}</label>
+          <select
+            :value="form.url"
+            class="lit-select lit-select--full"
+            @change="onVideoPicked($event)"
+          >
+            <option value="">{{ t("inputs.video_pick") }}</option>
+            <option v-for="v in videosList" :key="v.id" :value="v.url">
+              {{ v.name }}
+            </option>
+          </select>
+        </div>
+        <div v-if="!videosList?.length" class="lit-hint mt-2">
+          {{ t("inputs.video_empty") }}
+        </div>
+      </div>
+
+      <!-- CATEGORIA -->
+      <div v-if="form.tipo === 'categoria'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.categoria") }}</div>
+        <div class="lit-hint">{{ t("inputs.category_hint") }}</div>
+      </div>
+
+      <LiturgyMusicSearch v-model="searchOpen" :musics-list="musicsList" @pick="onMusicPicked" />
+
+      <div class="lit-dialog-footer">
+        <button
+          v-if="editIndex!! >= 0"
+          class="lit-btn lit-btn--danger"
+          @click="confirmRemove(editIndex!!, true)"
+        >
+          <v-icon icon="mdi-delete" size="14" />
+          <span>{{ t("actions.delete") }}</span>
+        </button>
+        <v-spacer />
+        <button class="lit-btn lit-btn--ghost" @click="$emit('update:modelValue', false)">
+          {{ t("actions.cancel") }}
+        </button>
+        <button class="lit-btn-add" data-testid="item-save" @click="saveItem">
+          <v-icon
+            :icon="editIndex!! >= 0 ? 'mdi-content-save' : 'mdi-plus-circle'"
+            size="22"
+            color="#3a6fb5"
+          />
+          <span>{{ editIndex!! >= 0 ? t("actions.save") : t("actions.add") }}</span>
+        </button>
+      </div>
+    </v-card>
+  </v-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+import pt from "../lang/pt.json";
+import es from "../lang/es.json";
+import Liturgy from "@/helpers/Liturgy";
+import LiturgyMusicSearch from "./LiturgyMusicSearch.vue";
+import type { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
+
+const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
+
+function _t(key: string, locale: string): string {
+  const dict = TRANSLATIONS[locale] ?? TRANSLATIONS.pt;
+  const path = key.split(".");
+  let cur: unknown = dict;
+  for (const k of path) {
+    if (cur && typeof cur === "object" && k in cur) cur = (cur as Record<string, unknown>)[k];
+    else return key;
+  }
+  return typeof cur === "string" ? cur : key;
+}
+
+const props = withDefaults(
+  defineProps<{
+    modelValue?: boolean;
+    editIndex?: number;
+    form: LiturgyItem;
+    colors?: string[];
+    musicsList?: LiturgyMusicItem[];
+    scheduledCategories?: ScheduledCategory[];
+    videosList?: { id: string; name: string; url: string }[];
+    setFormField: (key: string, value: unknown) => void;
+    onTypeChange: () => void;
+    onMusicChange: () => void;
+    onScheduledCategoryChange: () => void;
+    setMusicChoice: (choice: string | boolean) => void;
+    saveItem: () => void;
+    confirmRemove: (index: number, closeDialog?: boolean) => void;
+    openSite: () => void;
+    chooseFile: () => Promise<void>;
+    openSchedulesDialog: () => void;
+  }>(),
+  {
+    modelValue: false,
+    editIndex: -1,
+    colors: () => [],
+    musicsList: () => [],
+    scheduledCategories: () => [],
+    videosList: () => [],
+  }
+);
+
+defineEmits<{ "update:modelValue": [value: boolean] }>();
+
+const { locale } = useI18n();
+const t = (key: string) => _t(key, locale.value);
+
+function inputVal(e: Event): string {
+  return (e.target as HTMLInputElement).value;
+}
+function inputNum(e: Event): number {
+  return +(e.target as HTMLInputElement).value;
+}
+
+const presetsOpen = ref(false);
+const searchOpen = ref(false);
+
+function onMusicPicked(music: LiturgyMusicItem) {
+  const id = Number(music.id_music);
+  if (!Number.isFinite(id)) return;
+  props.setFormField("musica", id);
+  props.onMusicChange();
+}
+
+function onVideoPicked(e: Event) {
+  const select = e.target as HTMLSelectElement;
+  const url = select.value;
+  props.setFormField("url", url);
+  if (url) {
+    const video = props.videosList?.find((v) => v.url === url);
+    if (video) props.setFormField("item", video.name);
+  }
+}
+</script>
+
+<style scoped>
+/* ====================== Dialog ====================== */
+.lit-dialog {
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lit-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.1));
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  font-weight: 500;
+}
+.lit-dialog-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(var(--lj-on-surface-ch), 0.02);
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.2);
+}
+.lit-dialog-header .lit-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.lit-dialog-header .lit-field label {
+  font-size: 12px;
+  color: var(--lj-text);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.lit-field--small input {
+  width: 60px;
+}
+.lit-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(var(--v-border-color), 0.2);
+  background: rgba(var(--lj-on-surface-ch), 0.02);
+}
+.lit-panel {
+  padding: 12px 14px 14px;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.2);
+}
+.lit-panel-title {
+  font-weight: 500;
+  font-size: 12px;
+  color: rgba(var(--lj-on-surface-ch), 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+/* ====================== Fields ====================== */
+.lit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 1;
+}
+.lit-field--grow {
+  flex: 1;
+  min-width: 200px;
+}
+.lit-field--color {
+  flex-shrink: 0;
+}
+.lit-field-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 8px;
+}
+.lit-field label {
+  font-size: 11px;
+  color: rgba(var(--lj-on-surface-ch), 0.7);
+  font-weight: 500;
+}
+.lit-input,
+.lit-select {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(var(--v-border-color), 0.5);
+  border-radius: 3px;
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+}
+.lit-input--small {
+  width: 70px;
+}
+.lit-input:focus,
+.lit-select:focus {
+  border-color: var(--lj-navy);
+  box-shadow: var(--lj-shadow-focus-navy-sm);
+}
+textarea.lit-input {
+  height: auto;
+  padding: 6px 8px;
+  resize: vertical;
+}
+.lit-input-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.lit-input-row .lit-input {
+  flex: 1;
+}
+.lit-select--full {
+  width: 100%;
+}
+.lit-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.lit-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--lj-text);
+  user-select: none;
+}
+.lit-check input {
+  accent-color: var(--lj-navy);
+}
+.lit-field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.lit-label-inline {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.lit-input-row--grow {
+  flex: 1;
+  min-width: 0;
+}
+.lit-hint {
+  font-size: 11px;
+  color: rgba(var(--lj-on-surface-ch), 0.6);
+  padding: 4px 0;
+}
+
+/* ====================== Color picker ====================== */
+.lit-color-picker {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+.lit-color-input {
+  width: 30px;
+  height: 26px;
+  border: 1px solid rgba(var(--v-border-color), 0.5);
+  border-right: 0;
+  border-radius: 3px 0 0 3px;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+}
+.lit-color-toggle {
+  height: 26px;
+  width: 18px;
+  border: 1px solid rgba(var(--v-border-color), 0.5);
+  border-radius: 0 3px 3px 0;
+  background: var(--lj-surface-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--lj-text);
+  padding: 0;
+}
+.lit-color-toggle:hover {
+  background: rgba(var(--lj-on-surface-ch), 0.06);
+}
+.lit-color-presets {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  padding: 6px;
+  background: var(--lj-surface-bg);
+  border: 1px solid rgba(var(--v-border-color), 0.5);
+  border-radius: 4px;
+  box-shadow: var(--lj-shadow-3);
+}
+.lit-color-preset {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1.5px solid rgba(var(--v-border-color), 0.3);
+}
+.lit-color-preset:hover {
+  transform: scale(1.15);
+}
+.lit-color-preset.is-active {
+  border-color: white;
+  box-shadow: 0 0 0 2px var(--lj-navy);
+}
+
+/* ====================== Buttons ====================== */
+.lit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(var(--lj-on-surface-ch), 0.06);
+  color: var(--lj-text);
+  transition:
+    background 0.15s,
+    border 0.15s;
+  white-space: nowrap;
+}
+.lit-btn:hover {
+  background: rgba(var(--lj-on-surface-ch), 0.12);
+}
+.lit-btn--ghost {
+  background: transparent;
+  border: 1px solid transparent;
+}
+.lit-btn--ghost:hover {
+  background: rgba(var(--lj-on-surface-ch), 0.06);
+  border-color: rgba(var(--v-border-color), 0.4);
+}
+.lit-btn--primary {
+  background: var(--lj-navy);
+  color: var(--lj-white);
+}
+.lit-btn--primary:hover {
+  filter: brightness(1.1);
+}
+.lit-btn--danger {
+  background: #dc2626;
+  color: white;
+}
+.lit-btn--danger:hover {
+  background: #b91c1c;
+}
+
+/* Botão "Adicionar" estilo Delphi (ícone + grande + label) */
+.lit-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid rgba(var(--v-border-color), 0.4);
+  border-radius: 4px;
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border 0.12s;
+}
+.lit-btn-add:hover {
+  background: rgba(var(--lj-navy-ch), 0.06);
+  border-color: rgba(var(--lj-navy-ch), 0.4);
+}
+
+.lit-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+}
+.lit-card-action:hover {
+  background: rgba(var(--lj-on-surface-ch), 0.1);
+  opacity: 1;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+</style>

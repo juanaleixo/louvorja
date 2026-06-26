@@ -6,7 +6,16 @@
     <link rel="icon" href="/ico/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google" content="notranslate">
+    <!-- CSP: aplicada apenas em build de produção via vite.config.js
+         (transformIndexHtml). Em dev, o Vite HMR usa scripts inline
+         que seriam bloqueados por 'script-src self'. -->
+    <!--CSP_PROD-->
     <title>LouvorJA</title>
+    <style>
+      /* Evita flash branco entre a abertura da BrowserWindow e o primeiro
+         paint do Vue. As views da shell aplicam o fundo correto depois. */
+      html, body { margin: 0; background: #000; }
+    </style>
 </head>
 
 <body>

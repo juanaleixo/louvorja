@@ -1,8 +1,0 @@
-{
-  "id": "album",
-  "name": "Álbum",
-  "description": "Exibe as músicas de um álbum (função $media.openAlbum)",
-  "category": null,
-  "icon": null,
-  "dependencies": []
-}

@@ -1,0 +1,8 @@
+{
+  "id": "collections",
+  "name": "Álbuns",
+  "description": "Lista as coletâneas",
+  "category": "musics",
+  "icon": "mdi-music-box-multiple",
+  "dependencies": ["album"]
+}

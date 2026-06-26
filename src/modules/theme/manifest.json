@@ -1,0 +1,12 @@
+{
+  "id": "theme",
+  "name": "Temas",
+  "description": "Fornece ferramentas para customização das cores do programa.",
+  "category": null,
+  "showInMainMenu": true,
+  "icon": "mdi-palette",
+  "dependencies": [],
+  "moduleOptions": {
+    "size": "small"
+  }
+}

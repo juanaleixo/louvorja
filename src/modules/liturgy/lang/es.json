@@ -1,0 +1,179 @@
+{
+  "title": "Liturgia",
+  "ribbon": {
+    "title_ctx": "Configurar Liturgia",
+    "add": "Agregar",
+    "items": "Ítems",
+    "options": "Opciones",
+    "timer": "Cronómetro",
+    "file": "Archivo",
+    "mark_all": "Marcar Todos",
+    "unmark_all": "Desmarcar Todos",
+    "invert_selection": "Invertir Selección",
+    "delete_selected": "Borrar Seleccionados",
+    "mark_on_access": "Marcar como \"Concluido\" tras acceder al ítem",
+    "show_notes": "Mostrar Panel de Anotaciones",
+    "lock_items": "Bloquear Ítems"
+  },
+  "actions": {
+    "add": "Agregar ítem",
+    "save": "Guardar",
+    "load": "Cargar",
+    "clear": "Limpiar",
+    "start": "Iniciar culto",
+    "stop": "Detener",
+    "edit": "Editar",
+    "clone": "Duplicar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "drag": "Arrastrar para reordenar",
+    "change_color": "Cambiar color",
+    "mark_done": "Marcar como concluido",
+    "open": "Abrir",
+    "choose_folder": "Elegir carpeta",
+    "choose_file": "Elegir archivo",
+    "scheduled_items": "Gestionar ítems programados",
+    "scheduled_items_short": "Ítems programados",
+    "scheduled_manage": "Gestionar",
+    "mark_all": "Marcar todos como concluidos",
+    "unmark_all": "Desmarcar todos",
+    "remove_done": "Eliminar concluidos",
+    "toggle_lock": "Modo presentación",
+    "toggle_notes": "Anotaciones por día",
+    "prev_item": "Ítem anterior",
+    "next_item": "Siguiente ítem"
+  },
+  "types": {
+    "anotacao": "Anotación",
+    "arquivo": "Archivo",
+    "categoria": "Categoría",
+    "itens-agendados": "Ítems Programados",
+    "musica": "Música",
+    "site": "Sitio",
+    "video-online": "Vídeo Online"
+  },
+  "inputs": {
+    "type": "Tipo",
+    "item_name": "Nombre del ítem",
+    "item_name_placeholder": "Ej.: Bienvenida, Oración inicial, Ofrenda...",
+    "color": "Color",
+    "annotation": "Texto de la anotación",
+    "annotation_placeholder": "Anote aquí lo que será dicho o recordado...",
+    "url": "Dirección (URL)",
+    "file_path": "Archivo o Carpeta",
+    "file_path_placeholder": "C:\\ruta\\al\\archivo.ext",
+    "path_external": "Ruta externa",
+    "path_internal": "Ruta relativa al programa",
+    "music_choose_later": "Elegir durante el culto",
+    "music_select": "Música",
+    "music_pick": "-- seleccione una música --",
+    "scheduled_category": "Categoría del ítem programado",
+    "scheduled_pick": "-- seleccione una categoría --",
+    "scheduled_empty": "Ninguna categoría creada. Use el botón de configuración para crear.",
+    "category_hint": "Las categorías sirven como separadores visuales entre secciones de la liturgia.",
+    "duration_min": "Duración (min)",
+    "video_select": "Vídeo",
+    "video_pick": "-- seleccione un vídeo --",
+    "video_url_or_select": "URL del vídeo o seleccione uno guardado"
+  },
+  "data": {
+    "empty": "Liturgia vacía",
+    "empty_hint": "Agregue músicas, anotaciones, sitios, archivos y categorías para armar su culto.",
+    "total": "Tiempo total estimado",
+    "drop_hint": "Suelte para agregar a la liturgia",
+    "music_prefix": "Música"
+  },
+  "week": {
+    "label": "Semana",
+    "from": "de",
+    "to": "a"
+  },
+  "notes": {
+    "title": "Anotaciones",
+    "placeholder": "Anotaciones para este día...",
+    "days": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+    "font": "Fuente",
+    "size": "Tamaño",
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "strike": "Tachado",
+    "under": "Subrayado",
+    "text_color": "Color del texto",
+    "bg_color": "Color de fondo",
+    "align_left": "Alinear a la izquierda",
+    "align_center": "Centrar",
+    "align_right": "Alinear a la derecha",
+    "list_ul": "Lista con viñetas",
+    "list_ol": "Lista numerada"
+  },
+  "timer": {
+    "current_item": "Ítem en ejecución"
+  },
+  "placeholders": {
+    "untitled": "(Sin título)",
+    "category": "Nueva Categoría",
+    "music_choose": "Clic para elegir la música"
+  },
+  "music": {
+    "play_lyric": "Reproducir cantado",
+    "play_lyric_pb": "Reproducir playback (instrumental)",
+    "show_lyric": "Mostrar letra",
+    "show_lyric_text": "Mostrar letra (texto)",
+    "no_audio": "Slides sin audio"
+  },
+  "video": {
+    "play": "Reproducir vídeo"
+  },
+  "music_search": {
+    "title": "Búsqueda de Músicas",
+    "find_label": "Localizar Música:",
+    "col_album": "Álbum",
+    "col_music": "Música",
+    "empty": "Ninguna música disponible.",
+    "empty_search": "Ninguna música encontrada para esta búsqueda."
+  },
+  "schedules": {
+    "title": "Ítems Programados",
+    "categories": "Categorías",
+    "select_category": "Seleccione una categoría",
+    "select_category_hint": "Cree o elija una categoría a la izquierda para visualizar los ítems programados.",
+    "add_category": "Agregar categoría",
+    "new_category": "Nombre de la nueva categoría:",
+    "remove_category_confirm": "¿Eliminar esta categoría y todos sus ítems programados?",
+    "no_categories": "Ninguna categoría creada.",
+    "add_item": "Agregar ítem",
+    "no_items": "Ningún ítem programado para esta categoría.",
+    "date": "Fecha",
+    "item_name": "Nombre",
+    "file": "Archivo"
+  },
+  "dialog": {
+    "add_title": "Agregar Ítem",
+    "edit_title": "Modificar Ítem",
+    "choose_type": "¡Elija el tipo de ítem!",
+    "set_name": "¡Defina el nombre del ítem!",
+    "choose_scheduled": "¡Elija la categoría de ítems programados!",
+    "remove_confirm": "¿Desea realmente eliminar este ítem?",
+    "clear_confirm": "¿Desea limpiar toda la liturgia?",
+    "remove_done_confirm": "¿Borrar todos los ítems seleccionados (marcados)?",
+    "invalid_file": "Archivo inválido. No fue posible cargar la liturgia.",
+    "music_choose_first": "Elija la música primero (clic en el ítem).",
+    "scheduled_not_found": "No hay ítem programado para esta fecha en esta categoría.",
+    "desktop_only": "Recurso disponible solo en la versión desktop."
+  },
+  "copy": {
+    "title": "Copiar Liturgia",
+    "description": "Seleccione el día de origen para copiar los ítems al día actual.",
+    "select_label": "Día de origen",
+    "cancel": "Cancelar",
+    "confirm": "Copiar",
+    "same_day": "El día de origen no puede ser el mismo que el día actual.",
+    "confirm_title": "Copiar Liturgia",
+    "confirm_text": "¿Desea copiar la liturgia de {source} y sobrescribir la liturgia de {target}?<br><b>¡Esta acción no puede ser deshecha!</b>"
+  },
+  "clear": {
+    "confirm_title": "Limpiar Liturgia",
+    "confirm_text": "¿Desea limpiar TODOS los ítems de la liturgia de <b>{day}</b>?<br><b>¡Esta acción no puede ser deshecha!</b>"
+  }
+}

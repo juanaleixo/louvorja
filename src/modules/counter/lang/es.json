@@ -1,4 +1,5 @@
 {
-    "title": "Contable",
-    "text": "ESPANHOL"
+  "title": "Contador",
+  "ribbon": { "title_ctx": "Configurar Contador" },
+  "actions": { "reset": "Reiniciar" }
 }
