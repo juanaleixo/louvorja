@@ -508,10 +508,21 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.video_fullscreen ?? true"
-              @change="setUd('video_fullscreen', $c($event))"
+              :checked="videoProjFullscreen"
+              @change="setUd('video_projection.fullscreen', $c($event))"
             />
             <span>{{ $t("options.videos.fullscreen") }}</span>
+          </label>
+        </div>
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="videoProjAlwaysOnTop"
+              @change="setUd('video_projection.always_on_top', $c($event))"
+            />
+            <span>{{ $t("options.videos.always_on_top") }}</span>
           </label>
         </div>
 
@@ -533,20 +544,20 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="videoShowReturn"
-              @change="setUd('video_show_return', $c($event))"
+              :checked="vidProjShowReturn"
+              @change="setUd('video_projection.show_return', $c($event))"
             />
             <span>{{ $t("options.videos.show_return") }}</span>
           </label>
         </div>
-        <div v-if="videoShowReturn" class="opt-row">
+        <div v-if="vidProjShowReturn" class="opt-row">
           <label class="opt-label" for="opt-video-return-monitor">
             {{ $t("options.slides.open_file_return_at") }}
           </label>
           <MonitorSelect
             id="opt-video-return-monitor"
-            :model-value="getPref('file_return') ?? ''"
-            @update:model-value="setPref('file_return', $event)"
+            :model-value="getPref('online_video_return') ?? ''"
+            @update:model-value="setPref('online_video_return', $event)"
           />
         </div>
       </v-tabs-window-item>
@@ -568,14 +579,35 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="mediaProjectReturn"
-              @change="setMedia('project_return', $c($event))"
+              :checked="fileProjFullscreen"
+              @change="setUd('file_projection.fullscreen', $c($event))"
             />
-            <span>{{ $t("options.player.project_return") }}</span>
+            <span>{{ $t("options.player.fullscreen") }}</span>
           </label>
         </div>
-        <p class="opt-hint">{{ $t("options.player.project_return_hint") }}</p>
-        <div v-if="mediaProjectReturn" class="opt-row">
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="fileProjAlwaysOnTop"
+              @change="setUd('file_projection.always_on_top', $c($event))"
+            />
+            <span>{{ $t("options.player.always_on_top") }}</span>
+          </label>
+        </div>
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="fileProjShowReturn"
+              @change="setUd('file_projection.show_return', $c($event))"
+            />
+            <span>{{ $t("options.player.show_return") }}</span>
+          </label>
+        </div>
+        <div v-if="fileProjShowReturn" class="opt-row">
           <label class="opt-label" for="opt-file-return-monitor">
             {{ $t("options.slides.open_file_return_at") }}
           </label>
@@ -668,6 +700,7 @@ import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/constants/Icons";
+import Icon from "@/components/Icon.vue";
 
 interface ThemeOption {
   id: string;
@@ -683,9 +716,7 @@ const { displays, getPreferred, setPreferred, identify } = useDisplays();
 const userDataStore = useUserDataStore();
 
 const themes: ComputedRef<ThemeOption[]> = computed(() =>
-  (
-    ["light", "darkblue", "blue", "green", "orange", "purple", "pink", "black", "dark"] as const
-  ).map((id) => ({
+  Object.keys(theme.themes.value).map((id) => ({
     id,
     label: t(`options.general.themes.${id}`),
   }))
@@ -737,11 +768,25 @@ const mediaFadeAudio: ComputedRef<boolean> = computed(
 const mediaLazyLoad: ComputedRef<boolean> = computed(
   () => $userdata.get<boolean>("modules.media.lazy_load", true) === true
 );
-const mediaProjectReturn: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("modules.media.project_return", false) === true
+
+const videoProjFullscreen: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.video_projection.fullscreen", true) !== false
 );
-const videoShowReturn: ComputedRef<boolean> = computed(
-  () => userDataStore.$state.options?.video_show_return === true
+const videoProjAlwaysOnTop: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.video_projection.always_on_top", true) !== false
+);
+const vidProjShowReturn: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.video_projection.show_return", false) === true
+);
+
+const fileProjFullscreen: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.file_projection.fullscreen", true) !== false
+);
+const fileProjAlwaysOnTop: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.file_projection.always_on_top", true) !== false
+);
+const fileProjShowReturn: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.file_projection.show_return", false) === true
 );
 
 function setMedia(key: string, value: any): void {

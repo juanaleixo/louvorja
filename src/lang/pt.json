@@ -129,14 +129,15 @@
       "start_with_os": "Iniciar com o sistema operacional",
       "themes": {
         "light": "Claro",
-        "darkblue": "Azul-escuro",
+        "dark": "Escuro",
+        "black": "Preto",
         "blue": "Azul",
+        "darkblue": "Azul-escuro",
         "green": "Verde",
         "orange": "Laranja",
         "purple": "Roxo",
         "pink": "Rosa",
-        "black": "Preto",
-        "dark": "Escuro"
+        "terracota": "Terracota"
       }
     },
     "bible": {
@@ -331,6 +332,7 @@
     "videos": {
       "title": "Vídeos On-line",
       "fullscreen": "Exibir em tela cheia",
+      "always_on_top": "Manter sempre no topo",
       "youtube_action": "Ao executar link do YouTube na liturgia, abrir:",
       "action_video": "Vídeo",
       "action_link": "Link no navegador",
@@ -338,11 +340,12 @@
     },
     "player": {
       "title": "Player de Áudio/Vídeo",
+      "fullscreen": "Exibir em tela cheia",
+      "always_on_top": "Manter sempre no topo",
       "fade_audio": "Aplicar fade ao iniciar/parar áudio",
       "fade_audio_hint": "Quando ativado, o áudio aumenta gradualmente ao tocar e diminui antes de parar. Por padrão desligado para resposta imediata.",
       "lazy_load": "Carregar áudios sob demanda",
-      "project_return": "Reproduzir na tela de retorno",
-      "project_return_hint": "Quando ativado, a imagem ou vídeo também é exibida na tela de retorno (stage display)."
+      "show_return": "Exibir na tela de retorno"
     },
     "file_projection": {
       "title": "Projeção de Arquivos",

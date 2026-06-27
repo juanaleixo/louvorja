@@ -29,7 +29,7 @@ const { getPreferred, setPreferred } = useDisplays();
 const showReturn = ref(false);
 
 watchEffect(() => {
-  showReturn.value = useUserDataStore().$state.options?.video_show_return === true;
+  showReturn.value = useUserDataStore().$state.options?.video_projection?.show_return === true;
 });
 
 const videoMonitor = computed(() => getPreferred("online_video") ?? "");
@@ -37,15 +37,15 @@ function setVideoMonitor(val: string) {
   setPreferred("online_video", val);
 }
 
-const returnMonitor = computed(() => getPreferred("file_return") ?? "");
+const returnMonitor = computed(() => getPreferred("online_video_return") ?? "");
 function setReturnMonitor(val: string) {
-  setPreferred("file_return", val);
+  setPreferred("online_video_return", val);
 }
 
 function toggleReturn(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   showReturn.value = checked;
-  $userdata.set("options.video_show_return", checked);
+  $userdata.set("options.video_projection.show_return", checked);
 }
 </script>
 
