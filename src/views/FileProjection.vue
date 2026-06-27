@@ -67,12 +67,27 @@ function _activateProjection(p: FileProjectionState): void {
 
 function _readPendingProjection(): void {
   if (fileProjection.active) return;
+
+  // Tenta ler projeção de arquivo primeiro
   try {
     const stored = localStorage.getItem("lj_file_projection");
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
       localStorage.removeItem("lj_file_projection");
+      return;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  // Tenta ler projeção de YouTube
+  try {
+    const stored = localStorage.getItem("lj_youtube_projection");
+    if (stored) {
+      const p: FileProjectionState = JSON.parse(stored);
+      if (p?.url) _activateProjection(p);
+      localStorage.removeItem("lj_youtube_projection");
     }
   } catch {
     /* ignore */
@@ -85,11 +100,16 @@ useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
+useBroadcastListener(BROADCAST_TYPE.VIDEO_PROJECTION, (payload: unknown) => {
+  _activateProjection((payload || {}) as FileProjectionState);
+});
+
 useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
   _destroyYoutube();
   fileProjection.active = false;
   try {
     localStorage.removeItem("lj_file_projection");
+    localStorage.removeItem("lj_youtube_projection");
   } catch {
     /* ignore */
   }

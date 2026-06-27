@@ -85,6 +85,11 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Emitido por: liturgy (arquivo). Recebido por: Projection. */
   FILE_PROJECTION: "file_projection",
 
+  /** Projeção de vídeo online (YouTube) via useMedia.openYouTube.
+   *  Payload: { url: string, type: "youtube", title?: string }
+   *  Emitido por: useMedia.ts (openYouTube). Recebido por: FileProjection.vue. */
+  VIDEO_PROJECTION: "video_projection",
+
   /** Sincronização de vídeo entre o player principal e a projeção.
    *  Payload: { currentTime: number, isPaused: boolean }
    *  Emitido por: useMedia.ts (onTimeUpdate + goToTime + pause/play).

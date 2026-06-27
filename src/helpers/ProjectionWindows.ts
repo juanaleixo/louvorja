@@ -13,6 +13,7 @@
 
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
+import { PROJECTION_TYPE, PROJECTION_URL } from "@/constants/Projection";
 
 interface DisplayPlatform {
   open: (opts: {
@@ -29,15 +30,6 @@ interface DisplayPlatform {
 interface DisplaysAPI {
   getPrefs: () => Promise<Record<string, number | string | null>>;
 }
-
-const FEATURE_PROJECTION = "musicas"; // /projection
-const FEATURE_OPERATOR   = "operador"; // /operator
-const FEATURE_RETURN     = "retorno";  // /projection/return
-const FEATURE_BIBLE      = "bible";    // /projection/bible
-const FEATURE_BIBLE_RETURN = "bible_return"; // /projection/bible/return
-const FEATURE_FILE_PROJECTION = "file_projection"; // /projection/file
-const FEATURE_FILE_RETURN = "file_return"; // /projection/file/return
-const FEATURE_ONLINE_VIDEO = "online_video"; // feature para vídeos on-line (YouTube)
 
 const _openWebWindows: Record<string, Window | null> = {};
 
@@ -143,27 +135,26 @@ export async function openProjectionWindows(): Promise<void> {
   const openOperator = ($userdata.get("options.open_operator", false) as unknown) === true;
   const openReturn = ($userdata.get("options.open_return", false) as unknown) === true;
 
-  const projMonitor = prefs[FEATURE_PROJECTION] ?? null;
+  const projMonitor = prefs[PROJECTION_TYPE.MUSIC] ?? null;
   if (projMonitor != null) {
     // Monitor explícito (atual ou outro) → janela separada respeitando
     // a opção de fullscreen e always-on-top.
-    await _open("/projection", FEATURE_PROJECTION, projMonitor, fullscreen, alwaysOnTop);
+    await _open(PROJECTION_URL.BASE, PROJECTION_TYPE.MUSIC, projMonitor, fullscreen, alwaysOnTop);
   }
 
   if (openReturn) {
     await _open(
-      "/projection/return",
-      FEATURE_RETURN,
-      prefs[FEATURE_RETURN] ?? null,
+      PROJECTION_URL.RETURN,
+      PROJECTION_TYPE.RETURN,
+      prefs[PROJECTION_TYPE.RETURN] ?? null,
       fullscreen,
-      alwaysOnTop
-    );
+      alwaysOnTop)
   }
 
   if (openOperator) {
     // Operador NÃO usa always-on-top (o operador precisa interagir com a
     // janela principal sem que o overlay roube foco).
-    await _open("/operator", FEATURE_OPERATOR, prefs[FEATURE_OPERATOR] ?? null, false, false);
+    await _open("/operator", PROJECTION_TYPE.OPERATOR, prefs[PROJECTION_TYPE.OPERATOR] ?? null, false, false);
   }
 }
 
@@ -176,25 +167,26 @@ export async function openProjectionWindows(): Promise<void> {
  */
 export async function openFileProjectionWindows(): Promise<void> {
   const prefs = await _readPrefs();
-  const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
-  const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
+  const fullscreen = ($userdata.get("options.file_projection.fullscreen", true) as unknown) !== false;
+  const alwaysOnTop = ($userdata.get("options.file_projection.always_on_top", true) as unknown) !== false;
 
-  // Projeção de arquivo — fallback para monitor de vídeos, depois projeção principal
-  const fileProjMonitor = prefs[FEATURE_FILE_PROJECTION] ?? prefs[FEATURE_ONLINE_VIDEO] ?? prefs[FEATURE_PROJECTION] ?? null;
+  // Projeção de arquivo — fallback para monitor de música se não configurado
+  const fileProjMonitor =
+    prefs[PROJECTION_TYPE.FILE] ??
+    prefs[PROJECTION_TYPE.MUSIC] ??
+    null;
   if (fileProjMonitor != null) {
-    await _open("/projection/file", FEATURE_FILE_PROJECTION, fileProjMonitor, fullscreen, alwaysOnTop);
+    await _open(PROJECTION_URL.FILE, PROJECTION_TYPE.FILE, fileProjMonitor, fullscreen, alwaysOnTop);
   }
 
-  // Retorno de arquivo — respeita a opção "Reproduzir na Tela de Retorno" do player
-  // ou "Exibir na tela de retorno" dos vídeos personalizados.
+  // Retorno de arquivo — respeita a opção específica de arquivo
   const openFileReturn =
-    ($userdata.get("modules.media.project_return", false) as unknown) === true ||
-    ($userdata.get("options.video_show_return", false) as unknown) === true;
+    ($userdata.get("options.file_projection.show_return", false) as unknown) === true;
   if (openFileReturn) {
     await _open(
-      "/projection/file/return",
-      FEATURE_FILE_RETURN,
-      prefs[FEATURE_FILE_RETURN] ?? prefs[FEATURE_RETURN] ?? null,
+      PROJECTION_URL.FILE_RETURN,
+      PROJECTION_TYPE.FILE_RETURN,
+      prefs[PROJECTION_TYPE.FILE_RETURN] ?? null,
       fullscreen,
       alwaysOnTop
     );
@@ -209,23 +201,21 @@ export async function openFileProjectionWindows(): Promise<void> {
  */
 export async function openVideoProjectionWindows(): Promise<void> {
   const prefs = await _readPrefs();
-  const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
-  const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
+  const fullscreen = ($userdata.get("options.video_projection.fullscreen", true) as unknown) !== false;
+  const alwaysOnTop = ($userdata.get("options.video_projection.always_on_top", true) as unknown) !== false;
 
-  // Usa feature "online_video" sem fallback para file_projection
-  const videoMonitor = prefs[FEATURE_ONLINE_VIDEO] ?? prefs[FEATURE_PROJECTION] ?? null;
+  const videoMonitor = prefs[PROJECTION_TYPE.ONLINE_VIDEO] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
   if (videoMonitor != null) {
-    await _open("/projection/file", FEATURE_FILE_PROJECTION, videoMonitor, fullscreen, alwaysOnTop);
+    await _open(PROJECTION_URL.FILE, PROJECTION_TYPE.FILE, videoMonitor, fullscreen, alwaysOnTop);
   }
 
-  // Retorno de vídeos — só a opção específica de vídeos, não a do player
   const openVideoReturn =
-    ($userdata.get("options.video_show_return", false) as unknown) === true;
+    ($userdata.get("options.video_projection.show_return", false) as unknown) === true;
   if (openVideoReturn) {
     await _open(
-      "/projection/file/return",
-      FEATURE_FILE_RETURN,
-      prefs[FEATURE_FILE_RETURN] ?? prefs[FEATURE_RETURN] ?? null,
+      PROJECTION_URL.FILE_RETURN,
+      PROJECTION_TYPE.ONLINE_VIDEO_RETURN,
+      prefs[PROJECTION_TYPE.ONLINE_VIDEO_RETURN] ?? prefs[PROJECTION_TYPE.RETURN] ?? null,
       fullscreen,
       alwaysOnTop
     );
@@ -237,20 +227,20 @@ export async function openVideoProjectionWindows(): Promise<void> {
  */
 export async function openBibleWindow(): Promise<void> {
   const prefs = await _readPrefs();
-  const monitorId = prefs[FEATURE_BIBLE] ?? prefs[FEATURE_PROJECTION] ?? null;
+  const monitorId = prefs[PROJECTION_TYPE.BIBLE] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
   const openReturn = ($userdata.get("options.open_return", false) as unknown) === true;
   const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
   const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
 
   if (monitorId != null) {
-    await _open("/projection/bible", FEATURE_BIBLE, monitorId, fullscreen, alwaysOnTop);
+    await _open(PROJECTION_URL.BIBLE, PROJECTION_TYPE.BIBLE, monitorId, fullscreen, alwaysOnTop);
   }
 
   if (openReturn) {
     await _open(
-      "/projection/bible/return",
-      FEATURE_BIBLE_RETURN,
-      prefs[FEATURE_RETURN] ?? null,
+      PROJECTION_URL.BIBLE_RETURN,
+      PROJECTION_TYPE.BIBLE_RETURN,
+      prefs[PROJECTION_TYPE.RETURN] ?? null,
       fullscreen,
       alwaysOnTop
     );
@@ -262,13 +252,15 @@ export async function openBibleWindow(): Promise<void> {
  */
 export async function closeProjectionWindows(): Promise<void> {
   await Promise.all([
-    _close(FEATURE_PROJECTION),
-    _close(FEATURE_OPERATOR),
-    _close(FEATURE_RETURN),
-    _close(FEATURE_BIBLE),
-    _close(FEATURE_BIBLE_RETURN),
-    _close(FEATURE_FILE_PROJECTION),
-    _close(FEATURE_FILE_RETURN),
+    _close(PROJECTION_TYPE.MUSIC),
+    _close(PROJECTION_TYPE.OPERATOR),
+    _close(PROJECTION_TYPE.RETURN),
+    _close(PROJECTION_TYPE.BIBLE),
+    _close(PROJECTION_TYPE.BIBLE_RETURN),
+    _close(PROJECTION_TYPE.FILE),
+    _close(PROJECTION_TYPE.FILE_RETURN),
+    _close(PROJECTION_TYPE.ONLINE_VIDEO),
+    _close(PROJECTION_TYPE.ONLINE_VIDEO_RETURN),
   ]);
 }
 

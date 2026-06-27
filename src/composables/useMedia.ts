@@ -14,7 +14,7 @@ import { useSlides } from "@/composables/useSlides";
 import type { Slide } from "@/composables/useSlides";
 import { useLyric } from "@/composables/useLyric";
 import { useAlbum } from "@/composables/useAlbum";
-import { openProjectionWindows, openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import { openProjectionWindows, openFileProjectionWindows, openVideoProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import { Music } from "@/types/Music";
 import { LyricOpenParams } from "@/types/Lyric";
 
@@ -358,6 +358,7 @@ const _self = {
 
       try {
         localStorage.removeItem("lj_file_projection");
+        localStorage.removeItem("lj_youtube_projection");
       } catch {
         /* ignore */
       }
@@ -541,14 +542,14 @@ const _self = {
     this.minimize();
 
     try {
-      localStorage.setItem("lj_file_projection", JSON.stringify({ url, type: "youtube", title }));
+      localStorage.setItem("lj_youtube_projection", JSON.stringify({ url, type: "youtube", title }));
     } catch {
       /* ignore */
     }
 
-    await openFileProjectionWindows();
+    await openVideoProjectionWindows();
 
-    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type: "youtube", title });
+    $broadcast.send(BROADCAST_TYPE.VIDEO_PROJECTION, { url, type: "youtube", title });
 
     _ytUnlisten = $broadcast.listen((msg) => {
       if (msg.type !== BROADCAST_TYPE.YOUTUBE_STATE) return;
