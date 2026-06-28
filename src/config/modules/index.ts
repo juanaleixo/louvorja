@@ -1,6 +1,6 @@
 import type { RibbonPage, RibbonGroup, RibbonButton } from "@/types/Ribbon"
 import { Module, ModuleRibbon } from "@/types/Module";
-import { groupBycategory, groups } from "@/config/module/ribbon/groups";
+import { groupBycategory, groups } from "@/config/modules/ribbon/groups";
 
 const modules = import.meta.glob<ModuleRibbon>("./modules/*.ts", {
   eager: true,

@@ -163,7 +163,7 @@ import $alert from "@/helpers/Alert";
 import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { getRibbonModules } from "@/config/module";
+import { getRibbonModules } from "@/config/modules";
 
 const { t } = useI18n();
 const shell = useShell();

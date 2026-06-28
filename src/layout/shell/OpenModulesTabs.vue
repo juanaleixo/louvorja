@@ -41,7 +41,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import $appdata from "@/helpers/AppData";
 import $modules from "@/helpers/Modules";
-import { getModules } from "@/config/module";
+import { getModules } from "@/config/modules";
 import Icon from "@/components/Icon.vue";
 
 const { t } = useI18n();
