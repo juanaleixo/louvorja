@@ -720,7 +720,7 @@ import { useUserDataStore } from "@/stores/userDataStore";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
-import { ICONS } from "@/constants/Icons";
+import { ICONS } from "@/config/Icons";
 
 interface ThemeOption {
   id: string;

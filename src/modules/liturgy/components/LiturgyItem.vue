@@ -189,7 +189,7 @@ import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";
-import { ICONS } from "@/constants/Icons";
+import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };

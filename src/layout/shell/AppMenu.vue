@@ -91,7 +91,7 @@ import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
 import $modules from "@/helpers/Modules";
 import Platform from "@/helpers/Platform";
-import { ICONS } from "@/constants/Icons";
+import { ICONS } from "@/config/Icons";
 
 // Detecta macOS via Platform (Electron) ou navigator (web fallback) —
 // usado para ajustar o header da AppMenu (não sobrepor traffic lights)
