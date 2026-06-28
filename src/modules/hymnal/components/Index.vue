@@ -101,6 +101,7 @@ import $database from "@/helpers/Database";
 import $path from "@/helpers/Path";
 import $alert from "@/helpers/Alert";
 import $appdata from "@/helpers/AppData";
+import SljaConverter from "@/helpers/SljaConverter";
 
 const { t: i18nT, locale } = useI18n();
 const moduleId = manifest.id;
@@ -132,23 +133,39 @@ function hasScroll(val) {
   has_scroll.value = val;
 }
 
-async function downloadAudio(url, filename) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-  } catch (err) {
-    console.error("[hymnal] download falhou:", err);
-    $alert.error("modules.hymnal.export_error");
+function buildSljaSlides(data) {
+  const slides = [];
+
+  slides.push({
+    tipo: "CAPA",
+    letra: data.name || "",
+    letra_aux: "",
+    imagem: data.url_image ? String(data.url_image).split("/").pop() : "",
+    imagem_posicao: data.image_position || 5,
+  });
+
+  const lyricList = data.lyric
+    ? Array.isArray(data.lyric)
+      ? data.lyric
+      : Object.values(data.lyric)
+    : [];
+
+  const sorted = lyricList.filter((l) => l.show_slide !== 0).sort((a, b) => a.order - b.order);
+
+  let prevImg = data.url_image ? String(data.url_image).split("/").pop() : "";
+
+  for (const lyric of sorted) {
+    if (lyric.url_image) prevImg = String(lyric.url_image).split("/").pop();
+    slides.push({
+      tipo: "LETRA",
+      letra: lyric.lyric || "",
+      letra_aux: lyric.aux_lyric || "",
+      imagem: prevImg,
+      imagem_posicao: lyric.image_position || data.image_position || 5,
+    });
   }
+
+  return slides;
 }
 
 async function exportMusic() {
@@ -181,9 +198,60 @@ async function exportMusic() {
           $alert.error("modules.hymnal.export_no_file");
           return;
         }
-        const filename = `${data.name || selectedId.value}_${mode === "instrumental" ? "playback" : "cantada"}.mp3`;
-        const url = $path.file(filePath);
-        await downloadAudio(url, filename);
+
+        const nameSlug = (data.name || String(selectedId.value))
+          .replace(/[^\w\s-]/g, "")
+          .trim()
+          .replace(/\s+/g, "_");
+        const filename = `${nameSlug}_${mode === "instrumental" ? "playback" : "cantada"}.slja`;
+
+        const sljaSlides = buildSljaSlides(data);
+
+        const audioUrl = $path.file(filePath);
+        const audioResp = await fetch(audioUrl);
+        if (!audioResp.ok) throw new Error(`HTTP ${audioResp.status}`);
+        const audioBlob = await audioResp.blob();
+
+        const imagePaths = new Set();
+        if (data.url_image) imagePaths.add(data.url_image);
+        const lyricList = data.lyric
+          ? Array.isArray(data.lyric)
+            ? data.lyric
+            : Object.values(data.lyric)
+          : [];
+        for (const l of lyricList) {
+          if (l.url_image) imagePaths.add(l.url_image);
+        }
+
+        const images = new Map();
+        for (const imgPath of imagePaths) {
+          try {
+            const imgUrl = $path.file(imgPath);
+            const resp = await fetch(imgUrl);
+            if (resp.ok) {
+              const blob = await resp.blob();
+              images.set(String(imgPath).split("/").pop(), blob);
+            }
+          } catch (e) {
+            console.warn("[hymnal] imagem ignorada:", imgPath, e);
+          }
+        }
+
+        const sljaBlob = await SljaConverter.writeSlja({
+          slides: sljaSlides,
+          audio: audioBlob,
+          audioName: `${nameSlug}.mp3`,
+          images,
+        });
+
+        const url = URL.createObjectURL(sljaBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
       } catch (err) {
         console.error("[hymnal] exportMusic erro:", err);
         $alert.error("modules.hymnal.export_error");
