@@ -133,8 +133,8 @@
             <select
               id="opt-monitor-secondary"
               class="opt-select"
-              :value="monitorReturn ?? ''"
-              @change="setUd('monitor_return', $v($event) === '' ? null : Number($v($event)))"
+              :value="monitorSecondary ?? ''"
+              @change="setUd('monitor_secondary', $v($event) === '' ? null : Number($v($event)))"
             >
               <option value="">{{ $t("options.slides.none") }}</option>
               <option v-for="d in displays" :key="d.id" :value="d.id">
@@ -763,8 +763,8 @@ function $c(e: Event): boolean {
 const monitorPrimary: ComputedRef<number | string | null> = computed(() =>
   $userdata.get("options.monitor_primary", null)
 );
-const monitorReturn: ComputedRef<number | string | null> = computed(() =>
-  $userdata.get("options.monitor_return", null)
+const monitorSecondary: ComputedRef<number | string | null> = computed(() =>
+  $userdata.get("options.monitor_secondary", null)
 );
 
 function setUd(key: string, value: unknown): void {
