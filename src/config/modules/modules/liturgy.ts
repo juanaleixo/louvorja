@@ -9,7 +9,7 @@ export const module: Module = {
   title: "modules.liturgy.title",
   icon: ICONS.MODULES.LITURGY,
   color: "#27ae60",
-  category: ModuleCategoryEnum.UTILITIES,
+  category: ModuleCategoryEnum.LIVE,
   group: ModuleGroupEnum.CHURCH,
   order: 0,
 }

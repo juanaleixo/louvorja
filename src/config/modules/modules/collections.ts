@@ -8,7 +8,7 @@ export const module: Module = {
   id: "collections",
   title: "modules.collections.title",
   icon: ICONS.MODULES.COLLECTIONS,
-  color: "#16a085",
+  color: "#d5c403",
   category: ModuleCategoryEnum.COLLECTIONS,
   group: ModuleGroupEnum.ALBUMS,
   order: 2,

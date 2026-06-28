@@ -1,6 +1,7 @@
-import type { RibbonPage, RibbonGroup, RibbonButton } from "@/types/Ribbon"
+import type { RibbonPage, RibbonGroup } from "@/types/Ribbon"
 import { Module, ModuleRibbon } from "@/types/Module";
-import { groupBycategory, groups } from "@/config/modules/ribbon/groups";
+import { moduleGroups } from "@/config/modules/ribbon/moduleGroups";
+import { categories } from "@/config/modules/ribbon/categories";
 
 const modules = import.meta.glob<ModuleRibbon>("./modules/*.ts", {
   eager: true,
@@ -18,50 +19,75 @@ for (const mod of Object.values(modules)) {
   }
 }
 
-function buttonsForGroup(groupId: string): RibbonButton[] {
-  return allModules
-    .filter((m) => m.group === groupId)
-    .sort((a, b) => a.order - b.order)
-    .map((m) => ({
-      id: m.id,
-      icon: m.icon,
-      label: m.title,
-      module: m.id,
-      color: m.color || undefined,
-    }))
-}
-
 export function buildRibbonPages(): RibbonPage[] {
-  const pages: RibbonPage[] = []
-  const groupsByPage = groupBycategory(groups);
+  const pages: RibbonPage[] = [];
 
-  for (const [pageId, pageGroups] of groupsByPage) {
-    const groups: RibbonGroup[] = []
+  // Índice de compilação a partir de moduleGroups para ordenação de grupos e títulos
+  const groupOrder = new Map<string, number>();
+  const groupTitles = new Map<string, string>();
+  moduleGroups.forEach((g, i) => {
+    groupOrder.set(g.id, i);
+    groupTitles.set(g.id, g.title);
+  });
 
-    for (const g of pageGroups) {
-      const buttons = buttonsForGroup(g.id)
-      if (buttons.length === 0) continue
-
-      groups.push({
-        id: g.id,
-        title: g.title,
-        buttons,
-      })
-    }
-
-    if (groups.length === 0) continue
-
-    pages.push({
-      id: pageId,
-      title: `ribbon.pages.${pageId}`,
-      defaultModule: null,
-      groups,
-    })
+  // Agrupando todos os módulos por categoria
+  const cats = new Map<string, Module[]>();
+  for (const m of allModules) {
+    const arr = cats.get(m.category);
+    if (arr) arr.push(m);
+    else cats.set(m.category, [m]);
   }
 
-  pages.push(...contextualPages)
+  // Build índice de ordem de categoria a partir da configuração de categorias
+  const catOrder = new Map<string, number>();
+  for (const c of Object.values(categories)) {
+    catOrder.set(c.id, c.order);
+  }
 
-  return pages
+  // Ordenar categorias pela ordem configurada
+  const sortedCats = [...cats.entries()].sort((a, b) => {
+    return (catOrder.get(a[0]) ?? 999) - (catOrder.get(b[0]) ?? 999);
+  });
+
+  for (const [categoryId, catModules] of sortedCats) {
+    // Dentro da categoria, módulos de grupo pelo id de grupo
+    const byGroup = new Map<string, Module[]>();
+    for (const m of catModules) {
+      const arr = byGroup.get(m.group);
+      if (arr) arr.push(m);
+      else byGroup.set(m.group, [m]);
+    }
+
+    // Ordenar grupos pela ordem definida em moduleGroups
+    const sortedGroups = [...byGroup.entries()].sort((a, b) => {
+      return (groupOrder.get(a[0]) ?? 999) - (groupOrder.get(b[0]) ?? 999);
+    });
+
+    const ribbonGroups: RibbonGroup[] = sortedGroups.map(([groupId, groupModules]) => ({
+      id: groupId,
+      title: groupTitles.get(groupId) ?? `ribbon.groups.${groupId}`,
+      buttons: groupModules
+        .sort((a, b) => a.order - b.order)
+        .map((m) => ({
+          id: m.id,
+          icon: m.icon,
+          label: m.title,
+          module: m.id,
+          color: m.color || undefined,
+        })),
+    }));
+
+    pages.push({
+      id: categoryId,
+      title: `ribbon.pages.${categoryId}`,
+      defaultModule: null,
+      groups: ribbonGroups,
+    });
+  }
+
+  pages.push(...contextualPages);
+
+  return pages;
 }
 
 /**

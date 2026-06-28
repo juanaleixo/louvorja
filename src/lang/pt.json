@@ -408,7 +408,7 @@
   "ribbon": {
     "pages": {
       "collections": "Coletâneas",
-      "collections_online": "Coletâneas On-line",
+      "live": "Ao Vivo",
       "bible": "Bíblia",
       "utilities": "Utilitários",
       "favorites": "Favoritos"

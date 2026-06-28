@@ -17,10 +17,11 @@ export interface ModuleCategory {
   title: string;
   icon: string;
   color: string;
+  order: number;
+  groups?: ModuleGroup[];
 }
 
 export interface ModuleGroup {
-  category: string;
   id: string;
   title: string;
 }
