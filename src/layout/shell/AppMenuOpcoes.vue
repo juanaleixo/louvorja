@@ -133,8 +133,8 @@
             <select
               id="opt-monitor-secondary"
               class="opt-select"
-              :value="monitorSecondary ?? ''"
-              @change="setUd('monitor_secondary', $v($event) === '' ? null : Number($v($event)))"
+              :value="monitorReturn ?? ''"
+              @change="setUd('monitor_return', $v($event) === '' ? null : Number($v($event)))"
             >
               <option value="">{{ $t("options.slides.none") }}</option>
               <option v-for="d in displays" :key="d.id" :value="d.id">
@@ -154,6 +154,27 @@
             id="opt-bible-monitor"
             :model-value="getPref('bible') ?? ''"
             @update:model-value="setPref('bible', $event)"
+          />
+        </div>
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="bibleReturnEnabled"
+              @change="setUd('open_bible_return', $c($event))"
+            />
+            <span>{{ $t("options.bible.show_return") }}</span>
+          </label>
+        </div>
+        <div v-if="bibleReturnEnabled" class="opt-row">
+          <label class="opt-label" for="opt-bible-return-monitor">
+            {{ $t("options.bible.open_return_at") }}
+          </label>
+          <MonitorSelect
+            id="opt-bible-return-monitor"
+            :model-value="getPref('bible_return') ?? ''"
+            @update:model-value="setPref('bible_return', $event)"
           />
         </div>
       </v-tabs-window-item>
@@ -700,7 +721,6 @@ import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/constants/Icons";
-import Icon from "@/components/Icon.vue";
 
 interface ThemeOption {
   id: string;
@@ -743,8 +763,8 @@ function $c(e: Event): boolean {
 const monitorPrimary: ComputedRef<number | string | null> = computed(() =>
   $userdata.get("options.monitor_primary", null)
 );
-const monitorSecondary: ComputedRef<number | string | null> = computed(() =>
-  $userdata.get("options.monitor_secondary", null)
+const monitorReturn: ComputedRef<number | string | null> = computed(() =>
+  $userdata.get("options.monitor_return", null)
 );
 
 function setUd(key: string, value: unknown): void {
@@ -777,6 +797,10 @@ const videoProjAlwaysOnTop: ComputedRef<boolean> = computed(
 );
 const vidProjShowReturn: ComputedRef<boolean> = computed(
   () => $userdata.get<boolean>("options.video_projection.show_return", false) === true
+);
+
+const bibleReturnEnabled: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.open_bible_return", false) === true
 );
 
 const fileProjFullscreen: ComputedRef<boolean> = computed(

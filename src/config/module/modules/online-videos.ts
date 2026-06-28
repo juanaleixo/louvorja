@@ -26,8 +26,8 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_online_videos_actions",
         title: "ribbon.groups.actions",
         buttons: [
-          { id: "online_videos_personal_url", type: "action_input", icon: "mdi-link", label: "ribbon.btn.online_videos_personal_url", placeholder: "ribbon.btn.online_videos_personal_url_placeholder", action: "online_videos_personal_url", color: "#3498db" },
-          { id: "online_videos_stop", icon: "mdi-stop", label: "ribbon.btn.stop_projection", action: "online_videos_stop", color: "#e74c3c" },
+          { id: "online_videos_personal_url", type: "action_input", icon: ICONS.PROJECTION.START, label: "ribbon.btn.online_videos_personal_url", placeholder: "ribbon.btn.online_videos_personal_url_placeholder", action: "online_videos_personal_url", color: "#3498db" },
+          { id: "online_videos_stop", icon: ICONS.PROJECTION.STOP, label: "ribbon.btn.stop_projection", action: "online_videos_stop", color: "#e74c3c" },
         ],
       },
     ],

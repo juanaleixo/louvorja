@@ -8,7 +8,7 @@
     :disabled="disabled"
     @click="$emit('click', $event)"
   >
-    <v-icon
+    <Icon
       :icon="icon"
       :size="iconSize"
       :style="iconColor ? { color: iconColor } : null"
@@ -20,6 +20,7 @@
 
 <script setup>
 import { computed } from "vue";
+import Icon from "@/components/Icon.vue";
 
 const props = defineProps({
   icon: { type: String, required: true },

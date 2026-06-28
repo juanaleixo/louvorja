@@ -84,7 +84,7 @@ export const ICONS = {
     CLOCK: "mdi-clock-outline",
     COLLECTIONS: "nt",
     COUNTER: "mdi-counter",
-    CUSTOM_MUSICS: "mdi-folder-heart",
+    CUSTOM_MUSICS: "mdi-playlist-music-outline",
     CUSTOM_VIDEOS: "mdi-video-box",
     DOXOLOGY: "church",
     DRAW: "mdi-dice-multiple",

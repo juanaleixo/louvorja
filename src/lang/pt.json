@@ -143,7 +143,9 @@
     "bible": {
       "title": "Bíblia Sagrada",
       "open_at": "Abrir no monitor:",
-      "version": "Versão"
+      "version": "Versão",
+      "show_return": "Exibir na tela de retorno",
+      "open_return_at": "Tela de retorno em:"
     },
     "monitors": {
       "title": "Monitores",

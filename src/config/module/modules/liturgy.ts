@@ -26,7 +26,7 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_liturgy_add",
         title: "ribbon.groups.add",
         buttons: [
-          { id: "add_item", icon: "mdi-plus-box", label: "ribbon.btn.add_item", action: "lit_add_item", color: "#1b4f8a" },
+          { id: "add_item", icon: ICONS.ACTIONS.ADD, label: "ribbon.btn.add_item", action: "lit_add_item", color: "#1b4f8a" },
         ],
       },
       {
@@ -42,7 +42,7 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_liturgy_delete",
         title: "ribbon.groups.delete",
         buttons: [
-          { id: "delete_selected", icon: "mdi-close-thick", label: "ribbon.btn.delete_selected", action: "lit_delete", color: "#e74c3c" },
+          { id: "delete_selected", icon: ICONS.ACTIONS.DELETE, label: "ribbon.btn.delete_selected", action: "lit_delete", color: "#e74c3c" },
         ],
       },
       {
@@ -51,9 +51,9 @@ export const contextualPages: RibbonPage[] = [
         buttons: [
           { id: "mark_done", icon: "mdi-check-circle", label: "ribbon.btn.mark_done", action: "lit_mark_done", size: "small" },
           { id: "show_notes", icon: "mdi-note-text", label: "ribbon.btn.show_notes", action: "lit_show_notes", size: "small" },
-          { id: "lock_items", icon: "mdi-lock", label: "ribbon.btn.lock_items", action: "lit_lock", size: "small" },
-          { id: "copy_liturgy", icon: "mdi-content-copy", label: "ribbon.btn.copy_liturgy", action: "lit_copy", size: "small" },
-          { id: "clear_liturgy", icon: "mdi-delete-outline", label: "ribbon.btn.clear_liturgy", action: "lit_clear", size: "small", color: "#e74c3c" },
+          { id: "lock_items", icon: ICONS.ACTIONS.LOCK, label: "ribbon.btn.lock_items", action: "lit_lock", size: "small" },
+          { id: "copy_liturgy", icon: ICONS.ACTIONS.COPY, label: "ribbon.btn.copy_liturgy", action: "lit_copy", size: "small" },
+          { id: "clear_liturgy", icon: ICONS.ACTIONS.CLEAN, label: "ribbon.btn.clear_liturgy", action: "lit_clear", size: "small", color: "#e74c3c" },
         ],
       },
     ],

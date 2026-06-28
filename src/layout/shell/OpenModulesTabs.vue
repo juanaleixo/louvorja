@@ -15,10 +15,10 @@
       :aria-selected="isActive(m.id)"
       @click="focus(m.id)"
     >
-      <v-icon
+      <Icon
         :icon="getModule(m.id).icon"
         :color="getModule(m.id).color"
-        size="15"
+        size="20"
         class="subtab-icon"
         aria-hidden="true"
       />
@@ -42,6 +42,7 @@ import { useI18n } from "vue-i18n";
 import $appdata from "@/helpers/AppData";
 import $modules from "@/helpers/Modules";
 import { getModules } from "@/config/module";
+import Icon from "@/components/Icon.vue";
 
 const { t } = useI18n();
 const modules = getModules;

@@ -143,12 +143,15 @@ export async function openProjectionWindows(): Promise<void> {
   }
 
   if (openReturn) {
-    await _open(
-      PROJECTION_URL.RETURN,
-      PROJECTION_TYPE.RETURN,
-      prefs[PROJECTION_TYPE.RETURN] ?? null,
-      fullscreen,
-      alwaysOnTop)
+    const returnMonitor = prefs[PROJECTION_TYPE.RETURN];
+    if (returnMonitor != null) {
+      await _open(
+        PROJECTION_URL.RETURN,
+        PROJECTION_TYPE.RETURN,
+        returnMonitor,
+        fullscreen,
+        alwaysOnTop)
+    }
   }
 
   if (openOperator) {
@@ -183,13 +186,16 @@ export async function openFileProjectionWindows(): Promise<void> {
   const openFileReturn =
     ($userdata.get("options.file_projection.show_return", false) as unknown) === true;
   if (openFileReturn) {
-    await _open(
-      PROJECTION_URL.FILE_RETURN,
-      PROJECTION_TYPE.FILE_RETURN,
-      prefs[PROJECTION_TYPE.FILE_RETURN] ?? null,
-      fullscreen,
-      alwaysOnTop
-    );
+    const returnMonitor = prefs[PROJECTION_TYPE.FILE_RETURN];
+    if (returnMonitor != null) {
+      await _open(
+        PROJECTION_URL.FILE_RETURN,
+        PROJECTION_TYPE.FILE_RETURN,
+        returnMonitor,
+        fullscreen,
+        alwaysOnTop
+      );
+    }
   }
 }
 
@@ -209,16 +215,18 @@ export async function openVideoProjectionWindows(): Promise<void> {
     await _open(PROJECTION_URL.FILE, PROJECTION_TYPE.FILE, videoMonitor, fullscreen, alwaysOnTop);
   }
 
-  const openVideoReturn =
-    ($userdata.get("options.video_projection.show_return", false) as unknown) === true;
+  const openVideoReturn = $userdata.get("options.video_projection.show_return", false) as boolean;
   if (openVideoReturn) {
-    await _open(
-      PROJECTION_URL.FILE_RETURN,
-      PROJECTION_TYPE.ONLINE_VIDEO_RETURN,
-      prefs[PROJECTION_TYPE.ONLINE_VIDEO_RETURN] ?? prefs[PROJECTION_TYPE.RETURN] ?? null,
-      fullscreen,
-      alwaysOnTop
-    );
+    const returnMonitor = prefs[PROJECTION_TYPE.ONLINE_VIDEO_RETURN] ?? null;
+    if (returnMonitor != null) {
+      await _open(
+        PROJECTION_URL.FILE_RETURN,
+        PROJECTION_TYPE.ONLINE_VIDEO_RETURN,
+        returnMonitor,
+        fullscreen,
+        alwaysOnTop
+      );
+    }
   }
 }
 
@@ -228,7 +236,7 @@ export async function openVideoProjectionWindows(): Promise<void> {
 export async function openBibleWindow(): Promise<void> {
   const prefs = await _readPrefs();
   const monitorId = prefs[PROJECTION_TYPE.BIBLE] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
-  const openReturn = ($userdata.get("options.open_return", false) as unknown) === true;
+  const openReturn = ($userdata.get("options.open_bible_return", false) as unknown) === true;
   const fullscreen = ($userdata.get("options.fullscreen", true) as unknown) !== false;
   const alwaysOnTop = ($userdata.get("options.always_on_top", true) as unknown) !== false;
 
@@ -237,13 +245,16 @@ export async function openBibleWindow(): Promise<void> {
   }
 
   if (openReturn) {
-    await _open(
-      PROJECTION_URL.BIBLE_RETURN,
-      PROJECTION_TYPE.BIBLE_RETURN,
-      prefs[PROJECTION_TYPE.RETURN] ?? null,
-      fullscreen,
-      alwaysOnTop
-    );
+    const returnMonitor = prefs[PROJECTION_TYPE.BIBLE_RETURN] ?? null;
+    if (returnMonitor != null) {
+      await _open(
+        PROJECTION_URL.BIBLE_RETURN,
+        PROJECTION_TYPE.BIBLE_RETURN,
+        returnMonitor,
+        fullscreen,
+        alwaysOnTop
+      );
+    }
   }
 }
 

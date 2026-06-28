@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory, createWebHistory } from "vue-router";
 import Popup from "@/views/Popup.vue";
+import { PROJECTION_URL } from "@/constants/Projection";
 
 const routes = [
   {
@@ -13,12 +14,12 @@ const routes = [
     component: Popup,
   },
   {
-    path: "/projection",
+    path: PROJECTION_URL.BASE,
     name: "Projection",
     component: () => import("@/views/Projection.vue"),
   },
   {
-    path: "/projection/return",
+    path: PROJECTION_URL.RETURN,
     name: "ProjectionReturn",
     component: () => import("@/views/ProjectionReturn.vue"),
   },
@@ -48,12 +49,12 @@ const routes = [
     component: () => import("@views/remote_control/RemoteControl.vue"),
   },
   {
-    path: "/projection/bible",
+    path: PROJECTION_URL.BIBLE,
     name: "ProjectionBible",
     component: () => import("@/views/ProjectionBible.vue"),
   },
   {
-    path: "/projection/bible/return",
+    path: PROJECTION_URL.BIBLE_RETURN,
     name: "ProjectionBibleReturn",
     component: () => import("@/views/ProjectionBibleReturn.vue"),
   },
@@ -63,12 +64,12 @@ const routes = [
     component: () => import("@/views/ModuleProjection.vue"),
   },
   {
-    path: "/projection/file",
+    path: PROJECTION_URL.FILE,
     name: "FileProjection",
     component: () => import("@/views/FileProjection.vue"),
   },
   {
-    path: "/projection/file/return",
+    path: PROJECTION_URL.FILE_RETURN,
     name: "FileProjectionReturn",
     component: () => import("@/views/FileProjectionReturn.vue"),
   },

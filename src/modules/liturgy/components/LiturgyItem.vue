@@ -36,8 +36,8 @@
       <button
         class="lit-card-icon"
         :style="{ background: element.cor || defaultColor }"
-        :title="locked ? '' : t('actions.change_color')"
-        @click.stop="!locked && $emit('change-color', index)"
+        :title="locked ? '' : t('actions.drag')"
+        data-handle="true"
       >
         <v-icon :icon="iconFor(element)" size="28" color="white" />
       </button>
@@ -73,7 +73,7 @@
               class="lit-music-btn"
               @click.stop="$emit('play-music', element, 'sung')"
             >
-              <v-icon icon="mdi-filmstrip" size="18" color="#c0392b" />
+              <Icon :icon="ICONS.MUSIC.SING" :size="SIZE_ICON_MEDIA" color="#c0392b" />
             </button>
           </template>
 
@@ -91,7 +91,7 @@
               class="lit-music-btn"
               @click.stop="$emit('play-music', element, 'pb')"
             >
-              <v-icon icon="mdi-filmstrip-box" size="18" color="#1b4f8a" />
+              <Icon :icon="ICONS.MUSIC.PLAYBACK" :size="SIZE_ICON_MEDIA" color="#1b4f8a" />
             </button>
           </template>
 
@@ -105,7 +105,7 @@
               class="lit-music-btn"
               @click.stop="$emit('play-music', element, 'no_audio')"
             >
-              <v-icon icon="mdi-music-note-off" size="18" color="#7f8c8d" />
+              <Icon :icon="ICONS.MUSIC.NO_AUDIO" :size="SIZE_ICON_MEDIA" color="#7f8c8d" />
             </button>
           </template>
 
@@ -119,7 +119,7 @@
               class="lit-music-btn"
               @click.stop="$emit('open-lyric', Number(element.musica ?? element.id_music))"
             >
-              <v-icon icon="mdi-text-box-outline" size="18" color="#27ae60" />
+              <Icon :icon="ICONS.MUSIC.LYRIC" :size="SIZE_ICON_MEDIA" color="#27ae60" />
             </button>
           </template>
 
@@ -132,7 +132,7 @@
         <v-tooltip location="top" :open-delay="700">
           <template #activator="{ props }">
             <button v-bind="props" class="lit-music-btn" @click.stop="$emit('execute', element)">
-              <v-icon icon="mdi-play-circle" size="20" color="#e74c3c" />
+              <Icon :icon="ICONS.PLAYER.PLAY" :size="SIZE_ICON_MEDIA" color="#e74c3c" />
             </button>
           </template>
 
@@ -145,7 +145,7 @@
         <v-tooltip v-if="!locked" location="top" :open-delay="500">
           <template #activator="{ props }">
             <button v-bind="props" class="lit-card-action" @click.stop="$emit('edit', index)">
-              <v-icon icon="mdi-pencil" size="16" />
+              <Icon :icon="ICONS.ACTIONS.EDIT" :size="SIZE_ICON_TOOLS" />
             </button>
           </template>
 
@@ -155,7 +155,7 @@
         <v-tooltip v-if="!locked" location="top" :open-delay="500">
           <template #activator="{ props }">
             <button v-bind="props" class="lit-card-action" @click.stop="$emit('clone', index)">
-              <v-icon icon="mdi-content-copy" size="16" />
+              <Icon :icon="ICONS.ACTIONS.COPY" :size="SIZE_ICON_TOOLS" />
             </button>
           </template>
 
@@ -169,7 +169,7 @@
               class="lit-card-action"
               @click.stop="$emit('confirm-remove', index)"
             >
-              <v-icon icon="mdi-delete" color="red" size="16" />
+              <Icon :icon="ICONS.ACTIONS.DELETE" color="red" :size="SIZE_ICON_TOOLS" />
             </button>
           </template>
 
@@ -189,8 +189,12 @@ import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";
+import { ICONS } from "@/constants/Icons";
+import Icon from "@/components/Icon.vue";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
+const SIZE_ICON_TOOLS = "16";
+const SIZE_ICON_MEDIA = "20";
 
 function _t(key: string, locale: string): string {
   const dict = TRANSLATIONS[locale] ?? TRANSLATIONS.pt;
@@ -243,8 +247,8 @@ const t = (key: string) => _t(key, locale.value);
   align-items: stretch;
   flex: 1;
   background: var(--lj-surface-bg);
-  border: 1px solid rgba(var(--v-border-color), 0.4);
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: var(--lj-shadow-2);
   height: 64px;
   transition:
     background 0.15s,
@@ -451,7 +455,7 @@ const t = (key: string) => _t(key, locale.value);
   letter-spacing: 0.02em;
   padding-right: 4px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  box-shadow: var(--lj-shadow-1);
+  box-shadow: var(--lj-shadow-2);
 }
 .lit-category:hover {
   filter: brightness(1.1);

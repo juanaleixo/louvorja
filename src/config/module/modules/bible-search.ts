@@ -26,8 +26,8 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_bs_nav",
         title: "ribbon.groups.controls",
         buttons: [
-          { id: "prev_result", icon: "mdi-arrow-left-bold", label: "ribbon.btn.bible_prev_verse", action: "bible_search_prev", color: "#16a085" },
-          { id: "next_result", icon: "mdi-arrow-right-bold", label: "ribbon.btn.bible_next_verse", action: "bible_search_next", color: "#16a085" },
+          { id: "prev_result", icon: ICONS.ACTIONS.PREVIOUS, label: "ribbon.btn.bible_prev_verse", action: "bible_search_prev", color: "#16a085" },
+          { id: "next_result", icon: ICONS.ACTIONS.NEXT, label: "ribbon.btn.bible_next_verse", action: "bible_search_next", color: "#16a085" },
         ],
       },
       {
@@ -35,7 +35,7 @@ export const contextualPages: RibbonPage[] = [
         title: "ribbon.groups.actions",
         buttons: [
           { id: "go_bible", icon: "mdi-book-open-variant", label: "modules.bible_search.ribbon.go_bible", action: "bible_search_go_bible", color: "#c0392b" },
-          { id: "project_current", icon: "mdi-projector", label: "ribbon.btn.project", action: "bible_search_project", color: "#1b4f8a" },
+          { id: "project_current", icon: ICONS.PROJECTION.START, label: "ribbon.btn.project", action: "bible_search_project", color: "#1b4f8a" },
         ],
       },
       {
@@ -49,8 +49,8 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_bs_format",
         title: "ribbon.groups.format",
         buttons: [
-          { id: "toggle_format", icon: "mdi-format-color-fill", label: "ribbon.btn.format", action: "bible_search_toggle_format", color: "#1b4f8a" },
-          { id: "restore", icon: "mdi-restore", label: "ribbon.btn.restore", action: "bible_search_restore", color: "#9b59b6" },
+          { id: "toggle_format", icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: "bible_search_toggle_format", color: "#1b4f8a" },
+          { id: "restore", icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.restore", action: "bible_search_restore", color: "#9b59b6" },
         ],
       },
     ],
