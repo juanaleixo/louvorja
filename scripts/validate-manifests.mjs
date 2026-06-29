@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const MODULES_DIR = join(ROOT, "src/modules");
 
-const VALID_CATEGORIES = new Set(["musics", "bible", "utilities", null]);
+const VALID_CATEGORIES = new Set(["collections", "live", "bible", "utilities", "favorites", null]);
 const VALID_CUSTOMIZATION_TYPES = new Set([
   "font", "color", "font-size", "border-spacing",
   "v-align", "h-align", "image", "opacity", "object-fit", "select", "boolean",
@@ -48,7 +48,7 @@ function validate(filePath, data) {
   // category (opcional, mas se presente deve ser enum ou null)
   if ("category" in data && !VALID_CATEGORIES.has(data.category)) {
     errors.push(
-      `category: deve ser "musics" | "bible" | "utilities" | null, recebido ${JSON.stringify(data.category)}`
+      `category: deve ser "collections" | "live" | "bible" | "utilities" | "favorites" | null, recebido ${JSON.stringify(data.category)}`
     );
   }
 

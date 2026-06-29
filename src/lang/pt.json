@@ -580,7 +580,9 @@
       "toggle": "Iniciar/Pausar",
       "transmission": "Transmissão",
       "uncheck_all": "Desmarcar Todos",
-      "update": "Atualizar"
+      "update": "Atualizar",
+      "overlay_toggle": "Overlay on/off",
+      "overlay_add": "Adicionar overlay"
     }
   },
   "shell": {

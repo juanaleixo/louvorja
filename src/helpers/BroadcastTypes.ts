@@ -107,6 +107,12 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: useSlides (re-emite SLIDE_CHANGE). */
   REQUEST_SLIDE_STATE: "request_slide_state",
 
+  /** Solicita reemissão do estado atual dos overlays. Emitido por
+   *  OverlayRenderer ao montar em janelas que abriram depois do overlay
+   *  já estar ativo. Payload: {}
+   *  Recebido por: useOverlayState (re-lê UserData). */
+  REQUEST_OVERLAY_STATE: "request_overlay_state",
+
   // ─── In-app (hotkeys / HTTP events → módulos) ────────────────────────────
 
   /** Número sorteado via HTTP externo. Recebido por: módulo draw. */

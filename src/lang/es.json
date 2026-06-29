@@ -580,7 +580,9 @@
       "toggle": "Iniciar/Pausar",
       "transmission": "Transmisión",
       "uncheck_all": "Desmarcar Todos",
-      "update": "Actualizar"
+      "update": "Actualizar",
+      "overlay_toggle": "Superposición on/off",
+      "overlay_add": "Agregar superposición"
     }
   },
   "shell": {

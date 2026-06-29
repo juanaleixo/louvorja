@@ -18,7 +18,7 @@ export interface ModuleCategory {
   icon: string;
   color: string;
   order: number;
-  groups?: ModuleGroup[];
+  groups?: ModuleGroupEnum[];
 }
 
 export interface ModuleGroup {

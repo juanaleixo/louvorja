@@ -79,9 +79,8 @@ function toFileUrl(filePath: string): string {
 let fileInput: HTMLInputElement | null = null;
 
 function browse(): void {
-  const storage = (Platform.api as Record<string, unknown>)?.storage as
-    | { chooseImage?: () => Promise<string | null> }
-    | undefined;
+  const api = Platform.api as LouvorjaApi | null;
+  const storage = api?.storage;
   if (Platform.isDesktop && storage?.chooseImage) {
     storage.chooseImage().then((filePath) => {
       if (filePath) {

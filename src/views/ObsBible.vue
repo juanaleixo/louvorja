@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div class="obs-bible-root">
     <Transition name="fade-verse" mode="out-in">
       <div v-if="active && text" :key="text" class="obs-bible-content">
@@ -13,6 +14,7 @@
 import { ref, onMounted } from "vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const text = ref("");
 const reference = ref("");

@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div
     ref="root"
     class="module-projection"
@@ -67,6 +68,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const route = useRoute();
 

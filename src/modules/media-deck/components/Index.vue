@@ -483,8 +483,9 @@ function buildThumbPath(filePath: string): string | undefined {
 }
 
 async function addFiles(): Promise<void> {
-  if (Platform.isDesktop && Platform.api?.storage?.chooseFile) {
-    const result = await Platform.api.storage.chooseFile();
+  const api = Platform.api as LouvorjaApi | null;
+  if (Platform.isDesktop && api?.storage?.chooseFile) {
+    const result = await api.storage.chooseFile();
     if (!result) return;
     const paths = Array.isArray(result) ? result : [result];
     for (const rawPath of paths) {
@@ -746,6 +747,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   padding: 8px;
   gap: 4px;
   min-width: 0;
@@ -963,6 +965,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 8px;
   flex: 1;
+  min-height: 0;
   color: rgba(var(--v-theme-on-surface), 0.4);
   font-size: 13px;
 }

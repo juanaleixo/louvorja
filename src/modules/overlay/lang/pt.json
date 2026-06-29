@@ -1,0 +1,78 @@
+{
+  "title": "Overlays",
+  "ribbon": { "title_ctx": "Overlays" },
+  "global_enabled": "Overlay ativo",
+  "add_slot": "Adicionar overlay",
+  "slot": {
+    "name": "Nome",
+    "type": "Tipo",
+    "type_text": "Texto",
+    "type_image": "Imagem",
+    "type_module": "Espelho de módulo",
+    "module_source": "Módulo de origem",
+    "content": "Conteúdo",
+    "image_library": "Biblioteca de imagens",
+    "drag_drop_hint": "Arraste imagens aqui ou clique para selecionar",
+    "enabled": "Ativo",
+    "delete_confirm": "Excluir este overlay?"
+  },
+  "position": {
+    "title": "Posição",
+    "anchor": "Âncora",
+    "offset_x": "Deslocamento X",
+    "offset_y": "Deslocamento Y"
+  },
+  "style": {
+    "title": "Aparência",
+    "font": "Fonte",
+    "font_size": "Tamanho",
+    "color": "Cor do texto",
+    "background": "Fundo",
+    "background_opacity": "Opacidade do fundo",
+    "opacity": "Opacidade",
+    "padding": "Padding",
+    "border_radius": "Borda arredondada",
+    "border": "Borda",
+    "text_shadow": "Sombra no texto",
+    "box_shadow": "Sombra na caixa",
+    "text_align": "Alinhamento",
+    "animation": "Animação (entrada)",
+    "width": "Largura"
+  },
+  "animation": {
+    "title": "Animação",
+    "entrance": "Animação (entrada)",
+    "exit": "Animação (saída)",
+    "duration": "Duração (ms)"
+  },
+  "visibility": {
+    "title": "Visibilidade",
+    "show_on_return": "Mostrar no retorno",
+    "show_on_obs": "Mostrar no OBS"
+  },
+  "empty": "Nenhum overlay configurado. Clique em \"Adicionar overlay\" para começar.",
+  "animations": {
+    "fade": "Fade",
+    "slide-up": "Deslizar para cima",
+    "slide-down": "Deslizar para baixo",
+    "none": "Nenhuma",
+    "slide-left": "Deslizar para esquerda",
+    "slide-right": "Deslizar para direita",
+    "zoom-in": "Zoom in",
+    "zoom-out": "Zoom out",
+    "bounce": "Quicar",
+    "flip": "Girar 3D"
+  },
+  "anchors": {
+    "top-left": "Topo esquerdo",
+    "top-center": "Topo centro",
+    "top-right": "Topo direito",
+    "center-left": "Centro esquerdo",
+    "center": "Centro",
+    "center-right": "Centro direito",
+    "bottom-left": "Base esquerda",
+    "bottom-center": "Base centro",
+    "bottom-right": "Base direita"
+  },
+  "preview": "Preview"
+}

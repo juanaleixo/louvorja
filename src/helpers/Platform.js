@@ -35,8 +35,7 @@ export default {
   /**
    * Referência direta à API injetada pelo preload.
    * null quando rodando no browser/PWA.
-   *
-   * @type {object | null}
+   * @type {LouvorjaApi | null}
    */
   api,
 

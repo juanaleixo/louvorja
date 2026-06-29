@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div class="obs-root">
     <!--
       Fade-in só ao APARECER (música começa) e fade-out ao SUMIR (música
@@ -25,6 +26,7 @@
 <script setup>
 import { onMounted } from "vue";
 import { useProjectionState } from "@/composables/useProjectionState";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { slide } = useProjectionState();
 

@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div v-if="fileProjection.active" class="file-projection" @click="fileProjection.active = false">
     <img
       v-if="fileProjection.type === 'image'"
@@ -29,6 +30,7 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
 import Media from "@/composables/useMedia";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import {
   FileProjectionState,
   VideoMediaState,

@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div class="return-root" :class="{ 'return-root--ready': ready }">
     <div v-if="fileProjection.active" class="return-file-projection">
       <img
@@ -32,6 +33,7 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
 import Media from "@/composables/useMedia";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import {
   FileProjectionState,
   VideoMediaState,
