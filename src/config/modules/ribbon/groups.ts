@@ -2,9 +2,7 @@ import { ModuleGroup } from "@/types/Module";
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum";
 
 
-/**
- * A ordem em que estão declarados aqui será a ordem de exibição
- */
+
 export const groups: ModuleGroup[] = [
 
   // COLLECTIONS category
@@ -16,7 +14,6 @@ export const groups: ModuleGroup[] = [
   { id: ModuleGroupEnum.SEARCH, title: "ribbon.groups.search" },
 
   // LIVE category
-  { id: ModuleGroupEnum.CHURCH, title: "ribbon.groups.live" },
   { id: ModuleGroupEnum.MEDIA, title: "ribbon.groups.media" },
 
   // BIBLE category
