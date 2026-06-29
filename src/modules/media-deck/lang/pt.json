@@ -1,0 +1,30 @@
+{
+  "title": "Mídia Deck",
+  "library": "Biblioteca",
+  "playlist": "Playlist",
+  "all": "Todas",
+  "images": "Imagens",
+  "videos": "Vídeos",
+  "search": "Buscar na biblioteca...",
+  "add_files": "Adicionar arquivos",
+  "add": "Adicionar",
+  "cancel": "Cancelar",
+  "clear": "Limpar playlist",
+  "project": "Projetar",
+  "stop": "Parar",
+  "playing": "Projetando",
+  "next": "Próximo",
+  "prev": "Anterior",
+  "empty_library": "Nenhum arquivo na biblioteca",
+  "empty_playlist": "Playlist vazia",
+  "no_item_selected": "Nenhum item selecionado",
+  "confirm_clear": "Limpar playlist?",
+  "rename": "Renomear",
+  "delete": "Excluir",
+  "rename_placeholder": "Novo nome...",
+  "file_added": "Arquivo adicionado à biblioteca",
+  "added_to_playlist": "Adicionado à playlist",
+  "ribbon": {
+    "title_ctx": "Gerenciar Mídia Deck"
+  }
+}

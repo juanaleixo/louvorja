@@ -464,7 +464,7 @@ function executeButton(btn) {
   // devem vir primeiro na alternância para evitar match parcial.
   if (btn.action) {
     const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search)_(.+)$/
+      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search|media_deck)_(.+)$/
     );
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {

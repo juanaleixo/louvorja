@@ -1,6 +1,6 @@
 import type { RibbonPage, RibbonGroup } from "@/types/Ribbon"
 import { Module, ModuleRibbon } from "@/types/Module";
-import { moduleGroups } from "@/config/modules/ribbon/moduleGroups";
+import { groups } from "@/config/modules/ribbon/groups";
 import { categories } from "@/config/modules/ribbon/categories";
 
 const modules = import.meta.glob<ModuleRibbon>("./modules/*.ts", {
@@ -22,10 +22,10 @@ for (const mod of Object.values(modules)) {
 export function buildRibbonPages(): RibbonPage[] {
   const pages: RibbonPage[] = [];
 
-  // Índice de compilação a partir de moduleGroups para ordenação de grupos e títulos
+  // Índice de compilação a partir de groups para ordenação de grupos e títulos
   const groupOrder = new Map<string, number>();
   const groupTitles = new Map<string, string>();
-  moduleGroups.forEach((g, i) => {
+  groups.forEach((g, i) => {
     groupOrder.set(g.id, i);
     groupTitles.set(g.id, g.title);
   });
@@ -58,7 +58,7 @@ export function buildRibbonPages(): RibbonPage[] {
       else byGroup.set(m.group, [m]);
     }
 
-    // Ordenar grupos pela ordem definida em moduleGroups
+    // Ordenar grupos pela ordem definida em groups
     const sortedGroups = [...byGroup.entries()].sort((a, b) => {
       return (groupOrder.get(a[0]) ?? 999) - (groupOrder.get(b[0]) ?? 999);
     });
