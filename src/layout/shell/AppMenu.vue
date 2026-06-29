@@ -11,17 +11,7 @@
       :title="$t('shell.appmenu')"
       @click="toggle"
     >
-      <span class="app-menu-grid" aria-hidden="true">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-      </span>
+      <Icon :icon="ICONS.UI.OPTIONS" />
     </button>
 
     <Teleport to="body">
@@ -92,6 +82,7 @@ import AppMenuImportExport from "./AppMenuImportExport.vue";
 import $modules from "@/helpers/Modules";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
+import Icon from "@/components/Icon.vue";
 
 // Detecta macOS via Platform (Electron) ou navigator (web fallback) —
 // usado para ajustar o header da AppMenu (não sobrepor traffic lights)
@@ -201,6 +192,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
   width: var(--lj-appmenu-width);
   height: 100%;
   min-height: var(--lj-tab-height);
+  margin-left: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,21 +211,6 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 
 .app-menu-btn--open {
   background: var(--lj-navy-darker);
-}
-
-.app-menu-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 2px;
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-}
-
-.app-menu-grid > span {
-  background: var(--lj-white);
-  border-radius: 1px;
 }
 
 /* Painel fullscreen */

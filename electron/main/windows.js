@@ -41,7 +41,7 @@ function createMainWindow(devUrl, prodHtmlPath, preloadPath) {
     //           sem duplicar o título.
     frame: false,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
-    trafficLightPosition: process.platform === "darwin" ? { x: 8, y: 6 } : undefined,
+    trafficLightPosition: process.platform === "darwin" ? { x: 10, y: 12 } : undefined,
     autoHideMenuBar: true,
     webPreferences: {
       preload: preloadPath,

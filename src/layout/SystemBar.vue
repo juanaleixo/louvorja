@@ -5,15 +5,40 @@
     :class="{ 'systembar--mac': isMac }"
     @dblclick="toggleMaximize"
   >
+    <!-- AppMenu + Abas (no-drag) -->
+    <div class="systembar-left">
+      <AppMenu class="systembar-appmenu" />
+      <div class="systembar-tabs" role="tablist" :aria-label="$t('shell.ribbon_nav')">
+        <button
+          v-for="page in store.visiblePages"
+          :id="'systembar-tab-' + page.id"
+          :key="page.id"
+          type="button"
+          role="tab"
+          class="systembar-tab"
+          :class="{
+            'systembar-tab--active': store.activePage === page.id,
+          }"
+          :aria-selected="store.activePage === page.id"
+          @click.stop="store.selectPage(page.id)"
+        >
+          {{ $t(page.title) }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Título + logo (drag) -->
     <div class="systembar-drag">
       <LjLogo :size="16" class="systembar-logo" />
       <span class="systembar-title">{{ title }}</span>
     </div>
 
+    <!-- Ferramentas (no-drag) -->
     <div class="systembar-tools">
       <ShellTools />
     </div>
 
+    <!-- Window controls Win/Linux (no-drag) -->
     <div v-if="!isMac" class="systembar-controls">
       <button
         type="button"
@@ -50,8 +75,11 @@ import Platform from "@/helpers/Platform";
 import $appdata from "@/helpers/AppData";
 import LjLogo from "@/components/LjLogo.vue";
 import ShellTools from "@/layout/shell/ShellTools.vue";
+import AppMenu from "@/layout/shell/AppMenu.vue";
+import { useRibbonStore } from "@/stores/ribbonStore";
 
 const { t } = useI18n();
+const store = useRibbonStore();
 
 const isMaximized = ref(false);
 let unsubscribe = null;
@@ -128,6 +156,67 @@ onBeforeUnmount(() => {
   font-family: var(--lj-font-shell);
 }
 
+/* ── Left: AppMenu + tabs (no-drag) ── */
+.systembar-left {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.systembar--mac .systembar-left {
+  padding-left: 68px;
+}
+
+.systembar-appmenu {
+  height: 100%;
+}
+
+.systembar-tabs {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.systembar-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.systembar-tab {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0 14px;
+  height: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--lj-tabs-color);
+  transition:
+    background 0.15s,
+    color 0.15s;
+  outline: none;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+  font-family: inherit;
+  -webkit-app-region: no-drag;
+}
+
+.systembar-tab:hover:not(.systembar-tab--active) {
+  background: var(--lj-tabs-hover-bg);
+  color: var(--lj-tabs-color-hover);
+}
+
+.systembar-tab--active {
+  background: var(--lj-tabs-active-bg);
+  color: var(--lj-tabs-active-color);
+  font-weight: 600;
+}
+
+/* ── Center: title + logo (drag) ── */
 .systembar-drag {
   flex: 1;
   display: flex;
@@ -146,17 +235,13 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
-.systembar--mac .systembar-drag {
-  padding-left: 78px;
-  padding-right: var(--lj-space-5);
-}
-
 .systembar-title {
   font-weight: var(--lj-weight-medium);
   letter-spacing: 0.02em;
   opacity: 0.95;
 }
 
+/* ── Right: tools (no-drag) ── */
 .systembar-tools {
   display: flex;
   align-items: stretch;
@@ -172,6 +257,7 @@ onBeforeUnmount(() => {
   background: var(--lj-white-alpha-18);
 }
 
+/* ── Window controls Win/Linux (no-drag) ── */
 .systembar-controls {
   display: flex;
   align-items: stretch;

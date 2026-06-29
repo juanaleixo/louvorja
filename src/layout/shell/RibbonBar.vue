@@ -1,48 +1,50 @@
 <template>
   <div class="ribbon">
-    <!-- Linha de tabs -->
-    <div class="ribbon-tabs-row">
-      <AppMenu class="ribbon-app-menu" />
+    <!-- Linha de tabs: só no web/PWA (desktop usa SystemBar) -->
+    <template v-if="!Platform.isDesktop">
+      <div class="ribbon-tabs-row">
+        <AppMenu class="ribbon-app-menu" />
 
-      <div class="ribbon-tabs" role="tablist" :aria-label="$t('shell.ribbon_nav')">
-        <button
-          v-for="page in visiblePages"
-          :id="'ribbon-tab-' + page.id"
-          :key="page.id"
-          type="button"
-          role="tab"
-          class="ribbon-tab"
-          :class="{
-            'ribbon-tab--active': activePage === page.id,
-            'ribbon-tab--ctx': page.contextual,
-            'ribbon-tab--ctx-active': page.contextual && activePage === page.id,
-          }"
-          :aria-selected="activePage === page.id"
-          aria-controls="ribbon-tabpanel"
-          @click.stop="selectPage(page.id)"
-        >
-          {{ $t(page.title) }}
-        </button>
-      </div>
+        <div class="ribbon-tabs" role="tablist" :aria-label="$t('shell.ribbon_nav')">
+          <button
+            v-for="page in visiblePages"
+            :id="'ribbon-tab-' + page.id"
+            :key="page.id"
+            type="button"
+            role="tab"
+            class="ribbon-tab"
+            :class="{
+              'ribbon-tab--active': ribbonStore.activePage === page.id,
+              'ribbon-tab--ctx': page.contextual,
+              'ribbon-tab--ctx-active': page.contextual && ribbonStore.activePage === page.id,
+            }"
+            :aria-selected="ribbonStore.activePage === page.id"
+            aria-controls="ribbon-tabpanel"
+            @click.stop="ribbonStore.selectPage(page.id)"
+          >
+            {{ $t(page.title) }}
+          </button>
+        </div>
 
-      <div class="ribbon-tools">
-        <div v-if="!Platform.isDesktop" class="ribbon-tools-web">
-          <ShellTools />
+        <div class="ribbon-tools">
+          <div class="ribbon-tools-web">
+            <ShellTools />
+          </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <div
       id="ribbon-tabpanel"
       class="ribbon-body"
       role="tabpanel"
       tabindex="0"
-      :aria-labelledby="'ribbon-tab-' + activePage"
+      :aria-labelledby="'ribbon-tab-' + ribbonStore.activePage"
       :class="{ 'ribbon-body--ctx': isContextualActive }"
     >
       <RibbonGroup
         v-for="group in activeGroups"
-        :key="`${activePage}:${group.id}`"
+        :key="`${ribbonStore.activePage}:${group.id}`"
         :title="$t(group.title)"
       >
         <template v-if="group.customCategory">
@@ -52,7 +54,10 @@
           />
         </template>
         <template v-else>
-          <template v-for="btn in group.buttons" :key="`${activePage}:${group.id}:${btn.id}`">
+          <template
+            v-for="btn in group.buttons"
+            :key="`${ribbonStore.activePage}:${group.id}:${btn.id}`"
+          >
             <component
               :is="getCustomButtonComponent(btn, group)"
               v-if="btn.customButton"
@@ -170,6 +175,7 @@ import ShellTools from "./ShellTools.vue";
 import { useShell } from "@/composables/useShell";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useDisplays } from "@/composables/useDisplays";
+import { useRibbonStore } from "@/stores/ribbonStore";
 import Platform from "@/helpers/Platform";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
@@ -183,7 +189,7 @@ import { getRibbonModules } from "@/config/modules";
 const { t } = useI18n();
 const shell = useShell();
 const modules = getRibbonModules;
-const activePage = ref("collections");
+const ribbonStore = useRibbonStore();
 
 const inputValues = reactive({});
 
@@ -227,7 +233,7 @@ loadDynamicOptions();
 
 function getModuleIdForGroup(group) {
   if (group.modules?.length) return group.modules[0];
-  const page = modules.find((p) => p.id === activePage.value);
+  const page = modules.find((p) => p.id === ribbonStore.activePage);
   if (page?.activeOnModules?.length) return page.activeOnModules[0];
   return page?.defaultModule || null;
 }
@@ -300,25 +306,16 @@ function executeInputAction(btn) {
   }
 }
 
-const activeModuleId = computed(() => $appdata.get("active_module"));
-
 const openModuleIds = computed(() => {
   const modules = $appdata.get("modules") || {};
   return Object.keys(modules).filter((id) => modules[id]?.show === true);
 });
 
-const visiblePages = computed(() =>
-  modules.filter((p) => {
-    if (!p.contextual) return true;
-    if (!activeModuleId.value) return false;
-
-    return (p.activeOnModules || []).includes(activeModuleId.value);
-  })
-);
-
-const activePageObj = computed(() => modules.find((p) => p.id === activePage.value));
+const activePageObj = computed(() => modules.find((p) => p.id === ribbonStore.activePage));
 const activeGroups = computed(() => activePageObj.value?.groups || []);
 const isContextualActive = computed(() => !!activePageObj.value?.contextual);
+
+const visiblePages = computed(() => ribbonStore.visiblePages);
 
 function selectContextualPageForModule(moduleId) {
   if (!moduleId) return;
@@ -326,7 +323,7 @@ function selectContextualPageForModule(moduleId) {
   const ctxPage = modules.find((p) => p.contextual && (p.activeOnModules || []).includes(moduleId));
 
   if (ctxPage) {
-    activePage.value = ctxPage.id;
+    ribbonStore.selectPage(ctxPage.id);
   }
 }
 
@@ -337,20 +334,17 @@ watch(openModuleIds, (now) => {
     const stillVisible = (cur.activeOnModules || []).some((id) => now.includes(id));
 
     if (!stillVisible) {
-      activePage.value = "collections";
+      ribbonStore.selectPage("collections");
     }
   }
 });
 
-watch(activeModuleId, (moduleId) => {
-  selectContextualPageForModule(moduleId);
-});
-
-function selectPage(id) {
-  activePage.value = id;
-  const page = modules.find((p) => p.id === id);
-  if (page?.defaultModule) $modules.open(page.defaultModule);
-}
+watch(
+  computed(() => $appdata.get("active_module")),
+  (moduleId) => {
+    selectContextualPageForModule(moduleId);
+  }
+);
 
 function isModuleOpen(moduleId) {
   return moduleId ? openModuleIds.value.includes(moduleId) : false;
@@ -464,7 +458,7 @@ function executeButton(btn) {
   // devem vir primeiro na alternância para evitar match parcial.
   if (btn.action) {
     const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search|media_deck)_(.+)$/
+      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search|media_deck|overlay)_(.+)$/
     );
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
@@ -478,7 +472,7 @@ function executeButton(btn) {
 
 useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
   if (payload?.pageId) {
-    selectPage(payload.pageId);
+    ribbonStore.selectPage(payload.pageId);
   }
 });
 </script>
