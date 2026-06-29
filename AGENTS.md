@@ -32,12 +32,13 @@ Sistema de apresentação de letras de músicas e conteúdo bíblico para uso em
 
 ## Estrutura
 
-```
+```text
 src/
 ├── App.vue
 ├── main.js
 ├── i18n.js
 ├── assets/
+│   └── audio/sabbath-school/  # Sons de alerta (opening, five_minutes, one_minute)
 ├── components/              # Componentes reutilizáveis globais
 │   ├── Player.vue
 │   ├── FullscreenPlayer.vue
@@ -85,13 +86,18 @@ src/
 │   ├── useShell.ts          # Dispatcher de eventos do shell
 │   ├── useSlideStyle.ts     # Estilos centralizados de slides
 │   └── useSlides.ts         # Navegação de slides c/ bind de áudio
+├── constants/
+│   ├── Bible.ts              # Constantes bíblicas
+│   ├── Projection.ts         # Constantes de projeção
+│   └── UserDataKeys.js       # Chaves de user_data (liturgia, timer_worship)
+├── enums/                   # Enums TypeScript (MediaEnum, etc.)
 ├── helpers/                 # Utilitários e serviços
 │   ├── Alert.js             # Diálogos e alertas
 │   ├── AppData.ts           # Estado global de sessão (Pinia)
 │   ├── AudioBeep.ts         # Web Audio API para alarmes
 │   ├── AudioLibrary.ts      # Biblioteca de áudio deduplicada (SHA-256 + IndexedDB)
 │   ├── Broadcast.ts         # BroadcastChannel("louvorja") — multi-listener
-│   ├── BroadcastTypes.ts    # Tipos e constantes de broadcast (33+ tipos)
+│   ├── BroadcastTypes.ts    # Tipos e constantes de broadcast (51+ tipos)
 │   ├── CommandRegistry.js   # Registro de comandos (Modules + useMedia)
 │   ├── CustomSongs.ts       # CRUD de músicas personalizadas (IndexedDB)
 │   ├── Database.ts          # Carregamento de JSONs do banco c/ cache de sessão
@@ -169,7 +175,8 @@ src/
 │   ├── slide_editor/
 │   ├── stopwatch/
 │   ├── theme/
-│   └── timer/
+│   ├── timer/
+│   └── timer_worship/       # Timer de culto c/ alertas sonoros e ações ao final
 ├── plugins/                 # Plugins Vue (Vuetify, etc.)
 ├── router/                  # Rotas
 ├── stores/                  # Pinia stores
@@ -201,7 +208,7 @@ src/
 
 Cada módulo em `src/modules/<id>/` segue esta estrutura:
 
-```
+```text
 <id>/
 ├── manifest.json        # Metadados do módulo
 ├── index.js             # Registra o módulo (messages, customization)
@@ -213,6 +220,7 @@ Cada módulo em `src/modules/<id>/` segue esta estrutura:
 ```
 
 **manifest.json mínimo:**
+
 ```json
 {
   "id": "module_id",
@@ -225,6 +233,66 @@ Cada módulo em `src/modules/<id>/` segue esta estrutura:
 ```
 
 **Chaves de tradução** ficam em `modules.<id>.<key>` no i18n global.
+
+**Configuração da Ribbon** de cada módulo fica em `src/config/modules/modules/<id>.ts`:
+
+```ts
+// src/config/modules/modules/timer_worship.ts
+import type { RibbonPage } from "@/types/Ribbon"
+
+export const contextualPages: RibbonPage[] = [
+  {
+    id: "ctx_<id>",
+    title: "modules.<id>.ribbon.title_ctx",
+    contextual: true,
+    activeOnModules: ["<id>"],
+    defaultModule: null,
+    groups: [
+      { id: "ctx_<id>_actions", title: "ribbon.groups.actions", buttons: [...] },
+    ],
+  },
+]
+
+export const module: Module = {
+  id: "<id>",
+  title: "modules.<id>.title",
+  icon: "mdi-...",
+  color: "#...",
+  category: ModuleCategoryEnum.LIVE,
+  group: ModuleGroupEnum.CHURCH,
+  order: 1,
+}
+```
+
+### dependsOnOption
+
+Botões da ribbon podem usar `dependsOnOption` para só aparecer quando um `select` tiver determinado valor:
+
+```ts
+{
+  id: "timer_worship_file_audio",
+  icon: ICONS.UI.PLAYER,
+  label: "...",
+  action: "...",
+  dependsOnOption: { path: "modules.timer_worship.timer_end_action", value: "audio" },
+}
+```
+
+O `RibbonBar.vue` usa `v-show="isDependencyMet(btn)"` que compara `$userdata.get(btn.dependsOnOption.path)` com `btn.dependsOnOption.value`.
+
+### Config Sonic
+
+Arquivo `src/config/SabbathSchool.ts` centraliza os sons de alerta da Escola Sabatina:
+
+```ts
+SABBATH_SCHOOL_SOUNDS: {
+  OPENING:     { id: "opening",       label: "...", url: "..." },
+  FIVE_MINUTES: { id: "five_minutes",  label: "...", url: "..." },
+  ONE_MINUTE:  { id: "one_minute",    label: "...", url: "..." },
+}
+```
+
+Uso no `timer_worship`: `playSoundById(SABBATH_SCHOOL_SOUNDS.OPENING.id)` — busca por `Object.values().find(s => s.id === id)`.
 
 ## Estado Global
 
@@ -244,6 +312,7 @@ $userdata.set("theme", "dark");
 ```
 
 **Estrutura de `user_data` no store:**
+
 ```js
 {
   theme: string, 
@@ -360,12 +429,13 @@ $broadcast.send("slide_change", { slide_index: 0, ... });
 
 Os dados são arquivos JSON servidos pelo backend configurado em `.env`:
 
-```
+```text
 VITE_URL_DATABASE=https://...
 VITE_URL_FILES=https://...
 ```
 
 **Padrão de carregamento** (com cache de sessão via `Database.js`):
+
 ```js
 import $database from "@/helpers/Database";
 const musics = await $database.get("pt_musics");
@@ -400,6 +470,7 @@ No Electron, o cache vai para `userData/json_db/` via protocolo `louvorja://json
 O sistema original em Delphi (`louvorja-desktop`) possuía 33 módulos, banco SQLite com 74+ queries, servidor HTTP embarcado, sincronismo de áudio BASS24 e suporte a múltiplos monitores. Todas as 7 fases de migração foram concluídas.
 
 ### FASE 1 — Core de Músicas ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Favoritos (lista + reordenação) | `fmFavoritos.pas` + `favoritos.xml` | ✅ módulo `favorites` |
@@ -409,15 +480,17 @@ O sistema original em Delphi (`louvorja-desktop`) possuía 33 módulos, banco SQ
 | Bíblia completa | `fmMonitorBiblia` + versões PT/ES | ✅ módulo `bible` |
 
 ### FASE 2 — Liturgia / Gerenciamento de Culto ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Planejador de culto com itens | `fmLiturgia.pas` | ✅ módulo `liturgy` |
 | Tipos de item (música, anotação, site, arquivo) | `fmItensAgendados.pas` | ✅ 6 tipos + drag/drop |
 | Salvar/carregar liturgia | Formato `.ja` proprietário | ✅ export/import JSON |
 | Cronômetro por item da liturgia | `fmMonitorCronometro.pas` | ✅ integrado no `liturgy` |
-| Cronômetro Escola Sabatina | `fmMonitorCronometroCulto.pas` | ✅ módulo `stopwatch` |
+| Cronômetro Escola Sabatina | `fmMonitorCronometroCulto.pas` | ✅ módulo `timer_worship` (evolução do `stopwatch`) |
 
 ### FASE 3 — Sistema de Projeção Multi-Janela ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Stage display (slide atual + próximo) | `fmMusicaRetorno.pas` | ✅ `/projection/return` |
@@ -427,6 +500,7 @@ O sistema original em Delphi (`louvorja-desktop`) possuía 33 módulos, banco SQ
 | Identificação de monitores | `fmIdentificaMonitores.pas` | ✅ `electron/main/displays.js` |
 
 ### FASE 4 — Transmissão para OBS/Vmix ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Captura do slide atual para OBS | `/musica?transmissao` | ✅ `/obs` |
@@ -434,6 +508,7 @@ O sistema original em Delphi (`louvorja-desktop`) possuía 33 módulos, banco SQ
 | Captura do versículo para OBS | `/biblia?transmissao` | ✅ `/obs/bible` |
 
 ### FASE 5 — Sorteios e Utilitários Avançados ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Sorteador de números | `fmMonitorSorteio.pas` | ✅ módulo `draw` |
@@ -444,6 +519,7 @@ O sistema original em Delphi (`louvorja-desktop`) possuía 33 módulos, banco SQ
 | Doxologia | seção doxologia do Delphi | ⚠️ WIP `modules/doxology/` |
 
 ### FASE 6 — Editor de Slides ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Criar/editar slides customizados | `fmEditorSlides.pas` | ✅ módulo `slide_editor` |
@@ -452,6 +528,7 @@ O sistema original em Delphi (`louvorja-desktop`) possuía 33 módulos, banco SQ
 | Sincronismo com áudio | Marcação por slide | ⚠️ roadmap |
 
 ### FASE 7 — Atualização e Download de Coletâneas ✅
+
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Verificação de versão do banco | API `louvorja.com.br/params` | ✅ |
@@ -509,7 +586,7 @@ npm run validate:manifests   # Valida manifest.json de todos os módulos
 
 ### Arquitetura
 
-```
+```text
 ELECTRON MAIN (Node.js)
   ├── main.cjs              # Entry point (791 linhas) — IPC handlers, menus, janelas
   ├── preload.cjs           # contextBridge → window.louvorjaApi (409 linhas)
@@ -546,7 +623,7 @@ ELECTRON MAIN (Node.js)
 ### Roadmap Desktop (D0–D10)
 
 | Fase | Objetivo | Duração | Status |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **D0** | Bootstrap Electron — empacota Vue em janela nativa | 1-2 dias | ✅ |
 | **D1** | UserData persistente em `app.getPath("userData")` | 1 dia | ✅ |
 | **D2** | Cache JSON + protocolo `louvorja://` | 1-2 dias | ✅ |
@@ -569,7 +646,8 @@ export default {
 };
 ```
 
-Helpers atuais (`Storage`, `Path`, `Popup`) detectam `Platform.isDesktop` e delegam para `window.louvorjaApi.*` quando rodando em Electron, ou usam fallback web.
+Helpers atuais (`Storage`, `Path`, `Popup`) detectam `Platform.isDesktop` e delegam para
+`window.louvorjaApi.*` quando rodando em Electron, ou usam fallback web.
 
 ### Compatibilidade com Servidor LouvorJA Delphi
 
