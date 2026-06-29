@@ -1,5 +1,5 @@
 <template>
-  <v-icon v-if="isMdi" :icon="icon" v-bind="mergedMdiAttrs" />
+  <v-icon v-if="isMdi" :icon="icon" v-bind="mergedMdiAttrs" class="lj-icon" />
   <span
     v-else-if="svgContent"
     class="lj-icon"
@@ -123,9 +123,11 @@ const svgStyle = computed(() => {
 .lj-icon {
   flex-shrink: 0;
   line-height: 0;
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.35));
 }
 .lj-icon svg {
   display: block;
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.35));
 }
 .lj-icon--start {
   margin-right: 0.5em;

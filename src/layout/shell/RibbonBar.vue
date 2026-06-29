@@ -122,8 +122,23 @@
               />
               <span>{{ $t(btn.label) }}</span>
             </label>
+            <div v-else-if="btn.type === 'switch'" class="ribbon-switch">
+              <v-switch
+                :model-value="getCheckValue(btn)"
+                density="compact"
+                size="x-small"
+                hide-details
+                :label="$t(btn.label)"
+                color="primary"
+                class="ribbon-field-switch"
+                true-icon="mdi-check"
+                false-icon="mdi-close"
+                @update:model-value="setCheckValue(btn, $event)"
+              />
+            </div>
             <RibbonButton
               v-else
+              v-show="isDependencyMet(btn)"
               :icon="btn.icon"
               :icon-color="btn.color"
               :label="$t(btn.label)"
@@ -445,9 +460,11 @@ function executeButton(btn) {
   // Pattern genérico: action "<module>_<verb>" → MODULE_RIBBON_ACTION
   // Suporta os módulos novos (counter, draw, name_draw, clock, stopwatch,
   // message_board) sem precisar de tabela explícita.
+  // ATENÇÃO: módulos com prefixos compartilhados (ex: timer_worship → timer)
+  // devem vir primeiro na alternância para evitar match parcial.
   if (btn.action) {
     const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search)_(.+)$/
+      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search)_(.+)$/
     );
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
@@ -673,8 +690,8 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
 .ribbon-field-checkbox {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 5px;
+  padding: 2px 2px;
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
@@ -683,5 +700,12 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
 
 .ribbon-field-checkbox input {
   margin: 0;
+}
+
+.ribbon-switch {
+  padding: 1px;
+}
+.ribbon-field-switch {
+  padding: 0;
 }
 </style>

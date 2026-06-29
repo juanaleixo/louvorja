@@ -18,7 +18,7 @@
         {{ $t("options.slides.title") }}
       </v-tab>
       <v-tab value="videos">
-        <v-icon :icon="ICONS.UI.YOUTUBE"></v-icon>
+        <v-icon :icon="ICONS.MEDIA.YOUTUBE"></v-icon>
         {{ $t("options.videos.title") }}
       </v-tab>
       <v-tab value="player">

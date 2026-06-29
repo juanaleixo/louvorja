@@ -23,13 +23,14 @@ export interface RibbonButton {
   action?: string
   color?: string
   size?: "small"
-  type?: "screen" | "checkbox" | "action_input" | "select"
+  type?: "screen" | "checkbox" | "switch" | "action_input" | "select"
   feature?: string
   route?: string
   optionKey?: string
   placeholder?: string
   options?: { value: string; label: string }[]
   dependsOn?: string
+  dependsOnOption?: { path: string; value: string }
   customCategory?: string
   modules?: string[]
 }

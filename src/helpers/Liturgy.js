@@ -2,11 +2,11 @@
 import $userdata from "@/helpers/UserData";
 import $dev from "@/helpers/Dev";
 import {
-  KEY_ACTIVE_DAY,
-  KEY_CATEGORIES,
-  KEY_DAY_NOTES,
-  KEY_DAYS,
-  KEY_SCHEDULED,
+  KEY_LITURGY_ACTIVE_DAY,
+  KEY_LITURGY_CATEGORIES,
+  KEY_LITURGY_DAY_NOTES,
+  KEY_LITURGY_DAYS,
+  KEY_LITURGY_SCHEDULED,
 } from "@/constants/UserDataKeys";
 
 // Legacy keys (pré-day-based)
@@ -52,18 +52,18 @@ function clampDay(i) {
 export default {
   /* ---------------- Dia ativo ---------------- */
   getActiveDay() {
-    const stored = $userdata.get(KEY_ACTIVE_DAY, null);
+    const stored = $userdata.get(KEY_LITURGY_ACTIVE_DAY, null);
     if (stored == null) return todayDayIndex();
     return clampDay(stored);
   },
 
   setActiveDay(day) {
-    $userdata.set(KEY_ACTIVE_DAY, clampDay(day));
+    $userdata.set(KEY_LITURGY_ACTIVE_DAY, clampDay(day));
   },
 
   /* ---------------- Itens da liturgia (por dia) ---------------- */
   _dayKey(day) {
-    return `${KEY_DAYS}.${clampDay(day)}`;
+    return `${KEY_LITURGY_DAYS}.${clampDay(day)}`;
   },
 
   /** Migra itens legados para o modelo por dia.
@@ -243,11 +243,11 @@ export default {
 
   /* ---------------- Anotações por dia ---------------- */
   getDayNote(day) {
-    return $userdata.get(`${KEY_DAY_NOTES}.${clampDay(day)}`, "");
+    return $userdata.get(`${KEY_LITURGY_DAY_NOTES}.${clampDay(day)}`, "");
   },
 
   setDayNote(day, html) {
-    $userdata.set(`${KEY_DAY_NOTES}.${clampDay(day)}`, html ?? "");
+    $userdata.set(`${KEY_LITURGY_DAY_NOTES}.${clampDay(day)}`, html ?? "");
   },
 
   /* ---------------- Helpers de criação por tipo ---------------- */
@@ -334,11 +334,11 @@ export default {
    * Replica DM.cdsCategoriasItensAgendados + DM.cdsItensAgendados do Delphi.
    */
   scheduledCategories() {
-    return $userdata.get(KEY_CATEGORIES, []);
+    return $userdata.get(KEY_LITURGY_CATEGORIES, []);
   },
 
   setScheduledCategories(list) {
-    $userdata.set(KEY_CATEGORIES, list);
+    $userdata.set(KEY_LITURGY_CATEGORIES, list);
   },
 
   addScheduledCategory(nome) {
@@ -361,11 +361,11 @@ export default {
   },
 
   scheduledItems() {
-    return $userdata.get(KEY_SCHEDULED, []);
+    return $userdata.get(KEY_LITURGY_SCHEDULED, []);
   },
 
   setScheduledItems(list) {
-    $userdata.set(KEY_SCHEDULED, list);
+    $userdata.set(KEY_LITURGY_SCHEDULED, list);
   },
 
   addScheduledItemEntry(categoria, data, nome, arquivo, arquivoInfo = "E") {

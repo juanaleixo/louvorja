@@ -21,11 +21,11 @@ function loadUserDataKeys() {
   }
 }
 const keys = loadUserDataKeys();
-if (!keys || !keys.KEY_DAYS || !keys.KEY_ACTIVE_DAY) {
+if (!keys || !keys.KEY_LITURGY_DAYS || !keys.KEY_LITURGY_ACTIVE_DAY) {
   console.error("[routes] UserDataKeys.js não encontrado ou incompleto");
   throw new Error("UserDataKeys.js missing or incomplete");
 }
-const { KEY_DAYS, KEY_ACTIVE_DAY } = keys;
+const { KEY_LITURGY_DAYS, KEY_LITURGY_ACTIVE_DAY } = keys;
 
 /**
  * Estado em memória para sorteios (replicado entre requests).
@@ -299,12 +299,12 @@ function setupRoutes(app, { mainWindow, getUserData }) {
 
     // Caminhos fixos conforme solicitado pelo usuário
 
-    const allDays = getByPath(userData, KEY_DAYS, {});
+    const allDays = getByPath(userData, KEY_LITURGY_DAYS, {});
     let items = allDays[day] || [];
 
     // Se a lista do dia estiver vazia, tenta pegar do dia configurado como ativo no sistema
     if (items.length === 0) {
-      const activeDay = getByPath(userData, KEY_ACTIVE_DAY, day);
+      const activeDay = getByPath(userData, KEY_LITURGY_ACTIVE_DAY, day);
       if (activeDay !== day) {
         items = allDays[activeDay] || [];
         return res.json({ status: "ok", day: activeDay, items, is_active_day: true });

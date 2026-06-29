@@ -11,9 +11,15 @@
       </aside>
       <div class="d-flex flex-column align-center pa-4 flex-grow-1" style="gap: 16px">
         <!-- Seletor de modo -->
-        <v-btn-toggle v-model="mode" mandatory density="compact" divided>
-          <v-btn value="up" size="small">{{ t("mode.up") }}</v-btn>
-          <v-btn value="down" size="small">{{ t("mode.down") }}</v-btn>
+        <v-btn-toggle v-model="mode" color="primary" mandatory density="compact" divided>
+          <v-btn value="down" size="small">
+            <Icon icon="mdi-rotate-left" class="mr-2" />
+            {{ t("mode.down") }}
+          </v-btn>
+          <v-btn value="up" size="small">
+            {{ t("mode.up") }}
+            <Icon icon="mdi-rotate-right" class="ml-2" />
+          </v-btn>
         </v-btn-toggle>
 
         <!-- Horário base/alvo -->
@@ -67,6 +73,7 @@ import { playBeep } from "@/helpers/AudioBeep";
 import AppData from "@/helpers/AppData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import Icon from "@/components/Icon.vue";
 
 const { restoreFormat, show_format } = useModuleFormat("timer", manifest);
 

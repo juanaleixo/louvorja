@@ -452,7 +452,8 @@
       "main_text": "Texto Principal",
       "aux_text": "Texto Auxiliar",
       "text_options": "Opções de Texto",
-      "replicate_text": "Replicar Formatação de Texto"
+      "replicate_text": "Replicar Formatação de Texto",
+      "sound": "Som"
     },
     "fields": {
       "monitor": "Monitor",
