@@ -7,7 +7,7 @@ import {
   KEY_LITURGY_DAY_NOTES,
   KEY_LITURGY_DAYS,
   KEY_LITURGY_SCHEDULED,
-} from "@/constants/UserDataKeys";
+} from "@constants/UserDataKeys";
 
 // Legacy keys (pré-day-based)
 const KEY_LEGACY_ITEMS = "modules.liturgy.items";

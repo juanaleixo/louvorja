@@ -51,7 +51,7 @@
               @click="addToPlaylist(file)"
             >
               <v-img
-                v-if="file.type === 'image' && file.thumb"
+                v-if="file.thumb"
                 :src="file.thumb"
                 class="media-grid-item-thumb"
                 cover
@@ -114,11 +114,7 @@
               @click="playIndex(i)"
             >
               <div class="media-playlist-item-icon">
-                <v-icon
-                  :icon="item.typeIcon"
-                  :color="item.type === 'youtube' ? 'red' : 'grey'"
-                  size="18"
-                />
+                <v-icon :icon="item.typeIcon" color="grey" size="18" />
               </div>
               <div class="media-playlist-item-name">{{ item.name }}</div>
               <div class="media-playlist-item-actions">
@@ -149,11 +145,7 @@
       <!-- Player bar -->
       <div v-if="isPlaying && currentItem" class="media-playerbar">
         <div class="media-playerbar-info">
-          <v-icon
-            :icon="currentItem.typeIcon"
-            :color="currentItem.type === 'youtube' ? 'red' : undefined"
-            size="16"
-          />
+          <v-icon :icon="currentItem.typeIcon" size="16" />
           <span class="media-playerbar-name">{{ currentItem.name }}</span>
           <span class="media-playerbar-index">{{ currentIndex + 1 }} / {{ playlist.length }}</span>
         </div>
@@ -231,6 +223,8 @@ import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import $media from "@/composables/useMedia";
+import $appdata from "@/helpers/AppData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import { openDB, type IDBPDatabase } from "idb";
@@ -243,7 +237,7 @@ interface MediaFile {
   id: string;
   name: string;
   path: string;
-  type: "image" | "video" | "youtube";
+  type: "image" | "video";
   thumb?: string;
   addedAt: number;
   data?: ArrayBuffer;
@@ -254,7 +248,7 @@ interface PlaylistItem {
   id: string;
   name: string;
   path: string;
-  type: "image" | "video" | "youtube";
+  type: "image" | "video";
   typeIcon: string;
 }
 
@@ -343,6 +337,66 @@ async function readFileData(file: File): Promise<{ data: ArrayBuffer; mime: stri
 }
 
 /* ------------------------------------------------------------------ */
+/*  Video thumbnail generation                                         */
+/* ------------------------------------------------------------------ */
+
+function generateVideoThumbnail(videoUrl: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "metadata";
+    video.muted = true;
+
+    let cleanup: (() => void) | null = null;
+
+    const done = (thumb?: string) => {
+      if (cleanup) cleanup();
+      video.remove();
+      resolve(thumb);
+    };
+
+    cleanup = () => {
+      video.onloadeddata = null;
+      video.onseeked = null;
+      video.onerror = null;
+    };
+
+    video.onloadeddata = () => {
+      video.currentTime = Math.max(0, Math.min(1, (video.duration || 1) - 0.25));
+    };
+
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(160 / video.videoWidth, 90 / video.videoHeight, 1);
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        done(canvas.toDataURL("image/jpeg", 0.6));
+      } else {
+        done();
+      }
+    };
+
+    video.onerror = () => done();
+
+    video.src = videoUrl;
+    video.load();
+  });
+}
+
+async function generateAndStoreThumb(file: MediaFile): Promise<void> {
+  if (file.thumb) return;
+  const url = resolvePath(file.path);
+  const thumb = await generateVideoThumbnail(url);
+  if (thumb) {
+    file.thumb = thumb;
+    await saveFile(file);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Drag & drop                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -390,6 +444,7 @@ async function onDrop(e: DragEvent): Promise<void> {
       if (isImage) file.thumb = buildThumbPath(filePath);
       await saveFile(file);
       files.value.unshift(file);
+      if (isVideo) generateAndStoreThumb(file);
     } else {
       const isImage = f.type.startsWith("image/");
       const isVideo = f.type.startsWith("video/");
@@ -410,6 +465,7 @@ async function onDrop(e: DragEvent): Promise<void> {
       createdObjectUrls.set(fileId, path);
       await saveFile(file);
       files.value.unshift(file);
+      if (isVideo) generateAndStoreThumb(file);
     }
   }
 }
@@ -504,6 +560,7 @@ async function addFiles(): Promise<void> {
       if (isImage) file.thumb = buildThumbPath(rawPath);
       await saveFile(file);
       files.value.unshift(file);
+      if (isVideo) generateAndStoreThumb(file);
     }
   } else {
     fileInput.value?.click();
@@ -531,6 +588,7 @@ async function onFilesSelected(e: Event): Promise<void> {
       if (isImage) file.thumb = buildThumbPath(filePath);
       await saveFile(file);
       files.value.unshift(file);
+      if (isVideo) generateAndStoreThumb(file);
     } else {
       const isImage = f.type.startsWith("image/");
       const isVideo = f.type.startsWith("video/");
@@ -551,6 +609,7 @@ async function onFilesSelected(e: Event): Promise<void> {
       createdObjectUrls.set(fileId, path);
       await saveFile(file);
       files.value.unshift(file);
+      if (isVideo) generateAndStoreThumb(file);
     }
   }
   input.value = "";
@@ -566,8 +625,7 @@ function addToPlaylist(file: MediaFile): void {
     name: file.name,
     path: file.path,
     type: file.type,
-    typeIcon:
-      file.type === "image" ? "mdi-image" : file.type === "video" ? "mdi-video" : "mdi-youtube",
+    typeIcon: file.type === "image" ? "mdi-image" : "mdi-video",
   };
   playlist.value.push(item);
 }
@@ -603,25 +661,20 @@ async function playIndex(index: number): Promise<void> {
   isPlaying.value = true;
 
   const url = resolvePath(item.path);
-  const type: "image" | "video" | "youtube" = item.type;
+  const isVideo = item.type === "video";
 
-  if (type === "youtube") {
-    localStorage.setItem(
-      "lj_youtube_projection",
-      JSON.stringify({ url, type: "youtube", title: item.name })
-    );
-  } else {
-    localStorage.setItem("lj_file_projection", JSON.stringify({ url, type, title: item.name }));
-  }
+  localStorage.setItem(
+    "lj_file_projection",
+    JSON.stringify({ url, type: item.type, title: item.name })
+  );
 
-  if (currentIndex.value === index || !isPlaying.value) {
-    await openFileProjectionWindows();
-  }
+  await openFileProjectionWindows();
 
-  if (type === "youtube") {
-    $broadcast.send(BROADCAST_TYPE.VIDEO_PROJECTION, { url, type: "youtube", title: item.name });
-  } else {
-    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type, title: item.name });
+  $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type: item.type, title: item.name });
+
+  if (isVideo) {
+    $media.openAudio({ url, title: item.name });
+    $appdata.set("modules.media.config.video_file", true);
   }
 }
 
@@ -649,9 +702,10 @@ function stop(): void {
   isPlaying.value = false;
   currentIndex.value = -1;
   localStorage.removeItem("lj_file_projection");
-  localStorage.removeItem("lj_youtube_projection");
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
   closeProjectionWindows();
+  $appdata.set("modules.media.config.video_file", false);
+  $media.close();
 }
 
 /* ------------------------------------------------------------------ */
@@ -706,6 +760,9 @@ onMounted(async () => {
       if (!f.thumb || !f.thumb.startsWith("louvorja://")) {
         f.thumb = buildThumbPath(f.path);
       }
+    }
+    if (f.type === "video" && !f.thumb) {
+      generateAndStoreThumb(f);
     }
   }
 });

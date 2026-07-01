@@ -151,6 +151,7 @@ import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { openDB } from "idb";
+import { MediaEnum } from "@/enums/MediaEnum";
 import {
   KEY_TIMER_WORSHIP_END_ACTION,
   KEY_TIMER_WORSHIP_END_ACTION_AUDIO,
@@ -160,7 +161,6 @@ import {
   KEY_TIMER_WORSHIP_SOUND_ONE_MIN,
   KEY_TIMER_WORSHIP_SOUND_START,
 } from "@/constants/UserDataKeys";
-import { MediaEnum } from "@/enums/MediaEnum";
 
 type TimerMode = "up" | "down";
 

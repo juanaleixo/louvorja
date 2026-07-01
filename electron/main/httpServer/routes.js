@@ -9,21 +9,21 @@ const fs = require("fs");
 function loadUserDataKeys() {
   // Caminho no build (dentro de resources/)
   const prodPath = process.resourcesPath
-    ? path.join(process.resourcesPath, "constants", "UserDataKeys.js")
+    ? path.join(process.resourcesPath, "constants", "UserDataKeys.ts")
     : null;
   if (prodPath && fs.existsSync(prodPath)) {
     return require(prodPath);
   }
   // Caminho em DEV (dentro do projeto)
-  const devPath = path.join(__dirname, "../../../src/constants/UserDataKeys.js");
+  const devPath = path.join(__dirname, "../../../src/constants/UserDataKeys.ts");
   if (fs.existsSync(devPath)) {
     return require(devPath);
   }
 }
 const keys = loadUserDataKeys();
 if (!keys || !keys.KEY_LITURGY_DAYS || !keys.KEY_LITURGY_ACTIVE_DAY) {
-  console.error("[routes] UserDataKeys.js não encontrado ou incompleto");
-  throw new Error("UserDataKeys.js missing or incomplete");
+  console.error("[routes] UserDataKeys.ts não encontrado ou incompleto");
+  throw new Error("UserDataKeys.ts missing or incomplete");
 }
 const { KEY_LITURGY_DAYS, KEY_LITURGY_ACTIVE_DAY } = keys;
 

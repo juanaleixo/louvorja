@@ -18,5 +18,4 @@ export const KEY_TIMER_WORSHIP_SOUND_ONE_MIN = "modules.timer_worship.sound_one_
 export const KEY_TIMER_WORSHIP_END_ACTION = "modules.timer_worship.timer_end_action";
 export const KEY_TIMER_WORSHIP_END_ACTION_AUDIO = "modules.timer_worship.timer_end_data_audio";
 export const KEY_TIMER_WORSHIP_END_ACTION_VIDEO = "modules.timer_worship.timer_end_data_video";
-export const KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO =
-  "modules.timer_worship.timer_end_data_online_video";
+export const KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO = "modules.timer_worship.timer_end_data_online_video";
