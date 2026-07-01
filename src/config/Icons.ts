@@ -204,7 +204,7 @@ export const ICONS = {
     NOTE_TEXT_OUTLINE: "mdi-note-text-outline",
     OPEN_IN_APP: "mdi-open-in-app",
     OPEN_IN_NEW: "mdi-open-in-new",
-    OPTIONS: "mdi-cog-outline",
+    OPTIONS: "mdi-cog",
     PLAYER: "mdi-music-circle-outline",
     PUZZLE: "mdi-puzzle",
     STAR: "mdi-star",
@@ -246,8 +246,16 @@ export const ICONS = {
    * Ícones SVG  da pasta /assets/icons usados no componente Icon
    */
   CUSTOM: {
+    AVT: "avt",
+    AVT_COLOR: "avt-color",
     CHURCH: "church",
+    DBV: "dbv",
+    DBV_COLOR: "dbv-color",
+    DBV_ALT: "dbv-alt",
+    DBV_ALT_COLOR: "dbv-alt-color",
     HASD: "hasd",
+    IASD: "iasd",
+    IASD_ROUND: "iasd-round",
     JA: "ja",
     KIDS: "kids",
     LITURGY: "liturgy",

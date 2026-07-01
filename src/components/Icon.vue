@@ -65,8 +65,10 @@ const svgContent = computed(() => {
 
   let svg = raw;
 
-  // Remove all hardcoded fill attributes so currentColor can cascade
-  svg = svg.replace(/\sfill="[^"]*"/g, "");
+  if (props.color) {
+    // Remove all hardcoded fill attributes so currentColor can cascade
+    svg = svg.replace(/\sfill="[^"]*"/g, "");
+  }
 
   // Remove fixed width/height from root svg, keep viewBox
   svg = svg.replace(/<svg([^>]*)>/, (_match, attrs: string) => {
