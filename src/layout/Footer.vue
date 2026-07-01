@@ -1,6 +1,5 @@
 <template>
-  <footer id="footer-bar" class="footer" :class="{ 'footer--player': hasPlayer }">
-    <!-- Modo Player Delphi-style -->
+  <footer id="footer-bar" class="footer" :class="{ 'footer--active': hasPlayer }">
     <div v-if="hasPlayer" class="player">
       <div class="player-title" :class="{ 'player-title--youtube': isYouTube }">
         <v-icon
@@ -255,24 +254,24 @@ onMounted(loadDBVersion);
 
 <style scoped>
 .footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--lj-player-height);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 10;
   background: var(--lj-footer-bg);
   border-top: 1px solid var(--lj-footer-border);
-  flex-grow: 0;
-  flex-shrink: 0;
   user-select: none;
   font-family: var(--lj-font-shell);
-  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Footer só aparece quando há player ativo (sem player = display:none, sem ocupar espaço) */
-.footer:not(.footer--player) {
-  display: none;
-}
-
-.footer--player {
-  height: var(--lj-player-height);
+.footer--active {
+  transform: translateY(0);
 }
 
 /* Player */
@@ -464,13 +463,13 @@ onMounted(loadDBVersion);
   top: 0;
   left: 0;
   bottom: 0;
-  background: linear-gradient(180deg, var(--lj-color-cover-gold), var(--lj-color-cover-gold-dark));
+  background: linear-gradient(180deg, var(--lj-navy-dark), var(--lj-navy-darker));
   transition: width 0.1s linear;
   box-shadow: 0 0 8px var(--lj-gold-alpha-60);
 }
 
 .player-gauge-fill--paused {
-  background: linear-gradient(180deg, var(--lj-warning), var(--lj-warning-dark));
+  background: linear-gradient(180deg, var(--lj-navy-active), var(--lj-navy));
   box-shadow: none;
   transition: width 0.1s linear;
 }

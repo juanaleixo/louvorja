@@ -680,6 +680,8 @@
     "playing_youtube": "Reproduzindo do YouTube",
     "player": {
       "first": "Primeiro slide",
+      "forward": "Avançar",
+      "rewind": "Retroceder",
       "prev": "Slide anterior",
       "play": "Reproduzir",
       "pause": "Pausar",

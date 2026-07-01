@@ -7,7 +7,7 @@
     <!-- PageControl interno (tabs dos módulos abertos) -->
     <OpenModulesTabs />
 
-    <v-main class="shell-main">
+    <v-main class="shell-main" :class="{ 'shell-main--player-active': playerActive }">
       <div class="shell-grid">
         <div class="shell-center">
           <div class="shell-content">
@@ -69,6 +69,14 @@ const ready = ref(false);
 
 const liturgyModuleOpen = computed(() => {
   return $appdata.get("modules.liturgy.show", false) === true;
+});
+
+const playerActive = computed(() => {
+  try {
+    return $appdata.get("modules.media.minimized", false) === true;
+  } catch (_) {
+    return false;
+  }
 });
 
 // Listeners externos (eventos globais que substituem acoplamento direto via shell._ref)
@@ -238,6 +246,11 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: padding-bottom 0.3s ease;
+}
+
+.shell-main--player-active {
+  padding-bottom: var(--lj-player-height);
 }
 .shell-grid {
   display: flex;

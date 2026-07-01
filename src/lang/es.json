@@ -680,6 +680,8 @@
     "playing_youtube": "Reproduciendo de YouTube",
     "player": {
       "first": "Primera diapositiva",
+      "forward": "Siguiente",
+      "rewind": "Rebobinar",
       "prev": "Diapositiva anterior",
       "play": "Reproducir",
       "pause": "Pausar",
