@@ -5,9 +5,6 @@ export const ICONS = {
   ACTIONS: {
     ADD: "mdi-plus",
     CANCEL: "mdi-close-circle",
-    CHECK: "mdi-check",
-    CHECK_CIRCLE: "mdi-check-circle",
-    CHECKED: "mdi-checkbox-marked",
     CLEAN: "mdi-eraser",
     CLOSE: "mdi-close",
     COPY: "mdi-content-copy",
@@ -78,7 +75,9 @@ export const ICONS = {
     SCRIPT: "mdi-script",
   },
   MEDIA: {
-    AUDIO: "mdi-audio",
+    ADD: "mdi-music-note-plus",
+    AUDIO: "mdi-music",
+    AUDIO_PLAYER: "mdi-disc-player",
     AUDIOBOOK: "mdi-audiobook",
     AUDIOBOOK_OUTLINE: "mdi-audiobook-outline",
     AUDIO_VIDEO: "mdi-audio-video",
@@ -92,6 +91,7 @@ export const ICONS = {
     YOUTUBE: "mdi-youtube",
   },
   MODULES: {
+    BACKGROUND_MUSIC: "mdi-disc-player",
     BIBLE: "mdi-book-open-variant",
     BIBLE_SEARCH: "mdi-book-search",
     CLOCK: "mdi-clock-outline",
@@ -178,6 +178,8 @@ export const ICONS = {
     BACK: "mdi-chevron-left",
     BROOM: "mdi-broom",
     BUG: "mdi-bug-outline",
+    CHECK: "mdi-check",
+    CHECKED: "mdi-checkbox-marked",
     CODE_BRACES: "mdi-code-braces",
     ERASER: "mdi-eraser",
     FILE: "mdi-file-outline",
@@ -220,6 +222,26 @@ export const ICONS = {
     WINDOW_MINIMIZE: "mdi-window-minimize",
     WINDOW_RESTORE: "mdi-window-restore",
   },
+  CATEGORY: {
+    MUSIC: "mdi-music-note-plus",
+    ACTION: "mdi-lightning-bolt",
+    WORSHIP: "mdi-church",
+    APPEAL: "mdi-account-heart-outline",
+    HAPPY: "mdi-emoticon-happy",
+    SAD: "mdi-emoticon-sad",
+    SUSPENSE: "mdi-alert-circle-outline",
+    CELEBRATION: "mdi-party-popper",
+    PEACE: "mdi-white-balance-sunny",
+    MEDITATION: "mdi-meditation",
+    NATURE: "mdi-leaf",
+    SOLEMN: "mdi-candle",
+    URGENT: "mdi-alert",
+    VICTORY: "mdi-trophy",
+    THANKSGIVING: "mdi-hand-peace",
+    INTRO: "mdi-play-circle-outline",
+    CLOSING: "mdi-stop-circle-outline",
+    JA: "ja",
+  },
   /**
    * Ícones SVG  da pasta /assets/icons usados no componente Icon
    */
@@ -229,6 +251,7 @@ export const ICONS = {
     JA: "ja",
     KIDS: "kids",
     LITURGY: "liturgy",
+    LJA_COLOR: "lja-color",
     NT: "nt",
   },
 };

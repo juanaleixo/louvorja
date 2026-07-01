@@ -4,6 +4,11 @@ import "vuetify/styles";
 import { createVuetify } from "vuetify";
 
 export default createVuetify({
+  /**
+   * Ao criar ou alterar um tema, alterar também o arquivo CSS TOKENS
+   * [data-theme=*] no arquivo
+   * src/assets/styles/tokens.css
+   */
   theme: {
     defaultTheme: "darkblue",
     themes: {
@@ -12,6 +17,7 @@ export default createVuetify({
         colors: {
           primary: "#29569b",
           secondary: "#5c8bc0",
+          danger: "#e74c3c",
         },
       },
       dark: {
@@ -19,6 +25,7 @@ export default createVuetify({
         colors: {
           primary: "#2e2e2e",
           secondary: "#555555",
+          danger: "#e74c3c",
         },
       },
       black: {
@@ -26,6 +33,7 @@ export default createVuetify({
         colors: {
           primary: "#2e2e2e",
           secondary: "#555555",
+          danger: "#e74c3c",
         },
       },
       blue: {
@@ -33,6 +41,7 @@ export default createVuetify({
         colors: {
           primary: "#0b3d62",
           secondary: "#1976d2",
+          danger: "#e74c3c",
         },
       },
       darkblue: {
@@ -40,6 +49,7 @@ export default createVuetify({
         colors: {
           primary: "#1b2a41",
           secondary: "#3b5998",
+          danger: "#e74c3c",
         },
       },
       green: {
@@ -47,6 +57,7 @@ export default createVuetify({
         colors: {
           primary: "#077568",
           secondary: "#43a047",
+          danger: "#e74c3c",
         },
       },
       orange: {
@@ -68,6 +79,7 @@ export default createVuetify({
         colors: {
           primary: "#e91e63",
           secondary: "#f48fb1",
+          danger: "#e74c3c",
         },
       },
       terracota: {
@@ -75,6 +87,7 @@ export default createVuetify({
         colors: {
           primary: "#722F37",
           secondary: "#F8C800",
+          danger: "#e74c3c",
         },
       },
     },

@@ -1,0 +1,8 @@
+{
+  "id": "background_sound",
+  "name": "Background Sound",
+  "description": "Tocador de músicas de fundo com categorias, fade e volume independente.",
+  "category": "live",
+  "icon": "mdi-music-note-plus",
+  "dependencies": []
+}

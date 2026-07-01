@@ -295,7 +295,7 @@ function executeInputAction(btn) {
   const val = inputValues[btn.id]?.trim();
   if (!val) return;
   const m = btn.action.match(
-    /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos)_(.+)$/
+    /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|background_sound)_(.+)$/
   );
   if (m) {
     Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
@@ -458,7 +458,7 @@ function executeButton(btn) {
   // devem vir primeiro na alternância para evitar match parcial.
   if (btn.action) {
     const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search|media_deck|overlay)_(.+)$/
+      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search|media_deck|overlay|background_sound)_(.+)$/
     );
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
