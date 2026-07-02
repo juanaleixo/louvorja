@@ -88,6 +88,8 @@ const isDesktop = computed(() => $appdata.get("is_desktop"));
 const isMac = computed(() => Platform.platform === "darwin");
 
 const activeModuleId = computed(() => {
+  const activeId = $appdata.get("active_module");
+  if (activeId) return activeId;
   const modules = $appdata.get("modules") || {};
   const skip = new Set(["media", "lyric", "album"]);
   const ids = Object.keys(modules).reverse();
