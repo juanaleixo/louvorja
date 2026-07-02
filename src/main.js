@@ -357,7 +357,7 @@ $storage.hydrate().then(async () => {
 
   createI18nInstance().then(async (i18n) => {
     app.use(i18n);
-    ModuleManager.init(i18n);
+    await ModuleManager.init(i18n);
 
     if (import.meta.env.DEV) {
       try {
