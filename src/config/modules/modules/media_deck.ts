@@ -3,10 +3,11 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import type { RibbonPage } from "@/types/Ribbon"
 import { Module } from "@/types/Module";
 import { ICONS } from "@/config/Icons";
+import { ModuleEnum } from "@/enums/ModuleEnum";
 
 export const module: Module = {
-  id: "media-deck",
-  title: "modules.media-deck.title",
+  id: ModuleEnum.MEDIA_DECK,
+  title: "modules.media_deck.title",
   icon: ICONS.MODULES.SLIDE_EDITOR,
   color: "#1b4f8a",
   category: ModuleCategoryEnum.LIVE,
@@ -17,7 +18,7 @@ export const module: Module = {
 export const contextualPages: RibbonPage[] = [
   {
     id: "ctx_media_deck",
-    title: "modules.media-deck.ribbon.title_ctx",
+    title: "modules.media_deck.ribbon.title_ctx",
     contextual: true,
     activeOnModules: ["media-deck"],
     defaultModule: null,

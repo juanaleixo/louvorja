@@ -41,6 +41,7 @@ import {
   YTAPI,
   YTPlayer,
 } from "@/types/Media";
+import { KEY_LJ_FILE_PROJECTION, KEY_LJ_YOUTUBE_PROJECTION } from "@/constants/UserDataKeys";
 
 function getYT(): YTAPI | null {
   return (window as unknown as { YT?: YTAPI }).YT ?? null;
@@ -68,6 +69,7 @@ function _activateProjection(p: FileProjectionState): void {
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";
   fileProjection.title = p.title || "";
+  console.log("[FileProjectionReturn] Ativado:", p.type, p.url?.substring(0, 60));
   if (p.type === "youtube") nextTick(() => _initYoutube());
 }
 
@@ -93,7 +95,6 @@ function _readPendingProjection(): void {
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
-      localStorage.removeItem("lj_youtube_projection");
     }
   } catch {
     /* ignore */
@@ -106,7 +107,7 @@ useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
-useBroadcastListener(BROADCAST_TYPE.VIDEO_PROJECTION, (payload: unknown) => {
+useBroadcastListener(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, (payload: unknown) => {
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
@@ -114,8 +115,8 @@ useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
   _destroyYoutube();
   fileProjection.active = false;
   try {
-    localStorage.removeItem("lj_file_projection");
-    localStorage.removeItem("lj_youtube_projection");
+    localStorage.removeItem(KEY_LJ_FILE_PROJECTION);
+    localStorage.removeItem(KEY_LJ_YOUTUBE_PROJECTION);
   } catch {
     /* ignore */
   }
@@ -186,6 +187,9 @@ function _loadYtApi(cb: (YT: YTAPI) => void): void {
   if (!document.querySelector('script[src*="iframe_api"]')) {
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
+    tag.onerror = () => {
+      console.error("[FileProjectionReturn] Falha ao carregar YouTube IFrame API script");
+    };
     document.head.appendChild(tag);
   }
 }
@@ -195,8 +199,20 @@ function _initYoutube(): void {
   _ytInitializing = true;
   _destroyYoutube();
   const id = _embedUrlToId(fileProjection.url);
-  if (!id) return;
-  if (!ytContainer.value) return;
+  console.log(
+    "[FileProjectionReturn] _initYoutube - videoId:",
+    id,
+    "url:",
+    fileProjection.url?.substring(0, 60)
+  );
+  if (!id) {
+    console.warn("[FileProjectionReturn] ID do YouTube não extraído da URL");
+    return;
+  }
+  if (!ytContainer.value) {
+    console.warn("[FileProjectionReturn] Container YouTube não encontrado no DOM");
+    return;
+  }
 
   _loadYtApi((YT: YTAPI) => {
     if (!ytContainer.value) return;
@@ -227,6 +243,9 @@ function _initYoutube(): void {
             Broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
             Media.close(true);
           }
+        },
+        onError: (e: number) => {
+          console.error("[FileProjectionReturn] YouTube player error:", e);
         },
       },
     });

@@ -8,15 +8,16 @@ import $alert from "@/helpers/Alert";
 import $modules from "@/helpers/Modules";
 import $database from "@/helpers/Database";
 import $history from "@/helpers/History";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import { useAudioPlayback } from "@/composables/useAudioPlayback";
 import { useSlides } from "@/composables/useSlides";
 import type { Slide } from "@/composables/useSlides";
 import { useLyric } from "@/composables/useLyric";
 import { useAlbum } from "@/composables/useAlbum";
-import { openProjectionWindows, openFileProjectionWindows, openVideoProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import { openProjectionWindows, openVideoProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import { Music } from "@/types/Music";
 import { LyricOpenParams } from "@/types/Lyric";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const _audio = useAudioPlayback();
 const _slides = useSlides();
@@ -549,7 +550,7 @@ const _self = {
 
     await openVideoProjectionWindows();
 
-    $broadcast.send(BROADCAST_TYPE.VIDEO_PROJECTION, { url, type: "youtube", title });
+    $broadcast.send(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, { url, type: "youtube", title });
 
     _ytUnlisten = $broadcast.listen((msg) => {
       if (msg.type !== BROADCAST_TYPE.YOUTUBE_STATE) return;

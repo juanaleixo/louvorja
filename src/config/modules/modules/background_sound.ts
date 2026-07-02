@@ -4,10 +4,11 @@ import type { RibbonPage } from "@/types/Ribbon"
 import { Module } from "@/types/Module";
 import { ICONS } from "@/config/Icons";
 import { V_COLOR_DANGER, V_COLOR_PRIMARY } from "@/constants/Colors";
-import { ModuleEnum, ModulePathEnum } from "@/enums/ModuleEnum";
+import { ModuleEnum } from "@/enums/ModuleEnum";
+import $modules from "@/helpers/Modules";
 
 const moduleId = ModuleEnum.BACKGROUND_SOUND;
-const modulePath = ModulePathEnum.BACKGROUND_SOUND;
+const modulePath = $modules.getPath(moduleId);
 const moduleCtxId = "ctx_" + moduleId;
 
 export const module: Module = {

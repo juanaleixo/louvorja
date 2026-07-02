@@ -37,10 +37,21 @@ const SPA_ROUTES = new Set([
   "/projection/return",
   "/projection/bible",
   "/projection/module",
+  "/projection/file",
+  "/projection/file/return",
   "/clock",
   "/operator",
   "/remote",
 ]);
+
+function _isLocalhost(ip) {
+  return (
+    ip === "127.0.0.1" ||
+    ip === "::1" ||
+    ip === "::ffff:127.0.0.1" ||
+    ip === "localhost"
+  );
+}
 
 /**
  * O HTML produzido pelo Vite no target desktop traz uma `<meta>` CSP
@@ -66,6 +77,23 @@ function _injectBridge(html, token) {
     return cleaned.replace("</head>", bridge + "</head>");
   }
   return bridge + cleaned;
+}
+
+/**
+ * Injeção mínima para clients locais (Electron projection windows).
+ * Apenas força hash routing — NÃO abre EventSource SSE (o que causava
+ * conflitos de roteamento e exibia Shell.vue em vez de FileProjection.vue).
+ * A comunicação inter-window continua via BroadcastChannel.
+ */
+function _injectMinimalBridge(html) {
+  if (html.includes("window.LJ_SSE_BRIDGE_INJECTED")) return html;
+  const cleaned = _stripCspMeta(html);
+  const script =
+    '<script>window.LJ_HASH_ROUTING=true;</script>';
+  if (cleaned.includes("</head>")) {
+    return cleaned.replace("</head>", script + "</head>");
+  }
+  return script + cleaned;
 }
 
 /**
@@ -131,12 +159,18 @@ function _bridgeScript(token) {
  */
 function _createStaticIndexHandler(distDir, getToken) {
   let _cached = null;
-  return (_req, res) => {
+  return (req, res) => {
     try {
       if (_cached === null) {
         _cached = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
       }
-      const html = _injectBridge(_cached, typeof getToken === "function" ? getToken() : null);
+      // Clients locais (Electron projection windows) recebem injeção mínima
+      // (só LJ_HASH_ROUTING=true). Clients remotos (OBS, celular) recebem o
+      // bridge SSE completo (hash routing + EventSource + buffer replay).
+      const ip = req.ip || req.socket?.remoteAddress || "";
+      const html = _isLocalhost(ip)
+        ? _injectMinimalBridge(_cached)
+        : _injectBridge(_cached, typeof getToken === "function" ? getToken() : null);
       res.set("Content-Type", "text/html; charset=utf-8");
       res.set("Cache-Control", "no-cache");
       res.send(html);

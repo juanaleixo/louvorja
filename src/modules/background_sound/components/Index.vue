@@ -404,7 +404,8 @@ import Alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { V_COLOR_PRIMARY } from "@/constants/Colors";
-import { ModuleEnum, ModulePathEnum } from "@/enums/ModuleEnum";
+import { ModuleEnum } from "@/enums/ModuleEnum";
+import $modules from "@/helpers/Modules";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -530,7 +531,7 @@ const editFileInput = ref<HTMLInputElement | null>(null);
 /*  Settings                                                           */
 /* ------------------------------------------------------------------ */
 
-const BG_KEY = ModulePathEnum.BACKGROUND_SOUND;
+const BG_KEY = $modules.getPath(ModuleEnum.BACKGROUND_SOUND);
 const fadeInDuration = computed({
   get: () => $userdata.get<number>(`${BG_KEY}.fadeIn`, 3000) ?? 3000,
   set: (v) => $userdata.set(`${BG_KEY}.fadeIn`, v),

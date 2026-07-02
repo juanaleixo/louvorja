@@ -13,6 +13,7 @@
 
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
+import { KEY_DISPLAYS_PREFERRED } from "@/constants/UserDataKeys";
 
 export interface DisplayInfo {
   id: number | null;
@@ -38,7 +39,6 @@ interface OpenOptions {
 }
 
 const _webWindows: Record<string, Window | null> = {};
-const _PREFS_KEY = "displays.preferred";
 
 /**
  * Fallback hierárquico — quando uma feature não tem monitor explicitamente
@@ -133,7 +133,7 @@ async function _getRawPreferred(feature: string): Promise<number | null> {
       /* falha silenciosa — usa fallback */
     }
   }
-  const prefs = ($userdata.get(_PREFS_KEY, {}) as Record<string, number | null>) ?? {};
+  const prefs = ($userdata.get(KEY_DISPLAYS_PREFERRED, {}) as Record<string, number | null>) ?? {};
   return prefs[feature] ?? null;
 }
 
@@ -186,10 +186,10 @@ export async function setPreferredMonitor(
       /* falha silenciosa — usa fallback */
     }
   }
-  const prefs = { ...(($userdata.get(_PREFS_KEY, {}) as Record<string, number | null>) ?? {}) };
+  const prefs = { ...(($userdata.get(KEY_DISPLAYS_PREFERRED, {}) as Record<string, number | null>) ?? {}), };
   if (monitorId == null) delete prefs[feature];
   else prefs[feature] = monitorId;
-  $userdata.set(_PREFS_KEY, prefs);
+  $userdata.set(KEY_DISPLAYS_PREFERRED, prefs);
 }
 
 /** Mostra overlay "Monitor N" em todos os displays por durationMs (default 5000). */

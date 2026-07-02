@@ -13,9 +13,10 @@ const path = require("path");
  * @param {string} devUrl    URL do dev server (ex: "http://localhost:5002")
  * @param {string} prodHtmlPath  Caminho absoluto para dist/index.html
  * @param {string} preloadPath   Caminho absoluto para o preload.cjs
+ * @param {string} httpBaseUrl   URL base do Express server (ex: "http://localhost:7070")
  * @returns {BrowserWindow}
  */
-function createMainWindow(devUrl, prodHtmlPath, preloadPath) {
+function createMainWindow(devUrl, prodHtmlPath, preloadPath, httpBaseUrl) {
   const isDev =
     process.env.ELECTRON_DEV === "1" ||
     !require("electron").app.isPackaged;
@@ -88,11 +89,12 @@ function createMainWindow(devUrl, prodHtmlPath, preloadPath) {
 
   if (isDev) {
     win.loadURL(devUrl);
+  } else if (httpBaseUrl) {
+    // Produção: todas as janelas compartilham a origem do Express server
+    // para BroadcastChannel e YouTube IFrame API funcionarem.
+    win.loadURL(`${httpBaseUrl}/#/`);
   } else {
-    // Em produção carrega via custom protocol ao invés de file:// para
-    // ter origem real (não null) — habilita BroadcastChannel, fetch
-    // relativo, secure context. O `prodHtmlPath` é mantido por compat
-    // com a assinatura, mas não é mais usado para o load principal.
+    // Fallback: protocolo customizado (sem HTTP — YouTube não funciona)
     win.loadURL("louvorja://app/index.html");
   }
 

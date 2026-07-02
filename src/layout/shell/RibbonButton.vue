@@ -8,12 +8,7 @@
     :disabled="disabled"
     @click="$emit('click', $event)"
   >
-    <Icon
-      :icon="icon"
-      :size="iconSize"
-      :style="iconColor ? { color: iconColor } : null"
-      class="ribbon-btn-icon"
-    />
+    <Icon :icon="icon" :size="iconSize" :color="iconColor" class="ribbon-btn-icon" />
     <span class="ribbon-btn-label">{{ label }}</span>
   </button>
 </template>

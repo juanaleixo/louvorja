@@ -40,7 +40,7 @@
           <select
             id="opt-theme"
             class="opt-select"
-            :value="userdata.theme || 'darkblue'"
+            :value="getUserData(KEY_THEME, 'darkblue')"
             @change="changeTheme($v($event))"
           >
             <option v-for="th in themes" :key="th.id" :value="th.id">{{ th.label }}</option>
@@ -52,7 +52,7 @@
           <select
             id="opt-language"
             class="opt-select"
-            :value="userdata.language || 'pt'"
+            :value="getUserData(KEY_LANGUAGE, 'pt')"
             @change="changeLanguage($v($event))"
           >
             <option value="pt">Português</option>
@@ -64,7 +64,7 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.start_with_os"
+              :checked="getUserData(KEY_OPTIONS_START_WITH_OS, false)"
               @change="toggleStartWithOS($c($event))"
             />
             <span>{{ $t("options.general.start_with_os") }}</span>
@@ -77,8 +77,8 @@
             <input
               type="color"
               class="opt-color"
-              :value="userdata.global_bg_color ?? '#000033'"
-              @input="setUd('global_bg_color', $v($event))"
+              :value="getUserData(KEY_OPTIONS_GLOBAL_BG_COLOR, '#000033')"
+              @input="saveUserData(KEY_OPTIONS_GLOBAL_BG_COLOR, $v($event))"
             />
           </label>
         </div>
@@ -118,7 +118,12 @@
               id="opt-monitor-primary"
               class="opt-select"
               :value="monitorPrimary ?? ''"
-              @change="setUd('monitor_primary', $v($event) === '' ? null : Number($v($event)))"
+              @change="
+                saveUserData(
+                  KEY_OPTIONS_MONITOR_PRIMARY,
+                  $v($event) === '' ? null : Number($v($event))
+                )
+              "
             >
               <option value="">{{ $t("options.slides.none") }}</option>
               <option v-for="d in displays" :key="d.id" :value="d.id">
@@ -134,7 +139,12 @@
               id="opt-monitor-secondary"
               class="opt-select"
               :value="monitorSecondary ?? ''"
-              @change="setUd('monitor_secondary', $v($event) === '' ? null : Number($v($event)))"
+              @change="
+                saveUserData(
+                  KEY_OPTIONS_MONITOR_SECONDARY,
+                  $v($event) === '' ? null : Number($v($event))
+                )
+              "
             >
               <option value="">{{ $t("options.slides.none") }}</option>
               <option v-for="d in displays" :key="d.id" :value="d.id">
@@ -162,7 +172,7 @@
             <input
               type="checkbox"
               :checked="bibleReturnEnabled"
-              @change="setUd('open_bible_return', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_BIBLE_RETURN, $c($event))"
             />
             <span>{{ $t("options.bible.show_return") }}</span>
           </label>
@@ -200,8 +210,8 @@
           <select
             id="opt-slides-align"
             class="opt-select"
-            :value="userdata.text_align || 'center'"
-            @change="setUd('text_align', $v($event))"
+            :value="getUserData(KEY_OPTIONS_TEXT_ALIGN, 'center')"
+            @change="saveUserData(KEY_OPTIONS_TEXT_ALIGN, $v($event))"
           >
             <option value="top">{{ $t("options.slides.align_top") }}</option>
             <option value="center">{{ $t("options.slides.align_center") }}</option>
@@ -218,8 +228,8 @@
             min="6"
             max="60"
             class="opt-input opt-input--num"
-            :value="userdata.text_size ?? 17"
-            @input="setUd('text_size', Number($v($event)) || 17)"
+            :value="getUserData(KEY_OPTIONS_TEXT_SIZE, 17)"
+            @input="saveUserData(KEY_OPTIONS_TEXT_SIZE, Number($v($event)) || 17)"
           />
         </div>
 
@@ -227,8 +237,8 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.fullscreen ?? true"
-              @change="setUd('fullscreen', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_FULLSCREEN, true)"
+              @change="saveUserData(KEY_OPTIONS_FULLSCREEN, $c($event))"
             />
             <span>{{ $t("options.slides.fullscreen") }}</span>
           </label>
@@ -238,8 +248,8 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.always_on_top ?? true"
-              @change="setUd('always_on_top', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_ALWAYS_ON_TOP, true)"
+              @change="saveUserData(KEY_OPTIONS_ALWAYS_ON_TOP, $c($event))"
             />
             <span>{{ $t("options.slides.always_on_top") }}</span>
           </label>
@@ -250,13 +260,13 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.open_operator ?? false"
-              @change="setUd('open_operator', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_OPEN_OPERATOR, false)"
+              @change="saveUserData(KEY_OPTIONS_OPEN_OPERATOR, $c($event))"
             />
             <span>{{ $t("options.slides.open_operator") }}</span>
           </label>
           <MonitorSelect
-            v-if="userdata.open_operator"
+            v-if="getUserData(KEY_OPTIONS_OPEN_OPERATOR, false)"
             inline
             :aria-label="$t('options.slides.open_operator')"
             :model-value="getPref('operador') ?? ''"
@@ -268,13 +278,13 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.open_return ?? false"
-              @change="setUd('open_return', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_OPEN_RETURN, false)"
+              @change="saveUserData(KEY_OPTIONS_OPEN_RETURN, $c($event))"
             />
             <span>{{ $t("options.slides.open_return") }}</span>
           </label>
           <MonitorSelect
-            v-if="userdata.open_return"
+            v-if="getUserData(KEY_OPTIONS_OPEN_RETURN, false)"
             inline
             :aria-label="$t('options.slides.open_return')"
             :model-value="getPref('retorno') ?? ''"
@@ -286,8 +296,8 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.show_title_first_slide ?? true"
-              @change="setUd('show_title_first_slide', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_SHOW_TITLE_FIRST_SLIDE, true)"
+              @change="saveUserData(KEY_OPTIONS_SHOW_TITLE_FIRST_SLIDE, $c($event))"
             />
             <span>{{ $t("options.slides.show_title") }}</span>
           </label>
@@ -297,8 +307,8 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.minimize_on_start ?? false"
-              @change="setUd('minimize_on_start', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_MINIMIZE_ON_START, false)"
+              @change="saveUserData(KEY_OPTIONS_MINIMIZE_ON_START, $c($event))"
             />
             <span>{{ $t("options.slides.minimize_on_start") }}</span>
           </label>
@@ -309,21 +319,21 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.custom_text_format ?? false"
-              @change="setUd('custom_text_format', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_CUSTOM_TEXT_FORMAT, false)"
+              @change="saveUserData(KEY_OPTIONS_CUSTOM_TEXT_FORMAT, $c($event))"
             />
             <span>{{ $t("options.slides.custom_text_format") }}</span>
           </label>
         </div>
-        <div v-if="userdata.custom_text_format" class="opt-format-block">
+        <div v-if="getUserData(KEY_OPTIONS_CUSTOM_TEXT_FORMAT, false)" class="opt-format-block">
           <div class="opt-format-row">
             <label class="opt-format-field">
               <span class="opt-format-label">{{ $t("options.slides.title_color") }}</span>
               <input
                 type="color"
                 class="opt-color"
-                :value="userdata.title_color ?? '#ffd84d'"
-                @input="setUd('title_color', $v($event))"
+                :value="getUserData(KEY_OPTIONS_TITLE_COLOR, '#ffd84d')"
+                @input="saveUserData(KEY_OPTIONS_TITLE_COLOR, $v($event))"
               />
             </label>
             <label class="opt-format-field">
@@ -331,8 +341,8 @@
               <input
                 type="color"
                 class="opt-color"
-                :value="userdata.text_color ?? '#ffffff'"
-                @input="setUd('text_color', $v($event))"
+                :value="getUserData(KEY_OPTIONS_TEXT_COLOR, '#ffffff')"
+                @input="saveUserData(KEY_OPTIONS_TEXT_COLOR, $v($event))"
               />
             </label>
             <label class="opt-format-field">
@@ -340,8 +350,8 @@
               <input
                 type="color"
                 class="opt-color"
-                :value="userdata.repeat_color ?? '#bbbbbb'"
-                @input="setUd('repeat_color', $v($event))"
+                :value="getUserData(KEY_OPTIONS_REPEAT_COLOR, '#bbbbbb')"
+                @input="saveUserData(KEY_OPTIONS_REPEAT_COLOR, $v($event))"
               />
             </label>
             <label class="opt-format-field">
@@ -349,15 +359,15 @@
               <input
                 type="color"
                 class="opt-color"
-                :value="userdata.aux_color ?? '#cccccc'"
-                @input="setUd('aux_color', $v($event))"
+                :value="getUserData(KEY_OPTIONS_AUX_COLOR, '#cccccc')"
+                @input="saveUserData(KEY_OPTIONS_AUX_COLOR, $v($event))"
               />
             </label>
             <label class="opt-checkbox opt-format-check">
               <input
                 type="checkbox"
-                :checked="userdata.text_bg_transparent ?? false"
-                @change="setUd('text_bg_transparent', $c($event))"
+                :checked="getUserData(KEY_OPTIONS_TEXT_BG_TRANSPARENT, false)"
+                @change="saveUserData(KEY_OPTIONS_TEXT_BG_TRANSPARENT, $c($event))"
               />
               <span>{{ $t("options.slides.text_bg_transparent") }}</span>
             </label>
@@ -370,8 +380,8 @@
                 min="6"
                 max="60"
                 class="opt-input opt-input--num"
-                :value="userdata.title_size ?? 18"
-                @input="setUd('title_size', Number($v($event)) || 18)"
+                :value="getUserData(KEY_OPTIONS_TITLE_SIZE, 18)"
+                @input="saveUserData(KEY_OPTIONS_TITLE_SIZE, Number($v($event)) || 18)"
               />
             </label>
             <label class="opt-format-field">
@@ -381,8 +391,8 @@
                 min="6"
                 max="60"
                 class="opt-input opt-input--num"
-                :value="userdata.body_size ?? 14"
-                @input="setUd('body_size', Number($v($event)) || 14)"
+                :value="getUserData(KEY_OPTIONS_BODY_SIZE, 14)"
+                @input="saveUserData(KEY_OPTIONS_BODY_SIZE, Number($v($event)) || 14)"
               />
             </label>
             <label class="opt-format-field">
@@ -392,8 +402,8 @@
                 min="6"
                 max="60"
                 class="opt-input opt-input--num"
-                :value="userdata.aux_size ?? 10"
-                @input="setUd('aux_size', Number($v($event)) || 10)"
+                :value="getUserData(KEY_OPTIONS_AUX_SIZE, 10)"
+                @input="saveUserData(KEY_OPTIONS_AUX_SIZE, Number($v($event)) || 10)"
               />
             </label>
             <button type="button" class="opt-btn opt-btn--ghost" @click="restoreTextFormat">
@@ -408,20 +418,23 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.custom_return_text_format ?? false"
-              @change="setUd('custom_return_text_format', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_CUSTOM_RETURN_TEXT_FORMAT, false)"
+              @change="saveUserData(KEY_OPTIONS_CUSTOM_RETURN_TEXT_FORMAT, $c($event))"
             />
             <span>{{ $t("options.slides.custom_return_text_format") }}</span>
           </label>
         </div>
-        <div v-if="userdata.custom_return_text_format" class="opt-format-block">
+        <div
+          v-if="getUserData(KEY_OPTIONS_CUSTOM_RETURN_TEXT_FORMAT, false)"
+          class="opt-format-block"
+        >
           <div class="opt-format-row">
             <label class="opt-format-field">
               <span class="opt-format-label">{{ $t("options.slides.text_case") }}</span>
               <select
                 class="opt-select"
-                :value="userdata.slide_return_text_case || 'uppercase'"
-                @change="setUd('slide_return_text_case', $v($event))"
+                :value="getUserData(KEY_OPTIONS_SLIDE_RETURN_TEXT_CASE, 'uppercase')"
+                @change="saveUserData(KEY_OPTIONS_SLIDE_RETURN_TEXT_CASE, $v($event))"
               >
                 <option value="normal">{{ $t("options.slides.case_normal") }}</option>
                 <option value="capitalize">{{ $t("options.slides.case_capitalize") }}</option>
@@ -435,8 +448,8 @@
                 min="3"
                 max="15"
                 class="opt-input opt-input--num"
-                :value="userdata.slides?.font_size_next ?? 6"
-                @input="setUd('slides.font_size_next', Number($v($event)) || 6)"
+                :value="getUserData(KEY_OPTIONS_SLIDES_FONT_SIZE_NEXT, 6)"
+                @input="saveUserData(KEY_OPTIONS_SLIDES_FONT_SIZE_NEXT, Number($v($event)) || 6)"
               />
             </label>
           </div>
@@ -447,19 +460,19 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.custom_background ?? false"
-              @change="setUd('custom_background', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_CUSTOM_BACKGROUND, false)"
+              @change="saveUserData(KEY_OPTIONS_CUSTOM_BACKGROUND, $c($event))"
             />
             <span>{{ $t("options.slides.custom_background") }}</span>
           </label>
         </div>
-        <div v-if="userdata.custom_background" class="opt-format-block">
+        <div v-if="getUserData(KEY_OPTIONS_CUSTOM_BACKGROUND, false)" class="opt-format-block">
           <div class="opt-format-row">
             <label class="opt-checkbox opt-format-check">
               <input
                 type="checkbox"
-                :checked="userdata.bg_transparent ?? false"
-                @change="setUd('bg_transparent', $c($event))"
+                :checked="getUserData(KEY_OPTIONS_BG_TRANSPARENT, false)"
+                @change="saveUserData(KEY_OPTIONS_BG_TRANSPARENT, $c($event))"
               />
               <span>{{ $t("options.slides.bg_transparent") }}</span>
             </label>
@@ -468,8 +481,8 @@
               <input
                 type="color"
                 class="opt-color"
-                :value="userdata.bg_color ?? '#000000'"
-                @input="setUd('bg_color', $v($event))"
+                :value="getUserData(KEY_OPTIONS_BG_COLOR, '#000000')"
+                @input="saveUserData(KEY_OPTIONS_BG_COLOR, $v($event))"
               />
             </label>
             <label class="opt-format-field opt-format-field--grow">
@@ -477,17 +490,17 @@
               <input
                 type="text"
                 class="opt-input"
-                :value="userdata.bg_image ?? ''"
+                :value="getUserData(KEY_OPTIONS_BG_IMAGE, '')"
                 :placeholder="$t('options.slides.bg_image_placeholder')"
-                @input="setUd('bg_image', $v($event))"
+                @input="saveUserData(KEY_OPTIONS_BG_IMAGE, $v($event))"
               />
             </label>
             <label class="opt-format-field">
               <span class="opt-format-label">{{ $t("options.slides.bg_position") }}</span>
               <select
                 class="opt-select"
-                :value="userdata.bg_position ?? 'center'"
-                @change="setUd('bg_position', $v($event))"
+                :value="getUserData(KEY_OPTIONS_BG_POSITION, 'center')"
+                @change="saveUserData(KEY_OPTIONS_BG_POSITION, $v($event))"
               >
                 <option value="center">{{ $t("options.slides.pos_center") }}</option>
                 <option value="cover">{{ $t("options.slides.pos_cover") }}</option>
@@ -503,8 +516,8 @@
           <label class="opt-checkbox">
             <input
               type="checkbox"
-              :checked="userdata.affect_external_slides ?? true"
-              @change="setUd('affect_external_slides', $c($event))"
+              :checked="getUserData(KEY_OPTIONS_AFFECT_EXTERNAL_SLIDES, true)"
+              @change="saveUserData(KEY_OPTIONS_AFFECT_EXTERNAL_SLIDES, $c($event))"
             />
             <span>{{ $t("options.slides.affect_external") }}</span>
           </label>
@@ -530,7 +543,7 @@
             <input
               type="checkbox"
               :checked="videoProjFullscreen"
-              @change="setUd('video_projection.fullscreen', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN, $c($event))"
             />
             <span>{{ $t("options.videos.fullscreen") }}</span>
           </label>
@@ -541,7 +554,7 @@
             <input
               type="checkbox"
               :checked="videoProjAlwaysOnTop"
-              @change="setUd('video_projection.always_on_top', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP, $c($event))"
             />
             <span>{{ $t("options.videos.always_on_top") }}</span>
           </label>
@@ -554,8 +567,8 @@
           <select
             id="opt-youtube-action"
             class="opt-select"
-            :value="userdata.youtube_action || 'video'"
-            @change="setUd('youtube_action', $v($event))"
+            :value="getUserData(KEY_OPTIONS_YOUTUBE_ACTION, 'video')"
+            @change="saveUserData(KEY_OPTIONS_YOUTUBE_ACTION, $v($event))"
           >
             <option value="video">{{ $t("options.videos.action_video") }}</option>
             <option value="link">{{ $t("options.videos.action_link") }}</option>
@@ -566,7 +579,7 @@
             <input
               type="checkbox"
               :checked="vidProjShowReturn"
-              @change="setUd('video_projection.show_return', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN, $c($event))"
             />
             <span>{{ $t("options.videos.show_return") }}</span>
           </label>
@@ -601,7 +614,7 @@
             <input
               type="checkbox"
               :checked="fileProjFullscreen"
-              @change="setUd('file_projection.fullscreen', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN, $c($event))"
             />
             <span>{{ $t("options.player.fullscreen") }}</span>
           </label>
@@ -612,7 +625,7 @@
             <input
               type="checkbox"
               :checked="fileProjAlwaysOnTop"
-              @change="setUd('file_projection.always_on_top', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP, $c($event))"
             />
             <span>{{ $t("options.player.always_on_top") }}</span>
           </label>
@@ -623,7 +636,7 @@
             <input
               type="checkbox"
               :checked="fileProjShowReturn"
-              @change="setUd('file_projection.show_return', $c($event))"
+              @change="saveUserData(KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN, $c($event))"
             />
             <span>{{ $t("options.player.show_return") }}</span>
           </label>
@@ -721,6 +734,52 @@ import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
+import {
+  KEY_LANGUAGE,
+  KEY_OPTIONS_AFFECT_EXTERNAL_SLIDES,
+  KEY_OPTIONS_ALWAYS_ON_TOP,
+  KEY_OPTIONS_AUX_COLOR,
+  KEY_OPTIONS_AUX_SIZE,
+  KEY_OPTIONS_BG_COLOR,
+  KEY_OPTIONS_BG_IMAGE,
+  KEY_OPTIONS_BG_POSITION,
+  KEY_OPTIONS_BG_TRANSPARENT,
+  KEY_OPTIONS_BIBLE_RETURN,
+  KEY_OPTIONS_BODY_SIZE,
+  KEY_OPTIONS_CUSTOM_BACKGROUND,
+  KEY_OPTIONS_CUSTOM_RETURN_TEXT_FORMAT,
+  KEY_OPTIONS_CUSTOM_TEXT_FORMAT,
+  KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP,
+  KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN,
+  KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN,
+  KEY_OPTIONS_FULLSCREEN,
+  KEY_OPTIONS_GLOBAL_BG_COLOR,
+  KEY_OPTIONS_MINIMIZE_ON_START,
+  KEY_OPTIONS_MONITOR_PRIMARY,
+  KEY_OPTIONS_MONITOR_SECONDARY,
+  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP,
+  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN,
+  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN,
+  KEY_OPTIONS_OPEN_OPERATOR,
+  KEY_OPTIONS_OPEN_RETURN,
+  KEY_OPTIONS_REPEAT_COLOR,
+  KEY_OPTIONS_SHOW_TITLE_FIRST_SLIDE,
+  KEY_OPTIONS_SLIDES_FONT_SIZE_NEXT,
+  KEY_OPTIONS_SLIDE_RETURN_TEXT_CASE,
+  KEY_OPTIONS_START_WITH_OS,
+  KEY_OPTIONS_TEXT_ALIGN,
+  KEY_OPTIONS_TEXT_BG_TRANSPARENT,
+  KEY_OPTIONS_TEXT_COLOR,
+  KEY_OPTIONS_TEXT_SIZE,
+  KEY_OPTIONS_TITLE_COLOR,
+  KEY_OPTIONS_TITLE_SIZE,
+  KEY_OPTIONS_YOUTUBE_ACTION,
+  KEY_THEME,
+  KEY_MEDIA_FADE_AUDIO,
+  KEY_MEDIA_LAZY_LOAD,
+  KEY_OPTIONS_FILE_PROJECTION_FADE,
+  KEY_OPTIONS_FILE_PROJECTION_FADE_DURATION,
+} from "@/constants/UserDataKeys";
 
 interface ThemeOption {
   id: string;
@@ -733,7 +792,6 @@ const tab = ref("general");
 const { t, locale } = useI18n();
 const theme = useTheme();
 const { displays, getPreferred, setPreferred, identify } = useDisplays();
-const userDataStore = useUserDataStore();
 
 const themes: ComputedRef<ThemeOption[]> = computed(() =>
   Object.keys(theme.themes.value).map((id) => ({
@@ -742,15 +800,9 @@ const themes: ComputedRef<ThemeOption[]> = computed(() =>
   }))
 );
 
-const userdata: Record<string, any> = computed(() => {
-  return new Proxy(
-    {},
-    {
-      get: (_target: unknown, key: string | symbol) =>
-        $userdata.get(`options.${String(key)}`, undefined),
-    }
-  );
-});
+function getUserData<T = unknown>(key: string, defaultValue?: T): T {
+  return $userdata.get<T>(key, defaultValue) as T;
+}
 
 /* ---- Helpers de evento para o template (TypeScript strict) ---- */
 function $v(e: Event): string {
@@ -760,57 +812,57 @@ function $c(e: Event): boolean {
   return (e.target as HTMLInputElement).checked;
 }
 
-const monitorPrimary: ComputedRef<number | string | null> = computed(() =>
-  $userdata.get("options.monitor_primary", null)
+const monitorPrimary: ComputedRef<number | null> = computed(() =>
+  $userdata.get(KEY_OPTIONS_MONITOR_PRIMARY, null)
 );
-const monitorSecondary: ComputedRef<number | string | null> = computed(() =>
-  $userdata.get("options.monitor_secondary", null)
+const monitorSecondary: ComputedRef<number | null> = computed(() =>
+  $userdata.get(KEY_OPTIONS_MONITOR_SECONDARY, null)
 );
 
-function setUd(key: string, value: unknown): void {
-  $userdata.set(`options.${key}`, value);
+function saveUserData(key: string, value: unknown): void {
+  $userdata.set(key, value);
 }
 
 function restoreTextFormat(): void {
-  setUd("title_color", "#ffd84d");
-  setUd("text_color", "#ffffff");
-  setUd("repeat_color", "#bbbbbb");
-  setUd("aux_color", "#cccccc");
-  setUd("title_size", 18);
-  setUd("body_size", 14);
-  setUd("aux_size", 10);
-  setUd("text_bg_transparent", false);
+  saveUserData(KEY_OPTIONS_TITLE_COLOR, "#ffd84d");
+  saveUserData(KEY_OPTIONS_TEXT_COLOR, "#ffffff");
+  saveUserData(KEY_OPTIONS_REPEAT_COLOR, "#bbbbbb");
+  saveUserData(KEY_OPTIONS_AUX_COLOR, "#cccccc");
+  saveUserData(KEY_OPTIONS_TITLE_SIZE, 18);
+  saveUserData(KEY_OPTIONS_BODY_SIZE, 14);
+  saveUserData(KEY_OPTIONS_AUX_SIZE, 10);
+  saveUserData(KEY_OPTIONS_TEXT_BG_TRANSPARENT, false);
 }
 
 const mediaFadeAudio: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("modules.media.fade_audio", false) === true
+  () => $userdata.get<boolean>(KEY_MEDIA_FADE_AUDIO, false)!!
 );
 const mediaLazyLoad: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("modules.media.lazy_load", true) === true
+  () => $userdata.get<boolean>(KEY_MEDIA_LAZY_LOAD, true)!!
 );
 
 const videoProjFullscreen: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.video_projection.fullscreen", true) !== false
+  () => $userdata.get<boolean>(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN, true)!!
 );
 const videoProjAlwaysOnTop: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.video_projection.always_on_top", true) !== false
+  () => $userdata.get<boolean>(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP, true)!!
 );
 const vidProjShowReturn: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.video_projection.show_return", false) === true
+  () => $userdata.get<boolean>(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN, false)!!
 );
 
 const bibleReturnEnabled: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.open_bible_return", false) === true
+  () => $userdata.get<boolean>(KEY_OPTIONS_BIBLE_RETURN, false)!!
 );
 
 const fileProjFullscreen: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.file_projection.fullscreen", true) !== false
+  () => $userdata.get<boolean>(KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN, true)!!
 );
 const fileProjAlwaysOnTop: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.file_projection.always_on_top", true) !== false
+  () => $userdata.get<boolean>(KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP, true)!!
 );
 const fileProjShowReturn: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.file_projection.show_return", false) === true
+  () => $userdata.get<boolean>(KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN, false)!!
 );
 
 function setMedia(key: string, value: any): void {
@@ -818,10 +870,10 @@ function setMedia(key: string, value: any): void {
 }
 
 const fileProjectionFade: ComputedRef<boolean> = computed(
-  () => $userdata.get<boolean>("options.file_projection.fade", true) !== false
+  () => $userdata.get<boolean>(KEY_OPTIONS_FILE_PROJECTION_FADE, true)!!
 );
 const fileProjectionFadeDuration: ComputedRef<number> = computed(
-  () => $userdata.get("options.file_projection.fade_duration", 500) || 500
+  () => $userdata.get(KEY_OPTIONS_FILE_PROJECTION_FADE_DURATION, 500)!!
 );
 
 function setFileProj(key: string, value: any): void {
@@ -843,7 +895,7 @@ function getPref(feature: string): number | string | null {
 }
 
 function changeTheme(selectedTheme: string): void {
-  setUd("theme", selectedTheme);
+  saveUserData(KEY_THEME, selectedTheme);
   theme.change(selectedTheme);
   $userdata.set("theme", selectedTheme);
   document.documentElement.dataset.theme = selectedTheme;
@@ -853,17 +905,17 @@ function changeTheme(selectedTheme: string): void {
 }
 
 function changeLanguage(lang: string): void {
-  setUd("language", lang);
+  saveUserData(KEY_LANGUAGE, lang);
   locale.value = lang;
   $userdata.set("language", lang);
 }
 
 async function toggleStartWithOS(enabled: boolean): Promise<void> {
-  setUd("start_with_os", !!enabled);
+  saveUserData(KEY_OPTIONS_START_WITH_OS, enabled);
   const api = Platform?.appLogin as { set: (enabled: boolean) => Promise<unknown> } | null;
   if (api?.set) {
     try {
-      await api.set(!!enabled);
+      await api.set(enabled);
     } catch (e) {
       console.warn("[AppMenuOpcoes] setLoginItem falhou:", e);
     }
@@ -876,7 +928,7 @@ onMounted(async () => {
     try {
       const cur = await api.get();
       if (cur && typeof cur.openAtLogin === "boolean") {
-        $userdata.set("options.start_with_os", cur.openAtLogin);
+        $userdata.set(KEY_OPTIONS_START_WITH_OS, cur.openAtLogin);
       }
     } catch {
       /* ignore */

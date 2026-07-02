@@ -64,6 +64,7 @@ function _activateProjection(p: FileProjectionState): void {
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";
   fileProjection.title = p.title || "";
+  console.log("[FileProjection] Ativado:", p.type, p.url?.substring(0, 60));
   if (p.type === "youtube") nextTick(() => _initYoutube());
 }
 
@@ -89,7 +90,6 @@ function _readPendingProjection(): void {
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
-      localStorage.removeItem("lj_youtube_projection");
     }
   } catch {
     /* ignore */
@@ -102,7 +102,7 @@ useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
-useBroadcastListener(BROADCAST_TYPE.VIDEO_PROJECTION, (payload: unknown) => {
+useBroadcastListener(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, (payload: unknown) => {
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
@@ -182,6 +182,9 @@ function _loadYtApi(cb: (YT: YTAPI) => void): void {
   if (!document.querySelector('script[src*="iframe_api"]')) {
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
+    tag.onerror = () => {
+      console.error("[FileProjection] Falha ao carregar YouTube IFrame API script");
+    };
     document.head.appendChild(tag);
   }
 }
@@ -191,8 +194,20 @@ function _initYoutube(): void {
   _ytInitializing = true;
   _destroyYoutube();
   const id = _embedUrlToId(fileProjection.url);
-  if (!id) return;
-  if (!ytContainer.value) return;
+  console.log(
+    "[FileProjection] _initYoutube - videoId:",
+    id,
+    "url:",
+    fileProjection.url?.substring(0, 60)
+  );
+  if (!id) {
+    console.warn("[FileProjection] ID do YouTube não extraído da URL");
+    return;
+  }
+  if (!ytContainer.value) {
+    console.warn("[FileProjection] Container YouTube não encontrado no DOM");
+    return;
+  }
 
   _loadYtApi((YT: YTAPI) => {
     if (!ytContainer.value) return;
@@ -210,6 +225,7 @@ function _initYoutube(): void {
       events: {
         onReady: () => {
           _ytInitializing = false;
+          console.log("[FileProjection] YouTube player ready");
           if (ytPlayer) ytPlayer.playVideo();
           setTimeout(() => {
             if (ytPlayer && typeof ytPlayer.unMute === "function") {
@@ -226,6 +242,9 @@ function _initYoutube(): void {
             Broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
             Media.close(true);
           }
+        },
+        onError: (e: number) => {
+          console.error("[FileProjection] YouTube player error:", e);
         },
       },
     });

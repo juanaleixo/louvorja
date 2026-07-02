@@ -3,29 +3,8 @@
 const path = require("path");
 const fs = require("fs");
 
-// ---------------------------------------------------------------
-// Carregamento dinâmico (DEV + BUILD)
-// ---------------------------------------------------------------
-function loadUserDataKeys() {
-  // Caminho no build (dentro de resources/)
-  const prodPath = process.resourcesPath
-    ? path.join(process.resourcesPath, "constants", "UserDataKeys.ts")
-    : null;
-  if (prodPath && fs.existsSync(prodPath)) {
-    return require(prodPath);
-  }
-  // Caminho em DEV (dentro do projeto)
-  const devPath = path.join(__dirname, "../../../src/constants/UserDataKeys.ts");
-  if (fs.existsSync(devPath)) {
-    return require(devPath);
-  }
-}
-const keys = loadUserDataKeys();
-if (!keys || !keys.KEY_LITURGY_DAYS || !keys.KEY_LITURGY_ACTIVE_DAY) {
-  console.error("[routes] UserDataKeys.ts não encontrado ou incompleto");
-  throw new Error("UserDataKeys.ts missing or incomplete");
-}
-const { KEY_LITURGY_DAYS, KEY_LITURGY_ACTIVE_DAY } = keys;
+const KEY_LITURGY_DAYS = "modules.liturgy.days";
+const KEY_LITURGY_ACTIVE_DAY = "modules.liturgy.active_day";
 
 /**
  * Estado em memória para sorteios (replicado entre requests).

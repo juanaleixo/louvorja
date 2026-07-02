@@ -1,6 +1,7 @@
 import { ref, computed, watch, toRaw, type Ref, type ComputedRef } from "vue";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import type { AudioPlayback } from "@/composables/useAudioPlayback";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 export interface Slide {
   lyric?: string;

@@ -36,12 +36,13 @@ import Popup from "@/helpers/Popup";
 import Database from "@/helpers/Database";
 import Favorites from "@/helpers/Favorites";
 import History from "@/helpers/History";
-import Broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
+import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
 
 app.use(createPinia());
 app.use(router);

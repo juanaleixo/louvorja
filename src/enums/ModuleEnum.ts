@@ -6,6 +6,8 @@ export enum ModuleEnum {
   CUSTOM_VIDEOS = "custom_videos",
   DRAW = "draw",
   HYMNAL = "hymnal",
+  LITURGY = "liturgy",
+  MEDIA = "media",
   MEDIA_DECK = "media_deck",
   MESSAGE_BOARD = "message_board",
   MUSIC_SEARCH = "music_search",
@@ -15,23 +17,4 @@ export enum ModuleEnum {
   STOPWATCH = "stopwatch",
   TIMER = "timer",
   TIMER_WORSHIP = "timer_worship",
-}
-
-export enum ModulePathEnum {
-  BACKGROUND_SOUND = "modules." + ModuleEnum.BACKGROUND_SOUND,
-  BIBLE_SEARCH = "modules." + ModuleEnum.BIBLE_SEARCH,
-  CLOCK = "modules." + ModuleEnum.CLOCK,
-  COUNTER = "modules." + ModuleEnum.COUNTER,
-  CUSTOM_VIDEOS = "modules." + ModuleEnum.CUSTOM_VIDEOS,
-  DRAW = "modules." + ModuleEnum.DRAW,
-  HYMNAL = "modules." + ModuleEnum.HYMNAL,
-  MEDIA_DECK = "modules." + ModuleEnum.MEDIA_DECK,
-  MESSAGE_BOARD = "modules." + ModuleEnum.MESSAGE_BOARD,
-  MUSIC_SEARCH = "modules." + ModuleEnum.MUSIC_SEARCH,
-  NAME_DRAW = "modules." + ModuleEnum.NAME_DRAW,
-  ONLINE_VIDEOS = "modules." + ModuleEnum.ONLINE_VIDEOS,
-  OVERLAY = "modules." + ModuleEnum.OVERLAY,
-  STOPWATCH = "modules." + ModuleEnum.STOPWATCH,
-  TIMER = "modules." + ModuleEnum.TIMER,
-  TIMER_WORSHIP = "modules." + ModuleEnum.TIMER_WORSHIP,
 }

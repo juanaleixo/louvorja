@@ -69,11 +69,12 @@ import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import $modules from "@/helpers/Modules";
 import Fuse from "fuse.js";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const container = ref(null);
 const t = (key, params) => container.value?.t(key, params) || key;

@@ -25,8 +25,7 @@
  *   com música já tocando deixaria a tela em branco até a próxima troca
  *   de slide.
  */
-export { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import type { BroadcastMessage } from "@/helpers/BroadcastTypes";
+import { BROADCAST_TYPE, BroadcastMessage } from "@/helpers/BroadcastTypes";
 import Platform from "@/helpers/Platform";
 
 const CHANNEL_NAME = "louvorja";
@@ -37,16 +36,17 @@ const CHANNEL_NAME = "louvorja";
  * actions, command palette, requests) ficam fora.
  */
 const STATEFUL_TYPES = new Set<string>([
-  "slide_change",
-  "slide_progress",
-  "slides_data",
-  "media_close",
-  "bible_verse",
-  "bible_format_changed",
-  "module_projection_value",
-  "module_format_changed",
-  "message_board",
-  "file_projection",
+  BROADCAST_TYPE.SLIDE_CHANGE,
+  BROADCAST_TYPE.SLIDE_PROGRESS,
+  BROADCAST_TYPE.SLIDES_DATA,
+  BROADCAST_TYPE.MEDIA_CLOSE,
+  BROADCAST_TYPE.BIBLE_VERSE,
+  BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
+  BROADCAST_TYPE.MODULE_PROJECTION_VALUE,
+  BROADCAST_TYPE.MODULE_FORMAT_CHANGED,
+  BROADCAST_TYPE.MESSAGE_BOARD,
+  BROADCAST_TYPE.FILE_PROJECTION,
+  BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION,
 ]);
 
 let channel: BroadcastChannel | null = null;
@@ -62,6 +62,7 @@ function _deliverLocal(msg: BroadcastMessage): void {
       _lastByType.delete("slide_change");
       _lastByType.delete("slides_data");
       _lastByType.delete("file_projection");
+      _lastByType.delete("online_video_projection");
     } else if (STATEFUL_TYPES.has(msg.type)) {
       _lastByType.set(msg.type, msg);
     }

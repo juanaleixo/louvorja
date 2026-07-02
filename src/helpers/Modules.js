@@ -110,4 +110,7 @@ export default {
         return acc;
       }, {});
   },
+  getPath(moduleId) {
+    return `modules.${moduleId}`;
+  },
 };

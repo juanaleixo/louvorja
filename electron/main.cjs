@@ -50,6 +50,11 @@ const DEV_URL = "http://localhost:5002";
 const isDev =
   process.env.ELECTRON_DEV === "1" || !app.isPackaged;
 
+// URL base do servidor HTTP embarcado — todas as janelas Electron
+// compartilham esta origem HTTP para que BroadcastChannel e YouTube
+// IFrame API funcionem. Atualizada em runtime com a porta real.
+let HTTP_BASE_URL = "http://localhost:7070";
+
 // ---------------------------------------------------------------------------
 // Estado da app
 // ---------------------------------------------------------------------------
@@ -77,7 +82,7 @@ function createWindow() {
     console.log("[LouvorJA] userData:", paths.userData());
   }
 
-  mainWindow = createMainWindow(DEV_URL, prodHtmlPath, preloadPath);
+  mainWindow = createMainWindow(DEV_URL, prodHtmlPath, preloadPath, HTTP_BASE_URL);
 
   // DevTools só em dev OU quando LJ_DEVTOOLS=1 no env (debug pontual).
   if (isDev || process.env.LJ_DEVTOOLS === "1") {
@@ -156,40 +161,56 @@ app.whenReady().then(async () => {
   // D2 — Instalar handler do protocolo louvorja://
   protocolModule.handle();
 
-  // CSP via headers (defense-in-depth).
-  // Em produção reforça a política para recursos carregados via file:// e louvorja://.
-  // Em dev libera 'unsafe-inline' e 'unsafe-eval' para o HMR do Vite funcionar.
-  // file: precisa estar explícito em prod porque o Chromium trata file://
-  // como origem null e NÃO casa com 'self'.
-  const scriptSrc = isDev
-    ? "'self' 'unsafe-inline' 'unsafe-eval' louvorja: http://localhost:* https://www.youtube.com https://*.doubleclick.net https://www.google.com"
-    : "'self' file: louvorja: https://www.youtube.com https://*.doubleclick.net https://www.google.com";
-  const styleSrc = isDev
-    ? "'self' 'unsafe-inline' louvorja: http://localhost:* https://fonts.googleapis.com"
-    : "'self' 'unsafe-inline' file: louvorja: https://fonts.googleapis.com";
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        "Content-Security-Policy": [
-          "default-src 'self' file: louvorja:" + (isDev ? " http://localhost:* ws://localhost:*" : "") + ";" +
-          ` script-src ${scriptSrc};` +
-          ` style-src ${styleSrc};` +
-          " font-src 'self' data: file: louvorja: https://fonts.gstatic.com;" +
-           " img-src 'self' blob: data: https: file: louvorja:" + (isDev ? " http://localhost:*" : "") + " https://*.ytimg.com https://*.youtube.com;" +
-          " media-src 'self' blob: https: file: louvorja: http://localhost:* https://*.googlevideo.com;" +
-           " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com;" +
-          " frame-src https://www.youtube.com https://www.youtube-nocookie.com;" +
-          " worker-src 'self' file: louvorja:" + (isDev ? " blob:" : "") + ";",
-        ],
-      },
+  // CSP via headers (defense-in-depth) apenas para dev / HTTP.
+  // Em prod, CSP é gerenciado pelo protocol handler (protocol.js) que
+  // inspeciona o hash da URL e relaxa para janelas de projeção de vídeo.
+  // Em dev, libera 'unsafe-inline'/'unsafe-eval' para o HMR do Vite e
+  // YouTube IFrame API (que usa http://localhost:5002, origem HTTP real).
+  if (isDev) {
+    const DEV_CSP =
+      "default-src 'self' http://localhost:* ws://localhost:*; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* https://www.youtube.com https://*.doubleclick.net https://www.google.com; " +
+      "style-src 'self' 'unsafe-inline' http://localhost:* https://fonts.googleapis.com; " +
+      "font-src 'self' data: http://localhost:* https://fonts.gstatic.com; " +
+      "img-src 'self' blob: data: https: http://localhost:* https://*.ytimg.com https://*.youtube.com; " +
+      "media-src 'self' blob: https: http://localhost:* https://*.googlevideo.com; " +
+      "connect-src 'self' http://localhost:* ws://localhost:* https://api.louvorja.com.br https://*.louvorja.com.br https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com; " +
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
+      "worker-src 'self' blob:;";
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [DEV_CSP],
+        },
+      });
     });
-  });
+  }
+
+  // D5 — Iniciar servidor HTTP ANTES de qualquer janela para que todas
+  // compartilhem a mesma origem HTTP (BroadcastChannel + YouTube).
+  if (!isDev) {
+    try {
+      const cfg = userStore.read("config") || {};
+      const httpResult = await httpServer.start({
+        port: cfg.httpServer?.port || 7070,
+        mainWindow: null, // will be set after createWindow
+      });
+      HTTP_BASE_URL = `http://localhost:${httpResult.port}`;
+    } catch (e) {
+      console.warn("[main] HTTP server não disponível, usando louvorja://:", e.message);
+    }
+  }
 
   // Mostrar splash imediatamente (antes da janela principal carregar)
   splash.show();
 
   createWindow();
+
+  // Atualizar mainWindow no HTTP server recém-criado
+  if (mainWindow) {
+    try { httpServer.setMainWindow(mainWindow); } catch (_) { /* ignore */ }
+  }
 
   // Fechar splash quando a janela principal estiver pronta para mostrar
   if (mainWindow) {
@@ -239,33 +260,21 @@ app.whenReady().then(async () => {
     console.warn("[main] Falha ao aplicar storage config:", e.message);
   }
 
-  // D5/D6 — Auto-start do servidor HTTP e atalhos globais se configurado em userStore
-  setTimeout(async () => {
-    try {
-      const cfg = userStore.read("config") || {};
-      if (cfg.httpServer?.autoStart && mainWindow) {
-        await httpServer.start({
-          port: cfg.httpServer.port || 7070,
-          mainWindow,
-        });
-      }
-      if (cfg.shortcuts?.globalEnabled) {
-        shortcuts.enable();
-      }
-
-      // S2 — Quota: roda auto-limpeza ao iniciar se houver limite configurado.
-      try {
-        const storageCfg = userStore.read("storage") || {};
-        if (storageCfg.maxBytes && storageCfg.maxBytes > 0) {
-          await storage.enforceQuota(storageCfg.maxBytes);
-        }
-      } catch (_) {
-        /* ignore */
-      }
-    } catch (e) {
-      console.warn("[main] Auto-start falhou:", e.message);
+  // D6 — Atalhos globais se configurados.
+  try {
+    const cfg = userStore.read("config") || {};
+    if (cfg.shortcuts?.globalEnabled) {
+      shortcuts.enable();
     }
-  }, 1000);
+  } catch (_) { /* ignore */ }
+
+  // S2 — Quota: roda auto-limpeza ao iniciar se houver limite configurado.
+  try {
+    const storageCfg = userStore.read("storage") || {};
+    if (storageCfg.maxBytes && storageCfg.maxBytes > 0) {
+      storage.enforceQuota(storageCfg.maxBytes).catch(() => {});
+    }
+  } catch (_) { /* ignore */ }
 });
 
 // Fechar a app quando todas as janelas forem fechadas (exceto macOS)
@@ -497,7 +506,12 @@ ipcMain.handle("displays:getPrefs", () => displays.getPrefs());
 ipcMain.handle("windows:open", (_event, options) => {
   const preloadPath = path.join(__dirname, "preload.cjs");
   const prodHtmlPath = path.join(paths.webBuild(), "index.html");
-  const devUrl = isDev ? DEV_URL : null;
+  // Todas as janelas Electron compartilham a mesma origem:
+  //   - dev: http://localhost:5002 (Vite dev server)
+  //   - prod: http://localhost:PORT (Express server)
+  // Isso garante que BroadcastChannel funcione entre todas as janelas
+  // e que o YouTube IFrame Player API aceite a origem (HTTP real).
+  const devUrl = isDev ? DEV_URL : `${HTTP_BASE_URL}/#`;
   const win = windowFactory.openOnMonitor({
     ...options,
     preloadPath,

@@ -416,7 +416,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import draggable from "vuedraggable";
 import manifest from "../manifest.json";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import SljaConverter from "@/helpers/SljaConverter";
 import AudioLibrary from "@/helpers/AudioLibrary";
@@ -424,6 +424,7 @@ import CustomSongs from "@/helpers/CustomSongs";
 import $alert from "@/helpers/Alert";
 import { openProjectionWindows } from "@/helpers/ProjectionWindows";
 import { useSlideStyle } from "@/composables/useSlideStyle";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const SESSION_KEY = "slide_editor_song_v2";
 

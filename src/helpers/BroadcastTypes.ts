@@ -88,7 +88,7 @@ export const BROADCAST_TYPE = Object.freeze({
   /** Projeção de vídeo online (YouTube) via useMedia.openYouTube.
    *  Payload: { url: string, type: "youtube", title?: string }
    *  Emitido por: useMedia.ts (openYouTube). Recebido por: FileProjection.vue. */
-  VIDEO_PROJECTION: "video_projection",
+  ONLINE_VIDEO_PROJECTION: "online_video_projection",
 
   /** Sincronização de vídeo entre o player principal e a projeção.
    *  Payload: { currentTime: number, isPaused: boolean }

@@ -54,8 +54,9 @@ import Database from "@/helpers/Database";
 import UserData from "@/helpers/UserData";
 import Modules from "@/helpers/Modules";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
-import Broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import Broadcast from "@/helpers/Broadcast";
 import type { BibleBook, BibleSearchResult, BibleVersePayload } from "@/types/Bible";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const props = defineProps<{
   modelValue: boolean;

@@ -67,13 +67,13 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import $userdata from "@/helpers/UserData";
-import { ModulePathEnum } from "@/enums/ModuleEnum";
-import { V_COLOR_PRIMARY } from "@/constants/Colors";
 import { ICONS } from "@/config/Icons";
+import $modules from "@/helpers/Modules";
+import { ModuleEnum } from "@/enums/ModuleEnum";
 
 const { t } = useI18n();
 
-const LANG_PATH = ModulePathEnum.BACKGROUND_SOUND;
+const LANG_PATH = $modules.getPath(ModuleEnum.BACKGROUND_SOUND);
 
 const fadeIn = ref(3000);
 const fadeOut = ref(3000);
