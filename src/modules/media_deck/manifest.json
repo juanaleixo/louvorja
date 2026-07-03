@@ -1,9 +1,0 @@
-{
-  "id": "media_deck",
-  "name": "Mídia Deck",
-  "description": "Gerencie e projeta imagens e vídeos em sequência.",
-  "category": "live",
-  "icon": "mdi-play-box-multiple-outline",
-  "dependencies": [],
-  "customization": {}
-}

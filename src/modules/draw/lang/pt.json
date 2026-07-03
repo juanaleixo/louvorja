@@ -1,5 +1,6 @@
 {
   "title": "Sorteio",
+  "description": "Sorteador de números com animação.",
   "inputs": { "min": "Mínimo", "max": "Máximo" },
   "actions": { "draw": "Sortear", "reset": "Reiniciar", "fullscreen": "Tela cheia" },
   "data": { "drawn": "Números sorteados", "remaining": "Restantes" },

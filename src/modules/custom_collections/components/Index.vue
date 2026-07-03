@@ -207,7 +207,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import draggable from "vuedraggable";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import AppData from "@/helpers/AppData";
 import Modules from "@/helpers/Modules";

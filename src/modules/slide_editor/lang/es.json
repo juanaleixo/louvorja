@@ -1,5 +1,6 @@
 {
   "title": "Editor de Música",
+  "description": "Crea presentaciones con texto, imágenes y formato personalizados.",
   "ribbon": {
     "title_ctx": "Editor de Música",
     "title_ctx_file": "Archivo",

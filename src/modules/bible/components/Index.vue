@@ -283,7 +283,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted, type Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDisplay } from "vuetify";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import Screen from "../components/Screen.vue";
 import FormatPanel from "@/components/FormatPanel.vue";

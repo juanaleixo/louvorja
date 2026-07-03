@@ -17,7 +17,7 @@
     "version:min": "npm version minor",
     "version:bug": "npm version patch",
     "serve": "vite preview",
-    "validate:manifests": "node scripts/validate-manifests.mjs",
+    "validate:manifests": "npx tsx scripts/validate-manifests.ts",
     "typecheck": "tsc --noEmit",
     "prebuild": "npm run validate:manifests && npm run typecheck",
     "build": "vite build",

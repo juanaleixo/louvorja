@@ -1,4 +1,6 @@
 {
+  "title": "Diapositiva",
+  "description": "Monta la diapositiva de la canción (función $media.open)",
   "alerts": {
     "not_loaded": "¡Ocurrió un error al cargar este audio!",
     "close": "¿Quieres cerrar esta presentacion?",

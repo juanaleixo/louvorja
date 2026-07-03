@@ -96,7 +96,7 @@
 import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
 import { openDB } from "idb";
 import type { IDBPDatabase } from "idb";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import $alert from "@/helpers/Alert";

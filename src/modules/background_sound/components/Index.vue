@@ -392,7 +392,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import { openDB, type IDBPDatabase } from "idb";
 import { useBackgroundSound, type BgAudioFile } from "@/composables/useBackgroundSound";

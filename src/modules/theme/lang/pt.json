@@ -1,5 +1,6 @@
 {
   "title": "Aparência",
+  "description": "Fornece ferramentas para customização das cores do programa.",
   "light-themes": "Temas Claros",
   "dark-themes": "Temas Escuros"
 }

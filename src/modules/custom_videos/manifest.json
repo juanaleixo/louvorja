@@ -1,9 +1,0 @@
-{
-  "id": "custom_videos",
-  "name": "Meus Vídeos",
-  "description": "Vídeos do YouTube salvos por você. Adicione nome e URL, projete em tela cheia.",
-  "category": "utilities",
-  "icon": "mdi-video-vintage",
-  "dependencies": [],
-  "customization": {}
-}

@@ -3,7 +3,7 @@ import { Module, ModuleRibbon } from "@/types/Module";
 import { groups } from "@/config/modules/ribbon/groups";
 import { categories } from "@/config/modules/ribbon/categories";
 
-const modules = import.meta.glob<ModuleRibbon>("./modules/*.ts", {
+const modules = import.meta.glob<ModuleRibbon>("@/modules/*/manifest.ts", {
   eager: true,
 })
 
@@ -11,11 +11,11 @@ const allModules: Module[] = []
 const contextualPages: RibbonPage[] = []
 
 for (const mod of Object.values(modules)) {
-  if (mod.module?.id) {
+  if (mod.module?.id && mod.module.showInMainMenu !== false) {
     allModules.push(mod.module)
-    if (mod.contextualPages?.length) {
-      contextualPages.push(...mod.contextualPages)
-    }
+  }
+  if (mod.contextualPages?.length) {
+    contextualPages.push(...mod.contextualPages)
   }
 }
 

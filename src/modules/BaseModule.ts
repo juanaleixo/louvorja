@@ -1,58 +1,58 @@
-export interface ModuleManifest {
+import type { Module, CustomizationField, ModuleOptions, ExternalDependency } from "@/types/Module";
+
+/**
+ * Versão normalizada do Module com defaults aplicados para todos os campos.
+ * Usada internamente pelo BaseModule e pelo ModuleManager.
+ */
+export interface NormalizedModule {
+  active: boolean;
   id: string;
-  name?: string;
+  name: string;
   version?: string;
   description?: string;
   author?: string;
   category?: string;
-  icon?: string;
-  active?: boolean;
-  showInMainMenu?: boolean;
-  development?: boolean;
-  language?: string | null;
-  dependencies?: string[];
-  translations?: Record<string, unknown>;
-  system?: boolean;
-  customization?: Record<string, unknown>;
-  moduleOptions?: Record<string, unknown>;
-  components?: unknown;
-  componentsEntry?: unknown;
-  [key: string]: unknown;
-}
-
-interface NormalizedManifest extends Required<Omit<ModuleManifest, "components" | "componentsEntry" | "author" | "version" | "description">> {
-  active: boolean;
+  icon: string;
+  color: string;
   showInMainMenu: boolean;
   development: boolean;
   language: string | null;
-  dependencies: string[];
+  dependencies: (string | ExternalDependency)[];
   translations: Record<string, unknown>;
   system: boolean;
-  customization: Record<string, unknown>;
-  moduleOptions: Record<string, unknown>;
+  customization: Record<string, CustomizationField>;
+  moduleOptions: ModuleOptions;
+  components?: unknown;
+  componentsEntry?: unknown;
+  title: string;
+  group: string;
+  order: number;
 }
 
 export default class BaseModule {
-  manifest: NormalizedManifest;
+  manifest: NormalizedModule;
 
-  constructor(manifest: ModuleManifest) {
+  constructor(manifest: Module & { translations?: Record<string, unknown> }) {
     this.manifest = {
       active: manifest.active ?? true,
       id: manifest.id,
-      name: manifest.name,
-      version: manifest.version,
+      name: manifest.name ?? manifest.title,
       description: manifest.description,
-      author: manifest.author,
+      author: undefined,
       category: manifest.category,
       icon: manifest.icon,
+      color: manifest.color,
       showInMainMenu: manifest.showInMainMenu || false,
       development: manifest.development || false,
       language: manifest.language || null,
       dependencies: manifest.dependencies || [],
       translations: manifest.translations || {},
-      system: manifest.system ?? false,
-      customization: manifest.customization || {},
+      system: manifest.category == null && !manifest.showInMainMenu,
+      customization: (manifest.customization || {}) as Record<string, CustomizationField>,
       moduleOptions: manifest.moduleOptions || {},
+      title: manifest.title,
+      group: manifest.group,
+      order: manifest.order,
     };
   }
 
@@ -62,7 +62,7 @@ export default class BaseModule {
     }
   }
 
-  getManifest(): NormalizedManifest {
+  getManifest(): NormalizedModule {
     return this.manifest;
   }
 
@@ -78,7 +78,7 @@ export default class BaseModule {
     return this.manifest.componentsEntry;
   }
 
-  getDependencies(): string[] {
+  getDependencies(): (string | ExternalDependency)[] {
     return this.manifest.dependencies;
   }
 }

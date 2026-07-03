@@ -1,5 +1,6 @@
 {
   "title": "Sonido de Fondo",
+  "description": "Reproductor de música de fondo con categorías, fade y volumen independiente.",
   "categories": "Categorías",
   "new_category": "Nueva Categoría",
   "edit_category": "Editar Categoría",

@@ -34,7 +34,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import draggable from "vuedraggable";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import MusicMenuTable from "@/components/MusicMenuTable.vue";
 import AppData from "@/helpers/AppData";

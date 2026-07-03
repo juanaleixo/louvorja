@@ -1,5 +1,6 @@
 {
   "title": "Temporizador de culto",
+  "description": "Temporizador progresivo y regresivo para control de tiempo en el culto.",
   "mode": { "up": "Progresivo", "down": "Regresivo" },
   "actions": {
     "start": "Iniciar",

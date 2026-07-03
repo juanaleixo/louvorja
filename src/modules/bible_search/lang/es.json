@@ -1,5 +1,6 @@
 {
   "title": "Búsqueda Bíblica",
+  "description": "Búsqueda de versículos por palabra clave o referencia",
   "ribbon": {
     "results_count": "{n} resultado(s)",
     "project": "Proyectar",

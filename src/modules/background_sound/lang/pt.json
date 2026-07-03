@@ -1,5 +1,6 @@
 {
   "title": "Som de Fundo",
+  "description": "Tocador de músicas de fundo com categorias, fade e volume independente.",
   "categories": "Categorias",
   "new_category": "Nova Categoria",
   "edit_category": "Editar Categoria",

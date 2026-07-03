@@ -102,7 +102,7 @@ export default {
     this.i18n = i18n;
 
     // eager: false → cada index.js é avaliado sob demanda (menor custo síncrono no boot).
-    const modules = import.meta.glob("@/modules/**/index.js");
+    const modules = import.meta.glob("@/modules/**/index.ts");
 
     for (const path in modules) {
       try {

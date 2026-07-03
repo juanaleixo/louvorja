@@ -23,7 +23,7 @@
 <script setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import Window from "@/components/Window.vue";
 import { useLyric } from "@/composables/useLyric";
 import Modules from "@/helpers/Modules";

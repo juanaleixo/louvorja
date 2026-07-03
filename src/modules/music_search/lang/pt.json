@@ -1,5 +1,6 @@
 {
   "title": "Buscar Música",
+  "description": "Busca rápida de músicas no banco de dados.",
   "search_placeholder": "Digite o nome da música...",
   "search": "Buscar",
   "music": "Música",

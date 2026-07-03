@@ -24,7 +24,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 

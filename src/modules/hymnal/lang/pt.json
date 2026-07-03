@@ -1,5 +1,6 @@
 {
   "title": "Hinário Adventista",
+  "description": "Lista as músicas do Hinário Adventista",
   "inputs": {
     "search": "Digite o número ou nome do hino..."
   },

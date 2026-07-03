@@ -1,5 +1,6 @@
 {
   "title": "Favoritos",
+  "description": "Canciones marcadas como favoritas, con reordenación.",
   "data": {
     "empty": "No hay canciones en favoritos.",
     "empty_hint": "Haz clic en el ícono de estrella en cualquier canción para agregarla aquí."

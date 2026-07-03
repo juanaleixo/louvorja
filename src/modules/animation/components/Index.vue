@@ -19,7 +19,7 @@
 <script setup>
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import { ref, watch } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ShowAnimation from "./modals/ShowAnimation.vue";
 import EditAnimation from "./modals/EditAnimation.vue";
 

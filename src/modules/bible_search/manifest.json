@@ -1,8 +1,0 @@
-{
-  "id": "bible_search",
-  "name": "Busca Bíblica",
-  "description": "Busca de versículos por palavra-chave ou referência",
-  "category": "bible",
-  "icon": "mdi-book-search",
-  "dependencies": []
-}

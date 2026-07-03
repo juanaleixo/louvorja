@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, type ComputedRef } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";

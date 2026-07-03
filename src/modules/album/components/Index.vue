@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 
 import { useModule } from "@/composables/useModule";
 import { useAlbum } from "@/composables/useAlbum";

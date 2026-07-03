@@ -89,7 +89,7 @@ src/
 ├── constants/
 │   ├── Bible.ts              # Constantes bíblicas
 │   ├── Projection.ts         # Constantes de projeção
-│   └── UserDataKeys.js       # Chaves de user_data (liturgia, timer_worship)
+│   └── UserDataKeys.ts       # Chaves de user_data (liturgia, timer_worship)
 ├── enums/                   # Enums TypeScript (MediaEnum, etc.)
 ├── helpers/                 # Utilitários e serviços
 │   ├── Alert.js             # Diálogos e alertas
@@ -150,6 +150,7 @@ src/
 ├── modules/                 # Módulos do sistema
 │   ├── album/
 │   ├── animation/           # Loader de animejs (development)
+│   ├── background_sound/    # Tocador de músicas de fundo
 │   ├── base_module/         # Template para criar módulos (development)
 │   ├── bible/
 │   ├── bible_search/        # Busca bíblica por palavra-chave
@@ -166,11 +167,13 @@ src/
 │   ├── liturgy/
 │   ├── lyric/
 │   ├── media/
+│   ├── media_deck/          # Gerencia e projeta imagens/vídeos em sequência
 │   ├── message_board/
 │   ├── music_search/        # Busca rápida de músicas
 │   ├── musics/
 │   ├── name_draw/
 │   ├── online_videos/       # Coleção de vídeos online para projeção
+│   ├── overlay/             # Overlays customizáveis sobre a projeção
 │   ├── remote_control/
 │   ├── slide_editor/
 │   ├── stopwatch/
@@ -210,59 +213,83 @@ Cada módulo em `src/modules/<id>/` segue esta estrutura:
 
 ```text
 <id>/
-├── manifest.json        # Metadados do módulo
-├── index.js             # Registra o módulo (messages, customization)
+├── manifest.ts          # Metadados + Ribbon pages (unificado, substitui manifest.json + config/modules/*.ts)
+├── index.ts             # Registra o módulo (messages, customization) — importa `./manifest`
 ├── components/          # Componentes Vue do módulo
 │   └── Index.vue        # Componente principal
-└── lang/                # Traduções do módulo
+└── lang/                # Traduções do módulo (title, description, ribbon.*, customization.*, etc.)
     ├── pt.json
     └── es.json
 ```
 
-**manifest.json mínimo:**
+### manifest.ts
 
-```json
-{
-  "id": "module_id",
-  "name": "Nome",
-  "description": "Descrição.",
-  "category": "musics|bible|utilities",
-  "icon": "mdi-icon-name",
-  "dependencies": []
-}
-```
-
-**Chaves de tradução** ficam em `modules.<id>.<key>` no i18n global.
-
-**Configuração da Ribbon** de cada módulo fica em `src/config/modules/modules/<id>.ts`:
+Um único arquivo TypeScript substitui o antigo `manifest.json` + `config/modules/modules/<id>.ts`.
 
 ```ts
-// src/config/modules/modules/timer_worship.ts
-import type { RibbonPage } from "@/types/Ribbon"
+import { ModuleEnum } from "@/enums/ModuleEnum"
+import { ICONS } from "@/config/Icons"
+import $modules from "@/helpers/Modules"
+
+const moduleId = ModuleEnum.BIBLE;
+const modulePath = $modules.getPath(moduleId);
+const moduleCtxId = "ctx_" + moduleId;
+
+export const module: Module = {
+  id: moduleId,
+  title: `${modulePath}.title`,
+  description: `${modulePath}.description`,   // ← texto fica no lang/, não hardcoded
+  showInMainMenu: true,                        // obrigatório
+  icon: ICONS.MODULES.BIBLE,
+  color: "#c0392b",
+  category: ModuleCategoryEnum.BIBLE,
+  group: ModuleGroupEnum.BIBLE_GENERAL,
+  order: 0,
+  dependencies: [],
+}
 
 export const contextualPages: RibbonPage[] = [
   {
-    id: "ctx_<id>",
-    title: "modules.<id>.ribbon.title_ctx",
+    id: moduleCtxId,
+    title: `${modulePath}.ribbon.title_ctx`,
     contextual: true,
-    activeOnModules: ["<id>"],
-    defaultModule: null,
+    activeOnModules: [moduleId],
     groups: [
-      { id: "ctx_<id>_actions", title: "ribbon.groups.actions", buttons: [...] },
+      {
+        id: `${moduleCtxId}_format`,
+        title: "ribbon.groups.format",
+        buttons: [
+          { id: `${moduleId}_format`, icon: ICONS.ACTIONS.FORMAT, ... },
+          { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, ... },
+        ],
+      },
     ],
   },
 ]
+```
 
-export const module: Module = {
-  id: "<id>",
-  title: "modules.<id>.title",
-  icon: "mdi-...",
-  color: "#...",
-  category: ModuleCategoryEnum.LIVE,
-  group: ModuleGroupEnum.CHURCH,
-  order: 1,
+- `id` vem de `ModuleEnum.<KEY>` (enum centralizado em `src/enums/ModuleEnum.ts`, ~31 entries)
+- `title`/`description`: sempre via i18n (`${modulePath}.title` / `${modulePath}.description`), com textos reais em `lang/pt.json` e `lang/es.json`
+- `showInMainMenu: boolean` é obrigatório; módulos internos (`animation`, `base_module`) usam `false` e não geram botões na Ribbon
+- `icon` prefere `ICONS.*` (de `src/config/Icons.ts`) sempre que disponível
+- Botões de formatação contextual usam `ICONS.ACTIONS.FORMAT` e `ICONS.ACTIONS.RESTORE` (nunca `"mdi-format-color-fill"` ou `"mdi-restore"` hardcoded)
+- `contextualPages` substitui a configuração antiga em `src/config/modules/modules/<id>.ts` (pasta deletada)
+- `src/config/modules/index.ts` faz glob `@/modules/*/manifest.ts` e filtra `showInMainMenu !== false`
+
+### Lang
+
+Cada `lang/pt.json` e `lang/es.json` contém **todas** as chaves de tradução do módulo, incluindo `description` (ao lado de `title`):
+
+```json
+{
+  "title": "Bíblia",
+  "description": "Bíblia",
+  "ribbon": { "title_ctx": "Configurar Bíblia" },
+  ...
 }
 ```
+
+**Chaves de tradução** ficam em `modules.<id>.<key>` no i18n global (prefixo `modules.` + modulePath + chave).
 
 ### dependsOnOption
 
@@ -544,7 +571,8 @@ npm run dev                  # Servidor web/PWA → http://localhost:5002
 npm run host                 # Dev exposto na rede local
 npm run build                # Build de produção (web/PWA)
 npm run files                # Servidor local → http://localhost:7070 (./files/)
-npm run prebuild             # Pré-build (valida manifests dos módulos)
+npm run prebuild             # Pré-build (validate:manifests + typecheck)
+npm run validate:manifests   # Valida manifest.ts de todos os módulos
 npm run typecheck            # TypeScript type-check
 npm run lint                 # ESLint
 npm run format               # Prettier
@@ -562,7 +590,6 @@ npm run test:e2e             # Testes end-to-end (Playwright)
 npm run test:visual          # Testes visuais (Percy)
 npm run coverage             # Cobertura de código
 npm run serve                # Preview do build de produção
-npm run validate:manifests   # Valida manifest.json de todos os módulos
 ```
 
 > **Porta 5002**: deliberada. O Electron usa `http://localhost:5002` como `DEV_URL` em

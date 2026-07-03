@@ -121,7 +121,7 @@ interface ExtraMenuItem {
 const props = defineProps<{
   id_music: number;
   name: string;
-  has_instrumental_music: boolean;
+  has_instrumental_music: boolean | number;
   color?: string;
   extraMenu?: ExtraMenuItem[];
 }>();

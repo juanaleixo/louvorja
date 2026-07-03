@@ -119,7 +119,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import OverlaySlotEditor from "./OverlaySlotEditor.vue";
 import $userdata from "@/helpers/UserData";

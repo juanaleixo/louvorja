@@ -1,5 +1,6 @@
 {
   "title": "Histórico",
+  "description": "Músicas abertas recentemente.",
   "data": {
     "empty": "Nenhuma música aberta ainda.",
     "empty_hint": "As músicas que você abrir aparecerão aqui."

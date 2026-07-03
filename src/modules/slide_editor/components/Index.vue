@@ -414,7 +414,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import draggable from "vuedraggable";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $broadcast from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";

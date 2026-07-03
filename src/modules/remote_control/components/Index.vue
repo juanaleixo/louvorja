@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $userdata from "@/helpers/UserData";
 import $alert from "@/helpers/Alert";

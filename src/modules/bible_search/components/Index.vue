@@ -65,7 +65,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";

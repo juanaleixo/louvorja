@@ -1,5 +1,6 @@
 {
   "title": "Sorteo de Nombres",
+  "description": "Sorteo de nombres a partir de una lista.",
   "inputs": { "names": "Un nombre por línea..." },
   "actions": {
     "draw": "Sortear",

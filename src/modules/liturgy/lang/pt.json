@@ -1,5 +1,6 @@
 {
   "title": "Liturgia",
+  "description": "Planejador de cultos com itens, cronômetro e exportação.",
   "ribbon": {
     "title_ctx": "Configurar Liturgia",
     "add": "Adicionar",

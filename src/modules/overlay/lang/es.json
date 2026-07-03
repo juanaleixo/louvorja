@@ -1,5 +1,6 @@
 {
   "title": "Superposiciones",
+  "description": "Gestiona superposiciones personalizables sobre la proyección.",
   "ribbon": { "title_ctx": "Superposiciones" },
   "global_enabled": "Superposición activa",
   "add_slot": "Agregar superposición",

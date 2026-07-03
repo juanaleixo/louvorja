@@ -1,5 +1,6 @@
 {
   "title": "Overlays",
+  "description": "Gerencie overlays customizáveis sobre a projeção.",
   "ribbon": { "title_ctx": "Overlays" },
   "global_enabled": "Overlay ativo",
   "add_slot": "Adicionar overlay",

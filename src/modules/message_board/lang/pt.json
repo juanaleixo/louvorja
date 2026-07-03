@@ -1,5 +1,6 @@
 {
   "title": "Painel de Recados",
+  "description": "Exibe mensagens e recados em tela.",
   "inputs": {
     "message": "Texto do recado...",
     "label": "Rótulo (opcional)"

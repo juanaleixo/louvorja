@@ -118,7 +118,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import FormatPanel from "@/components/FormatPanel.vue";
 import AppData from "@/helpers/AppData";

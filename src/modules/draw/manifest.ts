@@ -1,0 +1,71 @@
+import type { Module } from "@/types/Module"
+import type { RibbonPage } from "@/types/Ribbon"
+import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
+import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
+import { ICONS } from "@/config/Icons"
+import { ModuleEnum } from "@/enums/ModuleEnum"
+import $modules from "@/helpers/Modules"
+
+const moduleId = ModuleEnum.DRAW;
+const modulePath = $modules.getPath(moduleId);
+const moduleCtxId = "ctx_" + moduleId;
+
+export const module: Module = {
+  id: moduleId,
+  name: "Sorteio",
+  title: `${modulePath}.title`,
+  description: `${modulePath}.description`,
+  icon: ICONS.MODULES.DRAW,
+  color: "#3498db",
+  showInMainMenu: true,
+  category: ModuleCategoryEnum.UTILITIES,
+  group: ModuleGroupEnum.DRAWS,
+  order: 0,
+  customization: {
+    font: { type: "font", label: "customization.font", default: "Arial, sans-serif" },
+    font_color: { type: "color", label: "customization.color", default: "#FFFFFF" },
+    font_size: { type: "font-size", label: "customization.size", default: 50 },
+    background_color: { type: "color", label: "customization.color", default: "#000000" },
+    border_spacing: { type: "border-spacing", label: "customization.border", default: 10 },
+    vertical_align: { type: "v-align", label: "customization.vertical", default: "center" },
+    horizontal_align: { type: "h-align", label: "customization.horizontal", default: "center" },
+    image: { type: "image", label: "customization.image", default: "" },
+    image_opacity: { type: "opacity", label: "customization.transparency", default: 100 },
+    image_fit: { type: "object-fit", label: "customization.adjust", default: "cover" },
+  },
+}
+
+export const contextualPages: RibbonPage[] = [
+  {
+    id: moduleCtxId,
+    title: `${modulePath}.ribbon.title_ctx`,
+    contextual: true,
+    activeOnModules: [moduleId],
+    defaultModule: null,
+    groups: [
+      {
+        id: "ctx_draw_actions",
+        title: "ribbon.groups.actions",
+        buttons: [
+          { id: `${moduleId}_draw`, icon: "mdi-dice-5", label: "ribbon.btn.draw_action", action: `${moduleId}_draw`, color: "#3498db" },
+          { id: `${moduleId}_reset`, icon: "mdi-restart", label: "ribbon.btn.draw_reset", action: `${moduleId}_reset`, color: "#7f8c8d" },
+        ],
+      },
+      {
+        id: "ctx_draw_format",
+        title: "ribbon.groups.format",
+        buttons: [
+          { id: `${moduleId}_toggle_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: `${moduleId}_toggle_format`, color: "#1b4f8a" },
+          { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.restore", action: `${moduleId}_restore`, color: "#9b59b6" },
+        ],
+      },
+      {
+        id: "ctx_draw_screen",
+        title: "ribbon.groups.expanded_area",
+        buttons: [
+          { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: `/projection/module?module=${moduleId}`, icon: "mdi-projector-screen-outline", label: "ribbon.btn.project", color: "#1b4f8a" },
+        ],
+      },
+    ],
+  },
+]

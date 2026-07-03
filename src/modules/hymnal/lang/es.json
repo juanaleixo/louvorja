@@ -1,5 +1,6 @@
 {
   "title": "Himnario Adventista",
+  "description": "Lista las canciones del Himnario Adventista",
   "inputs": {
     "search": "Escriba el número o nombre del himno..."
   },
