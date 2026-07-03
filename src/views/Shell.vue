@@ -27,7 +27,7 @@
 
     <CommandPalette v-model="cmdPaletteOpen" />
     <MusicSpotlight v-model="musicSearchOpen" />
-    <BibleSearchSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
+    <BibleSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
     <HotkeysCheatsheet v-model="hotkeysOpen" />
   </v-app>
 </template>
@@ -44,7 +44,7 @@ import AppAlert from "@/layout/Alert.vue";
 import AppLoading from "@/layout/Loading.vue";
 import CommandPalette from "@/layout/shell/CommandPalette.vue";
 import MusicSpotlight from "@components/MusicSpotlight.vue";
-import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
+import BibleSpotlight from "@components/BibleSpotlight.vue";
 import RibbonBar from "@/layout/shell/RibbonBar.vue";
 import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";
 import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";

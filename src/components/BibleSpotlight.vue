@@ -93,7 +93,7 @@ async function loadBooks(): Promise<void> {
       books.value = data;
     }
   } catch (e) {
-    console.error("[BibleSearchSpotlight] Erro ao carregar livros:", e);
+    console.error("[BibleSpotlight] Erro ao carregar livros:", e);
   }
 }
 
@@ -173,7 +173,7 @@ async function performSearch(preferredVersionId: number | null = null): Promise<
             verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
           }
         } catch (e) {
-          console.error("[BibleSearchSpotlight] Erro ao carregar versões:", e);
+          console.error("[BibleSpotlight] Erro ao carregar versões:", e);
         }
       }
 
@@ -239,7 +239,7 @@ async function performSearch(preferredVersionId: number | null = null): Promise<
           verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
         }
       } catch (e) {
-        console.error("[BibleSearchSpotlight] Erro ao carregar versões:", e);
+        console.error("[BibleSpotlight] Erro ao carregar versões:", e);
       }
     }
 

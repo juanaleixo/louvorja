@@ -85,7 +85,7 @@
       </div>
     </template>
 
-    <bible-search-spotlight v-model="bibleSearchOpen" @select="onBibleSearchSelect" />
+    <bible-spotlight v-model="bibleSearchOpen" @select="onBibleSearchSelect" />
   </div>
 </template>
 
@@ -93,7 +93,7 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
-import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
+import BibleSpotlight from "@components/BibleSpotlight.vue";
 import type {
   ActiveBibleState,
   Bible,
