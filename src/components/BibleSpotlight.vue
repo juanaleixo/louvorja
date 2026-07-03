@@ -1,54 +1,56 @@
 <template>
-  <v-dialog
-    v-model="model"
-    max-width="600"
-    content-class="bible-search-spotlight"
-    @keydown.esc="model = false"
-  >
-    <v-card>
-      <v-card-text class="pa-4">
-        <v-text-field
-          v-model="searchQuery"
-          :label="t('components.inputs.search') + ' (ex: João 3:16)'"
-          prepend-inner-icon="mdi-book-search"
-          clearable
-          hide-details
-          autofocus
-          variant="outlined"
-          density="comfortable"
-          @update:model-value="onSearch"
-          @keydown.enter="onEnter"
-        />
-
-        <div v-if="loading" class="text-center pa-8">
-          <v-progress-circular indeterminate color="primary" />
+  <v-dialog v-model="model" max-width="520">
+    <div ref="cardRef" class="quicknav-card" tabindex="-1" @keydown="handleKeydown">
+      <div class="quicknav-steps">
+        <div :class="['quicknav-step', { current: activeStep === 0 }]">
+          <span class="quicknav-step-num">1</span>
+          <span>{{ t("modules.bible.quicknav.step_book") }}</span>
         </div>
-
-        <v-list v-else-if="results.length > 0" class="mt-2 search-results" max-height="400">
-          <v-list-item
-            v-for="(res, i) in results"
-            :key="i"
-            :title="res.reference"
-            :subtitle="truncate(res.text, 100)"
-            hover
-            @click="selectResult(res)"
-          >
-            <template #prepend>
-              <v-icon icon="mdi-book-open-variant" color="primary" class="mr-2" />
-            </template>
-          </v-list-item>
-        </v-list>
-
-        <div v-else-if="searchQuery && !loading" class="text-center pa-8 text-medium-emphasis">
-          {{ t("options.module.bible.empty_search") }}
+        <div class="quicknav-arrow">→</div>
+        <div :class="['quicknav-step', { current: activeStep === 1 }]">
+          <span class="quicknav-step-num">2</span>
+          <span>{{ t("modules.bible.quicknav.step_chapter") }}</span>
         </div>
-      </v-card-text>
-    </v-card>
+        <div class="quicknav-arrow">→</div>
+        <div :class="['quicknav-step', { current: activeStep === 2 }]">
+          <span class="quicknav-step-num">3</span>
+          <span>{{ t("modules.bible.quicknav.step_verse") }}</span>
+        </div>
+      </div>
+
+      <div v-if="!books" class="quicknav-display">
+        <v-progress-circular indeterminate size="24" />
+      </div>
+
+      <div v-else class="quicknav-display">
+        <div class="quicknav-hint">
+          <template v-if="activeStep === 0">{{ t("modules.bible.quicknav.hint_book") }}</template>
+          <template v-else-if="activeStep === 1">
+            {{ t("modules.bible.quicknav.hint_chapter") }}
+          </template>
+          <template v-else>{{ t("modules.bible.quicknav.hint_verse") }}</template>
+        </div>
+        <div class="quicknav-buffer">
+          <span class="quicknav-text">{{ buffer || "—" }}</span>
+          <span class="quicknav-cursor">|</span>
+        </div>
+        <div class="quicknav-preview">{{ feedback || " " }}</div>
+        <div class="quicknav-footer">
+          <span v-if="activeStep === 0" v-html="t('modules.bible.quicknav.foot_book')" />
+          <span v-else-if="activeStep === 1" v-html="t('modules.bible.quicknav.foot_chapter')" />
+          <span v-else v-html="t('modules.bible.quicknav.foot_verse')" />
+        </div>
+      </div>
+
+      <button class="quicknav-close" @click="model = false">
+        <v-icon size="18">mdi-close</v-icon>
+      </button>
+    </div>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
 import UserData from "@/helpers/UserData";
@@ -57,6 +59,8 @@ import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Broadcast from "@/helpers/Broadcast";
 import type { BibleBook, BibleSearchResult, BibleVersePayload } from "@/types/Bible";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+
+type QuickNavState = "book" | "chapter" | "verse";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -68,202 +72,126 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useI18n();
-const moduleId = "bible";
 
 const model = computed({
   get: () => props.modelValue,
   set: (val: boolean) => emit("update:modelValue", val),
 });
 
-const searchQuery = ref<string>("");
-const results = ref<BibleSearchResult[]>([]);
-const loading = ref<boolean>(false);
+// Quick nav state
+const state = ref<QuickNavState>("book");
+const buffer = ref("");
+const feedback = ref("");
+const activeStep = ref(0);
+const selectedBook = ref<BibleBook | null>(null);
+const selectedChapter = ref<number>(0);
+const chapterVerses = ref<Record<string, string>>({});
+const cardRef = ref<HTMLElement | null>(null);
+let chapterTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Data
 const books = ref<BibleBook[] | null>(null);
 let _booksLang = "";
-let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-async function loadBooks(): Promise<void> {
+function reset(): void {
+  state.value = "book";
+  buffer.value = "";
+  feedback.value = "";
+  activeStep.value = 0;
+  selectedBook.value = null;
+  selectedChapter.value = 0;
+  chapterVerses.value = {};
+  if (chapterTimer) {
+    clearTimeout(chapterTimer);
+    chapterTimer = null;
+  }
+}
+
+function normalize(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function searchBooks(input: string, list: BibleBook[]): BibleBook[] {
+  const n = normalize(input);
+  if (!n) return [];
+  const scored = list
+    .map((b) => {
+      const abbr = normalize(b.abbreviation ?? "");
+      const name = normalize(b.name ?? "");
+      let score = Infinity;
+      if (abbr === n) score = 0;
+      else if (name === n) score = 1;
+      else if (abbr.startsWith(n)) score = 2;
+      else if (name.startsWith(n)) score = 3;
+      return { book: b, score };
+    })
+    .filter((b) => b.score < Infinity)
+    .sort((a, b) => a.score - b.score);
+  return scored.map((s) => s.book);
+}
+
+function checkBookMatch(): void {
+  if (buffer.value.length === 0) {
+    feedback.value = "";
+    return;
+  }
+  if (!books.value) return;
+  const matches = searchBooks(buffer.value, books.value);
+  if (matches.length === 0) {
+    feedback.value = "—";
+  } else if (matches.length === 1) {
+    commitBook(matches[0]);
+  } else {
+    feedback.value =
+      matches
+        .slice(0, 4)
+        .map((b) => b.abbreviation ?? b.name)
+        .join(", ") + (matches.length > 4 ? " …" : "");
+  }
+}
+
+function commitBook(b: BibleBook): void {
+  feedback.value = `${b.name}`;
+  selectedBook.value = b;
+  state.value = "chapter";
+  buffer.value = "";
+  activeStep.value = 1;
+  feedback.value = `${b.name} → cap. `;
+}
+
+async function commitChapter(val: number): Promise<void> {
+  if (!selectedBook.value) return;
+  selectedChapter.value = val;
+  state.value = "verse";
+  buffer.value = "";
+  activeStep.value = 2;
+  feedback.value = `${feedback.value.replace(/ → cap\.\s*$/, "").trim()} ${val}:`;
   const lang = locale.value === "es" ? "es" : "pt";
-  if (books.value && _booksLang === lang) return;
-
-  try {
-    const data = await Database.get<BibleBook[]>(`${lang}_bible_book`);
-    if (data) {
-      _booksLang = lang;
-      books.value = data;
-    }
-  } catch (e) {
-    console.error("[BibleSpotlight] Erro ao carregar livros:", e);
-  }
+  const versionId = UserData.get<number>("modules.bible.id_bible_version") || 1;
+  const bibleFile = `bible_${versionId}_${selectedBook.value.id_bible_book}_${val}`;
+  const data = await Database.get<Record<string, string>>(bibleFile);
+  if (data) chapterVerses.value = data;
 }
 
-async function onSearch(): Promise<void> {
-  if (searchTimeout) clearTimeout(searchTimeout);
-  if (!searchQuery.value) {
-    results.value = [];
-    return;
-  }
-
-  if (searchQuery.value.trim().length < 2) {
-    results.value = [];
-    return;
-  }
-
-  searchTimeout = setTimeout(async () => {
-    loading.value = true;
-    try {
-      const savedVersion = UserData.get<number>(`modules.${moduleId}.id_bible_version`);
-      await performSearch(savedVersion);
-    } finally {
-      loading.value = false;
-    }
-  }, 500);
-}
-
-async function performSearch(preferredVersionId: number | null = null): Promise<void> {
-  const lang = locale.value === "es" ? "es" : "pt";
-  if (!books.value || _booksLang !== lang) await loadBooks();
-  if (!books.value) {
-    results.value = [];
-    return;
-  }
-
-  const query = searchQuery.value.trim();
-
-  const normalize = (s: string): string =>
-    s
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-
-  const queryNorm = normalize(query);
-
-  const refMatch = query.match(/^(\d?\s*[a-zA-Z\s]+?)\s+(\d+)(?:[\s:]+(\d+))?$/);
-  if (refMatch) {
-    const bookSearch = normalize(refMatch[1].replace(/\s+/g, ""));
-    const chapter = parseInt(refMatch[2], 10);
-    const verse = refMatch[3] ? parseInt(refMatch[3], 10) : null;
-
-    const book = books.value.find((b: BibleBook) => {
-      const bName = normalize(b.name).replace(/\s+/g, "");
-      const bAbbr = normalize(b.abbreviation || "").replace(/\s+/g, "");
-      return bName.includes(bookSearch) || bAbbr === bookSearch;
-    });
-
-    if (book) {
-      let versionId = preferredVersionId || 1;
-      let bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-      let verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
-
-      if (!verses && versionId != 1) {
-        versionId = 1;
-        bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-        verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
-      }
-
-      if (!verses) {
-        try {
-          const versions = await Database.get<{ id_bible_version: number }[]>(
-            `${lang}_bible_version`,
-            { silent: true }
-          );
-          if (versions && versions.length > 0) {
-            versionId = versions[0].id_bible_version;
-            bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-            verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
-          }
-        } catch (e) {
-          console.error("[BibleSpotlight] Erro ao carregar versões:", e);
-        }
-      }
-
-      if (verses) {
-        if (verse && verses[verse]) {
-          results.value = [
-            {
-              id_bible_book: book.id_bible_book,
-              id_bible_version: versionId,
-              book: book.name,
-              chapter,
-              verse,
-              reference: `${book.name} ${chapter}:${verse}`,
-              text: verses[verse],
-            },
-          ];
-          return;
-        } else if (!verse) {
-          results.value = [
-            {
-              id_bible_book: book.id_bible_book,
-              id_bible_version: versionId,
-              book: book.name,
-              chapter,
-              verse: 1,
-              reference: `${book.name} ${chapter}`,
-              text: verses[1] || "",
-            },
-          ];
-          return;
-        }
-      }
-    }
-  }
-
-  const bookOnlySearch = queryNorm.replace(/\s+/g, "");
-  const bookOnly = (books.value || []).find((b: BibleBook) => {
-    const bName = normalize(b.name).replace(/\s+/g, "");
-    const bAbbr = normalize(b.abbreviation || "").replace(/\s+/g, "");
-    return bName === bookOnlySearch || bAbbr === bookOnlySearch;
-  });
-
-  if (bookOnly) {
-    let versionId = preferredVersionId || 1;
-    let bibleFile = `bible_${versionId}_${bookOnly.id_bible_book}_1`;
-    let verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
-
-    if (!verses && versionId != 1) {
-      versionId = 1;
-      bibleFile = `bible_${versionId}_${bookOnly.id_bible_book}_1`;
-      verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
-    }
-
-    if (!verses) {
-      try {
-        const versions = await Database.get<{ id_bible_version: number }[]>(
-          `${lang}_bible_version`,
-          { silent: true }
-        );
-        if (versions && versions.length > 0) {
-          versionId = versions[0].id_bible_version;
-          bibleFile = `bible_${versionId}_${bookOnly.id_bible_book}_1`;
-          verses = await Database.get<Record<string, string>>(bibleFile, { silent: true });
-        }
-      } catch (e) {
-        console.error("[BibleSpotlight] Erro ao carregar versões:", e);
-      }
-    }
-
-    results.value = [
-      {
-        id_bible_book: bookOnly.id_bible_book,
-        id_bible_version: versionId,
-        book: bookOnly.name,
-        chapter: 1,
-        verse: 1,
-        reference: `${bookOnly.name} 1`,
-        text: verses ? verses[1] : "",
-      },
-    ];
-    return;
-  }
-
-  results.value = [];
-}
-
-function onEnter(): void {
-  if (results.value.length > 0) {
-    selectResult(results.value[0]);
-  }
+function commitVerse(val: number): void {
+  if (!selectedBook.value) return;
+  const text = chapterVerses.value[String(val)];
+  if (!text) return;
+  const reference = `${selectedBook.value.name} ${selectedChapter.value}:${val}`;
+  const versionId = UserData.get<number>("modules.bible.id_bible_version") || 1;
+  const result: BibleSearchResult = {
+    id_bible_book: selectedBook.value.id_bible_book,
+    id_bible_version: versionId,
+    book: selectedBook.value.name,
+    chapter: selectedChapter.value,
+    verse: val,
+    reference,
+    text,
+  };
+  selectResult(result);
 }
 
 async function selectResult(res: BibleSearchResult): Promise<void> {
@@ -276,9 +204,7 @@ async function selectResult(res: BibleSearchResult): Promise<void> {
       verses: [res.verse],
       active: true,
     };
-
     await ProjectionWindows.openBibleWindow();
-
     Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, payload);
     Modules.open("bible");
     Broadcast.send(BROADCAST_TYPE.RIBBON_SELECT_PAGE, { pageId: "ctx_bible" });
@@ -287,23 +213,300 @@ async function selectResult(res: BibleSearchResult): Promise<void> {
   model.value = false;
 }
 
-function truncate(text: string | null | undefined, n: number): string {
-  if (!text) return "";
-  const clean = String(text).replace(/<[^>]+>/g, "");
-  return clean.length > n ? clean.slice(0, n).trim() + "\u2026" : clean;
+async function loadBooks(): Promise<void> {
+  const lang = locale.value === "es" ? "es" : "pt";
+  if (books.value && _booksLang === lang) return;
+  try {
+    const data = await Database.get<BibleBook[]>(`${lang}_bible_book`);
+    if (data) {
+      _booksLang = lang;
+      books.value = data;
+    }
+  } catch (e) {
+    console.error("[BibleSpotlight] Erro ao carregar livros:", e);
+  }
 }
 
-watch(model, (val: boolean) => {
+function handleKeydown(e: KeyboardEvent): void {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  if (e.key === "Escape") {
+    model.value = false;
+    return;
+  }
+
+  if (state.value === "book") {
+    if (/^[a-zA-Z]$/.test(e.key)) {
+      buffer.value += e.key.toLowerCase();
+      e.preventDefault();
+      checkBookMatch();
+      return;
+    }
+    if (e.key === "Backspace") {
+      buffer.value = buffer.value.slice(0, -1);
+      e.preventDefault();
+      if (buffer.value.length === 0) {
+        activeStep.value = 0;
+        feedback.value = "";
+      } else {
+        checkBookMatch();
+      }
+      return;
+    }
+    if (e.key === "Enter" && buffer.value.length > 0 && books.value) {
+      e.preventDefault();
+      const matches = searchBooks(buffer.value, books.value);
+      if (matches.length === 1) commitBook(matches[0]);
+      return;
+    }
+  }
+
+  if (state.value === "chapter") {
+    const max = selectedBook.value?.chapters ?? 0;
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      const candidate = buffer.value + e.key;
+      const val = parseInt(candidate, 10);
+      if (val < 1 || val > max) return;
+      buffer.value = candidate;
+      if (chapterTimer) clearTimeout(chapterTimer);
+      if (val * 10 > max) {
+        commitChapter(val);
+      } else {
+        chapterTimer = setTimeout(() => {
+          if (buffer.value) commitChapter(parseInt(buffer.value, 10));
+          chapterTimer = null;
+        }, 600);
+      }
+      return;
+    }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      buffer.value = buffer.value.slice(0, -1);
+      if (chapterTimer) clearTimeout(chapterTimer);
+      chapterTimer = null;
+      if (buffer.value.length === 0) {
+        state.value = "book";
+        activeStep.value = 0;
+        feedback.value = "";
+      }
+      return;
+    }
+    if (e.key === " " || e.key === "." || e.key === "Enter") {
+      e.preventDefault();
+      if (buffer.value.length > 0) {
+        const val = parseInt(buffer.value, 10);
+        if (val >= 1 && val <= max) commitChapter(val);
+      }
+      return;
+    }
+  }
+
+  if (state.value === "verse") {
+    const keys = Object.keys(chapterVerses.value).map(Number);
+    const max = keys.length > 0 ? Math.max(...keys) : 0;
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      const candidate = buffer.value + e.key;
+      const val = parseInt(candidate, 10);
+      if (val < 1 || val > max) return;
+      buffer.value = candidate;
+      const base = feedback.value.replace(/:(\s*\d*)$/, "");
+      feedback.value = `${base}:${val}`;
+      return;
+    }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      buffer.value = buffer.value.slice(0, -1);
+      if (buffer.value.length === 0) {
+        state.value = "chapter";
+        activeStep.value = 1;
+        feedback.value = feedback.value.replace(/:.*$/, "").trim() + " → cap. ";
+      } else {
+        const base = feedback.value.replace(/:(\s*\d*)$/, "");
+        feedback.value = `${base}:${buffer.value}`;
+      }
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const val = parseInt(buffer.value, 10);
+      if (val > 0) commitVerse(val);
+      return;
+    }
+  }
+}
+
+watch(model, async (val: boolean) => {
   if (val) {
-    searchQuery.value = "";
-    results.value = [];
-    loadBooks();
+    reset();
+    await loadBooks();
+    await nextTick();
+    cardRef.value?.focus();
   }
 });
 </script>
 
 <style scoped>
-.search-results {
-  overflow-y: auto;
+.quicknav-card {
+  position: relative;
+  width: 480px;
+  max-width: 90vw;
+  background: var(--lj-surface-bg, #1e1e1e);
+  border: 1px solid var(--lj-surface-border, #444);
+  border-radius: 16px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  outline: none;
+}
+
+.quicknav-steps {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quicknav-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lj-text-muted, #888);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.quicknav-step.current {
+  color: #fff;
+  background: var(--lj-primary, #1976d2);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
+}
+
+.quicknav-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  background: currentColor;
+  color: var(--lj-surface-bg, #1e1e1e);
+}
+
+.quicknav-step.current .quicknav-step-num {
+  background: #fff;
+  color: var(--lj-primary, #1976d2);
+}
+
+.quicknav-arrow {
+  font-size: 16px;
+  color: var(--lj-text-muted, #555);
+  font-weight: 300;
+}
+
+.quicknav-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.quicknav-hint {
+  font-size: 15px;
+  color: var(--lj-text-muted, #888);
+  letter-spacing: 0.3px;
+}
+
+.quicknav-buffer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  min-height: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+.quicknav-preview {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--lj-text-muted, #999);
+  min-height: 20px;
+  text-align: center;
+}
+
+.quicknav-text {
+  color: var(--lj-text, #eee);
+}
+
+.quicknav-text:empty::before {
+  content: "—";
+  color: var(--lj-text-muted, #555);
+}
+
+.quicknav-cursor {
+  display: inline-block;
+  width: 3px;
+  margin-left: 4px;
+  animation: quicknav-blink 1s step-end infinite;
+}
+
+@keyframes quicknav-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.quicknav-footer {
+  font-size: 13px;
+  color: var(--lj-text-muted, #666);
+}
+
+.quicknav-footer kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-family: inherit;
+  background: var(--lj-surface-border, #333);
+  border-radius: 4px;
+  border: 1px solid var(--lj-text-muted, #555);
+  margin: 0 2px;
+}
+
+.quicknav-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--lj-text-muted, #888);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.quicknav-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--lj-text, #eee);
+}
+
+.quicknav-card:focus {
+  outline: none;
 }
 </style>

@@ -33,7 +33,7 @@
 import { ref, computed } from "vue";
 
 const props = defineProps({
-  modelValue: [String, Number, Array],
+  modelValue: [String, Number, Array, null],
   label: String,
   icon: String,
   multiple: {
