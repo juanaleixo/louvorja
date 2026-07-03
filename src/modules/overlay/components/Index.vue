@@ -6,21 +6,6 @@
   >
     <div class="overlay-root">
       <!-- Header -->
-      <div class="overlay-header">
-        <v-switch
-          v-model="globalEnabled"
-          :label="t('global_enabled')"
-          density="compact"
-          color="primary"
-          hide-details
-          @update:model-value="onToggleGlobal"
-        />
-        <v-spacer />
-        <v-btn size="small" variant="tonal" color="primary" @click="addSlot">
-          <v-icon start icon="mdi-plus" />
-          {{ t("add_slot") }}
-        </v-btn>
-      </div>
 
       <v-divider />
 
@@ -44,11 +29,12 @@
               <img
                 v-else-if="slot.type === 'image'"
                 :src="previewImageUrl(slot)"
+                :style="previewImageStyle(slot)"
                 class="overlay-preview-img"
                 alt=""
               />
               <div v-else-if="slot.type === 'module_mirror'" class="overlay-preview-text">
-                {{ slot.source_module || "—" }}
+                {{ moduleValues[slot.source_module || ""] || slot.source_module || "—" }}
               </div>
             </div>
           </div>
@@ -136,6 +122,7 @@ const localSlots = reactive([]);
 const editingSlot = ref(null);
 const previewRef = ref(null);
 const previewImageCache = reactive({});
+const moduleValues = reactive({});
 
 let saveTimer = null;
 
@@ -247,6 +234,18 @@ function previewImageUrl(slot) {
   return "";
 }
 
+function previewImageStyle(slot) {
+  const scale = (slot.style?.image_scale ?? 100) / 100;
+  return {
+    width: "auto",
+    height: "auto",
+    maxWidth: `calc(100% * ${scale})`,
+    maxHeight: `calc(100% * ${scale})`,
+    objectFit: slot.style?.object_fit || "contain",
+    display: "block",
+  };
+}
+
 // Escuta mudanças de UserData de outras janelas
 useBroadcastListener("*", (payload, msg) => {
   if (msg.type === BROADCAST_TYPE.USERDATA_PATCH) {
@@ -269,6 +268,13 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
     case "add":
       addSlot();
       break;
+  }
+});
+
+// Escuta valores de módulos fonte para preview ao vivo
+useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload) => {
+  if (payload?.module) {
+    moduleValues[payload.module] = payload.text || payload.reference || "";
   }
 });
 
@@ -329,7 +335,7 @@ onMounted(() => {
 }
 
 .overlay-preview-slot {
-  white-space: nowrap;
+  white-space: pre-wrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -340,15 +346,13 @@ onMounted(() => {
 }
 
 .overlay-preview-img {
-  max-width: 100%;
-  max-height: 60px;
-  object-fit: contain;
+  display: block;
 }
 
 .overlay-slot-list {
   display: flex;
   flex-direction: column;
-  width: 500px;
+  width: 40%;
   min-width: 300px;
   flex-shrink: 0;
   overflow-y: auto;

@@ -30,8 +30,9 @@
 
     <div
       v-for="item in exiting"
-      :key="item.slot.id"
+      :key="'exit-' + item.slot.id"
       class="overlay-slot"
+      :class="animationExitClass(item.slot)"
       :style="exitingStyle(item.slot)"
     >
       <div
@@ -64,6 +65,7 @@
 <script setup>
 import { ref, shallowRef, watch } from "vue";
 import { useOverlayState } from "@/composables/useOverlayState";
+import { buildAnchorStyle } from "@/types/Overlay";
 
 const {
   globalEnabled,
@@ -75,6 +77,7 @@ const {
   imageStyle,
   textStyle,
   animationClass,
+  animationExitClass,
 } = useOverlayState();
 
 const imageUrls = ref({});
@@ -140,10 +143,20 @@ watch(
 
 function exitingStyle(slot) {
   const dur = `${(slot.style.animation_duration || 300) / 1000}s`;
-  const anim = slot.style.animation_exit || "fade";
+  const s = slot.style;
   return {
-    ...slotStyle(slot),
-    animation: `overlay-${anim}-exit ${dur} ease forwards`,
+    position: "absolute",
+    ...buildAnchorStyle(slot.position),
+    pointerEvents: "none",
+    zIndex: String(slot.order + 1),
+    opacity: String((s.opacity ?? 100) / 100),
+    padding: s.padding || "8px 16px",
+    borderRadius: s.border_radius || "4px",
+    border: s.border || "",
+    width: "auto",
+    height: "auto",
+    ...(s.box_shadow ? { boxShadow: "0 4px 16px rgba(0,0,0,0.45)" } : {}),
+    animationDuration: dur,
   };
 }
 

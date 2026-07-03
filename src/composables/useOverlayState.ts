@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, reactive, type Ref, type ComputedRef } from "vue";
+import { ref, computed, onMounted, reactive, watch, type Ref, type ComputedRef } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
@@ -55,9 +55,34 @@ export function useOverlayState(): OverlayStateReturn {
     refresh();
   });
 
+  function requestModuleStates() {
+    const seen = new Set<string>();
+    for (const slot of slots.value) {
+      if (slot.type === "module_mirror" && slot.source_module && !seen.has(slot.source_module)) {
+        seen.add(slot.source_module);
+        $broadcast.send(BROADCAST_TYPE.REQUEST_MODULE_STATE, { module: slot.source_module });
+      }
+    }
+  }
+
   onMounted(() => {
     $broadcast.send(BROADCAST_TYPE.REQUEST_OVERLAY_STATE);
+    requestModuleStates();
   });
+
+  // Monitora novos source_module adicionados em tempo real
+  watch(
+    () => slots.value.map((s) => s.source_module),
+    (curr, prev) => {
+      const prevSet = new Set(prev.filter(Boolean));
+      for (const sm of curr) {
+        if (sm && !prevSet.has(sm)) {
+          $broadcast.send(BROADCAST_TYPE.REQUEST_MODULE_STATE, { module: sm });
+        }
+      }
+    },
+    { deep: true }
+  );
 
   const activeSlots = computed(() => {
     if (!globalEnabled.value) return [];
@@ -115,11 +140,12 @@ export function useOverlayState(): OverlayStateReturn {
 
   function imageStyle(slot: OverlaySlot): Record<string, string> {
     const s = slot.style;
+    const scale = (s.image_scale ?? 100) / 100;
     return {
-      width: s.width || "auto",
-      height: s.height || "auto",
-      maxWidth: s.max_width || "40vw",
-      maxHeight: s.max_height || "30vh",
+      width: "auto",
+      height: "auto",
+      maxWidth: `calc(40vw * ${scale})`,
+      maxHeight: `calc(30vh * ${scale})`,
       objectFit: s.object_fit || "contain",
       display: "block",
     };

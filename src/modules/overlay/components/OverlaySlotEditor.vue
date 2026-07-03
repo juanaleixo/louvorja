@@ -194,44 +194,6 @@
           emitChange();
         "
       />
-      <v-select
-        :model-value="m.style.animation"
-        :label="t('style.animation')"
-        :items="animationOptions"
-        density="compact"
-        hide-details
-        variant="outlined"
-        @update:model-value="
-          m.style.animation = $event;
-          emitChange();
-        "
-      />
-      <v-select
-        :model-value="m.style.animation_exit"
-        :label="t('style.animation_exit')"
-        :items="animationOptions"
-        density="compact"
-        hide-details
-        variant="outlined"
-        @update:model-value="
-          m.style.animation_exit = $event;
-          emitChange();
-        "
-      />
-      <v-slider
-        :model-value="m.style.animation_duration"
-        :label="t('style.animation_duration')"
-        min="100"
-        max="1000"
-        step="50"
-        density="compact"
-        hide-details
-        thumb-label
-        @update:model-value="
-          m.style.animation_duration = $event;
-          emitChange();
-        "
-      />
       <v-row dense class="editor-checkboxes">
         <v-col cols="6">
           <v-checkbox
@@ -293,87 +255,36 @@
         "
       />
 
-      <v-divider class="my-2" />
+      <v-divider v-if="m.type === 'image'" class="my-2" />
 
-      <div class="text-caption font-weight-medium mb-1">Imagem</div>
-      <v-row dense>
-        <v-col cols="6">
-          <v-text-field
-            :model-value="m.style.width"
-            label="Largura"
-            density="compact"
-            hide-details
-            variant="outlined"
-            placeholder="auto"
-            @update:model-value="
-              m.style.width = $event;
-              emitChange();
-            "
-          />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field
-            :model-value="m.style.height"
-            label="Altura"
-            density="compact"
-            hide-details
-            variant="outlined"
-            placeholder="auto"
-            @update:model-value="
-              m.style.height = $event;
-              emitChange();
-            "
-          />
-        </v-col>
-      </v-row>
-      <v-row dense>
-        <v-col cols="6">
-          <v-text-field
-            :model-value="m.style.max_width"
-            label="Largura máxima"
-            density="compact"
-            hide-details
-            variant="outlined"
-            placeholder="40vw"
-            @update:model-value="
-              m.style.max_width = $event;
-              emitChange();
-            "
-          />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field
-            :model-value="m.style.max_height"
-            label="Altura máxima"
-            density="compact"
-            hide-details
-            variant="outlined"
-            placeholder="30vh"
-            @update:model-value="
-              m.style.max_height = $event;
-              emitChange();
-            "
-          />
-        </v-col>
-      </v-row>
-      <v-select
-        :model-value="m.style.object_fit"
-        label="Ajuste da imagem"
-        :items="[
-          { title: 'Contido (contain)', value: 'contain' },
-          { title: 'Cobrir (cover)', value: 'cover' },
-          { title: 'Preencher (fill)', value: 'fill' },
-          { title: 'Original (none)', value: 'none' },
-          { title: 'Reduzir (scale-down)', value: 'scale-down' },
-        ]"
-        density="compact"
-        hide-details
-        variant="outlined"
-        @update:model-value="
-          m.style.object_fit = $event;
-          emitChange();
-        "
-      />
+      <template v-if="m.type === 'image'">
+        <v-slider
+          :model-value="m.style.image_scale"
+          :label="t('style.image_scale')"
+          min="10"
+          max="200"
+          step="5"
+          density="compact"
+          hide-details
+          thumb-label
+          @update:model-value="
+            m.style.image_scale = $event;
+            emitChange();
+          "
+        />
+        <v-select
+          :model-value="m.style.object_fit"
+          :label="t('style.image_fit')"
+          :items="fitOptions"
+          density="compact"
+          hide-details
+          variant="outlined"
+          @update:model-value="
+            m.style.object_fit = $event;
+            emitChange();
+          "
+        />
+      </template>
     </div>
 
     <!-- Animation tab -->
@@ -449,6 +360,7 @@ import { ref, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import OverlayImagePicker from "./OverlayImagePicker.vue";
 import { OVERLAY_ANCHORS, OVERLAY_ANIMATIONS, OVERLAY_MODULE_SOURCES } from "@/types/Overlay";
+import { getModuleTitle } from "@/config/modules";
 
 const props = defineProps({
   slotData: { type: Object, required: true },
@@ -502,15 +414,28 @@ const anchors = OVERLAY_ANCHORS;
 const typeOptions = [
   { title: t("slot.type_text"), value: "text" },
   { title: t("slot.type_image"), value: "image" },
-  { title: t("slot.type_module"), value: "module_mirror" },
+  { title: t("slot.type_module_mirror"), value: "module_mirror" },
 ];
 
-const moduleOptions = [...OVERLAY_MODULE_SOURCES.map((m) => ({ title: m, value: m }))];
+const moduleOptions = [
+  ...OVERLAY_MODULE_SOURCES.map((m) => ({
+    title: _t(getModuleTitle(m)) || m,
+    value: m,
+  })),
+];
 
 const animationOptions = OVERLAY_ANIMATIONS.map((a) => ({
   title: t("animations." + a),
   value: a,
 }));
+
+const fitOptions = [
+  { title: t("style.fit_contain"), value: "contain" },
+  { title: t("style.fit_cover"), value: "cover" },
+  { title: t("style.fit_fill"), value: "fill" },
+  { title: t("style.fit_none"), value: "none" },
+  { title: t("style.fit_scale_down"), value: "scale-down" },
+];
 
 function onTypeChange() {
   if (m.type !== "module_mirror") m.source_module = null;

@@ -99,11 +99,20 @@ export function buildRibbonPages(): RibbonPage[] {
 }
 
 /**
- * Retorna Todos o modulo de acordo com ID informado
+ * Retorna o módulo de acordo com ID informado
  * @param {string }id id do módulo
  */
 export function getModule(id: string): Module | undefined {
   return allModules.find((m) => m.id === id)
+}
+
+/**
+ * Retorna o nome amigável do módulo de acordo com ID informado
+ * @param {string }id id do módulo
+ */
+export function getModuleTitle(id: string): string {
+  const module = getModule(id);
+  return module ? module.title : "";
 }
 
 /**

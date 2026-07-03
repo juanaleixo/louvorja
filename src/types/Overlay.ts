@@ -1,3 +1,5 @@
+import { ModuleEnum } from "@/enums/ModuleEnum";
+
 export type OverlaySlotType = "text" | "image" | "module_mirror";
 
 export type OverlayAnchor =
@@ -14,7 +16,11 @@ export const OVERLAY_ANCHORS: OverlayAnchor[] = [
 ];
 
 export const OVERLAY_MODULE_SOURCES = [
-  "timer", "counter", "clock", "stopwatch",
+  ModuleEnum.TIMER,
+  ModuleEnum.COUNTER,
+  ModuleEnum.CLOCK,
+  ModuleEnum.STOPWATCH,
+  ModuleEnum.TIMER_WORSHIP
 ] as const;
 
 export const OVERLAY_ANIMATIONS: OverlayAnimation[] = [
@@ -49,6 +55,7 @@ export interface OverlayStyle {
   max_width: string;
   max_height: string;
   object_fit: "contain" | "cover" | "fill" | "none" | "scale-down";
+  image_scale: number;
 }
 
 export interface OverlaySlot {
@@ -92,6 +99,7 @@ export const OVERLAY_STYLE_DEFAULTS: OverlayStyle = {
   max_width: "40vw",
   max_height: "30vh",
   object_fit: "contain",
+  image_scale: 100,
 };
 
 export function createOverlaySlot(overrides: Partial<OverlaySlot> = {}): OverlaySlot {

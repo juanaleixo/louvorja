@@ -9,7 +9,7 @@
     "type": "Tipo",
     "type_text": "Texto",
     "type_image": "Imagen",
-    "type_module": "Reflejo de módulo",
+    "type_module_mirror": "Reflejo de módulo",
     "module_source": "Módulo de origen",
     "content": "Contenido",
     "image_library": "Biblioteca de imágenes",
@@ -37,8 +37,13 @@
     "text_shadow": "Sombra de texto",
     "box_shadow": "Sombra de caja",
     "text_align": "Alineación",
-    "animation": "Animación (entrada)",
-    "width": "Ancho"
+    "image_scale": "Escala de imagen",
+    "image_fit": "Ajuste de imagen",
+    "fit_contain": "Contenido (contain)",
+    "fit_cover": "Cubrir (cover)",
+    "fit_fill": "Rellenar (fill)",
+    "fit_none": "Original (none)",
+    "fit_scale_down": "Reducir (scale-down)"
   },
   "animation": {
     "title": "Animación",

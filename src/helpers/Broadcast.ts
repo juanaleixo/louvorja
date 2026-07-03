@@ -51,7 +51,13 @@ const STATEFUL_TYPES = new Set<string>([
 
 let channel: BroadcastChannel | null = null;
 const _localListeners = new Set<(msg: BroadcastMessage) => void>();
-const _lastByType = new Map<string, BroadcastMessage>();
+const _lastByType = new Map<string, Map<string, BroadcastMessage>>();
+
+function _cacheKey(msg: BroadcastMessage): string {
+  return (msg.payload as Record<string, unknown> | undefined)?.module
+    ? String((msg.payload as Record<string, unknown>).module)
+    : "__default__";
+}
 
 function _deliverLocal(msg: BroadcastMessage): void {
   if (msg && typeof msg.type === "string") {
@@ -64,7 +70,13 @@ function _deliverLocal(msg: BroadcastMessage): void {
       _lastByType.delete("file_projection");
       _lastByType.delete("online_video_projection");
     } else if (STATEFUL_TYPES.has(msg.type)) {
-      _lastByType.set(msg.type, msg);
+      const key = _cacheKey(msg);
+      let inner = _lastByType.get(msg.type);
+      if (!inner) {
+        inner = new Map<string, BroadcastMessage>();
+        _lastByType.set(msg.type, inner);
+      }
+      inner.set(key, msg);
     }
   }
   for (const cb of _localListeners) {
@@ -140,8 +152,12 @@ export default {
     // Replay do último estado conhecido — listeners que registram depois
     // do boot (ex: Obs.vue montado num browser que abriu com música já
     // tocando) precisam ver o estado atual sem esperar a próxima emissão.
-    for (const msg of _lastByType.values()) {
-      try { callback(msg); } catch { /* noop */ }
+    // O cache é aninhado (tipo → module_id → mensagem) para suportar
+    // múltiplos módulos emitindo o mesmo tipo (ex: MODULE_PROJECTION_VALUE).
+    for (const inner of _lastByType.values()) {
+      for (const msg of inner.values()) {
+        try { callback(msg); } catch { /* noop */ }
+      }
     }
 
     return () => {
@@ -151,8 +167,14 @@ export default {
 
   /**
    * Retorna o último payload de um tipo stateful recebido NESTA janela.
+   * Se `module` for fornecido, busca o valor específico daquele módulo
+   * (útil para tipos como MODULE_PROJECTION_VALUE compartilhados por
+   * múltiplos módulos).
    */
-  getLastPayload(type: string): any | null {
-    return _lastByType.get(type)?.payload || null;
+  getLastPayload(type: string, module?: string): any | null {
+    if (module) {
+      return _lastByType.get(type)?.get(module)?.payload || null;
+    }
+    return _lastByType.get(type)?.get("__default__")?.payload || null;
   },
 };
