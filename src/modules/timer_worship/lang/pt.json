@@ -10,6 +10,18 @@
     "alarm_label": "Reproduzir",
     "play": "Tocar"
   },
+  "music": {
+    "sing": "Cantada",
+    "playback": "Playback",
+    "audio": "Audio",
+    "audio_playback": "Audio Playback"
+  },
+  "end_Action": {
+    "audio_not_configured": "Nenhum áudio configurado. Clique em Configurar áudio primeiro.",
+    "music_not_configured": "Nenhuma música configurada. Clique em Configurar música primeiro.",
+    "video_not_configured": "Nenhum vídeo configurado. Clique em Configurar vídeo primeiro.",
+    "online_video_not_configured": "Nenhum vídeo online configurado. Clique em Configurar vídeo online primeiro."
+  },
   "ribbon": {
     "title_ctx": "Configurar Timer Culto",
     "toggle": "Iniciar/Pausar",

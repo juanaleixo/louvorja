@@ -29,9 +29,9 @@ export const KEY_TIMER_WORSHIP_SOUND_FIVE_MIN = `${KEY_MODULES}.${ModuleEnum.TIM
 export const KEY_TIMER_WORSHIP_SOUND_ONE_MIN = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_one_min`;
 export const KEY_TIMER_WORSHIP_END_ACTION = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_action`;
 export const KEY_TIMER_WORSHIP_END_ACTION_AUDIO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_audio`;
+export const KEY_TIMER_WORSHIP_END_ACTION_MUSIC = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_music`;
 export const KEY_TIMER_WORSHIP_END_ACTION_VIDEO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`;
 export const KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`;
-
 
 export const KEY_DISPLAYS_PREFERRED = "displays.preferred";
 

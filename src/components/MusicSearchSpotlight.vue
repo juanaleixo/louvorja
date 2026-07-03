@@ -61,7 +61,7 @@
               <td>
                 <div class="d-flex justify-end">
                   <button
-                    v-if="mode === 'pick'"
+                    v-if="mode === 'pick' && !onMusicAction"
                     type="button"
                     class="music-search__pick"
                     :title="t('select')"
@@ -69,11 +69,49 @@
                   >
                     <v-icon icon="mdi-play-box-multiple" size="16" />
                   </button>
+                  <template v-if="onMusicAction">
+                    <button
+                      type="button"
+                      class="music-search__pick"
+                      :title="t('audio')"
+                      @click.stop="handleMusicAction(item, MusicActionEnum.AUDIO)"
+                    >
+                      <v-icon icon="mdi-play-box-multiple" size="16" />
+                    </button>
+                    <button
+                      type="button"
+                      class="music-search__pick"
+                      :title="t('playback')"
+                      :class="{ 'music-search__pick--disabled': !item.has_instrumental_music }"
+                      :disabled="!item.has_instrumental_music"
+                      @click.stop="handleMusicAction(item, MusicActionEnum.INSTRUMENTAL)"
+                    >
+                      <v-icon icon="mdi-play-box-multiple-outline" size="16" />
+                    </button>
+                    <button
+                      type="button"
+                      class="music-search__pick"
+                      :title="t('audio_only')"
+                      @click.stop="handleMusicAction(item, MusicActionEnum.AUDIO_ONLY)"
+                    >
+                      <v-icon icon="mdi-file-music" size="16" />
+                    </button>
+                    <button
+                      type="button"
+                      class="music-search__pick"
+                      :title="t('playback_only')"
+                      :class="{ 'music-search__pick--disabled': !item.has_instrumental_music }"
+                      :disabled="!item.has_instrumental_music"
+                      @click.stop="handleMusicAction(item, MusicActionEnum.PLAYBACK_ONLY)"
+                    >
+                      <v-icon icon="mdi-file-music-outline" size="16" />
+                    </button>
+                  </template>
                   <l-music-menu-table
                     v-else-if="!Platform.isRemote"
                     :id_music="Number(item.id_music)"
                     :name="item.name"
-                    :has_instrumental_music="item.has_instrumental_music"
+                    :has_instrumental_music="item.has_instrumental_music ?? false"
                   />
                   <div v-else class="d-flex align-center gap-1">
                     <v-btn
@@ -99,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import LMusicMenuTable from "@/components/MusicMenuTable.vue";
 import Database from "@/helpers/Database";
@@ -107,17 +145,18 @@ import Strings from "@/helpers/Strings";
 import Platform from "@/helpers/Platform";
 import type { MusicItem } from "@/types/Music";
 import type { AlbumItem } from "@/types/Album";
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
 
 interface SearchMusicItem extends MusicItem {
   track?: string | number;
   album?: string;
-  [key: string]: unknown;
 }
 
 const props = defineProps<{
   modelValue: boolean;
   mode?: "execute" | "pick";
   musicsList?: SearchMusicItem[] | null;
+  onMusicAction?: (music: SearchMusicItem, action: MusicActionEnum) => void;
 }>();
 
 const emit = defineEmits<{
@@ -136,6 +175,10 @@ const musics = ref<SearchMusicItem[]>([]);
 const open = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit("update:modelValue", value),
+});
+
+provide("close-spotlight", () => {
+  open.value = false;
 });
 
 const sourceMusics = computed<SearchMusicItem[]>(() =>
@@ -204,6 +247,11 @@ function pickFirst(): void {
 function pickMusic(music: SearchMusicItem): void {
   if (props.mode !== "pick") return;
   emit("pick", music);
+  open.value = false;
+}
+
+function handleMusicAction(music: SearchMusicItem, action: MusicActionEnum): void {
+  props.onMusicAction?.(music, action);
   open.value = false;
 }
 

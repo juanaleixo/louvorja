@@ -126,7 +126,7 @@ interface SearchResult {
   id_music: number | string;
   name: string;
   albums: Album[];
-  has_instrumental_music?: boolean;
+  has_instrumental_music: boolean;
 
   duration?: number;
   _custom?: boolean;

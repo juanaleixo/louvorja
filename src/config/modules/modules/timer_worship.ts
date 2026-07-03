@@ -128,7 +128,7 @@ export const contextualPages: RibbonPage[] = [
               { value: MediaEnum.NOTHING, label: "modules.timer_worship.ribbon.end_nothing" },
               { value: MediaEnum.AUDIO, label: "modules.timer_worship.ribbon.end_audio" },
               { value: MediaEnum.VIDEO, label: "modules.timer_worship.ribbon.end_video" },
-              { value: MediaEnum.ONLINE_VIDEOS, label: "modules.timer_worship.ribbon.end_online_video" },
+              { value: MediaEnum.ONLINE_VIDEO, label: "modules.timer_worship.ribbon.end_online_video" },
               { value: MediaEnum.MUSIC, label: "modules.timer_worship.ribbon.end_music" },
             ],
           },

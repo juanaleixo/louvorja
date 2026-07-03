@@ -15,6 +15,18 @@
     "alarm_label": "Tocar",
     "play": "Tocar"
   },
+  "music": {
+    "sing": "Cantada",
+    "playback": "Playback",
+    "audio": "Audio",
+    "audio_playback": "Audio Playback"
+  },
+  "end_Action": {
+    "audio_not_configured": "No hay audio configurado. Haz clic en configurar audio primero.",
+    "music_not_configured": "No hay música configurada. Haz clic en configurar música primero.",
+    "video_not_configured": "No hay vídeo configurado. Haz clic en configurar vídeo primero.",
+    "online_video_not_configured": "No hay vídeo en línea configurado. Haz clic en configurar vídeo en línea primero."
+  },
   "ribbon": {
     "title_ctx": "Configurar Temporizador de Culto",
     "toggle": "Iniciar/Pausar",

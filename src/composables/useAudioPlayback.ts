@@ -48,7 +48,7 @@ function _create(): AudioPlayback {
     if (!_el) return;
     const ct = isNaN(_el.currentTime) ? 0 : _el.currentTime;
     const d =
-      isNaN(_el.duration) || !isFinite(_el.duration) ? duration.value : _el.duration;
+      isNaN(_el.duration) || _el.duration < 0 ? duration.value : _el.duration;
     currentTime.value = ct;
     duration.value    = d;
     progress.value    = d <= 0 ? 0 : (ct / d) * 100;

@@ -126,7 +126,12 @@
     </v-dialog>
 
     <!-- Music search dialog -->
-    <MusicSearchSpotlight v-model="showMusicDialog" mode="pick" @pick="onMusicPicked" />
+    <MusicSearchSpotlight
+      v-model="showMusicDialog"
+      mode="pick"
+      :on-music-action="handleMusicAction"
+      @pick="onMusicPicked"
+    />
   </ModuleContainer>
 </template>
 
@@ -146,6 +151,9 @@ import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import Media from "@/composables/useMedia";
+import Database from "@/helpers/Database";
+import $path from "@/helpers/Path";
+import type { Music } from "@/types/Music";
 import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool";
 import { ICONS } from "@/config/Icons";
@@ -153,14 +161,17 @@ import Icon from "@/components/Icon.vue";
 import { openDB } from "idb";
 import { MediaEnum } from "@/enums/MediaEnum";
 import {
+  KEY_LJ_FILE_PROJECTION,
   KEY_TIMER_WORSHIP_END_ACTION,
   KEY_TIMER_WORSHIP_END_ACTION_AUDIO,
+  KEY_TIMER_WORSHIP_END_ACTION_MUSIC,
   KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO,
   KEY_TIMER_WORSHIP_END_ACTION_VIDEO,
   KEY_TIMER_WORSHIP_SOUND_FIVE_MIN,
   KEY_TIMER_WORSHIP_SOUND_ONE_MIN,
   KEY_TIMER_WORSHIP_SOUND_START,
 } from "@/constants/UserDataKeys";
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
 
 type TimerMode = "up" | "down";
 
@@ -264,7 +275,7 @@ const timerEndIcon = computed<string>(() => {
       return ICONS.UI.PLAYER;
     case MediaEnum.VIDEO:
       return ICONS.MEDIA.VIDEO;
-    case MediaEnum.ONLINE_VIDEOS:
+    case MediaEnum.ONLINE_VIDEO:
       return ICONS.MEDIA.YOUTUBE;
     case MediaEnum.MUSIC:
       return ICONS.MUSIC.MUSIC;
@@ -278,8 +289,14 @@ const timerEndInfo = computed<string | null>(() => {
   const label = t(`ribbon.end_${action}`);
   switch (action) {
     case MediaEnum.AUDIO: {
-      const url = $userdata.get<string>(KEY_TIMER_WORSHIP_END_ACTION_AUDIO);
-      return url ? `${label}: ${extractName(url)}` : `${label} — ${t("ribbon.not_configured")}`;
+      const data = $userdata.get<{ url?: string; title?: string; mode?: string } | null>(
+        KEY_TIMER_WORSHIP_END_ACTION_AUDIO,
+        null
+      );
+      if (!data?.url) return `${label} — ${t("ribbon.not_configured")}`;
+      const name = data.title || extractName(data.url);
+      const modeLabel = data.mode === "instrumental" ? t("music.audio_playback") : t("music.audio");
+      return `${label}: ${name} [${modeLabel}]`;
     }
     case MediaEnum.VIDEO: {
       const data = $userdata.get<{ url: string; type: string } | null>(
@@ -289,7 +306,7 @@ const timerEndInfo = computed<string | null>(() => {
         ? `${label}: ${extractName(data.url)}`
         : `${label} — ${t("ribbon.not_configured")}`;
     }
-    case MediaEnum.ONLINE_VIDEOS: {
+    case MediaEnum.ONLINE_VIDEO: {
       const data = $userdata.get<{ url: string; title: string } | null>(
         KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO
       );
@@ -300,12 +317,12 @@ const timerEndInfo = computed<string | null>(() => {
         id: string | number;
         name?: string;
         album?: string;
-        hasInstrumental?: boolean;
-      } | null>("modules.timer_worship.timer_end_data_music", null);
+        mode?: string;
+      } | null>(KEY_TIMER_WORSHIP_END_ACTION_MUSIC, null);
       if (!data?.id) return `${label} — ${t("ribbon.not_configured")}`;
       const album = data.album ? ` (${data.album})` : "";
-      const mode = data.hasInstrumental ? ` [Playback/Cantada]` : "";
-      return `${label}: ${data.name}${album}${mode}`;
+      const modeLabel = data.mode === "instrumental" ? t("music.playback") : t("music.sing");
+      return `${label}: ${data.name}${album} [${modeLabel}]`;
     }
     default:
       return null;
@@ -414,7 +431,7 @@ async function handleFileAudio(): Promise<void> {
   if (!result) return;
   const url = resolveFilePath(result.path || "", result.file);
   if (!url) return;
-  $userdata.set("modules.timer_worship.timer_end_data_audio", url);
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION_AUDIO, url);
 }
 
 async function handleFileVideo(): Promise<void> {
@@ -424,7 +441,7 @@ async function handleFileVideo(): Promise<void> {
   if (!url) return;
   const ext = (result.path || result.file?.name || "").split(".").pop()?.toLowerCase() || "";
   const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
-  $userdata.set("modules.timer_worship.timer_end_data_video", {
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION_VIDEO, {
     url,
     type: isImage ? "image" : "video",
   });
@@ -455,7 +472,7 @@ function pickOnlineVideo(video: { name: string; url: string }): void {
     Alert.error({ text: "Invalid YouTube URL" });
     return;
   }
-  $userdata.set("modules.timer_worship.timer_end_data_online_video", {
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO, {
     url: video.url,
     title: video.name,
   });
@@ -483,11 +500,44 @@ function onMusicPicked(music: {
   has_instrumental_music?: boolean;
 }): void {
   showMusicDialog.value = false;
-  $userdata.set("modules.timer_worship.timer_end_data_music", {
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION, MediaEnum.MUSIC);
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION_MUSIC, {
     id: music.id_music,
     name: music.name || "",
     album: music.album || "",
-    hasInstrumental: !!music.has_instrumental_music,
+    mode: "audio",
+  });
+}
+
+async function handleMusicAction(
+  music: { id_music: string | number; name?: string; has_instrumental_music?: boolean },
+  action: MusicActionEnum
+): Promise<void> {
+  showMusicDialog.value = false;
+
+  if (action === "audio" || action === "instrumental") {
+    $userdata.set(KEY_TIMER_WORSHIP_END_ACTION, MediaEnum.MUSIC);
+    $userdata.set(KEY_TIMER_WORSHIP_END_ACTION_MUSIC, {
+      id: music.id_music,
+      name: music.name || "",
+      mode: action,
+    });
+    return;
+  }
+
+  const data = await Database.get<Music>(`music_${music.id_music}`);
+  if (!data) return;
+
+  const isPlayback = action === "playback-only";
+  const rawUrl = isPlayback ? data.url_instrumental_music : data.url_music;
+  if (!rawUrl) return;
+  const url = $path.file(rawUrl);
+
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION, MediaEnum.AUDIO);
+  $userdata.set(KEY_TIMER_WORSHIP_END_ACTION_AUDIO, {
+    url,
+    title: music.name || "",
+    mode: isPlayback ? "instrumental" : undefined,
   });
 }
 
@@ -501,67 +551,80 @@ function playAlarm(): void {
 
 function triggerTimerEndAction(): void {
   const action = timerEndAction.value;
-  if (action === "nothing") return;
-  if (action === "audio") {
-    const url = $userdata.get<string>("modules.timer_worship.timer_end_data_audio", "");
-    if (!url) {
-      Alert.show({ text: "Nenhum áudio configurado. Clique em Configurar áudio primeiro." });
-      return;
-    }
-    Media.openAudio({ url, title: "Timer" });
-    return;
-  }
-  if (action === "video") {
-    const data = $userdata.get<{ url: string; type: string }>(
-      "modules.timer_worship.timer_end_data_video",
-      null
-    );
-    if (!data?.url) {
-      Alert.show({ text: "Nenhum vídeo configurado. Clique em Configurar vídeo primeiro." });
-      return;
-    }
-    const payload = { url: data.url, type: data.type, title: "Timer", fadeDuration: 500 };
-    try {
-      localStorage.setItem("lj_file_projection", JSON.stringify(payload));
-    } catch {
-      /* noop */
-    }
-    openFileProjectionWindows().catch(() => {});
-    Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
-    return;
-  }
-  if (action === "online_video") {
-    const data = $userdata.get<{ url: string; title: string }>(
-      "modules.timer_worship.timer_end_data_online_video",
-      null
-    );
-    if (!data?.url) {
-      Alert.show({
-        text: "Nenhum vídeo online configurado. Clique em Configurar vídeo online primeiro.",
-      });
-      return;
-    }
-    const id = data.url.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
-    )?.[1];
-    if (id)
-      Media.openYouTube(
-        `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`,
-        data.title
+  switch (action) {
+    case MediaEnum.AUDIO: {
+      const data = $userdata.get<{ url?: string; mode?: string; title?: string } | null>(
+        KEY_TIMER_WORSHIP_END_ACTION_AUDIO,
+        null
       );
-    return;
-  }
-  if (action === "music") {
-    const data = $userdata.get<{ id: string | number } | null>(
-      "modules.timer_worship.timer_end_data_music",
-      null
-    );
-    if (!data?.id) {
-      Alert.show({ text: "Nenhuma música configurada. Clique em Configurar música primeiro." });
+      if (!data?.url) {
+        Alert.show({ text: t("end_action.audio_not_configured") });
+        return;
+      }
+      const params: Record<string, string | undefined> = {
+        url: data.url,
+        title: data.title ?? "Timer",
+      };
+      if (data.mode === MusicActionEnum.INSTRUMENTAL) {
+        params.mode = MusicActionEnum.INSTRUMENTAL;
+      }
+      Media.openAudio(params as Parameters<typeof Media.openAudio>[0]);
       return;
     }
-    Media.open({ id_music: data.id });
-    return;
+    case MediaEnum.VIDEO: {
+      const data = $userdata.get<{ url: string; type: string }>(
+        KEY_TIMER_WORSHIP_END_ACTION_VIDEO,
+        null
+      );
+      if (!data?.url) {
+        Alert.show({ text: t("end_action.video_not_configured") });
+        return;
+      }
+      const payload = { url: data.url, type: data.type, title: "Timer", fadeDuration: 500 };
+      try {
+        localStorage.setItem(KEY_LJ_FILE_PROJECTION, JSON.stringify(payload));
+      } catch {
+        /* noop */
+      }
+      openFileProjectionWindows().catch(() => {});
+      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+      return;
+    }
+    case MediaEnum.ONLINE_VIDEO: {
+      const data = $userdata.get<{ url: string; title: string }>(
+        KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO,
+        null
+      );
+      if (!data?.url) {
+        Alert.show({
+          text: t("end_action.online_video_not_configured"),
+        });
+        return;
+      }
+      const id = data.url.match(
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
+      )?.[1];
+      if (id)
+        Media.openYouTube(
+          `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`,
+          data.title
+        );
+      return;
+    }
+    case MediaEnum.MUSIC: {
+      const data = $userdata.get<{ id: string | number; mode?: MusicActionEnum } | null>(
+        KEY_TIMER_WORSHIP_END_ACTION_MUSIC,
+        null
+      );
+      if (!data?.id) {
+        Alert.show({ text: t("end_action.music_not_configured") });
+        return;
+      }
+      Media.open({ id_music: data.id, mode: data.mode || MusicActionEnum.AUDIO });
+      return;
+    }
+    default:
+      return;
   }
 }
 

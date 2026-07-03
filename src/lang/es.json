@@ -584,7 +584,9 @@
       "uncheck_all": "Desmarcar Todos",
       "update": "Actualizar",
       "overlay_toggle": "Superposición on/off",
-      "overlay_add": "Agregar superposición"
+      "overlay_add": "Agregar superposición",
+      "audio_only": "Reproducir Audio",
+      "playback_only": "Reproducir Playback"
     }
   },
   "shell": {

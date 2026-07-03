@@ -1,8 +1,19 @@
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
+
+export interface MediaOpenParams {
+  id_music?: string | number;
+  id_album?: string | number | null;
+  mode?: MusicActionEnum;
+  minimized?: boolean;
+  url?: string;
+  title?: string;
+}
+
 export interface MediaConfig {
   audio?: unknown;
   slide_index?: number;
   last_slide?: number;
-  mode?: string;
+  mode?: MusicActionEnum;
   is_youtube?: boolean;
 }
 

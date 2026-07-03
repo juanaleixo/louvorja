@@ -119,6 +119,8 @@ export const ICONS = {
     TIMER_WORSHIP: "mdi-timer-sand-complete",
   },
   MUSIC: {
+    AUDIO: "mdi-file-music",
+    AUDIO_PLAYBACK: "mdi-file-music-outline",
     FILE: "mdi-file-music-outline",
     FOLDER: "mdi-folder-music",
     LYRIC: "mdi-text-box-outline",

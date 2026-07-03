@@ -584,7 +584,9 @@
       "uncheck_all": "Desmarcar Todos",
       "update": "Atualizar",
       "overlay_toggle": "Overlay on/off",
-      "overlay_add": "Adicionar overlay"
+      "overlay_add": "Adicionar overlay",
+      "audio_only": "Tocar Áudio",
+      "playback_only": "Tocar Playback"
     }
   },
   "shell": {

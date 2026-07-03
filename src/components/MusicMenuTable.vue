@@ -76,41 +76,67 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 /**
  * Widget de ações por linha de tabela de músicas: botões rápidos (favorito, cantar,
  * playback, sem áudio, letra) + menu dropdown com submenus. O sufixo "Table" no nome
  * indica o contexto onde é renderizado, não a presença de lógica de tabela — não há
  * duplicação com DataTable.vue.
  */
-import { computed } from "vue";
+import { computed, inject } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDisplay } from "vuetify";
 import Favorites from "@/helpers/Favorites";
 import Liturgy from "@/helpers/Liturgy";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
+import { ICONS } from "@/config/Icons";
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
 
-const props = defineProps({
-  id_music: Number,
-  name: String,
-  has_instrumental_music: [Boolean, Number],
-  color: String,
-  extraMenu: {
-    type: Array,
-    default: () => [],
-  },
-});
+interface ButtonItem {
+  testid: string;
+  disabled: boolean;
+  title: string;
+  icon: string;
+  click: () => void;
+}
+
+interface MenuItem {
+  title: string;
+  icon: string;
+  menu: MenuSubItem[];
+}
+interface MenuSubItem {
+  title: string;
+  icon?: string;
+  click?: () => void;
+  disabled?: boolean;
+}
+interface ExtraMenuItem {
+  title: string;
+  icon: string;
+  click: () => void;
+}
+
+const props = defineProps<{
+  id_music: number;
+  name: string;
+  has_instrumental_music: boolean;
+  color?: string;
+  extraMenu?: ExtraMenuItem[];
+}>();
 
 const { t } = useI18n();
 const { width } = useDisplay();
+
+const closeSpotlight = inject<() => void>("close-spotlight", () => {});
 
 const is_favorite = computed(() => Favorites.isFavorite(props.id_music));
 const compact = computed(() => width.value <= 550);
 const is_mobile = computed(() => AppData.get("is_mobile"));
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 
-const buttons = computed(() => [
+const buttons = computed<ButtonItem[]>(() => [
   {
     testid: "favorite",
     disabled: false,
@@ -124,33 +150,62 @@ const buttons = computed(() => [
     testid: "sing",
     disabled: false,
     title: t("ribbon.btn.sing"),
-    icon: "mdi-play-box-multiple",
-    click: () => Media.open({ id_music: props.id_music, mode: "audio" }),
+    icon: ICONS.MUSIC.SING,
+    click: () => {
+      closeSpotlight();
+      Media.open({ id_music: props.id_music, mode: MusicActionEnum.AUDIO });
+    },
   },
   {
     testid: "playback",
     disabled: !props.has_instrumental_music,
     title: t("ribbon.btn.playback"),
-    icon: "mdi-play-box-multiple-outline",
-    click: () => Media.open({ id_music: props.id_music, mode: "instrumental" }),
+    icon: ICONS.MUSIC.PLAYBACK,
+    click: () => {
+      closeSpotlight();
+      Media.open({ id_music: props.id_music, mode: MusicActionEnum.INSTRUMENTAL });
+    },
   },
   {
     testid: "no-audio",
     disabled: false,
     title: t("ribbon.btn.no_audio"),
-    icon: "mdi-checkbox-multiple-blank-outline",
-    click: () => Media.open(props.id_music),
+    icon: ICONS.MUSIC.NO_AUDIO,
+    click: () => {
+      closeSpotlight();
+      Media.open(props.id_music);
+    },
   },
   {
     testid: "lyric",
     disabled: false,
     title: t("ribbon.btn.lyric"),
-    icon: "mdi-text-box-outline",
+    icon: ICONS.MUSIC.LYRIC,
     click: () => Media.openLyric(props.id_music),
+  },
+  {
+    testid: "audio-only",
+    disabled: false,
+    title: t("ribbon.btn.audio_only"),
+    icon: ICONS.MUSIC.AUDIO,
+    click: () => {
+      closeSpotlight();
+      Media.openAudio(props.id_music);
+    },
+  },
+  {
+    testid: "playback-only",
+    disabled: !props.has_instrumental_music,
+    title: t("ribbon.btn.playback_only"),
+    icon: ICONS.MUSIC.AUDIO_PLAYBACK,
+    click: () => {
+      closeSpotlight();
+      Media.openAudio({ id_music: props.id_music, mode: MusicActionEnum.INSTRUMENTAL });
+    },
   },
 ]);
 
-const menu = computed(() => [
+const menu = computed<MenuItem[]>(() => [
   {
     title: t("components.music_menu.add_to"),
     icon: "mdi-plus",
@@ -175,44 +230,45 @@ const menu = computed(() => [
     menu: [
       {
         title: t("ribbon.btn.sing"),
-        icon: "mdi-play-box-multiple",
-        click: () => Media.open({ id_music: props.id_music, mode: "audio" }),
+        icon: ICONS.MUSIC.SING,
+        click: () => Media.open({ id_music: props.id_music, mode: MusicActionEnum.AUDIO }),
       },
       {
         title: t("ribbon.btn.playback"),
-        icon: "mdi-play-box-multiple-outline",
-        click: () => Media.open({ id_music: props.id_music, mode: "instrumental" }),
+        icon: ICONS.MUSIC.PLAYBACK,
+        click: () => Media.open({ id_music: props.id_music, mode: MusicActionEnum.INSTRUMENTAL }),
         disabled: !props.has_instrumental_music,
       },
       {
         title: t("ribbon.btn.no_audio"),
-        icon: "mdi-checkbox-multiple-blank-outline",
+        icon: ICONS.MUSIC.NO_AUDIO,
         click: () => Media.open(props.id_music),
       },
       {
         title: t("ribbon.btn.lyric"),
-        icon: "mdi-text-box-outline",
+        icon: ICONS.MUSIC.LYRIC,
         click: () => Media.openLyric(props.id_music),
       },
       { title: "-" },
       {
         title: t("components.music_menu.file_sing"),
-        icon: "mdi-file-music",
+        icon: ICONS.MUSIC.AUDIO,
         click: () => Media.openAudio(props.id_music),
       },
       {
         title: t("components.music_menu.file_playback"),
-        icon: "mdi-file-music-outline",
-        click: () => Media.openAudio({ id_music: props.id_music, mode: "instrumental" }),
+        icon: ICONS.MUSIC.AUDIO_PLAYBACK,
+        click: () =>
+          Media.openAudio({ id_music: props.id_music, mode: MusicActionEnum.INSTRUMENTAL }),
         disabled: !props.has_instrumental_music,
       },
     ],
   },
-  ...props.extraMenu.map((item) => ({
+  ...(props.extraMenu?.map((item) => ({
     title: item.title,
     icon: item.icon,
     menu: [{ title: item.title, icon: item.icon, click: item.click }],
-  })),
+  })) ?? []),
 ]);
 </script>
 
