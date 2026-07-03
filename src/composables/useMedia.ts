@@ -333,6 +333,13 @@ const _self = {
     });
   },
 
+  stop(): void {
+    _audio.stop();
+    this.clearVariables();
+    _slides.reset();
+    $appdata.set("modules.media.minimized", false);
+  },
+
   close(force = false): void {
     if (_isYouTube()) {
       if (!force) {

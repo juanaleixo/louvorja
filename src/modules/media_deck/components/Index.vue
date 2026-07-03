@@ -228,6 +228,7 @@ import $appdata from "@/helpers/AppData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import { openDB, type IDBPDatabase } from "idb";
+import { KEY_LJ_FILE_PROJECTION } from "@/constants/UserDataKeys";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -664,7 +665,7 @@ async function playIndex(index: number): Promise<void> {
   const isVideo = item.type === "video";
 
   localStorage.setItem(
-    "lj_file_projection",
+    KEY_LJ_FILE_PROJECTION,
     JSON.stringify({ url, type: item.type, title: item.name })
   );
 
@@ -675,6 +676,9 @@ async function playIndex(index: number): Promise<void> {
   if (isVideo) {
     $media.openAudio({ url, title: item.name });
     $appdata.set("modules.media.config.video_file", true);
+  } else {
+    $media.stop();
+    $appdata.set("modules.media.config.video_file", false);
   }
 }
 
@@ -705,7 +709,7 @@ function stop(): void {
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
   closeProjectionWindows();
   $appdata.set("modules.media.config.video_file", false);
-  $media.close();
+  $media.close(true);
 }
 
 /* ------------------------------------------------------------------ */
