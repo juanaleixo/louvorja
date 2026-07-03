@@ -174,7 +174,7 @@ app.whenReady().then(async () => {
       "font-src 'self' data: http://localhost:* https://fonts.gstatic.com; " +
       "img-src 'self' blob: data: https: http://localhost:* https://*.ytimg.com https://*.youtube.com; " +
       "media-src 'self' blob: https: http://localhost:* https://*.googlevideo.com; " +
-      "connect-src 'self' http://localhost:* ws://localhost:* https://api.louvorja.com.br https://*.louvorja.com.br https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com; " +
+      "connect-src 'self' blob: http://localhost:* ws://localhost:* https://api.louvorja.com.br https://*.louvorja.com.br https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com; " +
       "frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
       "worker-src 'self' blob:;";
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {

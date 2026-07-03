@@ -43,7 +43,7 @@ export default async ({ mode }) => {
     ` font-src 'self' data:${cspExtra} https://fonts.gstatic.com;` +
     ` img-src 'self' data: https:${cspExtra};` +
     ` media-src 'self' blob: https:${cspExtra};` +
-    ` connect-src 'self'${cspExtra} https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://www.google.com https://*.google.com;` +
+    ` connect-src 'self' blob:${cspExtra} https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://www.google.com https://*.google.com;` +
     `${cspDesktopFrame}` +
     ` worker-src 'self'${cspExtra};` +
     `">`;

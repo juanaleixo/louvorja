@@ -209,7 +209,7 @@ function handle() {
             "font-src 'self' data: file: louvorja: https://fonts.gstatic.com",
             "img-src 'self' blob: data: https: file: louvorja: https://*.ytimg.com https://*.youtube.com",
             "media-src 'self' blob: https: file: louvorja: https://*.googlevideo.com",
-            "connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com",
+            "connect-src 'self' blob: louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com",
             "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
             "worker-src 'self' file: louvorja:",
           ].join("; ");
