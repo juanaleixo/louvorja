@@ -26,7 +26,7 @@
     <AppFooter />
 
     <CommandPalette v-model="cmdPaletteOpen" />
-    <MusicSearchSpotlight v-model="musicSearchOpen" />
+    <MusicSpotlight v-model="musicSearchOpen" />
     <BibleSearchSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
     <HotkeysCheatsheet v-model="hotkeysOpen" />
   </v-app>
@@ -43,7 +43,7 @@ import AppModules from "@/layout/Modules.vue";
 import AppAlert from "@/layout/Alert.vue";
 import AppLoading from "@/layout/Loading.vue";
 import CommandPalette from "@/layout/shell/CommandPalette.vue";
-import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
+import MusicSpotlight from "@components/MusicSpotlight.vue";
 import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
 import RibbonBar from "@/layout/shell/RibbonBar.vue";
 import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";

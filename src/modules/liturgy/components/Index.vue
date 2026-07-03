@@ -111,7 +111,7 @@
       </v-card>
     </v-dialog>
 
-    <MusicSearchSpotlight
+    <MusicSpotlight
       v-model="chooseMusicSearchOpen"
       mode="pick"
       :musics-list="musicsList"
@@ -134,7 +134,7 @@ import LiturgyDayTabs from "./LiturgyDayTabs.vue";
 import LiturgyList from "./LiturgyList.vue";
 import LiturgyNotesPanel from "./LiturgyNotesPanel.vue";
 import LiturgyItemForm from "./LiturgyItemForm.vue";
-import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
+import MusicSpotlight from "@components/MusicSpotlight.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
 import $alert from "@/helpers/Alert";
 import $liturgy from "@/helpers/Liturgy";
