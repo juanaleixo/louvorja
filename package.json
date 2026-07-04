@@ -52,6 +52,7 @@
     "fuse.js": "^7.3.0",
     "idb": "^8.0.3",
     "jszip": "^3.10.1",
+    "pdfjs-dist": "^6.1.200",
     "pinia": "^3.0.4",
     "vue": "~3.5.29",
     "vue-country-flag-next": "^2.3.2",

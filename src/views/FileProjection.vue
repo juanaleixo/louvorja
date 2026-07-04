@@ -20,6 +20,11 @@
       ref="ytContainer"
       class="file-projection__youtube"
     />
+    <canvas
+      v-else-if="fileProjection.type === 'pdf'"
+      ref="pdfCanvas"
+      class="file-projection__pdf"
+    />
   </div>
   <div v-else class="file-projection__empty"></div>
 </template>
@@ -38,6 +43,10 @@ import {
   YTAPI,
   YTPlayer,
 } from "@/types/Media";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 function getYT(): YTAPI | null {
   return (window as unknown as { YT?: YTAPI }).YT ?? null;
@@ -48,16 +57,68 @@ const fileProjection = reactive<FileProjectionState>({
   type: "",
   url: "",
   title: "",
+  page: 1,
+  totalPages: 0,
 });
 
 const videoRef = ref<HTMLVideoElement | null>(null);
 const ytContainer = ref<HTMLDivElement | null>(null);
+const pdfCanvas = ref<HTMLCanvasElement | null>(null);
+
+let pdfDoc: import("pdfjs-dist").PDFDocumentProxy | null = null;
 
 let ytPlayer: YTPlayer | null = null;
 let ytSyncTimer: ReturnType<typeof setInterval> | null = null;
 let _ytInitializing = false;
 
 const _YT_SYNC_INTERVAL = 500;
+
+async function renderPdfPage(pageNum: number): Promise<void> {
+  const canvas = pdfCanvas.value;
+  if (!pdfDoc || !canvas) return;
+  try {
+    const page = await pdfDoc.getPage(pageNum);
+    const parent = canvas.parentElement as HTMLElement;
+    if (!parent) return;
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(
+      parent.clientWidth / viewport.width,
+      parent.clientHeight / viewport.height
+    );
+    const scaled = page.getViewport({ scale });
+    canvas.width = scaled.width;
+    canvas.height = scaled.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+    fileProjection.page = pageNum;
+  } catch (e) {
+    console.error("[FileProjection] Erro render página:", e);
+  }
+}
+
+async function loadPdf(url: string, pageNum = 1): Promise<void> {
+  try {
+    if (pdfDoc) {
+      try {
+        await (pdfDoc as any).destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    pdfDoc = null;
+    const data = await fetch(url).then((r) => r.arrayBuffer());
+    pdfDoc = await getDocument({ data }).promise;
+    fileProjection.totalPages = pdfDoc.numPages;
+    await renderPdfPage(pageNum);
+    Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_PAGE, {
+      page: fileProjection.page,
+      totalPages: pdfDoc.numPages,
+    });
+  } catch (e) {
+    console.error("[FileProjection] Erro carregar PDF:", e);
+  }
+}
 
 function _activateProjection(p: FileProjectionState): void {
   fileProjection.active = true;
@@ -66,6 +127,7 @@ function _activateProjection(p: FileProjectionState): void {
   fileProjection.title = p.title || "";
   console.log("[FileProjection] Ativado:", p.type, p.url?.substring(0, 60));
   if (p.type === "youtube") nextTick(() => _initYoutube());
+  if (p.type === "pdf") nextTick(() => loadPdf(p.url, p.page || 1));
 }
 
 function _readPendingProjection(): void {
@@ -106,8 +168,31 @@ useBroadcastListener(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, (payload: unknown) 
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
-useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_PAGE, (payload: unknown) => {
+  if (!fileProjection.active || fileProjection.type !== "pdf") return;
+  const data = payload as { page?: number };
+  if (typeof data.page === "number" && pdfDoc) {
+    const clamped = Math.max(1, Math.min(data.page, pdfDoc.numPages));
+    if (clamped !== data.page) {
+      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_PAGE, {
+        page: clamped,
+        totalPages: pdfDoc.numPages,
+      });
+    }
+    renderPdfPage(clamped);
+  }
+});
+
+useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, async () => {
   _destroyYoutube();
+  if (pdfDoc) {
+    try {
+      await (pdfDoc as any).destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+  pdfDoc = null;
   fileProjection.active = false;
   try {
     localStorage.removeItem("lj_file_projection");
@@ -307,7 +392,15 @@ onMounted(() => {
   window.addEventListener("keydown", _onKey);
 });
 
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
+  if (pdfDoc) {
+    try {
+      await (pdfDoc as any).destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+  pdfDoc = null;
   _destroyYoutube();
   window.removeEventListener("keydown", _onKey);
 });
@@ -343,5 +436,10 @@ onBeforeUnmount(() => {
 .file-projection__youtube {
   width: 100vw;
   height: 100vh;
+}
+.file-projection__pdf {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>

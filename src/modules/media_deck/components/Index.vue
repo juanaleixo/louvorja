@@ -19,6 +19,7 @@
           <v-tab value="all">{{ t("all") }}</v-tab>
           <v-tab value="image">{{ t("images") }}</v-tab>
           <v-tab value="video">{{ t("videos") }}</v-tab>
+          <v-tab value="pdf">{{ t("documents") }}</v-tab>
         </v-tabs>
         <v-spacer />
         <v-btn size="small" variant="tonal" @click="addFiles">
@@ -59,25 +60,26 @@
               />
               <div v-else class="media-grid-item-thumb media-grid-item-thumb--icon">
                 <v-icon
-                  :icon="file.type === 'image' ? 'mdi-image' : 'mdi-video'"
+                  :icon="
+                    file.type === 'image'
+                      ? 'mdi-image'
+                      : file.type === 'pdf'
+                        ? 'mdi-file-pdf-box'
+                        : 'mdi-video'
+                  "
                   color="grey"
                   size="28"
                 />
               </div>
               <div class="media-grid-item-name">{{ file.name }}</div>
               <div class="media-grid-item-actions">
-                <v-btn
-                  :icon="ICONS.ACTIONS.EDIT"
-                  size="x-small"
-                  variant="text"
-                  @click.stop="startRename(file)"
-                />
-                <v-btn
-                  :icon="ICONS.ACTIONS.DELETE"
-                  size="x-small"
-                  variant="text"
-                  @click.stop="removeFile(file)"
-                />
+                <v-btn variant="text" size="x-small" @click.stop="startRename(file)">
+                  <v-icon size="16" :icon="ICONS.ACTIONS.EDIT" />
+                </v-btn>
+
+                <v-btn variant="text" size="x-small" @click.stop="removeFile(file)">
+                  <v-icon :icon="ICONS.ACTIONS.DELETE" size="16" />
+                </v-btn>
               </div>
             </div>
           </div>
@@ -154,7 +156,10 @@
             icon="mdi-skip-previous"
             size="small"
             variant="text"
-            :disabled="currentIndex <= 0"
+            :disabled="
+              currentIndex <= 0 &&
+              (!currentItem || currentItem.type !== 'pdf' || currentPdfPage <= 1)
+            "
             @click="prev"
           />
           <v-btn
@@ -168,7 +173,12 @@
             icon="mdi-skip-next"
             size="small"
             variant="text"
-            :disabled="currentIndex >= playlist.length - 1"
+            :disabled="
+              currentIndex >= playlist.length - 1 &&
+              (!currentItem ||
+                currentItem.type !== 'pdf' ||
+                (currentPdfTotalPages > 0 && currentPdfPage >= currentPdfTotalPages))
+            "
             @click="next"
           />
           <v-btn icon="mdi-stop" size="small" variant="text" color="error" @click="stop" />
@@ -207,7 +217,7 @@
         ref="fileInput"
         type="file"
         multiple
-        accept="image/*,video/*"
+        accept="image/*,video/*,.pdf"
         style="display: none"
         @change="onFilesSelected"
       />
@@ -225,6 +235,7 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import $media from "@/composables/useMedia";
 import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import { openDB, type IDBPDatabase } from "idb";
@@ -238,7 +249,7 @@ interface MediaFile {
   id: string;
   name: string;
   path: string;
-  type: "image" | "video";
+  type: "image" | "video" | "pdf";
   thumb?: string;
   addedAt: number;
   data?: ArrayBuffer;
@@ -249,7 +260,7 @@ interface PlaylistItem {
   id: string;
   name: string;
   path: string;
-  type: "image" | "video";
+  type: "image" | "video" | "pdf";
   typeIcon: string;
 }
 
@@ -302,12 +313,14 @@ async function deleteFile(id: string): Promise<void> {
 const moduleContainer = ref<{ t(key: string): string } | null>(null);
 const t = (key: string): string => moduleContainer.value?.t(key) || key;
 
-const libraryFilter = ref<"all" | "image" | "video">("all");
+const libraryFilter = ref<"all" | "image" | "video" | "pdf">("all");
 const searchQuery = ref("");
 const files = ref<MediaFile[]>([]);
 const playlist = ref<PlaylistItem[]>([]);
 const currentIndex = ref(-1);
 const isPlaying = ref(false);
+const currentPdfPage = ref(1);
+const currentPdfTotalPages = ref(0);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 /* ------------------------------------------------------------------ */
@@ -434,12 +447,14 @@ async function onDrop(e: DragEvent): Promise<void> {
       const ext = name.split(".").pop()?.toLowerCase() || "";
       const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
       const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
-      if (!isImage && !isVideo) continue;
+      const isPdf = ext === "pdf";
+      if (!isImage && !isVideo && !isPdf) continue;
+      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const file: MediaFile = {
         id: "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
         name,
         path: filePath,
-        type: isImage ? "image" : "video",
+        type: fileType,
         addedAt: Date.now(),
       };
       if (isImage) file.thumb = buildThumbPath(filePath);
@@ -449,7 +464,9 @@ async function onDrop(e: DragEvent): Promise<void> {
     } else {
       const isImage = f.type.startsWith("image/");
       const isVideo = f.type.startsWith("video/");
-      if (!isImage && !isVideo) continue;
+      const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
+      if (!isImage && !isVideo && !isPdf) continue;
+      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const fileId = "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
       const path = URL.createObjectURL(f);
       const { data, mime } = await readFileData(f);
@@ -457,7 +474,7 @@ async function onDrop(e: DragEvent): Promise<void> {
         id: fileId,
         name: f.name,
         path,
-        type: isImage ? "image" : "video",
+        type: fileType,
         addedAt: Date.now(),
         data,
         mime,
@@ -501,6 +518,7 @@ async function removeFile(file: MediaFile): Promise<void> {
     if (idx === currentIndex.value) stop();
     else if (idx < currentIndex.value) currentIndex.value--;
     playlist.value.splice(idx, 1);
+    savePlaylist();
   }
   await deleteFile(file.id);
   files.value = files.value.filter((f) => f.id !== file.id);
@@ -550,12 +568,14 @@ async function addFiles(): Promise<void> {
       const ext = name.split(".").pop()?.toLowerCase() || "";
       const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
       const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
-      if (!isImage && !isVideo) continue;
+      const isPdf = ext === "pdf";
+      if (!isImage && !isVideo && !isPdf) continue;
+      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const file: MediaFile = {
         id: "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
         name,
         path: rawPath,
-        type: isImage ? "image" : "video",
+        type: fileType,
         addedAt: Date.now(),
       };
       if (isImage) file.thumb = buildThumbPath(rawPath);
@@ -578,12 +598,14 @@ async function onFilesSelected(e: Event): Promise<void> {
       const ext = name.split(".").pop()?.toLowerCase() || "";
       const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
       const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
-      if (!isImage && !isVideo) continue;
+      const isPdf = ext === "pdf";
+      if (!isImage && !isVideo && !isPdf) continue;
+      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const file: MediaFile = {
         id: "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
         name,
         path: filePath,
-        type: isImage ? "image" : "video",
+        type: fileType,
         addedAt: Date.now(),
       };
       if (isImage) file.thumb = buildThumbPath(filePath);
@@ -593,7 +615,9 @@ async function onFilesSelected(e: Event): Promise<void> {
     } else {
       const isImage = f.type.startsWith("image/");
       const isVideo = f.type.startsWith("video/");
-      if (!isImage && !isVideo) continue;
+      const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
+      if (!isImage && !isVideo && !isPdf) continue;
+      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const fileId = "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
       const path = URL.createObjectURL(f);
       const { data, mime } = await readFileData(f);
@@ -601,7 +625,7 @@ async function onFilesSelected(e: Event): Promise<void> {
         id: fileId,
         name: f.name,
         path,
-        type: isImage ? "image" : "video",
+        type: fileType,
         addedAt: Date.now(),
         data,
         mime,
@@ -620,26 +644,54 @@ async function onFilesSelected(e: Event): Promise<void> {
 /*  Playlist                                                           */
 /* ------------------------------------------------------------------ */
 
+const PLAYLIST_KEY = "modules.media_deck.playlist";
+
+function savePlaylist(): void {
+  const data = playlist.value.map(({ id, name, path, type }) => ({ id, name, path, type }));
+  $userdata.set(PLAYLIST_KEY, data);
+}
+
+function loadPlaylist(): void {
+  const saved = $userdata.get<
+    { id: string; name: string; path: string; type: "image" | "video" | "pdf" }[]
+  >(PLAYLIST_KEY, []);
+  if (saved?.length) {
+    playlist.value = saved.map((item) => ({
+      ...item,
+      typeIcon:
+        item.type === "image"
+          ? "mdi-image"
+          : item.type === "pdf"
+            ? "mdi-file-pdf-box"
+            : "mdi-video",
+    }));
+  }
+}
+
 function addToPlaylist(file: MediaFile): void {
   const item: PlaylistItem = {
     id: file.id,
     name: file.name,
     path: file.path,
     type: file.type,
-    typeIcon: file.type === "image" ? "mdi-image" : "mdi-video",
+    typeIcon:
+      file.type === "image" ? "mdi-image" : file.type === "pdf" ? "mdi-file-pdf-box" : "mdi-video",
   };
   playlist.value.push(item);
+  savePlaylist();
 }
 
 function removeFromPlaylist(index: number): void {
   if (index === currentIndex.value) stop();
   else if (index < currentIndex.value) currentIndex.value--;
   playlist.value.splice(index, 1);
+  savePlaylist();
 }
 
 function clearPlaylist(): void {
   stop();
   playlist.value = [];
+  savePlaylist();
 }
 
 /* ------------------------------------------------------------------ */
@@ -660,18 +712,22 @@ async function playIndex(index: number): Promise<void> {
 
   currentIndex.value = index;
   isPlaying.value = true;
+  currentPdfPage.value = 1;
+  currentPdfTotalPages.value = 0;
 
   const url = resolvePath(item.path);
   const isVideo = item.type === "video";
 
-  localStorage.setItem(
-    KEY_LJ_FILE_PROJECTION,
-    JSON.stringify({ url, type: item.type, title: item.name })
-  );
+  const payload: Record<string, unknown> = { url, type: item.type, title: item.name };
+  if (item.type === "pdf") {
+    payload.page = 1;
+  }
+
+  localStorage.setItem(KEY_LJ_FILE_PROJECTION, JSON.stringify(payload));
 
   await openFileProjectionWindows();
 
-  $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type: item.type, title: item.name });
+  $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
 
   if (isVideo) {
     $media.openAudio({ url, title: item.name });
@@ -691,12 +747,37 @@ async function togglePlay(): Promise<void> {
 }
 
 async function next(): Promise<void> {
+  const item = playlist.value[currentIndex.value];
+  if (item?.type === "pdf") {
+    const total = currentPdfTotalPages.value;
+    if (total > 0 && currentPdfPage.value >= total) {
+      if (currentIndex.value < playlist.value.length - 1) {
+        await playIndex(currentIndex.value + 1);
+      }
+      return;
+    }
+    currentPdfPage.value++;
+    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_PAGE, { page: currentPdfPage.value });
+    return;
+  }
   if (currentIndex.value < playlist.value.length - 1) {
     await playIndex(currentIndex.value + 1);
   }
 }
 
 async function prev(): Promise<void> {
+  const item = playlist.value[currentIndex.value];
+  if (item?.type === "pdf") {
+    if (currentPdfPage.value <= 1) {
+      if (currentIndex.value > 0) {
+        await playIndex(currentIndex.value - 1);
+      }
+      return;
+    }
+    currentPdfPage.value--;
+    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_PAGE, { page: currentPdfPage.value });
+    return;
+  }
   if (currentIndex.value > 0) {
     await playIndex(currentIndex.value - 1);
   }
@@ -741,12 +822,24 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
   }
 });
 
+// Recebe page/totalPages da janela de projeção
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_PAGE, (payload) => {
+  const data = payload as { page?: number; totalPages?: number };
+  if (typeof data.page === "number") {
+    currentPdfPage.value = data.page;
+  }
+  if (typeof data.totalPages === "number") {
+    currentPdfTotalPages.value = data.totalPages;
+  }
+});
+
 /* ------------------------------------------------------------------ */
 /*  Lifecycle                                                          */
 /* ------------------------------------------------------------------ */
 
 onMounted(async () => {
   files.value = await loadLibrary();
+  loadPlaylist();
   for (const f of files.value) {
     if (f.path.startsWith("blob:")) {
       if (f.data && f.mime) {
@@ -846,13 +939,12 @@ onBeforeUnmount(() => {
 
 .media-grid-item-actions {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 6px;
+  right: 0px;
   display: flex;
-  gap: 2px;
   opacity: 0;
   transition: opacity 0.12s;
-  background-color: rgb(255 255 255 / 0.42);
+  background-color: rgb(255 255 255 / 0.71);
 }
 
 .media-grid-item:hover .media-grid-item-actions {

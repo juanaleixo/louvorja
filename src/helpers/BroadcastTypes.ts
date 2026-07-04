@@ -81,9 +81,14 @@ export const BROADCAST_TYPE = Object.freeze({
   MEDIA_CLOSE: "media_close",
 
   /** Projeção de arquivo (imagem/vídeo) vindo de liturgia ou outro módulo.
-   *  Payload: { url: string, type: "image" | "video", title?: string }
+   *  Payload: { url: string, type: "image" | "video" | "pdf", title?: string, page?: number, totalPages?: number }
    *  Emitido por: liturgy (arquivo). Recebido por: Projection. */
   FILE_PROJECTION: "file_projection",
+
+  /** Navegação de página em PDF projetado.
+   *  Payload: { page: number }
+   *  Emitido por: media_deck (next/prev em PDF). Recebido por: FileProjection. */
+  FILE_PROJECTION_PAGE: "file_projection_page",
 
   /** Projeção de vídeo online (YouTube) via useMedia.openYouTube.
    *  Payload: { url: string, type: "youtube", title?: string }

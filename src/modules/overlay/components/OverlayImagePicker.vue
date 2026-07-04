@@ -26,12 +26,13 @@
         <img :src="thumbUrl(img)" class="image-picker-thumb" alt="" />
         <div class="image-picker-name">{{ img.name }}</div>
         <v-btn
-          icon="mdi-delete-outline"
-          size="x-small"
           variant="text"
+          size="x-small"
           class="image-picker-delete"
           @click.stop="deleteImage(img)"
-        />
+        >
+          <v-icon :icon="ICONS.ACTIONS.DELETE" size="16" />
+        </v-btn>
       </div>
     </div>
 
@@ -67,6 +68,7 @@ import {
   deleteImage as deleteFromDb,
   resolveImageUrl,
 } from "@/helpers/OverlayImages";
+import { ICONS } from "@/config/Icons";
 
 const { t: _t } = useI18n();
 const t = (key) => _t(`modules.overlay.${key}`);
@@ -262,10 +264,12 @@ onMounted(() => {
 
 .image-picker-delete {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  color: var(--lj-danger);
+  top: 0;
+  right: 0;
   opacity: 0;
   transition: opacity 0.12s;
+  background-color: rgb(255 255 255 / 0.74);
 }
 
 .image-picker-item:hover .image-picker-delete {

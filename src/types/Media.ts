@@ -28,6 +28,8 @@ export interface FileProjectionState {
   type: string;
   url: string;
   title: string;
+  page?: number;
+  totalPages?: number;
 }
 
 export interface YouTubeControlPayload {
