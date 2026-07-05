@@ -148,6 +148,23 @@ files/
 | `npm run serve` | Preview do build (requer `npm run build` antes) |
 | `npm run host` | Frontend acessível na rede local (`--host`) |
 | `npm run lint` | Verifica o código com ESLint |
+| `npm run format` | Formata código com Prettier |
+| `npm run format:check` | Verifica formatação (CI) |
+| `npm run typecheck` | TypeScript type-check |
+| `npm run validate:manifests` | Valida manifest.ts de todos os módulos |
+| `npm run prebuild` | Pré-build (validate:manifests + typecheck) |
+| `npm run electron:dev` | Desenvolvimento desktop (Electron) |
+| `npm run electron:build` | Build instalável (win/mac/linux) |
+| `npm run electron:build:win` | Build Windows |
+| `npm run electron:build:mac` | Build macOS |
+| `npm run electron:build:linux` | Build Linux |
+| `npm run electron:start` | Inicia Electron buildado |
+| `npm run test` | Testes unitários (vitest) |
+| `npm run test:watch` | Testes em modo watch |
+| `npm run test:ui` | Testes com interface Vite UI |
+| `npm run test:e2e` | Testes end-to-end (Playwright) |
+| `npm run test:visual` | Testes visuais (Percy) |
+| `npm run coverage` | Cobertura de código |
 
 ---
 
