@@ -117,7 +117,28 @@ function _getActiveModuleId() {
   return null;
 }
 
-/** Retorna true se há media aberta (módulo media visível OU minimizado com música). */
+/** Retorna a lista de módulos embedded abertos (excluindo popups e mídia). */
+function _getOpenEmbeddedModules() {
+  const modules = AppData.get("modules") || {};
+  const skip = new Set(["media", "lyric", "album"]);
+  return Object.values(modules)
+    .filter((m) => m && m.show === true && !skip.has(m.id) && m.popup !== true)
+    .sort((a, b) => a.order - b.order);
+}
+
+/** Alterna para o próximo módulo aberto (direction: 1 = próximo, -1 = anterior). */
+function _cycleModule(direction) {
+  const openModules = _getOpenEmbeddedModules();
+  if (openModules.length < 2) return;
+  const activeId = AppData.get("active_module");
+  const currentIndex = openModules.findIndex((m) => m.id === activeId);
+  if (currentIndex === -1) {
+    Modules.open(openModules[0].id);
+    return;
+  }
+  const nextIndex = (currentIndex + direction + openModules.length) % openModules.length;
+  Modules.open(openModules[nextIndex].id);
+}
 function _mediaIsActive() {
   return AppData.get("modules.media.show", false) || AppData.get("modules.media.minimized", false);
 }
@@ -589,6 +610,51 @@ $storage.hydrate().then(async () => {
         description: "hotkeys.ctrl_alt_d",
         group: "system",
         label: "Ctrl+Alt+D",
+      }
+    );
+
+    // Ctrl+O: ativar/desativar overlay
+    Hotkeys.register(
+      "Ctrl+o",
+      () => {
+        Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
+          module: "overlay",
+          action: "toggle",
+        });
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_o",
+        group: "general",
+        label: "Ctrl+O",
+      }
+    );
+
+    // Ctrl+Tab: próximo módulo aberto
+    Hotkeys.register(
+      "Ctrl+Tab",
+      () => {
+        _cycleModule(1);
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_tab",
+        group: "general",
+        label: "Ctrl+Tab",
+      }
+    );
+
+    // Shift+Ctrl+Tab: módulo anterior
+    Hotkeys.register(
+      "Shift+Ctrl+Tab",
+      () => {
+        _cycleModule(-1);
+      },
+      {
+        context: "global",
+        description: "hotkeys.shift_ctrl_tab",
+        group: "general",
+        label: "Shift+Ctrl+Tab",
       }
     );
 
