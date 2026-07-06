@@ -95,7 +95,7 @@ async function renderPdfPage(pageNum: number): Promise<void> {
     canvas.height = scaled.height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+    await page.render({ canvas, viewport: scaled }).promise;
     fileProjection.page = pageNum;
   } catch (e) {
     console.error("[FileProjectionReturn] Erro render página:", e);
