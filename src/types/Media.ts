@@ -32,6 +32,15 @@ export interface FileProjectionState {
   totalPages?: number;
 }
 
+export interface MediaFile {
+  id: string;
+  name: string;
+  fileName: string;
+  path: string;
+  data?: ArrayBuffer;
+  mime?: string;
+}
+
 export interface YouTubeControlPayload {
   action: string;
   value?: number;
@@ -65,6 +74,7 @@ export interface YTPlayerOptions {
   events: {
     onReady: () => void;
     onStateChange: (e: { data: number }) => void;
+    onError?: (e: number) => void;
   };
 }
 

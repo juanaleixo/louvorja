@@ -6,11 +6,18 @@
     @close="stop"
   >
     <!-- Header -->
-    <div class="bgm-root">
+    <div
+      class="bgm-root"
+      :class="{ 'bgm-root--drag-over': isDragOver }"
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent="onDragOver"
+      @dragleave="onDragLeave"
+      @drop.prevent="onDrop"
+    >
       <!-- Category chips -->
       <div v-if="categories.length" class="bgs-chips">
         <span class="bgm-header-title">{{ t("categories") }}</span>
-        <button
+        <div
           v-for="cat in categories"
           :key="cat.id"
           class="bgs-chip"
@@ -27,7 +34,7 @@
           <button class="bgs-chip-add" :title="t('add_audio')" @click.stop="addAudioFiles(cat)">
             <v-icon icon="mdi-plus" size="12" />
           </button>
-        </button>
+        </div>
       </div>
 
       <!-- Audio cards grid -->
@@ -150,160 +157,17 @@
         </div>
       </div>
 
-      <!-- New/Edit Category Dialog -->
-      <v-dialog v-model="showCategoryDialog" max-width="520" persistent>
-        <v-card>
-          <v-card-title class="text-body-1 font-weight-medium">
-            <v-icon :icon="editingCategory ? 'mdi-pencil' : 'mdi-plus'" class="mr-1" />
-            {{ editingCategory ? t("edit_category") : t("new_category") }}
-          </v-card-title>
-          <v-card-text>
-            <v-text-field
-              v-model="catForm.name"
-              density="compact"
-              hide-details
-              variant="outlined"
-              :label="t('category_name')"
-              class="mb-4"
-            />
-
-            <v-row>
-              <v-col cols="12" sm="6">
-                <label class="bgs-label d-block mb-1">{{ t("category_color") }}</label>
-                <div class="bgs-color-swatches">
-                  <button
-                    v-for="c in colorPresets"
-                    :key="c"
-                    class="bgs-color-swatch"
-                    :class="{ 'bgm-color-swatch--active': catForm.color === c }"
-                    :style="{ background: c }"
-                    @click="catForm.color = c"
-                  />
-                </div>
-              </v-col>
-              <v-col cols="12" sm="6">
-                <label class="bgs-label d-block mb-1">{{ t("category_icon") }}</label>
-                <div class="bgs-icon-grid">
-                  <button
-                    v-for="icon in iconOptions"
-                    :key="icon.value"
-                    class="bgs-icon-btn"
-                    :class="{ 'bgm-icon-btn--active': catForm.icon === icon.value }"
-                    @click="catForm.icon = icon.value"
-                  >
-                    <Icon :icon="icon.value" size="20" />
-                  </button>
-                </div>
-                <v-divider class="my-2" />
-                <label class="bgs-label d-block mb-1">{{ t("custom_image") }}</label>
-                <v-btn size="small" variant="tonal" @click="uploadCustomIcon">
-                  <v-icon start icon="mdi-upload" />
-                  {{ t("upload_image") }}
-                </v-btn>
-                <div v-if="catForm.iconImage" class="bgs-custom-icon-preview mt-2">
-                  <v-img :src="catForm.iconImage" width="40" height="40" />
-                  <v-btn
-                    icon="mdi-close"
-                    size="5px"
-                    variant="text"
-                    color="error"
-                    class="bgs-custom-icon-remove"
-                    :title="t('remove_image')"
-                    @click="removeCustomIcon"
-                  />
-                </div>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn
-              v-if="editingCategory"
-              variant="text"
-              color="error"
-              @click="deleteCategoryFromDialog"
-            >
-              <v-icon start icon="mdi-delete" />
-              {{ t("delete") }}
-            </v-btn>
-            <v-spacer />
-            <v-btn variant="text" @click="closeCategoryDialog">{{ t("cancel") }}</v-btn>
-            <v-btn
-              variant="tonal"
-              color="primary"
-              :disabled="!catForm.name.trim() || saving"
-              :loading="saving"
-              @click="saveCategoryForm"
-            >
-              {{ t("save") }}
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
-      <!-- Manage Categories Dialog -->
-      <v-dialog v-model="showManageDialog" max-width="600" persistent>
-        <v-card>
-          <v-card-title class="d-flex align-center ga-1">
-            <v-icon icon="mdi-tune" />
-            {{ t("manage_categories") }}
-            <v-spacer />
-            <v-btn
-              size="x-small"
-              variant="tonal"
-              class="text-label-large"
-              :color="V_COLOR_PRIMARY"
-              @click="openNewCategory"
-            >
-              <v-icon start icon="mdi-plus" />
-              {{ t("new_category") }}
-            </v-btn>
-          </v-card-title>
-          <v-card-text>
-            <div v-if="categories.length === 0" class="bgs-empty" style="min-height: 100px">
-              <p>{{ t("no_categories") }}</p>
-            </div>
-            <div v-else class="bgs-manage-list">
-              <div
-                v-for="cat in categories"
-                :key="cat.id"
-                class="bgs-manage-item"
-                :style="{ '--cat-color': cat.color }"
-              >
-                <div class="bgs-manage-item-icon">
-                  <Icon v-if="cat.iconType === 'icon'" :icon="cat.icon" size="20" color="white" />
-                  <v-img v-else :src="cat.icon" width="20" height="20" />
-                </div>
-                <div class="bgs-manage-item-info">
-                  <span class="bgs-manage-item-name">{{ cat.name }}</span>
-                  <span class="bgs-manage-item-count">
-                    {{ (cat.files || []).length }}
-                    {{
-                      t((cat.files || []).length === 1 ? "file_added" : "add_files").toLowerCase()
-                    }}
-                  </span>
-                </div>
-                <v-btn
-                  icon="mdi-pencil"
-                  size="small"
-                  variant="text"
-                  @click="openEditCategory(cat)"
-                />
-                <v-btn
-                  icon="mdi-delete"
-                  size="small"
-                  variant="text"
-                  color="error"
-                  @click="deleteCategory(cat)"
-                />
-              </div>
-            </div>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn variant="text" @click="showManageDialog = false">{{ t("close") }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <!-- Category Manager -->
+      <CategoryManagerDialog
+        v-model="showManageDialog"
+        :categories="categories"
+        :saving="saving"
+        :icon-options="iconOptions"
+        :color-presets="colorPresets"
+        :module-id="'background_sound'"
+        @save="handleSaveCategory"
+        @delete="handleDeleteCategory"
+      />
 
       <!-- Add audio dialog -->
       <v-dialog v-model="showAddAudioDialog" max-width="400">
@@ -394,8 +258,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import { openDB, type IDBPDatabase } from "idb";
-import { useBackgroundSound, type BgAudioFile } from "@/composables/useBackgroundSound";
+import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $appdata from "@/helpers/AppData";
@@ -403,56 +266,28 @@ import $userdata from "@/helpers/UserData";
 import Alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
+import CategoryManagerDialog, { CategoryFileData } from "@/components/CategoryManagerDialog.vue";
 import { V_COLOR_PRIMARY } from "@/constants/Colors";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import $modules from "@/helpers/Modules";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-interface BgCategory {
-  id: string;
-  name: string;
-  icon: string;
-  iconType: "icon" | "image";
-  iconData?: ArrayBuffer;
-  iconMime?: string;
-  color: string;
-  files: BgAudioFile[];
-}
+import { MediaFile } from "@/types/Media";
 
 /* ------------------------------------------------------------------ */
 /*  IDB Helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-const DB_NAME = "louvorja_" + ModuleEnum.BACKGROUND_SOUND;
-const DB_VERSION = 1;
-const STORE_CATEGORIES = "categories";
+const STORE_CATEGORIES = DB_TABLE.BACKGROUND_SOUND_CATEGORIES;
 
-let dbPromise: Promise<IDBPDatabase> | null = null;
-
-function getDb(): Promise<IDBPDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_CATEGORIES)) {
-          db.createObjectStore(STORE_CATEGORIES, { keyPath: "id" });
-        }
-      },
-    });
-  }
-  return dbPromise;
+async function loadCategories(): Promise<CategoryFileData[]> {
+  return (await $idb.getAll<CategoryFileData>(STORE_CATEGORIES)).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
 }
 
-async function loadCategories(): Promise<BgCategory[]> {
-  const db = await getDb();
-  return (await db.getAll(STORE_CATEGORIES)).sort((a, b) => a.name.localeCompare(b.name));
-}
-
-async function saveCategory(cat: BgCategory): Promise<void> {
-  const db = await getDb();
-  const files: BgAudioFile[] = (cat.files || []).map((f) => ({
+async function saveCategory(cat: CategoryFileData): Promise<void> {
+  const files: MediaFile[] = (cat.files || []).map((f) => ({
     id: String(f.id),
     name: String(f.name),
     fileName: String(f.fileName || f.name),
@@ -472,24 +307,15 @@ async function saveCategory(cat: BgCategory): Promise<void> {
     files,
   };
   try {
-    await db.put(STORE_CATEGORIES, plain);
+    await $idb.put(STORE_CATEGORIES, plain);
   } catch (err) {
-    console.error(
-      "[bg_music] saveCategory error:",
-      err,
-      "plain:",
-      plain,
-      "cat.id:",
-      cat.id,
-      typeof cat.id
-    );
+    console.error("[bg_music] saveCategory error:", err, "cat.id:", cat.id);
     throw err;
   }
 }
 
 async function deleteCategoryById(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete(STORE_CATEGORIES, id);
+  await $idb.del(STORE_CATEGORIES, id);
 }
 
 /* ------------------------------------------------------------------ */
@@ -506,20 +332,21 @@ const t = (key: string, named?: Record<string, unknown>): string =>
 /*  State                                                              */
 /* ------------------------------------------------------------------ */
 
-const categories = ref<BgCategory[]>([]);
+const categories = ref<CategoryFileData[]>([]);
 const selectedCategoryIds = ref(new Set<string>());
 const showManageDialog = ref(false);
 const showAddAudioDialog = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
-const showCategoryDialog = ref(false);
-const editingCategory = ref<BgCategory | null>(null);
 const saving = ref(false);
 const bg = useBackgroundSound();
-const pendingAudioFiles = ref<BgAudioFile[]>([]);
+const pendingAudioFiles = ref<MediaFile[]>([]);
 let pendingCategoryId: string | null = null;
+const pendingDropFiles = ref<File[]>([]);
+const isDragOver = ref(false);
+let dragCounter = 0;
 
 const showEditFileDialog = ref(false);
-const editingFileItem = ref<{ file: BgAudioFile; categoryId: string } | null>(null);
+const editingFileItem = ref<{ file: MediaFile; categoryId: string } | null>(null);
 const editFileForm = ref<{ name: string; fileName: string; newFile: File | null }>({
   name: "",
   fileName: "",
@@ -586,7 +413,7 @@ const colorPresets = [
 
 const visibleFiles = computed(() => {
   const result: {
-    file: BgAudioFile;
+    file: MediaFile;
     categoryId: string;
     categoryName: string;
     color: string;
@@ -631,20 +458,6 @@ function openManageCategories(): void {
   selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
 }
 
-async function deleteCategory(cat: BgCategory): Promise<void> {
-  if (!window.confirm(t("confirm_delete_category"))) return;
-  if (bg.currentFile.value) {
-    const currentCat = categories.value.find((c) =>
-      c.files?.some((f) => f.id === bg.currentFile.value?.id)
-    );
-    if (currentCat?.id === cat.id) bg.stop();
-  }
-  await deleteCategoryById(cat.id);
-  categories.value = await loadCategories();
-  rebuildAllBlobUrls(categories.value);
-  selectedCategoryIds.value = new Set([...selectedCategoryIds.value].filter((id) => id !== cat.id));
-}
-
 function toggleCategoryChip(id: string): void {
   const next = new Set(selectedCategoryIds.value);
   if (next.has(id)) next.delete(id);
@@ -652,100 +465,24 @@ function toggleCategoryChip(id: string): void {
   selectedCategoryIds.value = next;
 }
 
-const catForm = ref<{
-  name: string;
-  icon: string;
-  iconType: "icon" | "image";
-  iconImage: string;
-  iconData: ArrayBuffer | null;
-  iconMime: string;
-  color: string;
-}>({
-  name: "",
-  icon: ICONS.CATEGORY.MUSIC,
-  iconType: "icon",
-  iconImage: "",
-  iconData: null,
-  iconMime: "",
-  color: "#4CAF50",
-});
-
-function openNewCategory(): void {
-  editingCategory.value = null;
-  catForm.value = {
-    name: "",
-    icon: ICONS.CATEGORY.MUSIC,
-    iconType: "icon",
-    iconImage: "",
-    iconData: null,
-    iconMime: "",
-    color: "#4CAF50",
-  };
-  showCategoryDialog.value = true;
-}
-
-function openEditCategory(cat: BgCategory): void {
-  editingCategory.value = cat;
-  catForm.value = {
-    name: cat.name,
-    icon: cat.icon,
-    iconType: cat.iconType,
-    iconImage: cat.iconType === "image" ? cat.icon : "",
-    iconData: cat.iconData || null,
-    iconMime: cat.iconMime || "",
-    color: cat.color,
-  };
-  showCategoryDialog.value = true;
-}
-
-function closeCategoryDialog(): void {
-  showCategoryDialog.value = false;
-  editingCategory.value = null;
-}
-
-async function saveCategoryForm(): Promise<void> {
-  if (saving.value) return;
-  const form = catForm.value;
-  if (!form || !form.name.trim()) return;
+async function handleSaveCategory(cat: CategoryFileData): Promise<void> {
   saving.value = true;
   try {
-    const existingCat = editingCategory.value?.id
-      ? categories.value.find((c) => c.id === editingCategory.value!.id)
-      : null;
-    const cat: BgCategory = {
-      id: existingCat?.id ?? crypto.randomUUID(),
-      name: form.name.trim(),
-      icon: form.iconType === "image" ? form.iconImage : form.icon,
-      iconType: form.iconType,
-      ...(form.iconType === "image" && form.iconData
-        ? { iconData: form.iconData, iconMime: form.iconMime || "image/png" }
-        : existingCat?.iconType === "image"
-          ? { iconData: existingCat.iconData, iconMime: existingCat.iconMime }
-          : {}),
-      color: form.color,
-      files: existingCat?.files || [],
-    };
+    const existingCat = categories.value.find((c) => c.id === cat.id);
+    cat.files = existingCat?.files || [];
     await saveCategory(cat);
     const reloaded = await loadCategories();
     categories.value = reloaded;
     rebuildAllBlobUrls(categories.value);
     selectedCategoryIds.value = new Set(reloaded.map((c) => c.id));
-    closeCategoryDialog();
-  } catch (err) {
-    console.error("[bg_music] saveCategoryForm error:", err);
   } finally {
     saving.value = false;
   }
 }
 
-async function deleteCategoryFromDialog(): Promise<void> {
-  if (!editingCategory.value) return;
-  if (!window.confirm(t("confirm_delete_category"))) return;
-  await removeCategory(editingCategory.value);
-  closeCategoryDialog();
-}
-
-async function removeCategory(cat: BgCategory): Promise<void> {
+async function handleDeleteCategory(id: string): Promise<void> {
+  const cat = categories.value.find((c) => c.id === id);
+  if (!cat) return;
   if (bg.currentFile.value) {
     const currentCat = categories.value.find((c) =>
       c.files?.some((f) => f.id === bg.currentFile.value?.id)
@@ -755,6 +492,68 @@ async function removeCategory(cat: BgCategory): Promise<void> {
   await deleteCategoryById(cat.id);
   categories.value = await loadCategories();
   rebuildAllBlobUrls(categories.value);
+  selectedCategoryIds.value = new Set([...selectedCategoryIds.value].filter((cid) => cid !== id));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Drag & drop                                                        */
+/* ------------------------------------------------------------------ */
+
+function onDragEnter(): void {
+  isDragOver.value = true;
+  dragCounter++;
+}
+
+function onDragOver(): void {
+  isDragOver.value = true;
+}
+
+function onDragLeave(): void {
+  dragCounter--;
+  if (dragCounter <= 0) {
+    isDragOver.value = false;
+    dragCounter = 0;
+  }
+}
+
+const AUDIO_EXTS = ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"];
+
+async function onDrop(e: DragEvent): Promise<void> {
+  isDragOver.value = false;
+  dragCounter = 0;
+  const droppedFiles = e.dataTransfer?.files;
+  if (!droppedFiles?.length) return;
+
+  if (!categories.value.length) {
+    Alert.info({ title: t("add_audio"), text: t("no_categories") });
+    return;
+  }
+
+  const valid: File[] = [];
+  for (const f of Array.from(droppedFiles)) {
+    const ext = f.name.split(".").pop()?.toLowerCase() || "";
+    if (AUDIO_EXTS.includes(ext)) {
+      valid.push(f);
+    }
+  }
+
+  if (valid.length === 0) {
+    Alert.error({
+      title: t("add_audio"),
+      text: "Tipo de arquivo não suportado. Use mp3, wav, ogg, flac, etc.",
+    });
+    return;
+  }
+
+  if (valid.length < droppedFiles.length) {
+    Alert.info({
+      title: t("add_audio"),
+      text: `${valid.length} de ${droppedFiles.length} arquivos são suportados. Os demais foram ignorados.`,
+    });
+  }
+
+  pendingDropFiles.value = valid;
+  showAddAudioDialog.value = true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -774,10 +573,39 @@ function openAddAudioMenu(): void {
   showAddAudioDialog.value = true;
 }
 
-function addAudioFiles(cat: BgCategory): void {
-  pendingAudioFiles.value = cat.files;
+function addAudioFiles(cat: CategoryFileData): void {
+  pendingAudioFiles.value = cat.files || [];
   pendingCategoryId = cat.id;
   showAddAudioDialog.value = false;
+
+  if (pendingDropFiles.value.length) {
+    const files = [...pendingDropFiles.value];
+    pendingDropFiles.value = [];
+    for (const f of files) {
+      const filePath = (f as any).path;
+      const fileId = crypto.randomUUID();
+      const bgFile: MediaFile = {
+        id: fileId,
+        name: "",
+        fileName: f.name,
+        path: filePath || URL.createObjectURL(f),
+      };
+      if (!filePath) {
+        readFileData(f).then(({ data, mime }) => {
+          bgFile.data = data;
+          bgFile.mime = mime;
+        });
+      }
+      pendingAudioFiles.value.push(bgFile);
+    }
+    pendingAudioFiles.value = [];
+    if (pendingCategoryId) {
+      const cat = categories.value.find((c) => c.id === pendingCategoryId);
+      if (cat) saveCategory(cat);
+      pendingCategoryId = null;
+    }
+    return;
+  }
   fileInput.value?.click();
 }
 
@@ -787,7 +615,7 @@ async function onAudioFilesSelected(e: Event): Promise<void> {
   for (const f of Array.from(input.files)) {
     const filePath = (f as any).path;
     const fileId = crypto.randomUUID();
-    const bgFile: BgAudioFile = {
+    const bgFile: MediaFile = {
       id: fileId,
       name: "",
       fileName: f.name,
@@ -809,7 +637,7 @@ async function onAudioFilesSelected(e: Event): Promise<void> {
   }
 }
 
-async function removeFile(categoryId: string, file: BgAudioFile): Promise<void> {
+async function removeFile(categoryId: string, file: MediaFile): Promise<void> {
   const cat = categories.value.find((c) => c.id === categoryId);
   if (!cat) return;
   Alert.yesno(
@@ -821,7 +649,7 @@ async function removeFile(categoryId: string, file: BgAudioFile): Promise<void> 
   );
 }
 
-async function doRemove(categoryId: string, file: BgAudioFile): Promise<void> {
+async function doRemove(categoryId: string, file: MediaFile): Promise<void> {
   const cat = categories.value.find((c) => c.id === categoryId);
   if (!cat) return;
   if (bg.currentFile.value?.id === file.id) bg.stop();
@@ -832,7 +660,7 @@ async function doRemove(categoryId: string, file: BgAudioFile): Promise<void> {
   selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
 }
 
-function openEditFile(item: { file: BgAudioFile; categoryId: string }): void {
+function openEditFile(item: { file: MediaFile; categoryId: string }): void {
   editingFileItem.value = item;
   editFileForm.value = { name: item.file.name, fileName: item.file.fileName, newFile: null };
   showEditFileDialog.value = true;
@@ -895,7 +723,7 @@ const createdObjectUrls = new Map<string, string>();
 /*  Playback                                                           */
 /* ------------------------------------------------------------------ */
 
-function toggleFile(file: BgAudioFile): void {
+function toggleFile(file: MediaFile): void {
   if (bg.currentFile.value?.id === file.id && bg.isPlaying.value) {
     bg.togglePlay(fadeInDuration.value, fadeOutDuration.value);
   } else {
@@ -903,12 +731,12 @@ function toggleFile(file: BgAudioFile): void {
   }
 }
 
-function playFile(file: BgAudioFile): void {
+function playFile(file: MediaFile): void {
   const path = resolveFilePath(file);
   bg.playFile({ ...file, path }, fadeInDuration.value);
 }
 
-function resolveFilePath(file: BgAudioFile): string {
+function resolveFilePath(file: MediaFile): string {
   if (file.path && !file.path.startsWith("blob:")) return file.path;
   if (file.data && file.mime) {
     const existing = createdObjectUrls.get(file.id);
@@ -921,8 +749,8 @@ function resolveFilePath(file: BgAudioFile): string {
   return file.path;
 }
 
-function playRandom(cat: BgCategory): void {
-  if (!cat.files.length) return;
+function playRandom(cat: CategoryFileData): void {
+  if (!cat.files?.length) return;
   const idx = Math.floor(Math.random() * cat.files.length);
   playFile(cat.files[idx]);
 }
@@ -968,36 +796,6 @@ function toggleMute(): void {
   }
 }
 
-function uploadCustomIcon(): void {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
-  input.onchange = async (e: Event) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const buf = await file.arrayBuffer();
-      catForm.value.iconImage = url;
-      catForm.value.icon = url;
-      catForm.value.iconType = "image";
-      catForm.value.iconData = buf;
-      catForm.value.iconMime = file.type || "image/png";
-    }
-  };
-  input.click();
-}
-
-function removeCustomIcon(): void {
-  if (catForm.value.iconImage && catForm.value.iconImage.startsWith("blob:")) {
-    URL.revokeObjectURL(catForm.value.iconImage);
-  }
-  catForm.value.iconImage = "";
-  catForm.value.iconData = null;
-  catForm.value.iconMime = "";
-  catForm.value.iconType = "icon";
-  catForm.value.icon = ICONS.CATEGORY.MUSIC;
-}
-
 /* ------------------------------------------------------------------ */
 /*  Ribbon actions                                                     */
 /* ------------------------------------------------------------------ */
@@ -1022,7 +820,7 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
       openAddAudioMenu();
       break;
     case "manage_categories":
-      openManageCategories();
+      showManageDialog.value = true;
       break;
   }
 });
@@ -1044,7 +842,7 @@ watch(
 /*  Lifecycle                                                          */
 /* ------------------------------------------------------------------ */
 
-function rebuildIconUrls(list: BgCategory[]): void {
+function rebuildIconUrls(list: CategoryFileData[]): void {
   for (const cat of list) {
     if (cat.iconType === "image" && cat.iconData && cat.iconData.byteLength > 0) {
       const key = "__icon_" + cat.id;
@@ -1058,10 +856,10 @@ function rebuildIconUrls(list: BgCategory[]): void {
   }
 }
 
-function rebuildAllBlobUrls(list: BgCategory[]): void {
+function rebuildAllBlobUrls(list: CategoryFileData[]): void {
   rebuildIconUrls(list);
   for (const cat of list) {
-    for (const f of cat.files) {
+    for (const f of cat.files!!) {
       if (f.data && f.mime && f.path.startsWith("blob:")) {
         const key = "file_" + f.id;
         const old = createdObjectUrls.get(key);
@@ -1098,6 +896,10 @@ onBeforeUnmount(() => {
   height: 100%;
   overflow: hidden;
   font-family: var(--lj-font-shell);
+}
+.bgm-root--drag-over {
+  outline: 2px dashed rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 /* ── Header ── */

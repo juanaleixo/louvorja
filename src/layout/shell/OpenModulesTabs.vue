@@ -5,7 +5,7 @@
     role="tablist"
     :aria-label="$t('shell.open_modules')"
   >
-    <button
+    <v-btn
       v-for="m in openModules"
       :key="m.id"
       type="button"
@@ -32,7 +32,7 @@
       >
         <v-icon icon="mdi-close" size="11" aria-hidden="true" />
       </span>
-    </button>
+    </v-btn>
   </div>
 </template>
 
@@ -120,9 +120,9 @@ function close(id) {
 
 .subtab--active {
   background: var(--lj-subtab-active-bg);
-  color: var(--lj-subtab-active-color);
+  color: var(--lj-navy);
   font-weight: var(--lj-weight-semibold);
-  border-color: var(--lj-subtabs-border);
+  border-color: var(--lj-navy);
   z-index: 2;
   height: var(--lj-subtabs-height);
   margin-bottom: -1px;
@@ -143,6 +143,7 @@ function close(id) {
 .subtab-icon {
   opacity: 0.85;
   flex-shrink: 0;
+  margin-right: var(--lj-space-2);
 }
 
 .subtab-label {

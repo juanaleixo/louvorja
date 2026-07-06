@@ -154,7 +154,7 @@ import Media from "@/composables/useMedia";
 import Database from "@/helpers/Database";
 import $path from "@/helpers/Path";
 import type { Music } from "@/types/Music";
-import MusicSpotlight from "@components/MusicSpotlight.vue";
+import MusicSpotlight from "@/components/MusicSpotlight.vue";
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";

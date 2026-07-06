@@ -143,14 +143,9 @@ import LMusicMenuTable from "@/components/MusicMenuTable.vue";
 import Database from "@/helpers/Database";
 import Strings from "@/helpers/Strings";
 import Platform from "@/helpers/Platform";
-import type { MusicItem } from "@/types/Music";
+import type { SearchMusicItem } from "@/types/Music";
 import type { AlbumItem } from "@/types/Album";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
-
-interface SearchMusicItem extends MusicItem {
-  track?: string | number;
-  album?: string;
-}
 
 const props = defineProps<{
   modelValue: boolean;

@@ -144,7 +144,7 @@ const buttons = computed<ButtonItem[]>(() => [
       ? t("components.music_menu.remove_from_favorites")
       : t("components.music_menu.add_to_favorites"),
     icon: is_favorite.value ? "mdi-star" : "mdi-star-outline",
-    click: () => Favorites.toggle(props.id_music, props.name, props.has_instrumental_music),
+    click: () => Favorites.toggle(props.id_music, props.name, !!props.has_instrumental_music),
   },
   {
     testid: "sing",
@@ -215,12 +215,12 @@ const menu = computed<MenuItem[]>(() => [
           ? t("components.music_menu.remove_from_favorites")
           : t("components.music_menu.add_to_favorites"),
         icon: is_favorite.value ? "mdi-star-off" : "mdi-star",
-        click: () => Favorites.toggle(props.id_music, props.name, props.has_instrumental_music),
+        click: () => Favorites.toggle(props.id_music, props.name, !!props.has_instrumental_music),
       },
       {
         title: t("components.music_menu.add_to_liturgy"),
         icon: "mdi-view-list-outline",
-        click: () => Liturgy.addMusic(props.id_music, props.name, props.has_instrumental_music),
+        click: () => Liturgy.addMusic(props.id_music, props.name, !!props.has_instrumental_music),
       },
     ],
   },

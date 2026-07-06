@@ -121,11 +121,11 @@
               @change="
                 saveUserData(
                   KEY_OPTIONS_MONITOR_PRIMARY,
-                  $v($event) === '' ? null : Number($v($event))
+                  $v($event) === '' ? 0 : Number($v($event))
                 )
               "
             >
-              <option value="">{{ $t("options.slides.none") }}</option>
+              <option value="0">{{ $t("options.slides.none") }}</option>
               <option v-for="d in displays" :key="d.id" :value="d.id">
                 {{ d.label || `Monitor ${d.id}` }}
               </option>
@@ -142,11 +142,11 @@
               @change="
                 saveUserData(
                   KEY_OPTIONS_MONITOR_SECONDARY,
-                  $v($event) === '' ? null : Number($v($event))
+                  $v($event) === '' ? 0 : Number($v($event))
                 )
               "
             >
-              <option value="">{{ $t("options.slides.none") }}</option>
+              <option :value="0">{{ $t("options.slides.none") }}</option>
               <option v-for="d in displays" :key="d.id" :value="d.id">
                 {{ d.label || `Monitor ${d.id}` }}
               </option>

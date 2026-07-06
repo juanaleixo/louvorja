@@ -1,18 +1,10 @@
 import { ref, onUnmounted, getCurrentScope } from "vue";
-
-export interface BgAudioFile {
-  id: string;
-  name: string;
-  fileName: string;
-  path: string;
-  data?: ArrayBuffer;
-  mime?: string;
-}
+import { MediaFile } from "@/types/Media";
 
 export function useBackgroundSound() {
   const audio = new Audio();
   const isPlaying = ref(false);
-  const currentFile = ref<BgAudioFile | null>(null);
+  const currentFile = ref<MediaFile | null>(null);
   const currentTime = ref(0);
   const duration = ref(0);
   const progress = ref(0);
@@ -113,7 +105,7 @@ export function useBackgroundSound() {
     }, 30);
   }
 
-  function playFile(file: BgAudioFile, fadeInMs = 3000): void {
+  function playFile(file: MediaFile, fadeInMs = 3000): void {
     _revokeBlob();
     _stopRaf();
     _clearFade();

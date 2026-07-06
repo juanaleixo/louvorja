@@ -984,7 +984,7 @@ async function changeFolder(): Promise<void> {
     if (btn === "cancel") return;
     const move = btn === "yes";
     try {
-      await Platform.storage.setFilesDir(newDir, { moveExisting: move });
+      await Platform.storage?.setFilesDir(newDir, { moveExisting: move });
       const cur = (await Platform.userStore?.read("storage")) || {};
       await Platform.userStore?.write("storage", { ...cur, filesDir: newDir });
       await reloadStats();

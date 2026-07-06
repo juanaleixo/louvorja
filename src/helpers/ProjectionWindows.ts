@@ -15,6 +15,7 @@ import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
 import { PROJECTION_TYPE, PROJECTION_URL } from "@/constants/Projection";
 import {
+  KEY_BACKGROUND_PROJECTION_SHOW_RETURN,
   KEY_DISPLAYS_PREFERRED,
   KEY_OPTIONS_ALWAYS_ON_TOP,
   KEY_OPTIONS_BIBLE_RETURN,

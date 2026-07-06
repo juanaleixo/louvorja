@@ -93,7 +93,7 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import Database from "@/helpers/Database";
-import BibleSpotlight from "@components/BibleSpotlight.vue";
+import BibleSpotlight from "@/components/BibleSpotlight.vue";
 import type {
   ActiveBibleState,
   Bible,
