@@ -197,6 +197,7 @@
   --lj-white-alpha-18: rgba(255, 255, 255, 0.18);
   --lj-white-alpha-20: rgba(255, 255, 255, 0.2);
   --lj-white-alpha-25: rgba(255, 255, 255, 0.25);
+  --lj-white-alpha-50: rgba(255, 255, 255, 0.5);
   --lj-black-alpha-18: rgba(0, 0, 0, 0.18);
   --lj-black-alpha-20: rgba(0, 0, 0, 0.2);
   --lj-black-alpha-30: rgba(0, 0, 0, 0.3);
@@ -220,7 +221,7 @@
   /* =================================================================
    * 10. DIMENSÕES (px) — replicam fmMenu.dfm
    * ================================================================= */
-  --lj-systembar-height: 44px;
+  --lj-systembar-height: 35px;
   --lj-tab-height: 28px;
   --lj-ribbon-body-height: 105px;
   --lj-group-label-height: 18px;
