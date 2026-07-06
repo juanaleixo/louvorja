@@ -18,7 +18,7 @@
     "version:bug": "npm version patch",
     "serve": "vite preview",
     "validate:manifests": "npx tsx scripts/validate-manifests.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "vue-tsc --noEmit",
     "prebuild": "npm run validate:manifests && npm run typecheck",
     "build": "vite build",
     "lint": "eslint .",
