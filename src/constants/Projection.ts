@@ -8,6 +8,8 @@ export const PROJECTION_TYPE = {
   FILE_RETURN: "file_return",
   ONLINE_VIDEO: "online_video",
   ONLINE_VIDEO_RETURN: "online_video_return",
+  BACKGROUND: "background_projection",
+  BACKGROUND_RETURN: "background_projection_return",
 };
 const RETURN_URL = "/return"
 const URL_BASE = "/projection"
@@ -23,4 +25,6 @@ export const PROJECTION_URL = {
   FILE_RETURN: URL_BASE + "/file" + RETURN_URL,
   ONLINE_VIDEO: `${URL_BASE}/${PROJECTION_TYPE.ONLINE_VIDEO}`,
   ONLINE_VIDEO_RETURN: `${URL_BASE}/${PROJECTION_TYPE.ONLINE_VIDEO_RETURN}`,
+  BACKGROUND: URL_BASE + "/"+ PROJECTION_TYPE.BACKGROUND,
+  BACKGROUND_RETURN: URL_BASE + "/" + PROJECTION_TYPE.BACKGROUND + RETURN_URL,
 };

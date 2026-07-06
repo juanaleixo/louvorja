@@ -19,6 +19,13 @@ export const KEY_LITURGY_CATEGORIES = `${KEY_MODULES}.${ModuleEnum.LITURGY}.sche
 export const KEY_LITURGY_SCHEDULED = `${KEY_MODULES}.${ModuleEnum.LITURGY}.scheduled_items`;
 export const KEY_LITURGY_DAY_NOTES = `${KEY_MODULES}.${ModuleEnum.LITURGY}.day_notes`;
 
+//BACKGROUND PROJECTION
+export const KEY_BACKGROUND_PROJECTION_SHOW_RETURN = `${KEY_MODULES}.${ModuleEnum.BACKGROUND_PROJECTION}.show_return`;
+export const KEY_BACKGROUND_PROJECTION_IS_PLAYING = `${KEY_MODULES}.${ModuleEnum.BACKGROUND_PROJECTION}.is_playing`;
+
+//MEDIA DECK
+export const KEY_MEDIA_DECK_IS_PLAYING = `${KEY_MODULES}.${ModuleEnum.MEDIA_DECK}.is_playing`;
+
 //MEDIA
 export const KEY_MEDIA_FADE_AUDIO = `${KEY_MODULES}.${ModuleEnum.MEDIA}.fade_audio`;
 export const KEY_MEDIA_LAZY_LOAD = `${KEY_MODULES}.${ModuleEnum.MEDIA}.lazy_load`;

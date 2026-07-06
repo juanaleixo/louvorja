@@ -38,6 +38,7 @@ import Favorites from "@/helpers/Favorites";
 import History from "@/helpers/History";
 import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
+import $idb from "@/helpers/IndexedDB";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
@@ -388,6 +389,9 @@ $storage.hydrate().then(async () => {
         console.warn("[main] vue-axe não inicializado:", e.message);
       }
     }
+
+    // Inicializa IndexedDB unificado (cria tabelas se necessário)
+    await $idb.init();
 
     app.mount("#app");
 

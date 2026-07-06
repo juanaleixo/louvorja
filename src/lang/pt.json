@@ -204,7 +204,10 @@
     },
     "background": {
       "title": "Imagem de Fundo",
-      "color": "Cor do Fundo:"
+      "color": "Cor do Fundo:",
+      "select": "Selecionar imagem",
+      "no_image": "Nenhuma imagem configurada",
+      "position": "Ajuste:"
     },
     "transmission": {
       "title": "Transmissão",

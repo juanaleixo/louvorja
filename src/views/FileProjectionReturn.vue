@@ -1,5 +1,6 @@
 <template>
   <OverlayRenderer />
+  <div class="fp-wallpaper" :style="fallbackStyle"></div>
   <div class="return-root" :class="{ 'return-root--ready': ready }">
     <div v-if="fileProjection.active" class="return-file-projection">
       <img
@@ -33,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
@@ -47,8 +48,10 @@ import {
   YTPlayer,
 } from "@/types/Media";
 import { KEY_LJ_FILE_PROJECTION, KEY_LJ_YOUTUBE_PROJECTION } from "@/constants/UserDataKeys";
+import { getSetting } from "@/helpers/SettingsStorage";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { MainSettings } from "@/types/db/settings/main";
 
 GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -77,6 +80,35 @@ let ytSyncTimer: ReturnType<typeof setInterval> | null = null;
 let _ytInitializing = false;
 
 const _YT_SYNC_INTERVAL = 500;
+
+/* ── Wallpaper global (fallback) ── */
+
+/* ── Wallpaper via IndexedDB ── */
+
+const wpColor = ref("#000033");
+const wpImageUrl = ref("");
+const wpPosition = ref("cover");
+let wpBlobUrl: string | null = null;
+
+const bgSizeMap: Record<string, string> = {
+  cover: "cover",
+  contain: "contain",
+  center: "auto",
+  stretch: "100% 100%",
+  tile: "auto",
+};
+const bgRepeatMap: Record<string, string> = { tile: "repeat" };
+
+const fallbackStyle = computed(() => {
+  const style: Record<string, string> = { background: wpColor.value };
+  if (wpImageUrl.value) {
+    style.backgroundImage = `url(${wpImageUrl.value})`;
+    style.backgroundSize = bgSizeMap[wpPosition.value] || "cover";
+    style.backgroundPosition = wpPosition.value === "tile" ? "0 0" : "center";
+    style.backgroundRepeat = bgRepeatMap[wpPosition.value] || "no-repeat";
+  }
+  return style;
+});
 
 async function renderPdfPage(pageNum: number): Promise<void> {
   const canvas = pdfCanvas.value;
@@ -387,10 +419,36 @@ function _onKey(e: KeyboardEvent): void {
   }
 }
 
-onMounted(() => {
+async function reloadWallpaper(): Promise<void> {
+  const s = await getSetting<MainSettings>("main").catch(() => null);
+  if (s) {
+    wpColor.value = s.color || "#000033";
+    wpPosition.value = s.position || "cover";
+    if (s.image) {
+      if (wpBlobUrl) URL.revokeObjectURL(wpBlobUrl);
+      const blob = new Blob([s.image], { type: s.mime || "image/png" });
+      wpBlobUrl = URL.createObjectURL(blob);
+      wpImageUrl.value = wpBlobUrl;
+    } else {
+      if (wpBlobUrl) {
+        URL.revokeObjectURL(wpBlobUrl);
+        wpBlobUrl = null;
+      }
+      wpImageUrl.value = "";
+    }
+  }
+}
+
+useBroadcastListener(BROADCAST_TYPE.WALLPAPER_UPDATE, () => {
+  reloadWallpaper();
+});
+
+onMounted(async () => {
   document.body.style.margin = "0";
   document.body.style.overflow = "hidden";
   document.body.style.background = "#000";
+
+  await reloadWallpaper();
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -401,10 +459,11 @@ onMounted(() => {
   window.addEventListener("keydown", _onKey);
 });
 
-onBeforeUnmount(async () => {
+onBeforeUnmount(() => {
+  if (wpBlobUrl) URL.revokeObjectURL(wpBlobUrl);
   if (pdfDoc) {
     try {
-      await (pdfDoc as any).destroy();
+      (pdfDoc as any).destroy();
     } catch {
       /* ignore */
     }
@@ -416,14 +475,21 @@ onBeforeUnmount(async () => {
 </script>
 
 <style scoped>
+.fp-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
 .return-root {
+  position: relative;
+  z-index: 1;
   width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: transparent;
   opacity: 0;
   transition: opacity 120ms linear;
   box-sizing: border-box;
@@ -441,7 +507,7 @@ onBeforeUnmount(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: transparent;
 }
 
 .return-file-projection__media {

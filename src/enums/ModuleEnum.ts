@@ -5,6 +5,7 @@ export enum ModuleEnum {
   ALBUM = "album",
   ANIMATION = "animation",
   BACKGROUND_SOUND = "background_sound",
+  BACKGROUND_PROJECTION = "background_projection",
   BASE_MODULE = "base_module",
   BIBLE = "bible",
   BIBLE_SEARCH = "bible_search",

@@ -69,9 +69,14 @@ const routes = [
     component: () => import("@/views/FileProjection.vue"),
   },
   {
-    path: PROJECTION_URL.FILE_RETURN,
-    name: "FileProjectionReturn",
-    component: () => import("@/views/FileProjectionReturn.vue"),
+    path: PROJECTION_URL.BACKGROUND,
+    name: "BackgroundProjection",
+    component: () => import("@/views/BackgroundProjection.vue"),
+  },
+  {
+    path: PROJECTION_URL.BACKGROUND_RETURN,
+    name: "BackgroundProjectionReturn",
+    component: () => import("@/views/BackgroundProjectionReturn.vue"),
   },
 ];
 

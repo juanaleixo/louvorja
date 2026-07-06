@@ -43,6 +43,7 @@ interface DisplayPlatform {
     useHttpUrl?: boolean;
   }) => Promise<{ id: number }>;
   close: (feature: string) => Promise<void>;
+  listOpen: () => Promise<string[]>;
 }
 
 interface DisplaysAPI {
@@ -102,6 +103,24 @@ async function _close(feature: string): Promise<void> {
   _openWebWindows[feature] = null;
 }
 
+/**
+ * Verifica se a janela de projeção de fundo está aberta.
+ * Quando está aberta, as demais projeções (música, arquivo, bíblia)
+ * renderizam dentro dela, sem abrir janelas separadas.
+ */
+async function isBackgroundOpen(): Promise<boolean> {
+  try {
+    const api = (Platform as { windows?: DisplayPlatform }).windows;
+    if (Platform.isDesktop && api?.listOpen) {
+      const open = (await api.listOpen()) as string[];
+      return open.includes("media:" + PROJECTION_TYPE.BACKGROUND);
+    }
+  } catch {
+    /* noop */
+  }
+  return false;
+}
+
 async function _readPrefs(): Promise<Record<string, number | null>> {
   const api = (Platform as { displays?: DisplaysAPI }).displays;
   let raw: Record<string, number | string | null>;
@@ -149,6 +168,8 @@ function _resolveMonitorId(
  *   `options.open_return` estiverem habilitados nas configurações.
  */
 export async function openProjectionWindows(): Promise<void> {
+  if (await isBackgroundOpen()) return;
+
   const prefs = await _readPrefs();
   const fullscreen = $userdata.get(KEY_OPTIONS_FULLSCREEN, true) as boolean;
   const alwaysOnTop = $userdata.get(KEY_OPTIONS_ALWAYS_ON_TOP, true) as boolean;
@@ -189,6 +210,8 @@ export async function openProjectionWindows(): Promise<void> {
  * principal (fallback "Mesma janela" abre na janela atual).
  */
 export async function openFileProjectionWindows(): Promise<void> {
+  if (await isBackgroundOpen()) return;
+
   const prefs = await _readPrefs();
   const fullscreen = ($userdata.get(KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN, true) as boolean);
   const alwaysOnTop = ($userdata.get(KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP, true) as boolean);
@@ -226,6 +249,8 @@ export async function openFileProjectionWindows(): Promise<void> {
  * Player de Áudio/Vídeo (que pode estar em monitor diferente).
  */
 export async function openVideoProjectionWindows(): Promise<void> {
+  if (await isBackgroundOpen()) return;
+
   const prefs = await _readPrefs();
   const fullscreen = ($userdata.get(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN, true) as boolean);
   const alwaysOnTop = ($userdata.get(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP, true) as boolean);
@@ -255,6 +280,8 @@ export async function openVideoProjectionWindows(): Promise<void> {
  * Abre especificamente a janela da Bíblia se houver monitor configurado.
  */
 export async function openBibleWindow(): Promise<void> {
+  if (await isBackgroundOpen()) return;
+
   const prefs = await _readPrefs();
   const monitorId = prefs[PROJECTION_TYPE.BIBLE] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
   const openReturn = ($userdata.get(KEY_OPTIONS_BIBLE_RETURN, false) as boolean);
@@ -280,6 +307,44 @@ export async function openBibleWindow(): Promise<void> {
 }
 
 /**
+ * Abre janelas de projeção de fundo (imagem/vídeo do módulo Projeção de Fundo).
+ * Fullscreen, sem alwaysOnTop. Usa o monitor primário configurado nas
+ * preferências de projeção (KEY_OPTIONS_MONITOR_PRIMARY). Se nenhum monitor
+ * estiver configurado, não projeta.
+ */
+export async function openBackgroundProjectionWindows(): Promise<void> {
+  const primaryMonitorId = $userdata.get(KEY_OPTIONS_MONITOR_PRIMARY, null) as number | null;
+  if (primaryMonitorId != null) {
+    await _open(PROJECTION_URL.BACKGROUND, PROJECTION_TYPE.BACKGROUND, primaryMonitorId, true, false, true);
+  }
+
+  const showReturn = $userdata.get(KEY_BACKGROUND_PROJECTION_SHOW_RETURN, false) as boolean;
+  if (showReturn) {
+    const secondaryMonitorId = $userdata.get(KEY_OPTIONS_MONITOR_SECONDARY, null) as number | null;
+    if (secondaryMonitorId != null) {
+      await _open(
+        PROJECTION_URL.BACKGROUND_RETURN,
+        PROJECTION_TYPE.BACKGROUND_RETURN,
+        secondaryMonitorId,
+        true,
+        false,
+        true
+      );
+    }
+  }
+}
+
+/**
+ * Fecha as janelas de projeção de fundo.
+ */
+export async function closeBackgroundProjectionWindows(): Promise<void> {
+  await Promise.all([
+    _close(PROJECTION_TYPE.BACKGROUND),
+    _close(PROJECTION_TYPE.BACKGROUND_RETURN),
+  ]);
+}
+
+/**
  * Fecha todas as janelas auxiliares abertas pela media.
  */
 export async function closeProjectionWindows(): Promise<void> {
@@ -296,4 +361,4 @@ export async function closeProjectionWindows(): Promise<void> {
   ]);
 }
 
-export default { openProjectionWindows, closeProjectionWindows, openBibleWindow, openFileProjectionWindows, openVideoProjectionWindows };
+export default { openProjectionWindows, closeProjectionWindows, openBibleWindow, openFileProjectionWindows, openVideoProjectionWindows, openBackgroundProjectionWindows, closeBackgroundProjectionWindows };

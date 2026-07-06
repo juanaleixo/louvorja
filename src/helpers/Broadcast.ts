@@ -47,6 +47,7 @@ const STATEFUL_TYPES = new Set<string>([
   BROADCAST_TYPE.MESSAGE_BOARD,
   BROADCAST_TYPE.FILE_PROJECTION,
   BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION,
+  BROADCAST_TYPE.BACKGROUND_PROJECTION,
 ]);
 
 let channel: BroadcastChannel | null = null;
@@ -69,6 +70,7 @@ function _deliverLocal(msg: BroadcastMessage): void {
       _lastByType.delete("slides_data");
       _lastByType.delete("file_projection");
       _lastByType.delete("online_video_projection");
+      _lastByType.delete("background_projection");
     } else if (STATEFUL_TYPES.has(msg.type)) {
       const key = _cacheKey(msg);
       let inner = _lastByType.get(msg.type);

@@ -22,8 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted } from "vue";
-import Platform from "@/helpers/Platform";
+import { computed } from "vue";
+import $path from "@/helpers/Path";
+import { pickImage } from "@/helpers/FilePicker";
 
 interface CustomizationField {
   type: string;
@@ -60,61 +61,16 @@ function onInput(raw: string): void {
     return;
   }
   if (raw.startsWith("/") || /^[A-Za-z]:/.test(raw)) {
-    emit("update:modelValue", toFileUrl(raw));
+    emit("update:modelValue", $path.local(raw));
   } else {
     emit("update:modelValue", raw);
   }
 }
 
-function toFileUrl(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, "/");
-  const withSlash = normalized.startsWith("/") ? normalized : `/${normalized}`;
-  const encoded = withSlash
-    .split("/")
-    .map((p) => encodeURIComponent(p))
-    .join("/");
-  return `${LOCAL_PREFIX}${encoded}`;
+async function browse(): Promise<void> {
+  const url = await pickImage();
+  if (url) emit("update:modelValue", url);
 }
-
-let fileInput: HTMLInputElement | null = null;
-
-function browse(): void {
-  const api = Platform.api as LouvorjaApi | null;
-  const storage = api?.storage;
-  if (Platform.isDesktop && storage?.chooseImage) {
-    storage.chooseImage().then((filePath) => {
-      if (filePath) {
-        emit("update:modelValue", toFileUrl(filePath));
-      }
-    });
-  } else {
-    if (!fileInput) {
-      fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = "image/*";
-      fileInput.style.display = "none";
-      fileInput.addEventListener("change", () => {
-        const file = fileInput?.files?.[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e: ProgressEvent<FileReader>) => {
-            emit("update:modelValue", e.target?.result as string);
-          };
-          reader.readAsDataURL(file);
-        }
-        if (fileInput) fileInput.value = "";
-      });
-      document.body.appendChild(fileInput);
-    }
-    fileInput.click();
-  }
-}
-
-onUnmounted(() => {
-  if (fileInput && fileInput.parentNode) {
-    fileInput.parentNode.removeChild(fileInput);
-  }
-});
 </script>
 
 <style scoped>

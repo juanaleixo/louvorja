@@ -74,13 +74,44 @@
         <div class="opt-row">
           <label class="opt-format-field">
             <span class="opt-format-label">{{ $t("options.background.color") }}</span>
-            <input
-              type="color"
-              class="opt-color"
-              :value="getUserData(KEY_OPTIONS_GLOBAL_BG_COLOR, '#000033')"
-              @input="saveUserData(KEY_OPTIONS_GLOBAL_BG_COLOR, $v($event))"
-            />
+            <input type="color" class="opt-color" :value="bgColor" @input="onBgColorChange" />
           </label>
+        </div>
+        <div class="opt-row opt-row--inline">
+          <div class="opt-format-field opt-field-bgimage">
+            <span class="opt-format-label">{{ $t("options.background.title") }}</span>
+            <div class="opt-bg-pick">
+              <v-btn variant="outlined" size="small" @click="pickBgImage">
+                <v-icon start icon="mdi-image-plus" size="14" />
+                {{ $t("options.background.select") }}
+              </v-btn>
+              <span v-if="!currentBgImage" class="opt-bg-empty-text">
+                {{ $t("options.background.no_image") }}
+              </span>
+            </div>
+          </div>
+          <div v-if="currentBgImage" class="opt-bg-preview-wrap">
+            <div class="opt-bg-preview-thumb">
+              <img :src="currentBgImage" class="opt-bg-preview-img" />
+              <button
+                class="opt-bg-preview-remove"
+                :title="$t('actions.delete')"
+                @click="removeBgImage"
+              >
+                <v-icon icon="mdi-close" size="12" />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="opt-format-field opt-field-bgposition">
+          <span class="opt-format-label">{{ $t("options.background.position") }}</span>
+          <select class="opt-select" :value="bgPosition" @change="onBgPositionChange">
+            <option value="cover">Cobrir (cover)</option>
+            <option value="contain">Ajustar (contain)</option>
+            <option value="center">Centro</option>
+            <option value="stretch">Esticar</option>
+            <option value="tile">Lado a lado</option>
+          </select>
         </div>
       </v-tabs-window-item>
 
@@ -724,12 +755,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, type ComputedRef } from "vue";
+import { computed, type ComputedRef } from "vue";
+import { pickImageData } from "@/helpers/FilePicker";
+import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
+import Broadcast from "@/helpers/Broadcast";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useI18n } from "vue-i18n";
 import { useTheme } from "vuetify";
 import { useDisplays } from "@/composables/useDisplays";
 import MonitorSelect from "@/components/inputs/MonitorSelect.vue";
-import { useUserDataStore } from "@/stores/userDataStore";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
@@ -753,7 +787,6 @@ import {
   KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN,
   KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN,
   KEY_OPTIONS_FULLSCREEN,
-  KEY_OPTIONS_GLOBAL_BG_COLOR,
   KEY_OPTIONS_MINIMIZE_ON_START,
   KEY_OPTIONS_MONITOR_PRIMARY,
   KEY_OPTIONS_MONITOR_SECONDARY,
@@ -822,6 +855,92 @@ const monitorSecondary: ComputedRef<number | null> = computed(() =>
 function saveUserData(key: string, value: unknown): void {
   $userdata.set(key, value);
 }
+
+/* ── Wallpaper via IndexedDB ── */
+
+import { onMounted, onBeforeUnmount, ref } from "vue";
+import { MAIN_SETTINGS_ID, MainSettings } from "@/types/db/settings/main";
+
+const bgColor = ref("#000033");
+const bgPosition = ref("cover");
+let wallpaperBlobUrl = ref("");
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function notifyViews(): void {
+  Broadcast.send(BROADCAST_TYPE.WALLPAPER_UPDATE, {});
+}
+
+function onBgColorChange(e: Event): void {
+  bgColor.value = (e.target as HTMLInputElement).value;
+  scheduleSave();
+}
+
+function onBgPositionChange(e: Event): void {
+  bgPosition.value = (e.target as HTMLSelectElement).value;
+  scheduleSave();
+}
+
+async function scheduleSave(): Promise<void> {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const existing = (await getSetting<any>(MAIN_SETTINGS_ID).catch(() => ({}))) || {};
+
+    const settings: MainSettings = {
+      id: MAIN_SETTINGS_ID,
+      ...existing,
+      color: bgColor.value,
+      position: bgPosition.value,
+    };
+    await saveSetting(settings);
+    notifyViews();
+  }, 300);
+}
+
+const currentBgImage = computed(() => wallpaperBlobUrl.value);
+
+async function pickBgImage(): Promise<void> {
+  const result = await pickImageData();
+  if (!result) return;
+  const { data, mime } = result;
+  const blob = new Blob([data], { type: mime });
+  const url = URL.createObjectURL(blob);
+  if (wallpaperBlobUrl.value) URL.revokeObjectURL(wallpaperBlobUrl.value);
+  wallpaperBlobUrl.value = url;
+  await saveSetting({
+    id: "main",
+    image: data,
+    mime,
+    color: bgColor.value,
+    position: bgPosition.value,
+  });
+  notifyViews();
+}
+
+async function removeBgImage(): Promise<void> {
+  if (wallpaperBlobUrl.value) {
+    URL.revokeObjectURL(wallpaperBlobUrl.value);
+    wallpaperBlobUrl.value = "";
+  }
+  const existing = (await getSetting<any>(MAIN_SETTINGS_ID).catch(() => ({}))) || {};
+  await saveSetting({ id: MAIN_SETTINGS_ID, ...existing, image: null, mime: null });
+  notifyViews();
+}
+
+onMounted(async () => {
+  const s = await getSetting<any>(MAIN_SETTINGS_ID).catch(() => null);
+  if (s) {
+    bgColor.value = s.color || "#000033";
+    bgPosition.value = s.position || "cover";
+    if (s.image) {
+      const blob = new Blob([s.image], { type: s.mime || "image/png" });
+      wallpaperBlobUrl.value = URL.createObjectURL(blob);
+    }
+  }
+});
+
+onBeforeUnmount(() => {
+  if (wallpaperBlobUrl.value) URL.revokeObjectURL(wallpaperBlobUrl.value);
+});
 
 function restoreTextFormat(): void {
   saveUserData(KEY_OPTIONS_TITLE_COLOR, "#ffd84d");

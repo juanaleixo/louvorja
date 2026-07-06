@@ -90,10 +90,21 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Emitido por: media_deck (next/prev em PDF). Recebido por: FileProjection. */
   FILE_PROJECTION_PAGE: "file_projection_page",
 
+  /** Projeção de fundo (imagem/vídeo) do módulo Projeção de Fundo.
+   *  Payload: { url: string, type: "image" | "video", title?: string }
+   *  Emitido por: background_projection. Recebido por: BackgroundProjection. */
+  BACKGROUND_PROJECTION: "background_projection",
+
   /** Projeção de vídeo online (YouTube) via useMedia.openYouTube.
    *  Payload: { url: string, type: "youtube", title?: string }
    *  Emitido por: useMedia.ts (openYouTube). Recebido por: FileProjection.vue. */
   ONLINE_VIDEO_PROJECTION: "online_video_projection",
+
+  /** Notifica que o wallpaper/background settings foi alterado.
+   *  Payload: {} (vazio — as views recarregam do IndexedDB)
+   *  Emitido por: RibbonWallpaperSettings.vue, AppMenuOpcoes.vue
+   *  Recebido por: BackgroundProjection, FileProjection, etc. */
+  WALLPAPER_UPDATE: "wallpaper_update",
 
   /** Sincronização de vídeo entre o player principal e a projeção.
    *  Payload: { currentTime: number, isPaused: boolean }
