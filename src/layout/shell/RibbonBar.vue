@@ -42,16 +42,13 @@
       :aria-labelledby="'ribbon-tab-' + ribbonStore.activePage"
       :class="{ 'ribbon-body--ctx': isContextualActive }"
     >
-      <RibbonGroup
+      <RibbonGroupComponent
         v-for="group in activeGroups"
         :key="`${ribbonStore.activePage}:${group.id}`"
         :title="$t(group.title)"
       >
         <template v-if="group.customCategory">
-          <component
-            :is="getCustomCategoryComponent(group)"
-            v-bind="getCustomComponentProps(group)"
-          />
+          <component :is="group.customCategory" v-bind="getCustomComponentProps(group)" />
         </template>
         <template v-else>
           <template
@@ -59,7 +56,7 @@
             :key="`${ribbonStore.activePage}:${group.id}:${btn.id}`"
           >
             <component
-              :is="getCustomButtonComponent(btn, group)"
+              :is="btn.customButton"
               v-if="btn.customButton"
               v-bind="getCustomComponentProps(group, btn)"
             />
@@ -82,8 +79,8 @@
                 :placeholder="$t(btn.placeholder || '')"
                 @keydown.enter.prevent="executeInputAction(btn)"
               />
-              <RibbonButton
-                :icon="btn.icon"
+              <RibbonButtonComponent
+                :icon="btn.icon || ''"
                 :icon-color="btn.color"
                 :label="$t(btn.label)"
                 size="medium"
@@ -100,7 +97,7 @@
               <select
                 class="ribbon-field-select"
                 :value="getSelectValue(btn)"
-                @change="setSelectValue(btn, $event.target.value)"
+                @change="setSelectValue(btn, ($event.target as HTMLSelectElement)?.value)"
               >
                 <option v-for="opt in btn.options || []" :key="opt.value" :value="opt.value">
                   {{ $t(opt.label) }}
@@ -119,11 +116,32 @@
                 </template>
               </select>
             </div>
+            <div
+              v-else-if="btn.type === 'slider'"
+              v-show="isDependencyMet(btn)"
+              class="ribbon-field-wrap"
+            >
+              <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
+              <div class="ribbon-slider-row">
+                <v-slider
+                  :model-value="getSelectValue(btn)"
+                  :min="btn.min ?? 0"
+                  :max="btn.max ?? 2000"
+                  :step="btn.step ?? 100"
+                  density="compact"
+                  hide-details
+                  class="ribbon-slider"
+                  thumb-label
+                  @update:model-value="setSelectValue(btn, $event)"
+                />
+                <span class="ribbon-slider-value">{{ getSelectValue(btn) }}ms</span>
+              </div>
+            </div>
             <label v-else-if="btn.type === 'checkbox'" class="ribbon-field-checkbox">
               <input
                 type="checkbox"
                 :checked="getCheckValue(btn)"
-                @change="setCheckValue(btn, $event.target.checked)"
+                @change="setCheckValue(btn, ($event.target as HTMLSelectElement)?.value === 'true')"
               />
               <span>{{ $t(btn.label) }}</span>
             </label>
@@ -141,10 +159,10 @@
                 @update:model-value="setCheckValue(btn, $event)"
               />
             </div>
-            <RibbonButton
+            <RibbonButtonComponent
               v-else
               v-show="isDependencyMet(btn)"
-              :icon="btn.icon"
+              :icon="btn.icon || ''"
               :icon-color="btn.color"
               :label="$t(btn.label)"
               :size="btn.size || 'large'"
@@ -156,7 +174,7 @@
             />
           </template>
         </template>
-      </RibbonGroup>
+      </RibbonGroupComponent>
       <div v-if="activeGroups.length === 0" class="ribbon-empty">
         {{ $t("shell.empty_ribbon_page") }}
       </div>
@@ -164,11 +182,17 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, watch, reactive, defineAsyncComponent } from "vue";
+<script setup lang="ts">
+import {
+  ref,
+  computed,
+  watch,
+  reactive,
+  defineAsyncComponent,
+  type Component,
+  type ComputedRef,
+} from "vue";
 import { useI18n } from "vue-i18n";
-import RibbonGroup from "./RibbonGroup.vue";
-import RibbonButton from "./RibbonButton.vue";
 import RibbonScreenButton from "./RibbonScreenButton.vue";
 import AppMenu from "./AppMenu.vue";
 import ShellTools from "./ShellTools.vue";
@@ -185,39 +209,35 @@ import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { getRibbonModules } from "@/config/modules";
+import type { RibbonPage, RibbonGroup, RibbonButton } from "@/types/Ribbon";
+import RibbonButtonComponent from "@/layout/shell/RibbonButtonComponent.vue";
+import RibbonGroupComponent from "@/layout/shell/RibbonGroupComponent.vue";
 
 const { t } = useI18n();
 const shell = useShell();
-const modules = getRibbonModules;
+const modules: RibbonPage[] = getRibbonModules;
 const ribbonStore = useRibbonStore();
 
-const inputValues = reactive({});
+const inputValues = reactive<Record<string, string>>({});
 
 const { displays, setPreferred, getPreferred } = useDisplays();
 
-const dynamicSelectOptions = reactive({});
+interface DynamicOption {
+  value: string;
+  label: string;
+}
+const dynamicSelectOptions = reactive<Record<string, DynamicOption[]>>({});
 
-const customComponents = {};
-
-const moduleComponentGlob = import.meta.glob("/src/modules/*/components/*.vue");
-function resolveCustomComponent(moduleId, componentName) {
-  if (!moduleId || !componentName) return null;
-  const key = `/src/modules/${moduleId}/components/${componentName}.vue`;
-  const loader = moduleComponentGlob[key];
-  if (!loader) {
-    console.warn(`[RibbonBar] Component not found: ${key}`);
-    return null;
-  }
-  if (!customComponents[key]) {
-    customComponents[key] = defineAsyncComponent(loader);
-  }
-  return customComponents[key];
+interface BibleVersion {
+  id_bible_version: string;
+  abbreviation: string;
+  name: string;
 }
 
-async function loadDynamicOptions() {
+async function loadDynamicOptions(): Promise<void> {
   const [versionData, bookData] = await Promise.all([
-    $database.get("pt_bible_version", { silent: true }),
-    $database.get("pt_bible_book", { silent: true }),
+    $database.get<BibleVersion[]>("pt_bible_version", { silent: true }),
+    $database.get<unknown[]>("pt_bible_book", { silent: true }),
   ]);
   if (versionData?.length) {
     dynamicSelectOptions.version = versionData.map((v) => ({
@@ -226,75 +246,71 @@ async function loadDynamicOptions() {
     }));
   }
   if (bookData?.length) {
-    dynamicSelectOptions.books = bookData;
+    dynamicSelectOptions.books = bookData as DynamicOption[];
   }
 }
 loadDynamicOptions();
 
-function getModuleIdForGroup(group) {
+function getModuleIdForGroup(group: RibbonGroup): string | null {
   if (group.modules?.length) return group.modules[0];
-  const page = modules.find((p) => p.id === ribbonStore.activePage);
+  const page = modules.find((p: RibbonPage) => p.id === ribbonStore.activePage);
   if (page?.activeOnModules?.length) return page.activeOnModules[0];
   return page?.defaultModule || null;
 }
-function getCustomCategoryComponent(group) {
-  const modId = getModuleIdForGroup(group);
-  return resolveCustomComponent(modId, group.customCategory);
-}
-function getCustomButtonComponent(btn, group) {
-  const modId = getModuleIdForGroup(group);
-  return resolveCustomComponent(modId, btn.customButton);
-}
-function getCustomComponentProps(group, btn) {
+
+function getCustomComponentProps(
+  group: RibbonGroup,
+  btn?: RibbonButton
+): { module: string | null; config: RibbonGroup | RibbonButton } {
   return {
     module: getModuleIdForGroup(group),
     config: btn || group,
   };
 }
 
-function getSelectValue(btn) {
-  if (btn.optionKey) return $userdata.get(btn.optionKey, btn.defaultValue ?? "");
+function getSelectValue(btn: RibbonButton): string | number {
+  if (btn.optionKey) return $userdata.get(btn.optionKey, btn.defaultValue ?? "") as string;
   if (!btn.feature) return "";
   return getPreferred(btn.feature) ?? "";
 }
 
-function setSelectValue(btn, val) {
+function setSelectValue(btn: RibbonButton, val: string | number): void {
   if (btn.optionKey) {
     $userdata.set(btn.optionKey, val);
     return;
   }
   if (!btn.feature) return;
-  if (val === "") setPreferred(btn.feature, null);
-  else if (val === "primary" || val === "secondary") setPreferred(btn.feature, val);
+  if (val === "") setPreferred(btn.feature, 0);
+  else if (val === "primary" || val === "secondary") setPreferred(btn.feature, val as string);
   else setPreferred(btn.feature, Number(val));
 }
 
-function getCheckValue(btn) {
+function getCheckValue(btn: RibbonButton): boolean {
   if (!btn.optionKey) return false;
-  return $userdata.get(btn.optionKey, false) === true;
+  return $userdata.get<boolean>(btn.optionKey, false) === true;
 }
 
-function setCheckValue(btn, checked) {
+function setCheckValue(btn: RibbonButton, checked: boolean | null): void {
   if (!btn.optionKey) return;
-  $userdata.set(btn.optionKey, checked);
+  $userdata.set(btn.optionKey, checked ?? false);
 }
 
-function isDependencyMet(btn) {
+function isDependencyMet(btn: RibbonButton): boolean {
   if (btn.dependsOnOption) {
-    const val = $userdata.get(btn.dependsOnOption.path, "");
+    const val = $userdata.get(btn.dependsOnOption.path, "") as string;
     return val === btn.dependsOnOption.value;
   }
   if (!btn.dependsOn) return true;
-  const group = activeGroups.value?.find((g) => g.buttons.some((b) => b.id === btn.dependsOn));
-  const depBtn = group?.buttons.find((b) => b.id === btn.dependsOn);
+  const group = activeGroups.value?.find((g) => g.buttons?.some((b) => b.id === btn.dependsOn));
+  const depBtn = group?.buttons?.find((b) => b.id === btn.dependsOn);
   if (!depBtn || depBtn.type !== "checkbox" || !depBtn.optionKey) return true;
-  return $userdata.get(depBtn.optionKey, false) === true;
+  return $userdata.get<boolean>(depBtn.optionKey, false) === true;
 }
 
-function executeInputAction(btn) {
+function executeInputAction(btn: RibbonButton): void {
   const val = inputValues[btn.id]?.trim();
   if (!val) return;
-  const m = btn.action.match(
+  const m = btn.action?.match(
     /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|background_sound)_(.+)$/
   );
   if (m) {
@@ -306,33 +322,32 @@ function executeInputAction(btn) {
   }
 }
 
-const openModuleIds = computed(() => {
-  const modules = $appdata.get("modules") || {};
-  return Object.keys(modules).filter((id) => modules[id]?.show === true);
+const openModuleIds: ComputedRef<string[]> = computed(() => {
+  const mods = $appdata.get<Record<string, { show?: boolean }>>("modules") || {};
+  return Object.keys(mods).filter((id) => mods[id]?.show === true);
 });
 
-const activePageObj = computed(() => modules.find((p) => p.id === ribbonStore.activePage));
-const activeGroups = computed(() => activePageObj.value?.groups || []);
-const isContextualActive = computed(() => !!activePageObj.value?.contextual);
+const activePageObj: ComputedRef<RibbonPage | undefined> = computed(() =>
+  modules.find((p: RibbonPage) => p.id === ribbonStore.activePage)
+);
+const activeGroups: ComputedRef<RibbonGroup[]> = computed(() => activePageObj.value?.groups || []);
+const isContextualActive: ComputedRef<boolean> = computed(() => !!activePageObj.value?.contextual);
+const visiblePages: ComputedRef<RibbonPage[]> = computed(() => ribbonStore.visiblePages);
 
-const visiblePages = computed(() => ribbonStore.visiblePages);
-
-function selectContextualPageForModule(moduleId) {
+function selectContextualPageForModule(moduleId: string | null): void {
   if (!moduleId) return;
-
-  const ctxPage = modules.find((p) => p.contextual && (p.activeOnModules || []).includes(moduleId));
-
+  const ctxPage = modules.find(
+    (p: RibbonPage) => p.contextual && (p.activeOnModules || []).includes(moduleId)
+  );
   if (ctxPage) {
     ribbonStore.selectPage(ctxPage.id);
   }
 }
 
-watch(openModuleIds, (now) => {
+watch(openModuleIds, (now: string[]) => {
   const cur = activePageObj.value;
-
   if (cur?.contextual) {
-    const stillVisible = (cur.activeOnModules || []).some((id) => now.includes(id));
-
+    const stillVisible = (cur.activeOnModules || []).some((id: string) => now.includes(id));
     if (!stillVisible) {
       ribbonStore.selectPage("collections");
     }
@@ -340,28 +355,28 @@ watch(openModuleIds, (now) => {
 });
 
 watch(
-  computed(() => $appdata.get("active_module")),
-  (moduleId) => {
+  computed(() => $appdata.get<string | null>("active_module")),
+  (moduleId: string | null) => {
     selectContextualPageForModule(moduleId);
   }
 );
 
-function isModuleOpen(moduleId) {
+function isModuleOpen(moduleId: string | null): boolean {
   return moduleId ? openModuleIds.value.includes(moduleId) : false;
 }
 
-// Quando dois botões mapeiam ao mesmo módulo (ex.: stopwatch_culto/stopwatch
-// ou diverse/personal), só o último botão clicado fica destacado.
-function isButtonActive(btn) {
+function isButtonActive(btn: RibbonButton): boolean {
   if (!btn.module) return false;
   if (!openModuleIds.value.includes(btn.module)) return false;
-  const lastBtn = $appdata.get(`modules.${btn.module}.last_btn`);
-  // Se nenhum botão registrado ainda, considera ativo só botões sem irmãos
+  const lastBtn = $appdata.get<string | null>(`modules.${btn.module}.last_btn`);
   if (!lastBtn) return true;
   return lastBtn === btn.id;
 }
 
-const LITURGY_ACTIONS = {
+interface LiturgyActionMap {
+  [key: string]: string;
+}
+const LITURGY_ACTIONS: LiturgyActionMap = {
   lit_add_item: "add",
   lit_check_all: "check_all",
   lit_uncheck_all: "uncheck_all",
@@ -374,7 +389,7 @@ const LITURGY_ACTIONS = {
   lit_lock: "toggle_lock",
 };
 
-const BIBLE_ACTIONS = {
+const BIBLE_ACTIONS: LiturgyActionMap = {
   bible_clear: "clear",
   bible_prev_verse: "prev_verse",
   bible_next_verse: "next_verse",
@@ -382,7 +397,7 @@ const BIBLE_ACTIONS = {
   bible_restore: "restore",
 };
 
-const EDITOR_ACTIONS = new Set([
+const EDITOR_ACTIONS = new Set<string>([
   "editor_new",
   "editor_open",
   "editor_save",
@@ -410,11 +425,8 @@ const EDITOR_ACTIONS = new Set([
   "editor_view_16_9",
 ]);
 
-function executeButton(btn) {
+function executeButton(btn: RibbonButton): void {
   if (btn.module) {
-    // Marca qual botão originou a abertura — evita destacar todos os botões
-    // que mapeiam ao mesmo módulo (collections "Diversas" vs "Personalizadas",
-    // stopwatch "de Culto" vs "Cronômetro", etc).
     if (!$modules.check(btn.module)) {
       console.error(`[RibbonBar] Module "${btn.module}" not available`);
       $alert.error(`shell.not_implemented`);
@@ -451,15 +463,28 @@ function executeButton(btn) {
     });
     return;
   }
-  // Pattern genérico: action "<module>_<verb>" → MODULE_RIBBON_ACTION
-  // Suporta os módulos novos (counter, draw, name_draw, clock, stopwatch,
-  // message_board) sem precisar de tabela explícita.
-  // ATENÇÃO: módulos com prefixos compartilhados (ex: timer_worship → timer)
-  // devem vir primeiro na alternância para evitar match parcial.
   if (btn.action) {
-    const m = btn.action.match(
-      /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_videos|hymnal|bible_search|music_search|media_deck|overlay|background_sound)_(.+)$/
-    );
+    const actions = [
+      "counter",
+      "draw",
+      "name_draw",
+      "clock",
+      "stopwatch",
+      "timer_worship",
+      "timer",
+      "message_board",
+      "online_videos",
+      "custom_videos",
+      "hymnal",
+      "bible_search",
+      "music_search",
+      "media_deck",
+      "overlay",
+      "background_sound",
+      "background_projection",
+    ];
+    const pattern = new RegExp(`^(${actions.join("|")})_(.+)$`);
+    const m = btn.action.match(pattern);
     if (m) {
       Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
         module: m[1],
@@ -470,9 +495,10 @@ function executeButton(btn) {
   }
 }
 
-useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
-  if (payload?.pageId) {
-    ribbonStore.selectPage(payload.pageId);
+useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
+  const p = payload as { pageId?: string } | null;
+  if (p?.pageId) {
+    ribbonStore.selectPage(p.pageId);
   }
 });
 </script>
@@ -679,6 +705,24 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload) => {
 .ribbon-field-select:focus {
   border-color: var(--lj-navy);
   box-shadow: var(--lj-shadow-focus-navy-sm);
+}
+
+.ribbon-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ribbon-slider {
+  flex: 1;
+  min-width: 100px;
+}
+.ribbon-slider-value {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--lj-text);
+  white-space: nowrap;
+  min-width: 32px;
+  text-align: right;
 }
 
 .ribbon-field-checkbox {

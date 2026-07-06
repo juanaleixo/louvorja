@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import $modules from "@/helpers/Modules";
+import RibbonSettings from "@/modules/background_sound/components/RibbonSettings.vue";
 
 const moduleId = ModuleEnum.BACKGROUND_SOUND;
 const modulePath = $modules.getPath(moduleId);
@@ -15,7 +16,7 @@ export const module: Module = {
   name: "Background Sound",
   description: `${modulePath}.description`,
   title: `${modulePath}.title`,
-  icon: ICONS.MODULES.BACKGROUND_MUSIC,
+  icon: ICONS.MODULES.BACKGROUND_SOUND,
   color: "#00154d",
   showInMainMenu: true,
   category: ModuleCategoryEnum.LIVE,
@@ -40,28 +41,28 @@ export const contextualPages: RibbonPage[] = [
             id: `${moduleId}_play`,
             icon: ICONS.PLAYER.PLAY_PAUSE,
             label: `${modulePath}.play`,
-            action: `${moduleId}.play`,
+            action: `${moduleId}_play`,
             color: "#27ae60",
           },
           {
             id: `${moduleId}_stop`,
             icon: ICONS.PLAYER.STOP,
             label: `${modulePath}.stop`,
-            action: `${moduleId}.stop`,
+            action: `${moduleId}_stop`,
             color: "#e74c3c",
           },
           {
             id: `${moduleId}_stop_immediately`,
             icon: "mdi-stop-circle-outline",
             label: `${modulePath}.stop_immediately`,
-            action: `${moduleId}.stop_immediately`,
+            action: `${moduleId}_stop_immediately`,
             color: "#e74c3c",
           },
           {
             id: `${moduleId}_random`,
             icon: ICONS.PLAYER.SHUFFLE,
             label: `${modulePath}.play_random`,
-            action: `${moduleId}.play_random`,
+            action: `${moduleId}_play_random`,
             color: "#1976d2",
           },
         ],
@@ -74,14 +75,14 @@ export const contextualPages: RibbonPage[] = [
             id: `${moduleId}_add_audio`,
             icon: ICONS.MEDIA.ADD,
             label: `${modulePath}.add_audio`,
-            action: `${moduleId}.add_audio`,
+            action: `${moduleId}_add_audio`,
             color: "#1976d2",
           },
           {
             id: `${moduleId}_manage_categories`,
             icon: "mdi-tune",
             label: `${modulePath}.manage_categories`,
-            action: `${moduleId}.manage_categories`,
+            action: `${moduleId}_manage_categories`,
             color: "#1976d2",
           },
         ],
@@ -89,7 +90,7 @@ export const contextualPages: RibbonPage[] = [
       {
         id: `${moduleCtxId}_settings`,
         title: "ribbon.groups.settings",
-        customCategory: "RibbonSettings",
+        customCategory: RibbonSettings,
         modules: [moduleId],
       },
     ],

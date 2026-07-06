@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import VideoMonitors from "@/modules/custom_videos/components/VideoMonitors.vue";
 
 const moduleId = ModuleEnum.CUSTOM_VIDEOS;
 const modulePath = $modules.getPath(moduleId);
@@ -52,7 +53,7 @@ export const contextualPages: RibbonPage[] = [
       {
         id: "ctx_custom_videos_projection",
         title: "ribbon.groups.projection",
-        customCategory: "VideoMonitors",
+        customCategory: VideoMonitors,
       },
     ],
   },

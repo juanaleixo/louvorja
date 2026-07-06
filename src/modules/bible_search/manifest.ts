@@ -5,6 +5,7 @@ import { Module } from "@/types/Module"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import BookPicker from "@/modules/bible_search/components/BookPicker.vue";
 
 const moduleId = ModuleEnum.BIBLE_SEARCH;
 const modulePath = $modules.getPath(moduleId);
@@ -51,7 +52,7 @@ export const contextualPages: RibbonPage[] = [
       {
         id: "ctx_bs_filters",
         title: "ribbon.groups.filters",
-        customCategory: "BookPicker",
+        customCategory: BookPicker,
         modules: ["bible_search"],
         buttons: [],
       },

@@ -108,8 +108,8 @@ import {
 } from "@/helpers/Projection";
 
 const props = defineProps({
-  feature: { type: String, required: true },
-  route: { type: String, required: true },
+  feature: { type: String, default: "" },
+  route: { type: String, default: "" },
   icon: { type: String, default: "mdi-projector-screen-outline" },
   label: { type: String, default: "" },
   iconColor: { type: String, default: null },

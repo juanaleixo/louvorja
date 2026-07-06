@@ -15,7 +15,7 @@ export const module: Module = {
   name: "Mídia Deck",
   description: `${modulePath}.description`,
   title: `${modulePath}.title`,
-  icon: ICONS.MODULES.SLIDE_EDITOR,
+  icon: ICONS.MODULES.MEDIA_DECK,
   color: "#1b4f8a",
   showInMainMenu: true,
   category: ModuleCategoryEnum.LIVE,
