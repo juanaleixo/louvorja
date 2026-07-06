@@ -6,6 +6,7 @@ import $userdata from "@/helpers/UserData";
 import { getImage, resolveImageUrl } from "@/helpers/OverlayImages";
 import {
   OVERLAY_CONFIG_DEFAULTS,
+  OVERLAY_STYLE_DEFAULTS,
   buildAnchorStyle,
   type OverlaySlot,
   type OverlayConfig,
@@ -32,7 +33,10 @@ export function useOverlayState(): OverlayStateReturn {
   function refresh() {
     const data = $userdata.get<OverlayConfig>("modules.overlay", OVERLAY_CONFIG_DEFAULTS) ?? OVERLAY_CONFIG_DEFAULTS;
     globalEnabled.value = !!data.global_enabled;
-    slots.value = data.slots ?? [];
+    slots.value = (data.slots ?? []).map((s) => ({
+      ...s,
+      style: { ...OVERLAY_STYLE_DEFAULTS, ...(s.style || {}) },
+    }));
   }
 
   refresh();
@@ -103,53 +107,61 @@ export function useOverlayState(): OverlayStateReturn {
     return url;
   }
 
-  function slotStyle(slot: OverlaySlot): Record<string, string> {
-    const s = slot.style;
+function anchorTextAlign(slot: OverlaySlot): string {
+  const anchor = slot.position?.anchor || "bottom-center";
+  if (anchor.endsWith("right")) return "right";
+  if (anchor === "center" || anchor.endsWith("center")) return "center";
+  return "left";
+}
 
-    const dur = `${(s.animation_duration || 300) / 1000}s`;
-    const out: Record<string, string> = {
-      position: "absolute",
-      ...buildAnchorStyle(slot.position),
-      pointerEvents: "none",
-      zIndex: String(slot.order + 1),
-      opacity: String((s.opacity ?? 100) / 100),
-      transition: `opacity ${dur} ease, transform ${dur} ease`,
-      padding: s.padding || "8px 16px",
-      animationDuration: dur,
-      borderRadius: s.border_radius || "4px",
-      border: s.border || "",
-      width: s.width || "auto",
-      height: s.height || "auto",
-    };
+function slotStyle(slot: OverlaySlot): Record<string, string> {
+  const s = slot.style;
 
-    if (s.background && s.background !== "transparent") {
-      out.background = s.background;
-      if (s.background_opacity !== undefined && s.background_opacity < 100) {
-        out.background = undefined!;
-        out.backgroundColor = s.background;
-        out.opacity = String(((s.opacity ?? 100) / 100) * ((s.background_opacity ?? 100) / 100));
-      }
+  const dur = `${(s.animation_duration || 300) / 1000}s`;
+  const out: Record<string, string> = {
+    position: "absolute",
+    ...buildAnchorStyle(slot.position),
+    pointerEvents: "none",
+    zIndex: String(slot.order + 1),
+    opacity: String((s.opacity ?? 100) / 100),
+    transition: `opacity ${dur} ease, transform ${dur} ease`,
+    padding: s.padding || "8px 16px",
+    animationDuration: dur,
+    borderRadius: s.border_radius || "4px",
+    border: s.border || "",
+    width: s.width || "auto",
+    height: s.height || "auto",
+    textAlign: anchorTextAlign(slot),
+  };
+
+  if (s.background && s.background !== "transparent") {
+    out.background = s.background;
+    if (s.background_opacity !== undefined && s.background_opacity < 100) {
+      out.background = undefined!;
+      out.backgroundColor = s.background;
+      out.opacity = String(((s.opacity ?? 100) / 100) * ((s.background_opacity ?? 100) / 100));
     }
-
-    if (s.box_shadow) {
-      out.boxShadow = "0 4px 16px rgba(0,0,0,0.45)";
-    }
-
-    return out;
   }
 
-  function imageStyle(slot: OverlaySlot): Record<string, string> {
-    const s = slot.style;
-    const scale = (s.image_scale ?? 100) / 100;
-    return {
-      width: "auto",
-      height: "auto",
-      maxWidth: `calc(40vw * ${scale})`,
-      maxHeight: `calc(30vh * ${scale})`,
-      objectFit: s.object_fit || "contain",
-      display: "block",
-    };
+  if (s.box_shadow) {
+    out.boxShadow = "0 4px 16px rgba(0,0,0,0.45)";
   }
+
+  return out;
+}
+
+function imageStyle(slot: OverlaySlot): Record<string, string> {
+  const s = slot.style;
+  const scale = (s.image_scale ?? 100) / 100;
+  return {
+    width: "auto",
+    height: "auto",
+    maxWidth: `calc(40vw * ${scale})`,
+    maxHeight: `calc(30vh * ${scale})`,
+    objectFit: s.object_fit || "contain",
+    display: "inline-block",
+  };
+}
 
   function textStyle(slot: OverlaySlot): Record<string, string> {
     const s = slot.style;
@@ -179,12 +191,13 @@ export function useOverlayState(): OverlayStateReturn {
   };
 
   function animationClass(slot: OverlaySlot): string {
-    return ANIM_CLASSES[slot.style.animation] || "";
+    return ANIM_CLASSES[slot.style.animation] || ANIM_CLASSES[OVERLAY_STYLE_DEFAULTS.animation] || "";
   }
 
   function animationExitClass(slot: OverlaySlot): string {
-    return ANIM_CLASSES[slot.style.animation_exit]
-      ? ANIM_CLASSES[slot.style.animation_exit] + "--exit"
+    const anim = slot.style.animation_exit || OVERLAY_STYLE_DEFAULTS.animation_exit;
+    return ANIM_CLASSES[anim]
+      ? ANIM_CLASSES[anim] + "--exit"
       : "";
   }
 

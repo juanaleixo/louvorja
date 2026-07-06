@@ -16,33 +16,39 @@
             <v-icon icon="mdi-eye-outline" size="14" />
             <span>{{ t("preview") }}</span>
           </div>
-          <div ref="previewRef" class="overlay-preview-canvas">
-            <div
-              v-for="slot in localSlots"
-              :key="slot.id"
-              class="overlay-preview-slot"
-              :style="previewSlotStyle(slot)"
-            >
-              <div v-if="slot.type === 'text'" class="overlay-preview-text">
-                {{ slot.content || "Texto" }}
-              </div>
-              <img
-                v-else-if="slot.type === 'image'"
-                :src="previewImageUrl(slot)"
-                :style="previewImageStyle(slot)"
-                class="overlay-preview-img"
-                alt=""
-              />
-              <div v-else-if="slot.type === 'module_mirror'" class="overlay-preview-text">
-                {{ moduleValues[slot.source_module || ""] || slot.source_module || "—" }}
+          <div class="overlay-preview-canvas-wrap">
+            <div ref="previewRef" class="overlay-preview-canvas">
+              <div
+                v-for="slot in localSlots"
+                :key="slot.id"
+                class="overlay-preview-slot"
+                :class="{ 'overlay-preview-slot--active': editingSlot?.id === slot.id }"
+                :style="previewSlotStyle(slot)"
+                @click="selectPreviewSlot(slot)"
+              >
+                <div
+                  v-if="slot.type === 'text'"
+                  class="overlay-preview-text"
+                  :style="previewTextStyle(slot)"
+                >
+                  {{ slot.content || "Texto" }}
+                </div>
+                <img
+                  v-else-if="slot.type === 'image'"
+                  :src="previewImageUrl(slot)"
+                  :style="previewImageStyle(slot)"
+                  class="overlay-preview-img"
+                  alt=""
+                />
+                <div v-else-if="slot.type === 'module_mirror'" class="overlay-preview-text">
+                  {{ moduleValues[slot.source_module || ""] || slot.source_module || "—" }}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Slot list -->
-        <v-divider vertical />
-
         <div class="overlay-slot-list">
           <div v-if="localSlots.length === 0" class="overlay-empty">
             <v-icon icon="mdi-layers-outline" size="48" color="grey" />
@@ -112,7 +118,12 @@ import $userdata from "@/helpers/UserData";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { getImage, resolveImageUrl, deleteImage } from "@/helpers/OverlayImages";
-import { OVERLAY_CONFIG_DEFAULTS, createOverlaySlot, buildAnchorStyle } from "@/types/Overlay";
+import {
+  OVERLAY_CONFIG_DEFAULTS,
+  OVERLAY_STYLE_DEFAULTS,
+  createOverlaySlot,
+  buildAnchorStyle,
+} from "@/types/Overlay";
 
 const moduleContainer = ref(null);
 const t = (key) => moduleContainer.value?.t(key) || key;
@@ -131,7 +142,7 @@ function loadConfig() {
   globalEnabled.value = !!data.global_enabled;
   localSlots.length = 0;
   for (const s of data.slots || []) {
-    localSlots.push({ ...s, style: { ...s.style } });
+    localSlots.push({ ...s, style: { ...OVERLAY_STYLE_DEFAULTS, ...(s.style || {}) } });
   }
 }
 
@@ -157,6 +168,11 @@ function onSlotChange(updatedSlot) {
   if (updatedSlot?.id) {
     const idx = localSlots.findIndex((s) => s.id === updatedSlot.id);
     if (idx !== -1) {
+      if (updatedSlot.file_id !== localSlots[idx].file_id) {
+        Object.keys(previewImageCache).forEach((key) => {
+          if (key.startsWith(updatedSlot.id + "_")) delete previewImageCache[key];
+        });
+      }
       Object.assign(localSlots[idx], updatedSlot);
       if (updatedSlot.style) Object.assign(localSlots[idx].style, updatedSlot.style);
     }
@@ -175,6 +191,11 @@ function addSlot() {
 
 function editSlot(index) {
   editingSlot.value = localSlots[index];
+}
+
+function selectPreviewSlot(slot) {
+  const idx = localSlots.findIndex((s) => s.id === slot.id);
+  if (idx !== -1) editSlot(idx);
 }
 
 function duplicateSlot(index) {
@@ -204,32 +225,44 @@ async function removeSlot(index) {
   persist();
 }
 
+function anchorTextAlign(slot) {
+  const anchor = slot.position?.anchor || "bottom-center";
+  if (anchor.endsWith("right")) return "right";
+  if (anchor === "center" || anchor.endsWith("center")) return "center";
+  return "left";
+}
+
 function previewSlotStyle(slot) {
   if (!slot.enabled) return { display: "none" };
-  return {
+  const s = slot.style;
+  const out = {
     position: "absolute",
     ...buildAnchorStyle(slot.position),
-    opacity: String((slot.style.opacity ?? 100) / 100),
-    fontSize: `clamp(8px, ${slot.style.font_size || 3}vh, 24px)`,
-    color: slot.style.color || "#FFF",
-    fontFamily: slot.style.font || "Arial, sans-serif",
-    padding: slot.style.padding || "4px 8px",
-    background: slot.style.background,
-    border: slot.style.border,
-    borderRadius: slot.style.border_radius,
-    maxWidth: "40%",
     zIndex: slot.order + 1,
-    pointerEvents: "none",
-    lineHeight: "1.2",
+    opacity: String((s.opacity ?? 100) / 100),
+    padding: s.padding || "8px 16px",
+    borderRadius: s.border_radius || "4px",
+    border: s.border || "",
+    width: s.width || "auto",
+    height: s.height || "auto",
+    textAlign: anchorTextAlign(slot),
   };
+  if (s.background && s.background !== "transparent") {
+    out.background = s.background;
+  }
+  if (s.box_shadow) {
+    out.boxShadow = "0 4px 16px rgba(0,0,0,0.45)";
+  }
+  return out;
 }
 
 function previewImageUrl(slot) {
   if (!slot.file_id) return "";
-  if (previewImageCache[slot.id]) return previewImageCache[slot.id];
+  const cacheKey = `${slot.id}_${slot.file_id}`;
+  if (previewImageCache[cacheKey]) return previewImageCache[cacheKey];
   getImage(slot.file_id).then((record) => {
     const url = resolveImageUrl(record);
-    previewImageCache[slot.id] = url;
+    previewImageCache[cacheKey] = url;
   });
   return "";
 }
@@ -239,10 +272,24 @@ function previewImageStyle(slot) {
   return {
     width: "auto",
     height: "auto",
-    maxWidth: `calc(100% * ${scale})`,
-    maxHeight: `calc(100% * ${scale})`,
+    maxWidth: `calc(40% * ${scale})`,
+    maxHeight: `calc(30% * ${scale})`,
     objectFit: slot.style?.object_fit || "contain",
-    display: "block",
+    display: "inline-block",
+  };
+}
+
+function previewTextStyle(slot) {
+  const s = slot.style;
+  return {
+    fontFamily: s.font || "Arial, sans-serif",
+    fontSize: `clamp(5px, ${s.font_size || 5}vh, 80px)`,
+    color: s.color || "#FFFFFF",
+    textAlign: s.text_align || "center",
+    lineHeight: "1.3",
+    fontWeight: "600",
+    letterSpacing: "0.02em",
+    ...(s.text_shadow ? { textShadow: "0 2px 8px rgba(0,0,0,0.8)" } : {}),
   };
 }
 
@@ -324,20 +371,29 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.overlay-preview-canvas {
-  position: relative;
+.overlay-preview-canvas-wrap {
   flex: 1;
-  margin: 8px;
-  border-radius: 8px;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+.overlay-preview-canvas {
+  position: absolute;
+  inset: 0;
   background: #111;
   overflow: hidden;
-  min-height: 200px;
+  border-radius: 8px;
 }
 
 .overlay-preview-slot {
   white-space: pre-wrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+}
+.overlay-preview-slot--active {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 .overlay-preview-text {

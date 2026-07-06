@@ -162,9 +162,9 @@
             <RibbonButtonComponent
               v-else
               v-show="isDependencyMet(btn)"
-              :icon="btn.icon || ''"
-              :icon-color="btn.color"
-              :label="$t(btn.label)"
+              :icon="resolveBtnIcon(btn)"
+              :icon-color="resolveBtnColor(btn)"
+              :label="$t(resolveBtnLabel(btn))"
               :size="btn.size || 'large'"
               :active="isButtonActive(btn)"
               :hidden="!isButtonActive(btn)"
@@ -424,6 +424,32 @@ const EDITOR_ACTIONS = new Set<string>([
   "editor_view_4_3",
   "editor_view_16_9",
 ]);
+
+function resolveBtnIcon(btn: RibbonButton): string {
+  if (btn.stateBinding) {
+    const val = $userdata.get(btn.stateBinding.watchPath);
+    return val
+      ? btn.stateBinding.iconOn || btn.icon || ""
+      : btn.stateBinding.iconOff || btn.icon || "";
+  }
+  return btn.icon || "";
+}
+
+function resolveBtnColor(btn: RibbonButton): string | undefined {
+  if (btn.stateBinding) {
+    const val = $userdata.get(btn.stateBinding.watchPath);
+    return val ? btn.stateBinding.colorOn || btn.color : btn.stateBinding.colorOff || btn.color;
+  }
+  return btn.color;
+}
+
+function resolveBtnLabel(btn: RibbonButton): string {
+  if (btn.stateBinding) {
+    const val = $userdata.get(btn.stateBinding.watchPath);
+    return val ? btn.stateBinding.labelOn || btn.label : btn.stateBinding.labelOff || btn.label;
+  }
+  return btn.label;
+}
 
 function executeButton(btn: RibbonButton): void {
   if (btn.module) {

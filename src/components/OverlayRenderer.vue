@@ -1,87 +1,56 @@
 <template>
   <div v-if="showCanvas" class="overlay-canvas">
-    <div
-      v-for="slot in activeSlots"
-      :key="slot.id"
-      class="overlay-slot"
-      :class="animationClass(slot)"
-      :style="slotStyle(slot)"
-    >
-      <div v-if="slot.type === 'text'" class="overlay-slot__text" :style="textStyle(slot)">
-        {{ slot.content }}
-      </div>
-
-      <img
-        v-else-if="slot.type === 'image'"
-        :src="imageUrls[slot.id] || slot.content"
-        class="overlay-slot__img"
-        :style="imageStyle(slot)"
-        alt=""
-      />
-
+    <TransitionGroup @leave="onLeave" @after-leave="onAfterLeave">
       <div
-        v-else-if="slot.type === 'module_mirror'"
-        class="overlay-slot__text"
-        :style="textStyle(slot)"
+        v-for="slot in activeSlots"
+        :key="slot.id"
+        :data-slot-id="slot.id"
+        class="overlay-slot"
+        :class="animationClass(slot)"
+        :style="slotStyle(slot)"
       >
-        {{ moduleValues[slot.source_module || ""] || "\u2014" }}
-      </div>
-    </div>
+        <div v-if="slot.type === 'text'" class="overlay-slot__text" :style="textStyle(slot)">
+          {{ slot.content }}
+        </div>
 
-    <div
-      v-for="item in exiting"
-      :key="'exit-' + item.slot.id"
-      class="overlay-slot"
-      :class="animationExitClass(item.slot)"
-      :style="exitingStyle(item.slot)"
-    >
-      <div
-        v-if="item.slot.type === 'text'"
-        class="overlay-slot__text"
-        :style="textStyle(item.slot)"
-      >
-        {{ item.slot.content }}
-      </div>
+        <img
+          v-else-if="slot.type === 'image'"
+          :src="imageUrls[slot.id] || slot.content"
+          class="overlay-slot__img"
+          :style="imageStyle(slot)"
+          alt=""
+        />
 
-      <img
-        v-else-if="item.slot.type === 'image'"
-        :src="imageUrls[item.slot.id] || item.slot.content"
-        class="overlay-slot__img"
-        :style="imageStyle(item.slot)"
-        alt=""
-      />
-
-      <div
-        v-else-if="item.slot.type === 'module_mirror'"
-        class="overlay-slot__text"
-        :style="textStyle(item.slot)"
-      >
-        {{ moduleValues[item.slot.source_module || ""] || "\u2014" }}
+        <div
+          v-else-if="slot.type === 'module_mirror'"
+          class="overlay-slot__text"
+          :style="textStyle(slot)"
+        >
+          {{ moduleValues[slot.source_module || ""] || "\u2014" }}
+        </div>
       </div>
-    </div>
+    </TransitionGroup>
   </div>
 </template>
 
 <script setup>
-import { ref, shallowRef, watch } from "vue";
+import { ref, watch } from "vue";
 import { useOverlayState } from "@/composables/useOverlayState";
-import { buildAnchorStyle } from "@/types/Overlay";
 
 const {
   globalEnabled,
   activeSlots,
-  slots,
   moduleValues,
   slotImage,
   slotStyle,
   imageStyle,
   textStyle,
   animationClass,
-  animationExitClass,
 } = useOverlayState();
 
 const imageUrls = ref({});
-const exiting = shallowRef([]);
+const showCanvas = ref(false);
+const slotDataById = {};
 
 async function loadImages(list) {
   const map = {};
@@ -95,86 +64,63 @@ async function loadImages(list) {
 
 watch(
   [activeSlots, globalEnabled],
-  ([current, ge], [oldCurrent]) => {
-    const exitingIds = new Set(exiting.value.map((e) => e.slot.id));
-    const disabled = [];
-
-    if (!ge) {
-      // Global toggle off — exit all currently active
-      for (const slot of oldCurrent || current) {
-        if (!exitingIds.has(slot.id)) {
-          disabled.push(slot);
-        }
-      }
-    } else if (oldCurrent) {
-      const currentIds = new Set(current.map((s) => s.id));
-      for (const prev of oldCurrent) {
-        if (!currentIds.has(prev.id) && !exitingIds.has(prev.id)) {
-          const full = slots.value.find((s) => s.id === prev.id);
-          if (full) disabled.push(full);
-        }
-      }
-    }
-
-    if (disabled.length) {
-      const entries = disabled.map((s) => {
-        const slot = JSON.parse(JSON.stringify(s));
-        const dur = slot.style.animation_duration || 300;
-        const timer = setTimeout(() => {
-          exiting.value = exiting.value.filter((e) => e.timer !== timer);
-        }, dur);
-        return { slot, timer };
-      });
-      exiting.value = [...exiting.value, ...entries];
-    }
-
-    // Remove do exiting slots que reapareceram (reabilitados)
+  ([current, ge]) => {
     if (ge) {
-      const currentIds = new Set(current.map((s) => s.id));
-      const removed = exiting.value.filter((e) => currentIds.has(e.slot.id));
-      removed.forEach((e) => clearTimeout(e.timer));
-      exiting.value = exiting.value.filter((e) => !currentIds.has(e.slot.id));
+      showCanvas.value = true;
     }
-
+    for (const s of current) {
+      slotDataById[s.id] = s;
+    }
     loadImages(current);
   },
   { deep: true, immediate: true }
 );
 
-function exitingStyle(slot) {
-  const dur = `${(slot.style.animation_duration || 300) / 1000}s`;
-  const s = slot.style;
-  return {
-    position: "absolute",
-    ...buildAnchorStyle(slot.position),
-    pointerEvents: "none",
-    zIndex: String(slot.order + 1),
-    opacity: String((s.opacity ?? 100) / 100),
-    padding: s.padding || "8px 16px",
-    borderRadius: s.border_radius || "4px",
-    border: s.border || "",
-    width: "auto",
-    height: "auto",
-    ...(s.box_shadow ? { boxShadow: "0 4px 16px rgba(0,0,0,0.45)" } : {}),
-    animationDuration: dur,
-  };
+const EXIT_STYLES = {
+  fade: { opacity: "0" },
+  "slide-up": { opacity: "0", transform: "translateY(-20px)" },
+  "slide-down": { opacity: "0", transform: "translateY(20px)" },
+  "slide-left": { opacity: "0", transform: "translateX(-20px)" },
+  "slide-right": { opacity: "0", transform: "translateX(20px)" },
+  "zoom-in": { opacity: "0", transform: "scale(0.5)" },
+  "zoom-out": { opacity: "0", transform: "scale(1.5)" },
+  bounce: { opacity: "0", transform: "scale(0.3)" },
+  flip: { opacity: "0", transform: "perspective(400px) rotateX(90deg)" },
+  none: {},
+};
+
+function onLeave(el, done) {
+  const slotId = el.dataset.slotId;
+  const slot = slotDataById[slotId];
+  const dur = slot?.style?.animation_duration || 300;
+  const anim = slot?.style?.animation_exit || "fade";
+  const exitStyle = EXIT_STYLES[anim] || EXIT_STYLES.fade;
+
+  el.style.animation = "none";
+  el.style.transition = `opacity ${dur / 1000}s ease, transform ${dur / 1000}s ease`;
+
+  const currentTransform = window.getComputedStyle(el).transform;
+  el.style.opacity = String((slot?.style?.opacity ?? 100) / 100);
+
+  void el.offsetWidth;
+
+  if (exitStyle.transform) {
+    el.style.transform =
+      currentTransform !== "none"
+        ? `${currentTransform} ${exitStyle.transform}`
+        : exitStyle.transform;
+  }
+  el.style.opacity = "0";
+
+  el.addEventListener("transitionend", () => done(), { once: true });
+  setTimeout(() => done(), dur + 50);
 }
 
-const showCanvas = ref(true);
-
-watch(globalEnabled, (ge) => {
-  if (!ge && exiting.value.length === 0) {
-    showCanvas.value = false;
-  } else if (ge) {
-    showCanvas.value = true;
-  }
-});
-
-watch(exiting, (e) => {
-  if (!globalEnabled.value && e.length === 0) {
+function onAfterLeave() {
+  if (!globalEnabled.value && activeSlots.value.length === 0) {
     showCanvas.value = false;
   }
-});
+}
 </script>
 
 <style scoped>
@@ -232,40 +178,6 @@ watch(exiting, (e) => {
 }
 .overlay-anim--flip {
   animation: overlay-flip 0.4s ease;
-}
-
-/* ── Exit animations ── */
-
-.overlay-anim--fade--exit {
-  animation: overlay-fade-exit 0.3s ease forwards;
-}
-.overlay-anim--slide-up--exit {
-  animation: overlay-slide-up-exit 0.3s ease forwards;
-}
-.overlay-anim--slide-down--exit {
-  animation: overlay-slide-down-exit 0.3s ease forwards;
-}
-.overlay-anim--slide-left--exit {
-  animation: overlay-slide-left-exit 0.3s ease forwards;
-}
-.overlay-anim--slide-right--exit {
-  animation: overlay-slide-right-exit 0.3s ease forwards;
-}
-.overlay-anim--zoom-in--exit {
-  animation: overlay-zoom-in-exit 0.3s ease forwards;
-}
-.overlay-anim--zoom-out--exit {
-  animation: overlay-zoom-out-exit 0.3s ease forwards;
-}
-.overlay-anim--bounce--exit {
-  animation: overlay-bounce-exit 0.35s ease forwards;
-}
-.overlay-anim--flip--exit {
-  animation: overlay-flip-exit 0.35s ease forwards;
-}
-
-.overlay-anim--exit-fade {
-  animation: overlay-fade-exit 0.3s ease forwards;
 }
 
 /* ── Keyframes: entrance ── */
@@ -343,83 +255,6 @@ watch(exiting, (e) => {
   to {
     opacity: 1;
     transform: perspective(400px) rotateX(0deg);
-  }
-}
-
-/* ── Keyframes: exit ── */
-
-@keyframes overlay-fade-exit {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes overlay-slide-up-exit {
-  to {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes overlay-slide-down-exit {
-  to {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-}
-
-@keyframes overlay-slide-left-exit {
-  to {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-}
-
-@keyframes overlay-slide-right-exit {
-  to {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-}
-
-@keyframes overlay-zoom-in-exit {
-  to {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-}
-
-@keyframes overlay-zoom-out-exit {
-  to {
-    opacity: 0;
-    transform: scale(1.5);
-  }
-}
-
-@keyframes overlay-bounce-exit {
-  0% {
-    opacity: 1;
-  }
-  30% {
-    transform: scale(1.08);
-  }
-  60% {
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-}
-
-@keyframes overlay-flip-exit {
-  from {
-    opacity: 1;
-    transform: perspective(400px) rotateX(0deg);
-  }
-  to {
-    opacity: 0;
-    transform: perspective(400px) rotateX(90deg);
   }
 }
 </style>

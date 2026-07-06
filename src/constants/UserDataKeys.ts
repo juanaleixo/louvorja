@@ -30,6 +30,9 @@ export const KEY_MEDIA_DECK_IS_PLAYING = `${KEY_MODULES}.${ModuleEnum.MEDIA_DECK
 export const KEY_MEDIA_FADE_AUDIO = `${KEY_MODULES}.${ModuleEnum.MEDIA}.fade_audio`;
 export const KEY_MEDIA_LAZY_LOAD = `${KEY_MODULES}.${ModuleEnum.MEDIA}.lazy_load`;
 
+//OVERLAY
+export const KEY_OVERLAY_GLOBAL_ENABLED = `${KEY_MODULES}.${ModuleEnum.OVERLAY}.global_enabled`;
+
 //TIMER CULTO
 export const KEY_TIMER_WORSHIP_SOUND_START = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_start`;
 export const KEY_TIMER_WORSHIP_SOUND_FIVE_MIN = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_five_min`;

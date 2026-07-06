@@ -41,6 +41,15 @@ export interface RibbonButton {
   min?: number;
   max?: number;
   step?: number;
+  stateBinding?: {
+    watchPath: string;
+    iconOn?: string;
+    iconOff?: string;
+    colorOn?: string;
+    colorOff?: string;
+    labelOn?: string;
+    labelOff?: string;
+  };
 }
 
 export interface RibbonAction {

@@ -128,7 +128,7 @@
       <v-slider
         :model-value="m.style.font_size"
         :label="t('style.font_size')"
-        min="2"
+        min="1"
         max="20"
         step="0.5"
         density="compact"

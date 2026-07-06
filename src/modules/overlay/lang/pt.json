@@ -1,7 +1,14 @@
 {
   "title": "Overlays",
   "description": "Gerencie overlays customizáveis sobre a projeção.",
-  "ribbon": { "title_ctx": "Overlays" },
+  "ribbon": {
+    "title_ctx": "Overlays",
+    "btn": {
+      "overlay_toggle": "Overlay",
+      "overlay_on": "Overlay ativo",
+      "overlay_add": "Adicionar overlay"
+    }
+  },
   "global_enabled": "Overlay ativo",
   "add_slot": "Adicionar overlay",
   "slot": {
@@ -26,7 +33,7 @@
   "style": {
     "title": "Aparência",
     "font": "Fonte",
-    "font_size": "Tamanho",
+    "font_size": "Tamanho do texto",
     "color": "Cor do texto",
     "background": "Fundo",
     "background_opacity": "Opacidade do fundo",

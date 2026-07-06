@@ -1,7 +1,14 @@
 {
   "title": "Superposiciones",
   "description": "Gestiona superposiciones personalizables sobre la proyección.",
-  "ribbon": { "title_ctx": "Superposiciones" },
+  "ribbon": {
+    "title_ctx": "Superposiciones",
+    "btn": {
+      "overlay_toggle": "Superposición",
+      "overlay_on": "Superposición activa",
+      "overlay_add": "Agregar superposición"
+    }
+  },
   "global_enabled": "Superposición activa",
   "add_slot": "Agregar superposición",
   "slot": {
@@ -26,7 +33,7 @@
   "style": {
     "title": "Apariencia",
     "font": "Fuente",
-    "font_size": "Tamaño",
+    "font_size": "Tamaño del texto",
     "color": "Color del texto",
     "background": "Fondo",
     "background_opacity": "Opacidad del fondo",
