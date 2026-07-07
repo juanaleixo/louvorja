@@ -44,6 +44,7 @@ import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
 import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
+import { ModuleEnum } from "@/enums/ModuleEnum";
 
 app.use(createPinia());
 app.use(router);
@@ -531,13 +532,13 @@ $storage.hydrate().then(async () => {
 
           // Módulos genéricos (counter, timer, etc.)
           const moduleIds = [
-            "counter",
-            "draw",
-            "name_draw",
-            "message_board",
-            "stopwatch",
-            "timer",
-            "clock",
+            ModuleEnum.COUNTER,
+            ModuleEnum.DRAW,
+            ModuleEnum.NAME_DRAW,
+            ModuleEnum.MESSAGE_BOARD,
+            ModuleEnum.STOPWATCH,
+            ModuleEnum.TIMER,
+            ModuleEnum.CLOCK,
           ];
           for (const id of moduleIds) {
             Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, { module: id, active: false });
@@ -622,7 +623,7 @@ $storage.hydrate().then(async () => {
       "Ctrl+o",
       () => {
         Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
-          module: "overlay",
+          module: ModuleEnum.OVERLAY,
           action: "toggle",
         });
       },
@@ -631,6 +632,23 @@ $storage.hydrate().then(async () => {
         description: "hotkeys.ctrl_o",
         group: "general",
         label: "Ctrl+O",
+      }
+    );
+
+    // Ctrl+P: iniciar/parar projeção de fundo
+    Hotkeys.register(
+      "Ctrl+p",
+      () => {
+        Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
+          module: ModuleEnum.BACKGROUND_PROJECTION,
+          action: "play",
+        });
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_p",
+        group: "general",
+        label: "Ctrl+P",
       }
     );
 

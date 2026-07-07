@@ -775,6 +775,7 @@
     "ctrl_m": "Abrir busca de músicas",
     "ctrl_k": "Abrir paleta de comandos",
     "ctrl_o": "Ativar/desativar overlay",
+    "ctrl_p": "Iniciar/parar projeção de fundo",
     "ctrl_tab": "Próximo módulo aberto",
     "shift_ctrl_tab": "Módulo anterior",
     "ctrl_n": "Novo item (liturgia ativa)",
