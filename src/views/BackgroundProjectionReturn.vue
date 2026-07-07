@@ -71,7 +71,7 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 import { getSetting } from "@/helpers/SettingsStorage";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import Slide from "@/components/Slide.vue";
-import { MainSettings } from "@/types/db/settings/main";
+import { MAIN_BACKGROUND_ID, BackgroundSettings } from "@/types/db/settings/BackgroundSettings";
 
 /* ── Background state ── */
 
@@ -210,7 +210,7 @@ function onKey(e: KeyboardEvent): void {
 }
 
 async function reloadWallpaper(): Promise<void> {
-  const s = await getSetting<MainSettings>("main").catch(() => null);
+  const s = await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => null);
   if (s) {
     wpColor.value = s.color || "#000033";
     wpPosition.value = s.position || "cover";

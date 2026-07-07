@@ -1,21 +1,29 @@
 <template>
-  <div class="rbw-container">
-    <div class="rbw-col">
-      <div class="rbw-group">
-        <input type="color" class="rbw-color" :value="wpColor" @input="onColor" />
-        <label class="rbw-label">{{ $t(modulePrefix + ".bg_color") }}</label>
+  <div class="rfps-container">
+    <div class="rfps-col">
+      <div class="rfps-group">
+        <input type="checkbox" :checked="enabled" @change="onToggle" />
+        <label class="rfps-label">{{ $t("options.file_projection.custom_background") }}</label>
       </div>
-      <div class="rbw-group">
-        <select class="rbw-select" :value="wpPosition" @change="onPos">
+    </div>
+  </div>
+  <div v-if="enabled" class="rfps-container">
+    <div class="rfps-col">
+      <div class="rfps-group">
+        <input type="color" class="rfps-color" :value="wpColor" @input="onColor" />
+        <label class="rfps-label">{{ $t(modulePrefix + ".bg_color") }}</label>
+      </div>
+      <div class="rfps-group">
+        <select class="rfps-select" :value="wpPosition" @change="onPos">
           <option value="cover">Cover</option>
           <option value="contain">Contain</option>
           <option value="center">Center</option>
           <option value="stretch">Stretch</option>
           <option value="tile">Tile</option>
         </select>
-        <label class="rbw-label">{{ $t(modulePrefix + ".bg_position") }}</label>
+        <label class="rfps-label">{{ $t(modulePrefix + ".bg_position") }}</label>
       </div>
-      <div class="rbw-group">
+      <div class="rfps-group">
         <div class="opt-format-field opt-field-bgimage">
           <div class="opt-bg-pick">
             <v-btn variant="outlined" size="x-small" @click="pick">
@@ -26,15 +34,15 @@
               {{ $t("options.background.no_image") }}
             </span>
           </div>
-          <span class="rbw-label">{{ $t("options.background.title") }}</span>
+          <span class="rfps-label">{{ $t("options.background.title") }}</span>
         </div>
       </div>
     </div>
-    <div class="rbw-col">
-      <div class="rbw-group">
-        <div v-if="wpImageUrl" class="rbw-preview">
-          <img :src="wpImageUrl" class="rbw-preview-img" />
-          <button class="rbw-preview-remove" @click="remove">
+    <div class="rfps-col">
+      <div class="rfps-group">
+        <div v-if="wpImageUrl" class="rfps-preview">
+          <img :src="wpImageUrl" class="rfps-preview-img" />
+          <button class="rfps-preview-remove" @click="remove">
             <v-icon icon="mdi-close" size="15" />
           </button>
         </div>
@@ -47,17 +55,20 @@
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import $modules from "@/helpers/Modules";
+import $userdata from "@/helpers/UserData";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import { pickImageData } from "@/helpers/FilePicker";
 import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
-import { MAIN_BACKGROUND_ID, BackgroundSettings } from "@/types/db/settings/BackgroundSettings";
 
 const { t } = useI18n();
-const modulePrefix = $modules.getPath(ModuleEnum.BACKGROUND_PROJECTION);
+const modulePrefix = $modules.getPath(ModuleEnum.MEDIA_DECK);
 const currentBgImage = computed(() => wpImageUrl.value);
 
+const STORAGE_ID = "file_projection_background";
+
+const enabled = ref(false);
 const wpColor = ref("#000033");
 const wpImageUrl = ref("");
 const wpPosition = ref("cover");
@@ -65,16 +76,28 @@ let wpBlobUrl: string | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 function notifyViews(): void {
-  Broadcast.send(BROADCAST_TYPE.WALLPAPER_UPDATE, {});
+  Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_BG_UPDATE, {});
+}
+
+function onToggle(e: Event): void {
+  enabled.value = (e.target as HTMLInputElement).checked;
+  $userdata.set("options.file_projection.background_enabled", enabled.value);
+  if (enabled.value) {
+    saveSetting({
+      id: STORAGE_ID,
+      color: wpColor.value,
+      position: wpPosition.value,
+    }).catch(() => {});
+  }
+  notifyViews();
 }
 
 async function scheduleSave(): Promise<void> {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const existing =
-      (await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
+    const existing = (await getSetting<any>(STORAGE_ID).catch(() => ({}))) || {};
     await saveSetting({
-      id: MAIN_BACKGROUND_ID,
+      id: STORAGE_ID,
       ...existing,
       color: wpColor.value,
       position: wpPosition.value,
@@ -101,7 +124,7 @@ async function pick(): Promise<void> {
   wpBlobUrl = URL.createObjectURL(blob);
   wpImageUrl.value = wpBlobUrl;
   await saveSetting({
-    id: MAIN_BACKGROUND_ID,
+    id: STORAGE_ID,
     image: r.data,
     mime: r.mime,
     color: wpColor.value,
@@ -116,14 +139,15 @@ async function remove(): Promise<void> {
     wpBlobUrl = null;
   }
   wpImageUrl.value = "";
-  const existing =
-    (await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
-  await saveSetting({ id: MAIN_BACKGROUND_ID, ...existing, image: null, mime: null });
+  const existing = (await getSetting<any>(STORAGE_ID).catch(() => ({}))) || {};
+  await saveSetting({ id: STORAGE_ID, ...existing, image: null, mime: null });
   notifyViews();
 }
 
 onMounted(async () => {
-  const s = await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => null);
+  enabled.value =
+    $userdata.get<boolean>("options.file_projection.background_enabled", false) === true;
+  const s = await getSetting<any>(STORAGE_ID).catch(() => null);
   if (s) {
     wpColor.value = s.color || "#000033";
     wpPosition.value = s.position || "cover";
@@ -141,14 +165,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.rbw-container {
+.rfps-container {
   display: flex;
   flex-direction: row;
   gap: 10px;
   height: 100%;
   align-items: start;
 }
-.rbw-col {
+.rfps-col {
   display: flex;
   grid-gap: 6px;
   flex-wrap: wrap;
@@ -156,19 +180,19 @@ onBeforeUnmount(() => {
   min-width: 100px;
   margin-left: 5px;
 }
-.rbw-group {
+.rfps-group {
   display: flex;
   align-items: center;
   white-space: nowrap;
 }
-.rbw-label {
+.rfps-label {
   font-size: 10px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   margin-left: 5px;
 }
-.rbw-color {
+.rfps-color {
   width: 35px;
   height: 20px;
   border: 1px solid #555;
@@ -177,7 +201,7 @@ onBeforeUnmount(() => {
   padding: 0;
   background: transparent;
 }
-.rbw-preview {
+.rfps-preview {
   position: relative;
   width: 120px;
   height: 80px;
@@ -186,12 +210,12 @@ onBeforeUnmount(() => {
   border: 1px solid #555;
   flex-shrink: 0;
 }
-.rbw-preview-img {
+.rfps-preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.rbw-preview-remove {
+.rfps-preview-remove {
   position: absolute;
   top: 0;
   right: 0;
@@ -207,7 +231,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 0;
 }
-.rbw-select {
+.rfps-select {
   height: 22px;
   width: 80px;
   padding: 0 4px;

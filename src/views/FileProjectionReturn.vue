@@ -47,11 +47,20 @@ import {
   YTAPI,
   YTPlayer,
 } from "@/types/Media";
-import { KEY_LJ_FILE_PROJECTION, KEY_LJ_YOUTUBE_PROJECTION } from "@/constants/UserDataKeys";
+import {
+  KEY_LJ_FILE_PROJECTION,
+  KEY_LJ_YOUTUBE_PROJECTION,
+  KEY_OPTIONS_FILE_PROJECTION_BG_ENABLED,
+} from "@/constants/UserDataKeys";
+import $userdata from "@/helpers/UserData";
 import { getSetting } from "@/helpers/SettingsStorage";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { MainSettings } from "@/types/db/settings/main";
+import {
+  MAIN_BACKGROUND_ID,
+  BackgroundSettings,
+  FILE_PROJECTION_BACKGROUND_ID,
+} from "@/types/db/settings/BackgroundSettings";
 
 GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -172,11 +181,11 @@ function _readPendingProjection(): void {
 
   // Tenta ler projeção de arquivo primeiro
   try {
-    const stored = localStorage.getItem("lj_file_projection");
+    const stored = localStorage.getItem(KEY_LJ_FILE_PROJECTION);
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
-      localStorage.removeItem("lj_file_projection");
+      localStorage.removeItem(KEY_LJ_FILE_PROJECTION);
       return;
     }
   } catch {
@@ -185,7 +194,7 @@ function _readPendingProjection(): void {
 
   // Tenta ler projeção de YouTube
   try {
-    const stored = localStorage.getItem("lj_youtube_projection");
+    const stored = localStorage.getItem(KEY_LJ_YOUTUBE_PROJECTION);
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
@@ -420,7 +429,9 @@ function _onKey(e: KeyboardEvent): void {
 }
 
 async function reloadWallpaper(): Promise<void> {
-  const s = await getSetting<MainSettings>("main").catch(() => null);
+  const useCustom = $userdata.get<boolean>(KEY_OPTIONS_FILE_PROJECTION_BG_ENABLED, false) === true;
+  const id = useCustom ? FILE_PROJECTION_BACKGROUND_ID : MAIN_BACKGROUND_ID;
+  const s = await getSetting<BackgroundSettings>(id).catch(() => null);
   if (s) {
     wpColor.value = s.color || "#000033";
     wpPosition.value = s.position || "cover";
@@ -440,6 +451,10 @@ async function reloadWallpaper(): Promise<void> {
 }
 
 useBroadcastListener(BROADCAST_TYPE.WALLPAPER_UPDATE, () => {
+  reloadWallpaper();
+});
+
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_BG_UPDATE, () => {
   reloadWallpaper();
 });
 

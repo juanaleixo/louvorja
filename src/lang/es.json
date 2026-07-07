@@ -355,7 +355,8 @@
     "file_projection": {
       "title": "Proyección de Archivos",
       "fade": "Usar fundido al abrir/cerrar proyección",
-      "fade_duration": "Duración del fundido"
+      "fade_duration": "Duración del fundido",
+      "custom_background": "Personalizar fondo de proyección"
     }
   },
   "about": {

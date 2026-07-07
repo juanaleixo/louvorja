@@ -105,6 +105,7 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Emitido por: RibbonWallpaperSettings.vue, AppMenuOpcoes.vue
    *  Recebido por: BackgroundProjection, FileProjection, etc. */
   WALLPAPER_UPDATE: "wallpaper_update",
+  FILE_PROJECTION_BG_UPDATE: "file_projection_bg_update",
 
   /** Sincronização de vídeo entre o player principal e a projeção.
    *  Payload: { currentTime: number, isPaused: boolean }

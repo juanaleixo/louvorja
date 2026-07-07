@@ -6,6 +6,7 @@ import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { KEY_MEDIA_DECK_IS_PLAYING } from "@/constants/UserDataKeys";
+import RibbonFileProjectionSettings from "./components/RibbonFileProjectionSettings.vue";
 
 const moduleId = ModuleEnum.MEDIA_DECK;
 const modulePath = $modules.getPath(moduleId);
@@ -104,6 +105,11 @@ export const contextualPages: RibbonPage[] = [
             color: "#1b4f8a",
           },
         ],
+      },
+      {
+        id: `${moduleCtxId}_background`,
+        title: `${modulePath}.ribbon.background`,
+        customCategory: RibbonFileProjectionSettings,
       },
     ],
   },

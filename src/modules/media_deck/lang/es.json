@@ -29,6 +29,7 @@
   "file_added": "Archivo añadido a la biblioteca",
   "added_to_playlist": "Añadido a la lista de reproducción",
   "ribbon": {
-    "title_ctx": "Gestionar Media Deck"
+    "title_ctx": "Gestionar Media Deck",
+    "background": "Fondo de Proyección"
   }
 }

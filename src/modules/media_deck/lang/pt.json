@@ -29,6 +29,7 @@
   "file_added": "Arquivo adicionado à biblioteca",
   "added_to_playlist": "Adicionado à playlist",
   "ribbon": {
-    "title_ctx": "Gerenciar Mídia Deck"
+    "title_ctx": "Gerenciar Mídia Deck",
+    "background": "Fundo da Projeção"
   }
 }

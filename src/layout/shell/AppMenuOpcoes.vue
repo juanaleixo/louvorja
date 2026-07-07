@@ -749,6 +749,54 @@
             <span class="opt-unit">ms</span>
           </div>
         </div>
+
+        <v-divider class="opt-divider" />
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input type="checkbox" :checked="fileProjBgEnabled" @change="toggleFileProjBg" />
+            <span>{{ $t("options.file_projection.custom_background") }}</span>
+          </label>
+        </div>
+
+        <template v-if="fileProjBgEnabled">
+          <div class="opt-row">
+            <input
+              type="color"
+              class="opt-color"
+              :value="fileProjBgColor"
+              @input="onFileProjBgColor"
+            />
+          </div>
+          <div class="opt-row">
+            <div class="opt-bg-pick">
+              <v-btn variant="outlined" size="small" @click="pickFileProjBgImage">
+                <v-icon start icon="mdi-image-plus" size="16" />
+                {{ $t("options.background.select") }}
+              </v-btn>
+              <span v-if="!fileProjBgImageUrl" class="opt-bg-empty-text">
+                {{ $t("options.background.no_image") }}
+              </span>
+            </div>
+          </div>
+          <div v-if="fileProjBgImageUrl" class="opt-row">
+            <div class="opt-bg-preview">
+              <img :src="fileProjBgImageUrl" class="opt-bg-preview-img" />
+              <button class="opt-bg-preview-remove" @click="removeFileProjBgImage">
+                <v-icon icon="mdi-close" size="15" />
+              </button>
+            </div>
+          </div>
+          <div class="opt-row">
+            <select class="opt-select" :value="fileProjBgPosition" @change="onFileProjBgPosition">
+              <option value="cover">Cover</option>
+              <option value="contain">Contain</option>
+              <option value="center">Center</option>
+              <option value="stretch">Stretch</option>
+              <option value="tile">Tile</option>
+            </select>
+          </div>
+        </template>
       </v-tabs-window-item>
     </v-tabs-window>
   </div>
@@ -859,7 +907,7 @@ function saveUserData(key: string, value: unknown): void {
 /* ── Wallpaper via IndexedDB ── */
 
 import { onMounted, onBeforeUnmount, ref } from "vue";
-import { MAIN_SETTINGS_ID, MainSettings } from "@/types/db/settings/main";
+import { MAIN_BACKGROUND_ID, BackgroundSettings } from "@/types/db/settings/BackgroundSettings";
 
 const bgColor = ref("#000033");
 const bgPosition = ref("cover");
@@ -883,10 +931,10 @@ function onBgPositionChange(e: Event): void {
 async function scheduleSave(): Promise<void> {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const existing = (await getSetting<any>(MAIN_SETTINGS_ID).catch(() => ({}))) || {};
+    const existing = (await getSetting<any>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
 
-    const settings: MainSettings = {
-      id: MAIN_SETTINGS_ID,
+    const settings: BackgroundSettings = {
+      id: MAIN_BACKGROUND_ID,
       ...existing,
       color: bgColor.value,
       position: bgPosition.value,
@@ -907,7 +955,7 @@ async function pickBgImage(): Promise<void> {
   if (wallpaperBlobUrl.value) URL.revokeObjectURL(wallpaperBlobUrl.value);
   wallpaperBlobUrl.value = url;
   await saveSetting({
-    id: "main",
+    id: MAIN_BACKGROUND_ID,
     image: data,
     mime,
     color: bgColor.value,
@@ -921,13 +969,13 @@ async function removeBgImage(): Promise<void> {
     URL.revokeObjectURL(wallpaperBlobUrl.value);
     wallpaperBlobUrl.value = "";
   }
-  const existing = (await getSetting<any>(MAIN_SETTINGS_ID).catch(() => ({}))) || {};
-  await saveSetting({ id: MAIN_SETTINGS_ID, ...existing, image: null, mime: null });
+  const existing = (await getSetting<any>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
+  await saveSetting({ id: MAIN_BACKGROUND_ID, ...existing, image: null, mime: null });
   notifyViews();
 }
 
 onMounted(async () => {
-  const s = await getSetting<any>(MAIN_SETTINGS_ID).catch(() => null);
+  const s = await getSetting<any>(MAIN_BACKGROUND_ID).catch(() => null);
   if (s) {
     bgColor.value = s.color || "#000033";
     bgPosition.value = s.position || "cover";
@@ -940,6 +988,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (wallpaperBlobUrl.value) URL.revokeObjectURL(wallpaperBlobUrl.value);
+  if (fileProjBlobUrl) URL.revokeObjectURL(fileProjBlobUrl);
 });
 
 function restoreTextFormat(): void {
@@ -997,6 +1046,106 @@ const fileProjectionFadeDuration: ComputedRef<number> = computed(
 
 function setFileProj(key: string, value: any): void {
   $userdata.set(`options.file_projection.${key}`, value);
+}
+
+/* ── File Projection Background ── */
+
+const FP_STORAGE_ID = "file_projection_background";
+
+const fileProjBgEnabled: ComputedRef<boolean> = computed(
+  () => $userdata.get<boolean>("options.file_projection.background_enabled", false) === true
+);
+
+const fileProjBgColor = ref("#000033");
+const fileProjBgPosition = ref("cover");
+const fileProjBgImageUrl = ref("");
+let fileProjBlobUrl: string | null = null;
+
+function notifyFileProjViews(): void {
+  Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_BG_UPDATE, {});
+}
+
+async function saveFileProjBg(): Promise<void> {
+  const existing = (await getSetting<any>(FP_STORAGE_ID).catch(() => ({}))) || {};
+  await saveSetting({
+    id: FP_STORAGE_ID,
+    ...existing,
+    color: fileProjBgColor.value,
+    position: fileProjBgPosition.value,
+  });
+  notifyFileProjViews();
+}
+
+async function loadFileProjBg(): Promise<void> {
+  const s = await getSetting<any>(FP_STORAGE_ID).catch(() => null);
+  if (s) {
+    fileProjBgColor.value = s.color || "#000033";
+    fileProjBgPosition.value = s.position || "cover";
+    if (s.image) {
+      if (fileProjBlobUrl) URL.revokeObjectURL(fileProjBlobUrl);
+      const blob = new Blob([s.image], { type: s.mime || "image/png" });
+      fileProjBlobUrl = URL.createObjectURL(blob);
+      fileProjBgImageUrl.value = fileProjBlobUrl;
+    } else {
+      if (fileProjBlobUrl) {
+        URL.revokeObjectURL(fileProjBlobUrl);
+        fileProjBlobUrl = null;
+      }
+      fileProjBgImageUrl.value = "";
+    }
+  } else {
+    fileProjBgColor.value = "#000033";
+    fileProjBgPosition.value = "cover";
+    fileProjBgImageUrl.value = "";
+  }
+}
+
+function toggleFileProjBg(e: Event): void {
+  const checked = (e.target as HTMLInputElement).checked;
+  $userdata.set("options.file_projection.background_enabled", checked);
+  if (checked) {
+    loadFileProjBg();
+  } else {
+    notifyFileProjViews();
+  }
+}
+
+function onFileProjBgColor(e: Event): void {
+  fileProjBgColor.value = (e.target as HTMLInputElement).value;
+  saveFileProjBg();
+}
+
+function onFileProjBgPosition(e: Event): void {
+  fileProjBgPosition.value = (e.target as HTMLSelectElement).value;
+  saveFileProjBg();
+}
+
+async function pickFileProjBgImage(): Promise<void> {
+  const r = await pickImageData();
+  if (!r) return;
+  const blob = new Blob([r.data], { type: r.mime });
+  if (fileProjBlobUrl) URL.revokeObjectURL(fileProjBlobUrl);
+  fileProjBlobUrl = URL.createObjectURL(blob);
+  fileProjBgImageUrl.value = fileProjBlobUrl;
+  await saveSetting({
+    id: FP_STORAGE_ID,
+    image: r.data,
+    mime: r.mime,
+    color: fileProjBgColor.value,
+    position: fileProjBgPosition.value,
+  });
+  notifyFileProjViews();
+}
+
+async function removeFileProjBgImage(): Promise<void> {
+  if (fileProjBlobUrl) {
+    URL.revokeObjectURL(fileProjBlobUrl);
+    fileProjBlobUrl = null;
+  }
+  fileProjBgImageUrl.value = "";
+  const existing = (await getSetting<any>(FP_STORAGE_ID).catch(() => ({}))) || {};
+  await saveSetting({ id: FP_STORAGE_ID, ...existing, image: null, mime: null });
+  notifyFileProjViews();
 }
 
 function setPref(feature: string, displayId: string): void {
