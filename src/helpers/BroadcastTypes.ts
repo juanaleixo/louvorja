@@ -80,6 +80,21 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: Projection, Obs. (ainda não emitido — ver Media.js). */
   MEDIA_CLOSE: "media_close",
 
+  /** Projeção de arquivo (imagem/vídeo) vindo de liturgia ou outro módulo.
+   *  Payload: { url: string, type: "image" | "video", title?: string }
+   *  Emitido por: liturgy (arquivo). Recebido por: Projection. */
+  FILE_PROJECTION: "file_projection",
+
+  /** Sincronização de vídeo entre o player principal e a projeção.
+   *  Payload: { currentTime: number, isPaused: boolean }
+   *  Emitido por: useMedia.ts (onTimeUpdate + goToTime + pause/play).
+   *  Recebido por: FileProjection.vue (sincroniza o <video> com o <audio>). */
+  VIDEO_STATE: "video_state",
+
+  /** Força a RibbonBar a selecionar uma página específica.
+   *  Payload: { pageId: string } */
+  RIBBON_SELECT_PAGE: "ribbon:select_page",
+
   /** Solicita reemissão do estado atual do slide. Emitido por janelas
    *  secundárias (Popup) ao montar para sincronizar com o estado da janela
    *  principal — sem isso, broadcasts são "fire-and-forget" e janelas que
@@ -127,6 +142,16 @@ export const BROADCAST_TYPE = Object.freeze({
    *  tem seu próprio Pinia store.
    *  Payload: { path: string, value: unknown, _src?: string } */
   USERDATA_PATCH: "userdata:patch",
+
+  // ─── YouTube projection bidirectional sync ────────────────────────────────
+
+  /** Estado atual do YouTube na projeção (broadcast da janela de projeção para
+   *  o módulo). Payload: { currentTime: number, isPaused: boolean, duration: number } */
+  YOUTUBE_STATE: "youtube_state",
+
+  /** Comando de controle enviado do módulo para a janela de projeção.
+   *  Payload: { action: "play" | "pause" | "seekTo" | "setVolume", value?: number } */
+  YOUTUBE_CONTROL: "youtube_control",
 } as const);
 
 export type BroadcastTypeValue = (typeof BROADCAST_TYPE)[keyof typeof BROADCAST_TYPE];

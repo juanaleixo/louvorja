@@ -14,5 +14,8 @@
   "data": {
     "empty": "Ningún aviso. Use el campo arriba para agregar.",
     "showing": "Mostrando en proyección"
+  },
+  "ribbon": {
+    "title_ctx": "Configurar Avisos"
   }
 }

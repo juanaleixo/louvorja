@@ -70,7 +70,7 @@ export function usePlayerState(): {
   fullscreen: (value?: boolean) => void;
   toggleVolume: () => void;
   setVolume: (value?: number) => void;
-  seekToProgress: () => void;
+  seekToProgress: (pct: number) => void;
   goToSlide: (index: number) => void;
 } {
   const { t }     = useI18n();
@@ -106,7 +106,11 @@ export function usePlayerState(): {
     const cfg        = (media.value?.config as Record<string, unknown>) ?? {};
     const lastSlide  = (cfg.last_slide as number) ?? 0;
     const slideIndex = (cfg.slide_index as number) ?? 0;
-    const hasAudio   = !!(cfg.audio);
+
+    const isYouTube = !!(cfg.is_youtube);
+    const hasAudio  = !!(cfg.audio) || isYouTube || !!(cfg.video_file);
+    const hasSlides = !isYouTube && lastSlide > 0;
+
     return [
       {
         show: hasAudio, compact: true,  disabled: false,
@@ -114,12 +118,12 @@ export function usePlayerState(): {
         click: () => rewind(),
       },
       {
-        show: true, compact: true, disabled: slideIndex <= 0,
+        show: hasSlides, compact: true, disabled: slideIndex <= 0,
         highlight: false, icon: "mdi-page-first",
         click: () => first(),
       },
       {
-        show: true, compact: false, disabled: slideIndex <= 0,
+        show: hasSlides, compact: false, disabled: slideIndex <= 0,
         highlight: false, icon: "mdi-chevron-left",
         click: () => prev(),
       },
@@ -129,12 +133,12 @@ export function usePlayerState(): {
         click: () => playToggle(),
       },
       {
-        show: true, compact: false, disabled: slideIndex >= lastSlide - 1,
+        show: hasSlides, compact: false, disabled: slideIndex >= lastSlide - 1,
         highlight: false, icon: "mdi-chevron-right",
         click: () => next(),
       },
       {
-        show: true, compact: true, disabled: slideIndex >= lastSlide - 1,
+        show: hasSlides, compact: true, disabled: slideIndex >= lastSlide - 1,
         highlight: false, icon: "mdi-page-last",
         click: () => last(),
       },
@@ -211,8 +215,8 @@ export function usePlayerState(): {
   function setVolume(value?: number): void {
     Media.setVolume(value ?? audio.volume.value);
   }
-  function seekToProgress(): void {
-    const time = (audio.duration.value * audio.progress.value) / 100;
+  function seekToProgress(pct: number): void {
+    const time = (audio.duration.value * pct) / 100;
     Media.goToTime(time);
   }
   function goToSlide(index: number): void { Media.goToSlide(index); }

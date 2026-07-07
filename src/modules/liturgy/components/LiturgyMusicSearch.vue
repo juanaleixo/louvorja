@@ -75,7 +75,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import type { LiturgyMusicItem } from "../types";
+import type { LiturgyMusicItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -141,11 +141,18 @@ const allRows = computed<Row[]>(() => {
   return rows;
 });
 
+function normalize(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 const filteredRows = computed<Row[]>(() => {
-  const q = query.value.trim().toLowerCase();
+  const q = normalize(query.value);
   if (!q) return allRows.value;
   return allRows.value.filter(
-    (r) => r.name.toLowerCase().includes(q) || r.album.toLowerCase().includes(q)
+    (r) => normalize(r.name).includes(q) || normalize(r.album).includes(q)
   );
 });
 
@@ -258,7 +265,7 @@ function selectRow(row: Row) {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: rgba(var(--lj-on-surface-ch), 0.06);
+  background: var(--lj-gray-50);
   text-align: left;
   padding: 8px 12px;
   font-weight: 500;

@@ -10,6 +10,10 @@
       <span class="systembar-title">{{ title }}</span>
     </div>
 
+    <div class="systembar-tools">
+      <ShellTools />
+    </div>
+
     <div v-if="!isMac" class="systembar-controls">
       <button
         type="button"
@@ -45,6 +49,7 @@ import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import $appdata from "@/helpers/AppData";
 import LjLogo from "@/components/LjLogo.vue";
+import ShellTools from "@/layout/shell/ShellTools.vue";
 
 const { t } = useI18n();
 
@@ -73,29 +78,17 @@ const title = computed(() => {
   return `${moduleTitle} - Louvor JA`;
 });
 
-async function minimize() {
-  try {
-    await Platform.window?.minimize();
-  } catch (_) {
-    /* ignore */
-  }
+function minimize() {
+  Platform.window?.minimize();
 }
 
-async function toggleMaximize() {
-  try {
-    const res = await Platform.window?.toggleMaximize();
-    if (res && typeof res.maximized === "boolean") isMaximized.value = res.maximized;
-  } catch (_) {
-    /* ignore */
-  }
+function toggleMaximize() {
+  const res = Platform.window?.toggleMaximize();
+  if (res && typeof res.maximized === "boolean") isMaximized.value = res.maximized;
 }
 
-async function closeWindow() {
-  try {
-    await Platform.window?.close();
-  } catch (_) {
-    /* ignore */
-  }
+function closeWindow() {
+  Platform.window?.close();
 }
 
 async function syncMaximized() {
@@ -162,6 +155,21 @@ onBeforeUnmount(() => {
   font-weight: var(--lj-weight-medium);
   letter-spacing: 0.02em;
   opacity: 0.95;
+}
+
+.systembar-tools {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+  padding-right: var(--lj-space-2);
+}
+
+.systembar-tools .shell-tool {
+  height: var(--lj-systembar-height);
+  color: var(--lj-white);
+}
+.systembar-tools .shell-tool:hover {
+  background: var(--lj-white-alpha-18);
 }
 
 .systembar-controls {

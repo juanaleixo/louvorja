@@ -27,16 +27,22 @@
               onTypeChange();
             "
           >
-            <option value="anotacao">{{ t("types.anotacao") }}</option>
-            <option value="arquivo">{{ t("types.arquivo") }}</option>
-            <option value="categoria">{{ t("types.categoria") }}</option>
-            <option value="itensagendados">{{ t("types.itensagendados") }}</option>
-            <option value="musica">{{ t("types.musica") }}</option>
-            <option value="site">{{ t("types.site") }}</option>
+            <option :value="LiturgyItemTypeEnum.ANOTACAO">{{ t("types.anotacao") }}</option>
+            <option :value="LiturgyItemTypeEnum.ARQUIVO">{{ t("types.arquivo") }}</option>
+            <option :value="LiturgyItemTypeEnum.CATEGORIA">{{ t("types.categoria") }}</option>
+            <option :value="LiturgyItemTypeEnum.ITENS_AGENDADOS">
+              {{ t("types.itens-agendados") }}
+            </option>
+            <option :value="LiturgyItemTypeEnum.MUSICA">{{ t("types.musica") }}</option>
+            <option :value="LiturgyItemTypeEnum.VIDEO_ONLINE">{{ t("types.video-online") }}</option>
+            <option :value="LiturgyItemTypeEnum.SITE">{{ t("types.site") }}</option>
           </select>
         </div>
 
-        <div v-if="form.tipo !== 'itensagendados'" class="lit-field lit-field--grow">
+        <div
+          v-if="form.tipo !== LiturgyItemTypeEnum.ITENS_AGENDADOS"
+          class="lit-field lit-field--grow"
+        >
           <label>{{ t("inputs.item_name") }}:</label>
           <input
             :value="form.item"
@@ -92,7 +98,7 @@
       </div>
 
       <!-- Painel ANOTAÇÃO -->
-      <div v-if="form.tipo === 'anotacao'" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemTypeEnum.ANOTACAO" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.anotacao") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.annotation") }}</label>
@@ -107,7 +113,7 @@
       </div>
 
       <!-- Painel SITE -->
-      <div v-if="form.tipo === 'site'" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemTypeEnum.SITE" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.site") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.url") }}</label>
@@ -128,7 +134,7 @@
       </div>
 
       <!-- Painel ARQUIVO -->
-      <div v-if="form.tipo === 'arquivo'" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemTypeEnum.ARQUIVO" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.arquivo") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.file_path") }}</label>
@@ -142,13 +148,6 @@
             />
             <button
               class="lit-btn lit-btn--ghost"
-              :title="t('actions.choose_folder')"
-              @click="chooseFolder"
-            >
-              <v-icon icon="mdi-folder-outline" size="14" />
-            </button>
-            <button
-              class="lit-btn lit-btn--ghost"
               :title="t('actions.choose_file')"
               @click="chooseFile"
             >
@@ -156,37 +155,19 @@
             </button>
           </div>
         </div>
-        <div class="lit-field-row">
-          <label class="lit-radio">
-            <input
-              type="radio"
-              :checked="form.dir_info === 'E'"
-              @change="setFormField('dir_info', 'E')"
-            />
-            {{ t("inputs.path_external") }}
-          </label>
-          <label class="lit-radio">
-            <input
-              type="radio"
-              :checked="form.dir_info === 'I'"
-              @change="setFormField('dir_info', 'I')"
-            />
-            {{ t("inputs.path_internal") }}
-          </label>
-        </div>
       </div>
 
       <!-- Painel MÚSICA -->
-      <div v-if="form.tipo === 'musica'" class="lit-panel">
+      <div v-if="form.tipo === LiturgyItemTypeEnum.MUSICA" class="lit-panel">
         <label class="lit-check">
           <input
             type="checkbox"
-            :checked="form.escolha === '1'"
+            :checked="form.escolha"
             @change="setMusicChoice(($event.target as HTMLInputElement).checked)"
           />
           <span>{{ t("inputs.music_choose_later") }}</span>
         </label>
-        <div v-if="form.escolha !== '1'" class="lit-field lit-field--inline mt-2">
+        <div v-if="!form.escolha" class="lit-field lit-field--inline mt-2">
           <label class="lit-label-inline">{{ t("inputs.music_select") }}:</label>
           <div class="lit-input-row lit-input-row--grow">
             <select
@@ -214,8 +195,8 @@
       </div>
 
       <!-- Painel ITENS AGENDADOS -->
-      <div v-if="form.tipo === 'itensagendados'" class="lit-panel">
-        <div class="lit-panel-title">{{ t("types.itensagendados") }}</div>
+      <div v-if="form.tipo === 'itens-agendados'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.itens-agendados") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.scheduled_category") }}</label>
           <div class="lit-input-row">
@@ -243,6 +224,27 @@
         </div>
         <div v-if="scheduledCategories?.length === 0" class="lit-hint">
           {{ t("inputs.scheduled_empty") }}
+        </div>
+      </div>
+
+      <!-- Painel VÍDEO ON-LINE -->
+      <div v-if="form.tipo === 'video-online'" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.video-online") }}</div>
+        <div class="lit-field">
+          <label>{{ t("inputs.video_select") }}</label>
+          <select
+            :value="form.url"
+            class="lit-select lit-select--full"
+            @change="onVideoPicked($event)"
+          >
+            <option value="">{{ t("inputs.video_pick") }}</option>
+            <option v-for="v in videosList" :key="v.id" :value="v.url">
+              {{ v.name }}
+            </option>
+          </select>
+        </div>
+        <div v-if="!videosList?.length" class="lit-hint mt-2">
+          {{ t("inputs.video_empty") }}
         </div>
       </div>
 
@@ -287,7 +289,8 @@ import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import Liturgy from "@/helpers/Liturgy";
 import LiturgyMusicSearch from "./LiturgyMusicSearch.vue";
-import type { LiturgyItemData, LiturgyMusicItem, ScheduledCategory } from "../types";
+import type { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -306,10 +309,11 @@ const props = withDefaults(
   defineProps<{
     modelValue?: boolean;
     editIndex?: number;
-    form: LiturgyItemData;
+    form: LiturgyItem;
     colors?: string[];
     musicsList?: LiturgyMusicItem[];
     scheduledCategories?: ScheduledCategory[];
+    videosList?: { id: string; name: string; url: string }[];
     setFormField: (key: string, value: unknown) => void;
     onTypeChange: () => void;
     onMusicChange: () => void;
@@ -318,7 +322,6 @@ const props = withDefaults(
     saveItem: () => void;
     confirmRemove: (index: number, closeDialog?: boolean) => void;
     openSite: () => void;
-    chooseFolder: () => Promise<void>;
     chooseFile: () => Promise<void>;
     openSchedulesDialog: () => void;
   }>(),
@@ -328,6 +331,7 @@ const props = withDefaults(
     colors: () => [],
     musicsList: () => [],
     scheduledCategories: () => [],
+    videosList: () => [],
   }
 );
 
@@ -351,6 +355,16 @@ function onMusicPicked(music: LiturgyMusicItem) {
   if (!Number.isFinite(id)) return;
   props.setFormField("musica", id);
   props.onMusicChange();
+}
+
+function onVideoPicked(e: Event) {
+  const select = e.target as HTMLSelectElement;
+  const url = select.value;
+  props.setFormField("url", url);
+  if (url) {
+    const video = props.videosList?.find((v) => v.url === url);
+    if (video) props.setFormField("item", video.name);
+  }
 }
 </script>
 

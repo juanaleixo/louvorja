@@ -61,8 +61,12 @@ function httpRequest(url, headers = {}) {
         });
       });
     });
-    req.on("error", reject);
+    req.on("error", (err) => {
+      console.error(`[jsonCache] Erro na requisição para ${url}:`, err.message);
+      reject(err);
+    });
     req.setTimeout(15000, () => {
+      console.warn(`[jsonCache] Timeout (15s) na requisição para ${url}`);
       req.destroy(new Error("Request timeout"));
     });
   });
@@ -112,7 +116,7 @@ const _inflight = new Map();
  * @param {string} relPath        Ex: "/pt_musics" ou "/music_123"
  * @param {string} remoteBaseUrl  Ex: "https://api.louvorja.com.br/json_db"
  * @param {object} headers        Headers para a requisição (Api-Token, etc.)
- * @returns {Promise<{body: Buffer, contentType: string, fromCache: boolean}>}
+ * @returns {Promise<{body: Buffer|null, contentType: string, fromCache: boolean, status: number}>}
  */
 async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
   const localPath = safeLocalPath(relPath);
@@ -124,6 +128,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
       body: await fs.readFile(localPath),
       contentType: "application/json",
       fromCache: true,
+      status: 200,
     };
   }
 
@@ -139,17 +144,27 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
       const remoteUrl = remoteBaseUrl + sep + relPath;
       console.log(`[jsonCache] MISS ${relPath} — baixando: ${remoteUrl}`);
       const response = await httpRequest(remoteUrl, headers);
+      console.log(`[jsonCache] Resposta de ${relPath}: status=${response.status}`);
 
       if (response.status >= 200 && response.status < 300) {
+        if (!response.body || response.body.length === 0) {
+          throw new Error(`Resposta vazia do servidor para ${relPath}`);
+        }
         try {
           JSON.parse(response.body.toString("utf-8"));
-        } catch {
-          console.warn(`[jsonCache] Resposta não é JSON válido: ${relPath}`);
-          return {
-            body: response.body,
-            contentType: response.contentType,
-            fromCache: false,
-          };
+        } catch (parseErr) {
+          console.warn(`[jsonCache] Resposta não é JSON válido: ${relPath} - Erro: ${parseErr.message}`);
+          // Se falhou o parse mas temos cache stale, vamos usar o stale
+          if (fs.existsSync(localPath)) {
+            console.warn(`[jsonCache] Usando cache stale para ${relPath} devido a JSON inválido remoto`);
+            return {
+              body: await fs.readFile(localPath),
+              contentType: "application/json",
+              fromCache: true,
+              status: 200,
+            };
+          }
+          throw new Error(`JSON inválido: ${relPath}`);
         }
 
         // Escrita atômica: .tmp único (timestamp + random) → rename
@@ -169,6 +184,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
           body: response.body,
           contentType: "application/json",
           fromCache: false,
+          status: response.status,
         };
       }
 
@@ -180,6 +196,18 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
           body: await fs.readFile(localPath),
           contentType: "application/json",
           fromCache: true,
+          status: 200,
+        };
+      }
+
+      // 404 sem cache: recurso inexistente (ex. music_* órfão) — não lançar exceção
+      if (response.status === 404) {
+        console.warn(`[jsonCache] HTTP 404 para ${relPath} (sem cache local)`);
+        return {
+          body: null,
+          contentType: "application/json",
+          fromCache: false,
+          status: 404,
         };
       }
 
@@ -193,6 +221,7 @@ async function fetchJson(relPath, remoteBaseUrl, headers = {}) {
           body: await fs.readFile(localPath),
           contentType: "application/json",
           fromCache: true,
+          status: 200,
         };
       }
       throw e;

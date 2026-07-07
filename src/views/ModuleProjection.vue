@@ -155,6 +155,12 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_FORMAT_CHANGED, (payload) => {
   _tick.value += 1;
 });
 
+useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
+  if (!payload || typeof payload.path !== "string") return;
+  if (!payload.path.startsWith(`modules.${moduleId.value}.`)) return;
+  _tick.value += 1;
+});
+
 function onResize() {
   if (!root.value) return;
   sw.value = root.value.offsetWidth;
@@ -201,26 +207,6 @@ watch([font, font_color, font_size, background_color, image], onResize);
   display: flex;
   box-sizing: border-box;
   overflow: hidden;
-}
-
-.align-start {
-  align-items: flex-start;
-}
-.align-center {
-  align-items: center;
-}
-.align-end {
-  align-items: flex-end;
-}
-
-.justify-start {
-  justify-content: flex-start;
-}
-.justify-center {
-  justify-content: center;
-}
-.justify-end {
-  justify-content: flex-end;
 }
 
 .module-projection__content {

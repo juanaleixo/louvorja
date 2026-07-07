@@ -1,6 +1,7 @@
 {
   "title": "Liturgia",
   "ribbon": {
+    "title_ctx": "Configurar Liturgia",
     "add": "Adicionar",
     "items": "Itens",
     "options": "Opções",
@@ -45,11 +46,12 @@
   },
   "types": {
     "anotacao": "Anotação",
-    "arquivo": "Arquivo/Diretório",
+    "arquivo": "Arquivo",
     "categoria": "Categoria",
-    "itensagendados": "Itens Agendados",
+    "itens-agendados": "Itens Agendados",
     "musica": "Música",
-    "site": "Site"
+    "site": "Site",
+    "video-online": "Vídeo Online"
   },
   "inputs": {
     "type": "Tipo",
@@ -70,7 +72,10 @@
     "scheduled_pick": "-- selecione uma categoria --",
     "scheduled_empty": "Nenhuma categoria criada. Use o botão de configuração para criar.",
     "category_hint": "Categorias servem como separadores visuais entre seções da liturgia.",
-    "duration_min": "Duração (min)"
+    "duration_min": "Duração (min)",
+    "video_select": "Vídeo",
+    "video_pick": "-- selecione um vídeo --",
+    "video_url_or_select": "URL do vídeo ou selecione um salvo"
   },
   "data": {
     "empty": "Liturgia vazia",
@@ -117,6 +122,9 @@
     "show_lyric_text": "Mostrar letra (texto)",
     "no_audio": "Slides sem áudio"
   },
+  "video": {
+    "play": "Reproduzir vídeo"
+  },
   "music_search": {
     "title": "Busca de Músicas",
     "find_label": "Localizar Música:",
@@ -153,5 +161,19 @@
     "music_choose_first": "Escolha a música primeiro (clique no item).",
     "scheduled_not_found": "Não há item agendado para esta data nesta categoria.",
     "desktop_only": "Recurso disponível apenas na versão desktop."
+  },
+  "copy": {
+    "title": "Copiar Liturgia",
+    "description": "Selecione o dia de origem para copiar os itens para o dia atual.",
+    "select_label": "Dia de origem",
+    "cancel": "Cancelar",
+    "confirm": "Copiar",
+    "same_day": "O dia de origem não pode ser o mesmo que o dia atual.",
+    "confirm_title": "Copiar Liturgia",
+    "confirm_text": "Deseja copiar a liturgia de <b>{source}</b> e sobrescrever a liturgia de <b>{target}</b>?<br><b>Esta ação não pode ser desfeita!<b>"
+  },
+  "clear": {
+    "confirm_title": "Limpar Liturgia",
+    "confirm_text": "Deseja limpar TODOS os itens da liturgia de <b>{day}</b>?<br><b>Esta ação não pode ser desfeita!</b>"
   }
 }

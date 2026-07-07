@@ -117,29 +117,33 @@ function _create(): AudioPlayback {
 
   function play(onError?: (e: unknown) => void): void {
     const el = getElement();
-    el
-      .play()
-      .then(() => {
-        _playing = true;
-        isPaused.value = false;
-        _startRaf();
-      })
-      .catch((e) => {
-        if (onError) onError(e);
-      });
+    const playPromise = el.play();
+    if (playPromise) {
+      playPromise
+        .then(() => {
+          if (el.paused) return;
+          _playing = true;
+          isPaused.value = false;
+          _startRaf();
+        })
+        .catch((e) => {
+          if (onError) onError(e);
+        });
+    }
   }
 
   function pause(callback?: () => void): void {
     _stopRaf();
+    isPaused.value = true;
     const el = getElement();
     el.pause();
-    isPaused.value = true;
     if (callback) callback();
   }
 
   function stop(callback?: () => void): void {
     _stopRaf();
     if (_el) {
+      _el.onerror = null;
       _el.pause();
       _el.src = "";
     }
@@ -158,8 +162,13 @@ function _create(): AudioPlayback {
 
   function seekTo(time: number): void {
     const el = getElement();
-    const d  = duration.value;
-    el.currentTime = Math.max(0, Math.min(time ?? 0, d));
+    // Usa a duração real do elemento (pode ser > duration.value se este
+    // ainda não foi atualizado por _syncTime — comum em streams via
+    // protocolo customizado)
+    const d = isNaN(el.duration) || !isFinite(el.duration)
+      ? duration.value
+      : el.duration;
+    el.currentTime = Math.max(0, Math.min(time ?? 0, d > 0 ? d : Infinity));
   }
 
   function advanceTime(delta: number): void {

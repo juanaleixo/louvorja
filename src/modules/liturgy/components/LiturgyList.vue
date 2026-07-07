@@ -17,7 +17,7 @@
     <div v-else class="liturgy-scroll">
       <draggable
         :model-value="items"
-        :item-key="(item: LiturgyItemData) => item.id"
+        :item-key="(item: LiturgyItem) => item.id"
         :disabled="locked"
         handle="button[data-handle='true']"
         tag="div"
@@ -27,7 +27,7 @@
         @update:model-value="onReorder"
       >
         <template #item="{ element, index }">
-          <LiturgyItem
+          <LiturgyItemComponent
             :element="element"
             :index="index"
             :locked="locked"
@@ -53,10 +53,10 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import draggable from "vuedraggable";
+import LiturgyItemComponent from "./LiturgyItem.vue";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import LiturgyItem from "./LiturgyItem.vue";
-import type { LiturgyItemData } from "../types";
+import type { LiturgyItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -73,22 +73,22 @@ function _t(key: string, locale: string): string {
 
 withDefaults(
   defineProps<{
-    items: LiturgyItemData[];
+    items: LiturgyItem[];
     locked?: boolean;
     defaultColor?: string;
     totalDuration?: number;
-    isChecked: (item: LiturgyItemData) => boolean;
-    iconForItem: (item: LiturgyItemData) => string;
-    subtitleFor: (item: LiturgyItemData) => string;
-    onReorder: (items: LiturgyItemData[]) => void;
+    isChecked: (item: LiturgyItem) => boolean;
+    iconForItem: (item: LiturgyItem) => string;
+    subtitleFor: (item: LiturgyItem) => string;
+    onReorder: (items: LiturgyItem[]) => void;
     openItemDialog: (index?: number) => void;
     cloneItem: (index: number) => void;
     confirmRemove: (index?: number) => void;
-    executeItem: (item: LiturgyItemData) => void;
-    playMusic: (item: LiturgyItemData, mode: string) => void;
+    executeItem: (item: LiturgyItem) => void;
+    playMusic: (item: LiturgyItem, mode: string) => void;
     openLyric: (musica: number) => void;
     changeColor: (index: number) => void;
-    toggleChecked: (element: LiturgyItemData) => void;
+    toggleChecked: (element: LiturgyItem) => void;
   }>(),
   {
     locked: false,
@@ -175,6 +175,7 @@ const t = (key: string) => _t(key, locale.value);
   color: var(--lj-white);
 }
 .lit-btn--primary:hover {
+  color: var(--lj-navy);
   filter: brightness(1.1);
 }
 .mt-4 {

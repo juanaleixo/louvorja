@@ -1,12 +1,20 @@
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { openDB } from "idb";
 import $liturgy from "@/helpers/Liturgy";
 import $media from "@/composables/useMedia";
 import $database from "@/helpers/Database";
 import $alert from "@/helpers/Alert";
+import $path from "@/helpers/Path";
+import $broadcast from "@/helpers/Broadcast";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
+import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS = { pt, es };
 
@@ -38,8 +46,8 @@ export const COLORS = [
 export const DEFAULT_COLOR = "#00004F";
 
 export const DEFAULT_FORM = () => ({
-  id: null,
-  tipo: "anotacao",
+  id: "",
+  tipo: LiturgyItemTypeEnum.ANOTACAO,
   item: "",
   subitem: "",
   cor: DEFAULT_COLOR,
@@ -48,7 +56,7 @@ export const DEFAULT_FORM = () => ({
   dir_info: "E",
   url: "",
   musica: -1,
-  escolha: "0",
+  escolha: false,
   has_instrumental_music: false,
   subtipo: "",
 });
@@ -100,12 +108,14 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
   function iconForItem(item) {
     const map = {
-      anotacao: "mdi-note-text-outline",
-      arquivo: item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
-      site: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
-      musica: "mdi-music",
-      itensagendados: "mdi-calendar-multiselect",
-      categoria: "mdi-format-section",
+      [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
+      [LiturgyItemTypeEnum.ARQUIVO]:
+        item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
+      [LiturgyItemTypeEnum.SITE]: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
+      [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
+      [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
+      [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
+      [LiturgyItemTypeEnum.CATEGORIA]: "mdi-format-section",
     };
     return map[item.tipo] || "mdi-circle-medium";
   }
@@ -116,7 +126,8 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function subtitleFor(item) {
-    if (item.tipo === "musica" && item.escolha === "1") return t("placeholders.music_choose");
+    if (item.tipo === LiturgyItemTypeEnum.MUSICA && item.escolha)
+      return t("placeholders.music_choose");
     return item.subitem || "";
   }
 
@@ -155,7 +166,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     menuOpen.value = false;
     if (!confirm(t("dialog.remove_done_confirm"))) return;
     const toRemove = items.value
-      .filter((i) => i.tipo !== "categoria" && $liturgy.isCheckedToday(i))
+      .filter((i) => i.tipo !== LiturgyItemTypeEnum.CATEGORIA && $liturgy.isCheckedToday(i))
       .map((i) => i.id);
     toRemove.forEach((id) => $liturgy.remove(id, activeDay.value));
     items.value = [...items.value];
@@ -174,26 +185,29 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   function onTypeChange() {
-    if (form.value.tipo !== "musica") {
+    if (form.value.tipo !== LiturgyItemTypeEnum.MUSICA) {
       form.value.musica = -1;
-      form.value.escolha = "0";
+      form.value.escolha = false;
     }
-    if (form.value.tipo === "musica" && form.value.musica === -1) {
-      form.value.escolha = "1";
+    if (form.value.tipo !== LiturgyItemTypeEnum.VIDEO_ONLINE) {
+      form.value.url = "";
+      form.value.subitem = "";
+    }
+    if (form.value.tipo === LiturgyItemTypeEnum.MUSICA && form.value.musica === -1) {
+      form.value.escolha = true;
     }
   }
 
   function setMusicChoice(later) {
-    form.value.escolha = later ? "1" : "0";
+    form.value.escolha = later;
     if (later) form.value.musica = -1;
   }
 
   function onMusicChange() {
     const m = musicsList.value.find((x) => x.id_music === form.value.musica);
     if (m) {
-      // form.value.item = m.name;
       form.value.has_instrumental_music = !!m.has_instrumental_music;
-      form.value.escolha = "0";
+      form.value.escolha = false;
     }
   }
 
@@ -209,44 +223,59 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       $alert?.warning?.({ text: t("dialog.choose_type") });
       return;
     }
-    if (f.tipo !== "itensagendados" && !String(f.item || "").trim()) {
+    if (f.tipo !== LiturgyItemTypeEnum.ITENS_AGENDADOS && !String(f.item || "").trim()) {
       $alert?.warning?.({ text: t("dialog.set_name") });
       return;
     }
-    if (f.tipo === "itensagendados" && !f.id) {
+    if (f.tipo === LiturgyItemTypeEnum.ITENS_AGENDADOS && !f.id) {
       $alert?.warning?.({ text: t("dialog.choose_scheduled") });
       return;
     }
 
     const built = { ...f };
-    if (f.tipo === "anotacao") {
-      built.subitem = f.subitem || "";
-    } else if (f.tipo === "site") {
-      built.url = $liturgy.validateUrl(f.url);
-      built.subitem = "Site " + built.url;
-    } else if (f.tipo === "arquivo") {
-      const isDir = f.dir.endsWith("/") || f.dir.endsWith("\\");
-      built.subtipo = isDir ? "dir" : "arq";
-      built.subitem = (isDir ? "Pasta " : "Arquivo ") + f.dir;
-    } else if (f.tipo === "musica") {
-      if (f.escolha === "1" || Number(f.musica) === -1) {
-        built.escolha = "1";
-        built.musica = -1;
-        built.subtipo = "escolha";
-        built.subitem = t("placeholders.music_choose");
-      } else {
-        const m = musicsList.value.find((x) => x.id_music === Number(f.musica));
-        built.escolha = "0";
-        built.subtipo = built.has_instrumental_music ? "ja" : "div";
-        built.subitem = t("data.music_prefix") + " " + (m?.name || `#${f.musica}`);
-        built.id_music = Number(f.musica);
+    switch (f.tipo) {
+      case LiturgyItemTypeEnum.ANOTACAO:
+        built.subitem = f.subitem || "";
+        break;
+      case LiturgyItemTypeEnum.SITE:
+        built.url = $liturgy.validateUrl(f.url);
+        built.subitem = "Site " + built.url;
+        break;
+      case LiturgyItemTypeEnum.ARQUIVO: {
+        const isDir = f.dir.endsWith("/") || f.dir.endsWith("\\");
+        built.subtipo = isDir ? "dir" : "arq";
+        built.subitem = (isDir ? "Pasta " : "Arquivo ") + f.dir;
+        break;
       }
-    } else if (f.tipo === "itensagendados") {
-      const c = scheduledCategories.value.find((x) => x.id === f.id);
-      built.item = c?.nome || "";
-      built.subitem = "";
-    } else if (f.tipo === "categoria") {
-      built.subitem = "";
+      case LiturgyItemTypeEnum.MUSICA: {
+        if (f.escolha || Number(f.musica) === -1) {
+          built.escolha = true;
+          built.musica = -1;
+          built.subtipo = "escolha";
+          built.subitem = t("placeholders.music_choose");
+        } else {
+          const m = musicsList.value.find((x) => x.id_music === Number(f.musica));
+          built.escolha = false;
+          built.subtipo = built.has_instrumental_music ? "ja" : "div";
+          built.subitem = t("data.music_prefix") + " " + (m?.name || `#${f.musica}`);
+          built.id_music = Number(f.musica);
+        }
+        break;
+      }
+      case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
+        const c = scheduledCategories.value.find((x) => x.id === f.id);
+        built.item = c?.nome || "";
+        built.subitem = "";
+        break;
+      }
+      case LiturgyItemTypeEnum.VIDEO_ONLINE:
+        console.log(built);
+        built.url = f.url || "";
+        built.subitem = "URL: " + built.url;
+        break;
+      case LiturgyItemTypeEnum.CATEGORIA:
+        built.subitem = "";
+        break;
     }
 
     if (editIndex.value >= 0) {
@@ -289,23 +318,33 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
   /* ============== Execução do item ============== */
   function executeItem(item) {
-    if (item.tipo === "musica") {
-      playMusic(item, "sung");
-    } else if (item.tipo === "site") {
-      openUrl(item.url);
-    } else if (item.tipo === "arquivo") {
-      openFile(item);
-    } else if (item.tipo === "itensagendados") {
-      const sched = $liturgy.findScheduledForToday(item.id);
-      if (sched && sched.arquivo) openUrl(sched.arquivo);
-      else alert(t("dialog.scheduled_not_found"));
-    } else if (item.tipo === "anotacao") {
-      alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
+    switch (item.tipo) {
+      case LiturgyItemTypeEnum.MUSICA:
+        playMusic(item, "sung");
+        break;
+      case LiturgyItemTypeEnum.SITE:
+        executeSite(item);
+        break;
+      case LiturgyItemTypeEnum.ARQUIVO:
+        openFile(item);
+        break;
+      case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
+        const sched = $liturgy.findScheduledForToday(item.id);
+        if (sched && sched.arquivo) openUrl(sched.arquivo);
+        else alert(t("dialog.scheduled_not_found"));
+        break;
+      }
+      case LiturgyItemTypeEnum.VIDEO_ONLINE:
+        executeOnlineVideo(item);
+        break;
+      case LiturgyItemTypeEnum.ANOTACAO:
+        alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
+        break;
     }
   }
 
   function playMusic(item, mode = "sung") {
-    if (item.escolha === "1" || !item.id_music) {
+    if (item.escolha || !item.id_music) {
       alert(t("dialog.music_choose_first"));
       return;
     }
@@ -338,11 +377,137 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     window.open(valid, "_blank", "noopener,noreferrer");
   }
 
-  function openFile(item) {
-    if (Platform.isDesktop && Platform.api?.openPath) {
-      Platform.api.openPath(item.dir);
+  function extractYoutubeId(url) {
+    const m = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
+    );
+    return m ? m[1] : null;
+  }
+
+  function buildEmbedUrl(url) {
+    const id = extractYoutubeId(url);
+    if (!id) return null;
+    return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`;
+  }
+
+  function executeSite(item) {
+    const url = item.url || "";
+    if (!url) return;
+
+    if (isYoutube(url) && $userdata.get("options.youtube_action", "video") === "video") {
+      const embedUrl = buildEmbedUrl(url);
+      if (embedUrl) {
+        $media.openYouTube(embedUrl, item.item || "");
+        return;
+      }
+    }
+
+    openUrl(url);
+  }
+
+  function executeOnlineVideo(item) {
+    const url = item.url || "";
+    if (!url) return;
+
+    const embedUrl = buildEmbedUrl(url);
+    if (!embedUrl) {
+      $alert.error({ text: "modules.custom_videos.invalid_url" });
+      return;
+    }
+    $media.openYouTube(embedUrl, item.item || item.subitem || url);
+  }
+
+  const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+  const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
+  const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
+
+  /**
+   * Persiste o payload de FILE_PROJECTION em sessionStorage para que janelas
+   * de projeção que abrirem depois do broadcast (e portanto perderam a mensagem)
+   * possam restaurar o estado ao montar.
+   */
+  function _persistFileProjection(payload) {
+    try {
+      localStorage.setItem("lj_file_projection", JSON.stringify(payload));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  /**
+   * Resolve caminho de arquivo para URL acessível pelo navegador.
+   * - URLs absolutas (http://, file://, etc) retornam como estão
+   * - Caminhos absolutos do sistema de arquivos (/) → file:// no desktop
+   * - Demais caminhos passam por $path.file() (relativos ao banco)
+   */
+  function _resolveFileUrl(dir) {
+    if (!dir) return "";
+    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) return dir;
+    if (Platform.isDesktop) {
+      // Caminho absoluto → louvorja://local/ (protocolo customizado que
+      // serve arquivos locais sem as restrições de file://)
+      // Unix: /Users/... → louvorja://local/Users/...
+      if (dir.startsWith("/")) return "louvorja://local" + dir;
+      // Windows: C:\... → louvorja://local/C:/...  (substitui \ por /)
+      if (/^[A-Za-z]:\\/.test(dir)) return "louvorja://local/" + dir.replace(/\\/g, "/");
+    }
+    return $path.file(dir);
+  }
+
+  async function openFile(item) {
+    const dir = item.dir || "";
+    const ext = dir.split(".").pop().toLowerCase();
+    const url = _resolveFileUrl(dir);
+
+    // Se o caminho não tem "/" nem protocolo, é um nome de arquivo sem caminho
+    // (ex: arrastado sem file.path) — não é possível localizá-lo
+    if (
+      !url ||
+      (!dir.includes("/") &&
+        !dir.includes("\\") &&
+        !/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir) &&
+        !dir.startsWith("/"))
+    ) {
+      $alert.error({ text: url, title: "modules.media.alerts.file_not_found" });
+      return;
+    }
+
+    if (IMAGE_EXTS.includes(ext)) {
+      // Inclui duração do fade no payload para evitar race cross-window
+      const fadeDur =
+        $userdata.get("options.file_projection.fade", true) !== false
+          ? $userdata.get("options.file_projection.fade_duration", 500) || 500
+          : 0;
+      const payload = { url, type: "image", title: item.item || "", fadeDuration: fadeDur };
+      _persistFileProjection(payload);
+
+      await openFileProjectionWindows().catch((e) => {
+        $alert.error(e);
+        console.error(e);
+      });
+      $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+    } else if (VIDEO_EXTS.includes(ext)) {
+      const fadeDur =
+        $userdata.get("options.file_projection.fade", true) !== false
+          ? $userdata.get("options.file_projection.fade_duration", 500) || 500
+          : 0;
+      const payload = { url, type: "video", title: item.item || "", fadeDuration: fadeDur };
+      _persistFileProjection(payload);
+      await openFileProjectionWindows().catch((e) => {
+        $alert.error(e);
+        console.error(e);
+      });
+      $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+      $media.openAudio({ url, title: item.item || "" });
+      $appdata.set("modules.media.config.video_file", true);
+    } else if (AUDIO_EXTS.includes(ext)) {
+      $media.openAudio({ url, title: item.item || "" });
     } else {
-      openUrl(item.dir);
+      if (Platform.isDesktop && Platform.api?.openPath) {
+        Platform.api.openPath(dir);
+      } else {
+        openUrl(dir);
+      }
     }
   }
 
@@ -350,18 +515,12 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     openUrl(form.value.url);
   }
 
-  /* ============== Browse arquivo/pasta ============== */
-  async function chooseFolder() {
-    if (Platform.isDesktop && Platform.api?.chooseFolder) {
-      const dir = await Platform.api.chooseFolder();
-      if (dir) form.value.dir = dir + (dir.endsWith("/") || dir.endsWith("\\") ? "" : "/");
-    } else {
-      alert(t("dialog.desktop_only"));
-    }
-  }
-
+  /* ============== Browse arquivo ============== */
   async function chooseFile() {
-    if (Platform.isDesktop && Platform.api?.chooseFile) {
+    if (Platform.isDesktop && Platform.api?.storage?.chooseFile) {
+      const file = await Platform.api.storage.chooseFile();
+      if (file) form.value.dir = file;
+    } else if (Platform.isDesktop && Platform.api?.chooseFile) {
       const file = await Platform.api.chooseFile();
       if (file) form.value.dir = file;
     } else {
@@ -369,7 +528,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       inp.type = "file";
       inp.onchange = (e) => {
         const f = e.target.files[0];
-        if (f) form.value.dir = f.name;
+        if (f) form.value.dir = f.path || f.name;
       };
       inp.click();
     }
@@ -403,6 +562,8 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
   async function _addDroppedFile(file, e) {
     const name = file.name;
+    // No Electron, file.path contém o caminho absoluto completo
+    const filePath = file.path || name;
     const ext = name.split(".").pop().toLowerCase();
     const textExts = ["txt", "rtf"];
 
@@ -412,13 +573,14 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         if (dtItem.webkitGetAsEntry) {
           const entry = dtItem.webkitGetAsEntry();
           if (entry && entry.isDirectory) {
+            const dirPath = file.path ? file.path + "/" : entry.name + "/";
             $liturgy.add(
               {
-                tipo: "arquivo",
+                tipo: LiturgyItemTypeEnum.ARQUIVO,
                 item: entry.name,
-                subitem: "Pasta " + entry.name,
+                subitem: "Pasta " + (file.path || entry.name),
                 subtipo: "dir",
-                dir: entry.name + "/",
+                dir: dirPath,
                 dir_info: "E",
                 cor: DEFAULT_COLOR,
               },
@@ -439,7 +601,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       });
       $liturgy.add(
         {
-          tipo: "anotacao",
+          tipo: LiturgyItemTypeEnum.ANOTACAO,
           item: name.replace(/\.[^.]+$/, ""),
           subitem: text.slice(0, 2000),
           cor: DEFAULT_COLOR,
@@ -449,11 +611,11 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     } else {
       $liturgy.add(
         {
-          tipo: "arquivo",
+          tipo: LiturgyItemTypeEnum.ARQUIVO,
           item: name.replace(/\.[^.]+$/, ""),
-          subitem: "Arquivo " + name,
+          subitem: "Arquivo " + (filePath !== name ? filePath : name),
           subtipo: "arq",
-          dir: name,
+          dir: filePath,
           dir_info: "E",
           cor: DEFAULT_COLOR,
         },
@@ -470,6 +632,44 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     } catch {
       musicsCache.value = [];
     }
+  }
+
+  const videosCache = ref([]);
+
+  const ONLINE_VIDEO_DEFAULTS = [
+    {
+      title: "Vitória (Adoradores 5) [Ao Vivo]",
+      url: "https://www.youtube.com/watch?v=nlNluQp7cFI",
+    },
+    { title: "Além do Rio - Arautos do Rei", url: "https://www.youtube.com/watch?v=AmcX_HLy6b0" },
+    { title: "Só o Começo - Vocal Livre", url: "https://www.youtube.com/watch?v=XktoQTwHSK4" },
+  ];
+
+  async function loadVideosList() {
+    let all = [];
+    try {
+      const db = await openDB("louvorja_custom_videos", 1, {
+        upgrade(database) {
+          if (!database.objectStoreNames.contains("videos")) {
+            database.createObjectStore("videos", { keyPath: "id" });
+          }
+        },
+      });
+      all = await db.getAll("videos");
+      all.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+    } catch {
+      all = [];
+    }
+    // Mescla com os defaults do módulo online_videos (evita duplicatas por URL)
+    //TODO remover esse trecho quando implementar a biblioteca de coletanea online
+    const seen = new Set(all.map((v) => v.url));
+    for (const def of ONLINE_VIDEO_DEFAULTS) {
+      if (!seen.has(def.url)) {
+        all.push({ id: def.url, name: def.title, url: def.url });
+        seen.add(def.url);
+      }
+    }
+    videosCache.value = all;
   }
 
   function setFormField(field, value) {
@@ -489,6 +689,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     editIndex,
     form,
     musicsCache,
+    videosCache,
     isDraggingOver,
     menuOpen,
     items,
@@ -520,12 +721,12 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     openUrl,
     openFile,
     openSite,
-    chooseFolder,
     chooseFile,
     onDragOver,
     onDragLeave,
     onDrop,
     loadMusicsList,
+    loadVideosList,
     setFormField,
     toggleMenuOpen,
     closeMenu,

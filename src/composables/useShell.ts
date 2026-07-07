@@ -4,6 +4,7 @@ interface ShellActions {
   openCommandPalette: () => void;
   openHotkeysCheatsheet: () => void;
   openMusicSearch: () => void;
+  openBibleSearch: () => void;
 }
 
 const _state = reactive<ShellActions>({
@@ -15,6 +16,9 @@ const _state = reactive<ShellActions>({
   },
   openMusicSearch: () => {
     window.dispatchEvent(new CustomEvent("louvorja:open-music-search"));
+  },
+  openBibleSearch: () => {
+    window.dispatchEvent(new CustomEvent("louvorja:open-bible-search"));
   },
 });
 

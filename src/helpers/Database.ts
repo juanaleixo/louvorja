@@ -17,7 +17,10 @@ function getVersion(): string {
 }
 
 export default {
-  async get<T = unknown>(file: string, opts: { fresh?: boolean } = {}): Promise<T | null> {
+  async get<T = unknown>(
+    file: string,
+    opts: { fresh?: boolean; silent?: boolean } = {}
+  ): Promise<T | null> {
     try {
       const cache_name = `db:${file}`;
 
@@ -43,8 +46,8 @@ export default {
           "Api-Token": import.meta.env.VITE_API_TOKEN as string,
         },
       });
-
-      if (!response.ok) throw new Error();
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = (await response.json()) as T;
 
       $dev.write("Salvando BD em cache", file);
@@ -56,7 +59,9 @@ export default {
 
       return data;
     } catch (error) {
-      $alert.error({ text: "messages.file_database_not_found", error });
+      if (!opts.silent) {
+        $alert.error({ text: "messages.file_database_not_found", error });
+      }
       return null;
     }
   },

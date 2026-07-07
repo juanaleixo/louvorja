@@ -19,6 +19,7 @@ const app = createApp(App);
 //Modules
 import ModuleManager from "@/helpers/ModuleManager";
 import $storage from "@/helpers/Storage";
+import $alert from "@helpers/Alert";
 import Platform from "@/helpers/Platform";
 
 //Helpers
@@ -37,6 +38,7 @@ import Favorites from "@/helpers/Favorites";
 import History from "@/helpers/History";
 import Broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
+import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
@@ -177,17 +179,160 @@ $storage.hydrate().then(async () => {
   // D5 — Conectar eventos do servidor HTTP às ações do app.
   if (Platform.isDesktop) {
     Platform.onHttpEvent((eventType, data) => {
-      if (eventType === "http:song-slides") {
-        const action = data.action;
-        if (action === "next") Media.nextSlide();
-        else if (action === "previous") Media.prevSlide();
-        else if (action === "close") Media.close(true);
-      } else if (eventType === "http:open-song") {
-        Media.open({ id_music: data.id_music, mode: data.mode });
-      } else if (eventType === "http:drawing-number") {
-        Broadcast.send(BROADCAST_TYPE.DRAWING_NUMBER, { number: data.number });
-      } else if (eventType === "http:drawing-name") {
-        Broadcast.send(BROADCAST_TYPE.DRAWING_NAME, { name: data.name });
+      const action = data.action;
+      switch (eventType) {
+        case "http:song-slides":
+          switch (action) {
+            case "next":
+              Media.nextSlide();
+              break;
+            case "previous":
+              Media.prevSlide();
+              break;
+            case "close":
+              Media.close(true);
+              break;
+            case "go-to-slide":
+              Media.goToSlide(data.index);
+              break;
+            case "liturgy-execute": {
+              const item = Liturgy.get(data.id);
+              if (item) {
+                Liturgy.toggleChecked(item.id);
+                switch (item.tipo) {
+                  case "musica":
+                    Media.open({ id_music: item.id_music, mode: data.tag });
+                    break;
+                  case "site": {
+                    const url = Liturgy.validateUrl(item.url);
+                    window.open(url, "_blank", "noopener,noreferrer");
+                    break;
+                  }
+                  case "itens-agendados": {
+                    const sched = Liturgy.findScheduledForToday(item.id);
+                    if (sched && sched.arquivo) {
+                      const valid = Liturgy.validateUrl(sched.arquivo);
+                      window.open(valid, "_blank", "noopener,noreferrer");
+                    }
+                    break;
+                  }
+                  case "arquivo": {
+                    const dir = item.dir || "";
+                    const ext = dir.split(".").pop().toLowerCase();
+                    const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+                    const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
+                    const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
+
+                    let url;
+                    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) {
+                      url = dir;
+                    } else if (Platform.isDesktop) {
+                      if (dir.startsWith("/")) url = "louvorja://local" + dir;
+                      else if (/^[A-Za-z]:\\/.test(dir))
+                        url = "louvorja://local/" + dir.replace(/\\/g, "/");
+                      else url = Path.file(dir);
+                    } else {
+                      url = Path.file(dir);
+                    }
+
+                    if (!url) break;
+
+                    if (IMAGE_EXTS.includes(ext)) {
+                      const payload = { url, type: "image", title: item.item || "" };
+                      try {
+                        localStorage.setItem("lj_file_projection", JSON.stringify(payload));
+                      } catch (e) {
+                        /* ignore */
+                      }
+                      ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+                    } else if (VIDEO_EXTS.includes(ext)) {
+                      const payload = { url, type: "video", title: item.item || "" };
+                      try {
+                        localStorage.setItem("lj_file_projection", JSON.stringify(payload));
+                      } catch (e) {
+                        /* ignore */
+                      }
+                      ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
+                      Media.openAudio({ url, title: item.item || "" });
+                      AppData.set("modules.media.config.video_file", true);
+                    } else if (AUDIO_EXTS.includes(ext)) {
+                      Media.openAudio({ url, title: item.item || "" });
+                    } else {
+                      const valid = Liturgy.validateUrl(dir);
+                      window.open(valid, "_blank", "noopener,noreferrer");
+                    }
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+
+            case "bible-verse":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+                text: data.text,
+                reference: data.reference,
+                bookId: data.bookId,
+                chapter: data.chapter,
+                verses: data.verses,
+                versionId: data.versionId,
+                active: true,
+              });
+              ProjectionWindows.openBibleWindow();
+              break;
+            case "bible-next":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "next_verse" });
+              break;
+            case "bible-prev":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "prev_verse" });
+              break;
+            case "bible-close":
+              Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+              break;
+            default:
+              console.warn("Ação desconhecida:", action);
+              break;
+          }
+          break;
+        case "http:open-song":
+          console.log("[http:open-song] Abrindo música:", data);
+          Media.open({ id_music: data.id_music, mode: data.mode });
+
+          // Se veio de um item da liturgia (Choose Later), marca ele como checked
+          if (data.id) {
+            Liturgy.toggleChecked(data.id);
+          }
+          break;
+        case "http:drawing-number":
+          Broadcast.send(BROADCAST_TYPE.DRAWING_NUMBER, { number: data.number });
+          break;
+        case "http:drawing-name":
+          Broadcast.send(BROADCAST_TYPE.DRAWING_NAME, { name: data.name });
+          break;
+        default:
+          console.warn("Evento desconhecido:", eventType);
+          break;
+      }
+    });
+
+    // Responde a pedidos de estado usando o cache do Broadcast.ts.
+    // Isso garante que janelas de projeção recém-abertas recebam o estado
+    // atual mesmo se o módulo específico (Bíblia ou Música) não estiver montado.
+    Broadcast.listen((msg) => {
+      if (msg.type === BROADCAST_TYPE.REQUEST_BIBLE_STATE) {
+        const last = Broadcast.getLastPayload(BROADCAST_TYPE.BIBLE_VERSE);
+        if (last) {
+          Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, last);
+        }
+      }
+
+      if (msg.type === BROADCAST_TYPE.REQUEST_SLIDE_STATE) {
+        const last = Broadcast.getLastPayload(BROADCAST_TYPE.SLIDE_CHANGE);
+        if (last) {
+          Broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, last);
+        }
       }
     });
 
@@ -291,6 +436,48 @@ $storage.hydrate().then(async () => {
       label: "Cmd+K",
     });
 
+    // Ctrl+Space: Quick Search
+    Hotkeys.register(
+      "Ctrl+Space",
+      () => {
+        _shell().openCommandPalette();
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_space",
+        group: "general",
+        label: "Ctrl+Space",
+      }
+    );
+
+    // Ctrl+B: Bible Spotlight
+    Hotkeys.register(
+      "Ctrl+b",
+      () => {
+        _shell().openBibleSearch();
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_b",
+        group: "bible",
+        label: "Ctrl+B",
+      }
+    );
+
+    // Ctrl+M: Music Spotlight
+    Hotkeys.register(
+      "Ctrl+m",
+      () => {
+        _shell().openMusicSearch();
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_m",
+        group: "media",
+        label: "Ctrl+M",
+      }
+    );
+
     // Ctrl+F: foca campo de busca do módulo ativo via broadcast
     Hotkeys.register(
       "Ctrl+f",
@@ -307,12 +494,50 @@ $storage.hydrate().then(async () => {
       }
     );
 
-    // Esc: fecha módulo ativo
+    // Esc: encerra qualquer projeção ativa
     Hotkeys.register(
       "Escape",
       () => {
-        const id = _getActiveModuleId();
-        if (id) Modules.close(id);
+        // Função para encerrar tudo exceto música (que pode ter confirmação)
+        const closeEverythingElse = () => {
+          // Bíblia
+          Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+
+          // Módulos genéricos (counter, timer, etc.)
+          const moduleIds = [
+            "counter",
+            "draw",
+            "name_draw",
+            "message_board",
+            "stopwatch",
+            "timer",
+            "clock",
+          ];
+          for (const id of moduleIds) {
+            Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, { module: id, active: false });
+          }
+        };
+
+        // Projeção de arquivos de imagem e vídeo
+        if (Broadcast.getLastPayload(BROADCAST_TYPE.FILE_PROJECTION)) {
+          $alert.yesno("modules.media.alerts.close_projection", (btn) => {
+            if (btn === "yes") {
+              Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { action: "clear" });
+              Media.close(true);
+              closeEverythingElse();
+            }
+          });
+        } else if (_mediaIsActive()) {
+          // Música/Slides (com confirmação se ativa)
+          $alert.yesno("modules.media.alerts.close", (btn) => {
+            if (btn === "yes") {
+              Media.close(true);
+              closeEverythingElse();
+            }
+          });
+        } else {
+          closeEverythingElse();
+        }
       },
       {
         context: "global",

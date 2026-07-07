@@ -65,10 +65,7 @@
       </button>
 
       <!-- Ações específicas de música -->
-      <div
-        v-if="element.tipo === 'musica' && element.escolha === '0'"
-        class="lit-card-music-actions"
-      >
+      <div v-if="element.tipo === 'musica' && !element.escolha" class="lit-card-music-actions">
         <v-tooltip location="top" :open-delay="700">
           <template #activator="{ props }">
             <button
@@ -130,6 +127,19 @@
         </v-tooltip>
       </div>
 
+      <!-- Ação de vídeo on-line -->
+      <div v-if="element.tipo === 'video-online'" class="lit-card-music-actions">
+        <v-tooltip location="top" :open-delay="700">
+          <template #activator="{ props }">
+            <button v-bind="props" class="lit-music-btn" @click.stop="$emit('execute', element)">
+              <v-icon icon="mdi-play-circle" size="20" color="#e74c3c" />
+            </button>
+          </template>
+
+          {{ t("video.play") }}
+        </v-tooltip>
+      </div>
+
       <!-- Ações: editar + reordenar (sem X — exclusão pelo ribbon "Apagar Selecionados") -->
       <div class="lit-card-end">
         <v-tooltip v-if="!locked" location="top" :open-delay="500">
@@ -178,7 +188,7 @@
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
-import type { LiturgyItemData } from "../types";
+import type { LiturgyItem } from "@/types/Liturgy";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -195,13 +205,13 @@ function _t(key: string, locale: string): string {
 
 withDefaults(
   defineProps<{
-    element: LiturgyItemData;
+    element: LiturgyItem;
     index: number;
     locked?: boolean;
     defaultColor?: string;
-    isChecked: (item: LiturgyItemData) => boolean;
-    iconFor: (item: LiturgyItemData) => string;
-    subtitleFor: (item: LiturgyItemData) => string;
+    isChecked: (item: LiturgyItem) => boolean;
+    iconFor: (item: LiturgyItem) => string;
+    subtitleFor: (item: LiturgyItem) => string;
   }>(),
   { locked: false, defaultColor: "#00004F" }
 );
@@ -210,11 +220,11 @@ defineEmits<{
   edit: [index: number];
   clone: [index: number];
   "confirm-remove": [index: number];
-  execute: [item: LiturgyItemData];
-  "play-music": [item: LiturgyItemData, mode: string];
+  execute: [item: LiturgyItem];
+  "play-music": [item: LiturgyItem, mode: string];
   "open-lyric": [musica: number];
   "change-color": [index: number];
-  "toggle-checked": [element: LiturgyItemData];
+  "toggle-checked": [element: LiturgyItem];
 }>();
 
 const { locale } = useI18n();

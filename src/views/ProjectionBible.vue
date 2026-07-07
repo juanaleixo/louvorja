@@ -24,8 +24,13 @@
     />
 
     <Transition name="fade-verse" mode="out-in">
-      <div v-if="active && text" :key="text" class="projection-bible-content">
+      <div
+        v-if="active && (text || reference)"
+        :key="text + reference"
+        class="projection-bible-content"
+      >
         <span
+          v-if="text"
           class="projection-bible-text"
           :style="{
             color: font_color || '#FFFFFF',
@@ -43,6 +48,7 @@
         </span>
 
         <span
+          v-if="reference"
           class="projection-bible-reference"
           :style="{
             color: reference_font_color || '#FB8C00',
@@ -55,10 +61,7 @@
         </span>
       </div>
 
-      <div v-else class="projection-bible-empty">
-        <div class="projection-bible-empty__icon">📖</div>
-        <div class="projection-bible-empty__hint">Selecione um versículo</div>
-      </div>
+      <div v-else class="projection-bible-empty"></div>
     </Transition>
   </div>
 </template>
@@ -114,9 +117,14 @@ const ref_font_size_px = computed(() => pcToPx(reference_font_size.value));
 const border_spacing_px = computed(() => pcToPx(border_spacing.value));
 
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
+  console.log("[ProjectionBible] Recebido BIBLE_VERSE:", payload);
+  if (payload === null || payload.active === false) {
+    window.close();
+    return;
+  }
   text.value = payload?.text || "";
   reference.value = payload?.reference || "";
-  active.value = payload?.active ?? true;
+  active.value = payload?.active ?? !!payload?.text;
 });
 
 // Permite que mudanças de formatação (UserData) também cheguem por broadcast.
@@ -133,6 +141,7 @@ function onResize() {
 function onKey(e) {
   if (e.key === "Escape") {
     e.preventDefault();
+    Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
     setTimeout(() => window.close(), 150);
   }
 }
@@ -153,9 +162,17 @@ onMounted(() => {
   // do usuário ter selecionado, não recebe nada e fica vazia.
   // Pequeno delay para garantir que o listener da janela principal já
   // está ativo após o roteamento.
-  setTimeout(() => {
+  const requestState = () => {
+    if (active.value) return; // Já recebeu estado
     Broadcast.send(BROADCAST_TYPE.REQUEST_BIBLE_STATE, {});
-  }, 100);
+  };
+
+  // Tenta imediatamente e depois de 100ms, 500ms e 1000ms se ainda estiver vazio.
+  // Isso resolve latências de abertura de janela no Electron.
+  requestState();
+  setTimeout(requestState, 100);
+  setTimeout(requestState, 500);
+  setTimeout(requestState, 1000);
 });
 
 onBeforeUnmount(() => {
@@ -222,18 +239,6 @@ watch([font, font_color, font_size, background_color, image], onResize);
   text-align: center;
   color: rgba(255, 255, 255, 0.35);
   user-select: none;
-}
-
-.projection-bible-empty__icon {
-  font-size: 6vw;
-  margin-bottom: 1vw;
-  opacity: 0.5;
-}
-
-.projection-bible-empty__hint {
-  font-size: 1.5vw;
-  font-family: Arial, sans-serif;
-  letter-spacing: 0.04em;
 }
 
 .fade-verse-enter-active,

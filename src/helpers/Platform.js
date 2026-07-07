@@ -194,7 +194,7 @@ export default {
 
   /**
    * Gerenciamento de armazenamento local (S2): stats, clear, verify,
-   * setFilesDir, openDir, checkLocal, setAutoCache.
+   * setFilesDir, openDir, checkLocal, removeFiles, sizeOfPaths, setAutoCache.
    * null no browser/PWA — controle só no desktop.
    */
   get storage() {
@@ -234,5 +234,14 @@ export default {
    */
   get transmission() {
     return api?.transmission ?? null;
+  },
+
+  /**
+   * Identifica se a visão atual é de controle remoto/mobile (web).
+   * No renderer do Electron, é sempre false.
+   */
+  get isRemote() {
+    if (this.isDesktop) return false;
+    return typeof window !== "undefined" && window.location.hash.includes("/remote");
   },
 };

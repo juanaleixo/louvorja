@@ -30,6 +30,9 @@
  */
 export const GLOBAL_CANDIDATES = new Set([
   "f1", // Cheatsheet — útil system-wide durante apresentação
+  "Ctrl+space", // Quick Search
+  "Ctrl+b", // Bible Spotlight
+  "Ctrl+m", // Music Spotlight
   "Ctrl+k", // Command Palette
   "Meta+k", // Command Palette (Mac)
   "Ctrl+arrowleft", // Música anterior — útil com app minimizado durante culto

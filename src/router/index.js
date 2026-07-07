@@ -43,14 +43,34 @@ const routes = [
     component: () => import("@/views/ObsBible.vue"),
   },
   {
+    path: "/remote",
+    name: "RemoteControl",
+    component: () => import("@views/remote_control/RemoteControl.vue"),
+  },
+  {
     path: "/projection/bible",
     name: "ProjectionBible",
     component: () => import("@/views/ProjectionBible.vue"),
   },
   {
+    path: "/projection/bible/return",
+    name: "ProjectionBibleReturn",
+    component: () => import("@/views/ProjectionBibleReturn.vue"),
+  },
+  {
     path: "/projection/module",
     name: "ModuleProjection",
     component: () => import("@/views/ModuleProjection.vue"),
+  },
+  {
+    path: "/projection/file",
+    name: "FileProjection",
+    component: () => import("@/views/FileProjection.vue"),
+  },
+  {
+    path: "/projection/file/return",
+    name: "FileProjectionReturn",
+    component: () => import("@/views/FileProjectionReturn.vue"),
   },
 ];
 

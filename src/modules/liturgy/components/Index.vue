@@ -63,9 +63,9 @@
       :save-item="saveItem"
       :confirm-remove="confirmRemove"
       :open-site="openSite"
-      :choose-folder="chooseFolder"
       :choose-file="chooseFile"
       :open-schedules-dialog="openSchedulesDialog"
+      :videos-list="videosCache"
     />
 
     <LiturgySchedules
@@ -82,6 +82,34 @@
       :update-scheduled="updateScheduled"
       :remove-scheduled="removeScheduled"
     />
+
+    <v-dialog v-model="copyDialog" max-width="400">
+      <v-card>
+        <v-card-title>{{ t("copy.title") }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-3">{{ t("copy.description") }}</p>
+          <v-select
+            v-model="copySourceDay"
+            :items="copyDayOptions"
+            item-title="label"
+            item-value="value"
+            :label="t('copy.select_label')"
+            hide-details
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="copyDialog = false">
+            <v-icon icon="mdi-close" size="16" class="mr-1" />
+            {{ t("copy.cancel") }}
+          </v-btn>
+          <v-btn variant="flat" color="primary" @click="doCopyLiturgy">
+            <v-icon icon="mdi-content-copy" size="16" class="mr-1" />
+            {{ t("copy.confirm") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <MusicSearchSpotlight
       v-model="chooseMusicSearchOpen"
@@ -108,7 +136,10 @@ import LiturgyNotesPanel from "./LiturgyNotesPanel.vue";
 import LiturgyItemForm from "./LiturgyItemForm.vue";
 import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
-import type { LiturgyItemData, LiturgyMusicItem } from "../types";
+import $alert from "@/helpers/Alert";
+import $liturgy from "@/helpers/Liturgy";
+import type { LiturgyItem, LiturgyMusicItem } from "@/types/Liturgy";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -132,7 +163,7 @@ const module_ = computed(() => Modules.get("liturgy") as { show: boolean } | nul
 const persist = useLiturgyPersistence();
 const litItems = useLiturgyItems(persist.activeDay, persist.scheduledCategories);
 const chooseMusicSearchOpen = ref(false);
-const chooseLaterItem = ref<LiturgyItemData | null>(null);
+const chooseLaterItem = ref<LiturgyItem | null>(null);
 const chooseLaterMode = ref("sung");
 
 const {
@@ -190,23 +221,26 @@ const {
   playMusic,
   openLyric,
   openSite,
-  chooseFolder,
   chooseFile,
   onDragOver,
   onDrop,
   loadMusicsList,
   setFormField,
+  videosCache,
+  loadVideosList,
 } = litItems;
 
 const openItemDialogRoot = () => openItemDialog();
-const isChooseLaterMusic = (item: LiturgyItemData) =>
-  item.tipo === "musica" && (item.escolha === "1" || !item.id_music);
+const isChooseLaterMusic = (item: LiturgyItem) =>
+  item.tipo === "musica" && (item.escolha || !item.id_music);
 
-async function openChooseLaterSearch(item: LiturgyItemData, mode = "sung") {
+async function openChooseLaterSearch(item: LiturgyItem, mode = "sung") {
   chooseLaterItem.value = item;
   chooseLaterMode.value = mode;
   chooseMusicSearchOpen.value = true;
-  if (!musicsList.value.length) await loadMusicsList();
+  if (chooseLaterItem.value && !isChecked(chooseLaterItem.value)) {
+    toggleChecked(chooseLaterItem.value);
+  }
 }
 
 function onChooseLaterMusicPicked(music: LiturgyMusicItem) {
@@ -220,7 +254,7 @@ function onChooseLaterMusicPicked(music: LiturgyMusicItem) {
     subitem: t("data.music_prefix") + " " + music.name,
     musica: id,
     id_music: id,
-    escolha: "0",
+    escolha: false,
     subtipo: hasInstrumental ? "ja" : "div",
     has_instrumental_music: hasInstrumental,
   };
@@ -233,7 +267,7 @@ function onChooseLaterMusicPicked(music: LiturgyMusicItem) {
   }
 }
 
-const executeItemMaybeMark = (item: LiturgyItemData) => {
+const executeItemMaybeMark = (item: LiturgyItem) => {
   if (isChooseLaterMusic(item)) {
     openChooseLaterSearch(item);
     return;
@@ -245,7 +279,7 @@ const executeItemMaybeMark = (item: LiturgyItemData) => {
   }
 };
 
-const playMusicMaybeChoose = (item: LiturgyItemData, mode: string) => {
+const playMusicMaybeChoose = (item: LiturgyItem, mode: string) => {
   if (isChooseLaterMusic(item)) {
     openChooseLaterSearch(item, mode);
     return;
@@ -253,7 +287,7 @@ const playMusicMaybeChoose = (item: LiturgyItemData, mode: string) => {
   playMusic(item, mode);
 };
 
-const openLyricMaybeChoose = (target: LiturgyItemData | number) => {
+const openLyricMaybeChoose = (target: LiturgyItem | number) => {
   const item =
     typeof target === "object"
       ? target
@@ -267,9 +301,7 @@ const openLyricMaybeChoose = (target: LiturgyItemData | number) => {
 
 const colors = COLORS;
 const defaultColor = DEFAULT_COLOR;
-const safeItems = computed(
-  (): LiturgyItemData[] => (items.value as LiturgyItemData[] | null) ?? []
-);
+const safeItems = computed((): LiturgyItem[] => (items.value as LiturgyItem[] | null) ?? []);
 
 const dayLabels = computed(() => {
   if (locale.value === "es") {
@@ -277,6 +309,10 @@ const dayLabels = computed(() => {
   }
   return ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 });
+
+const copyDialog = ref(false);
+const copySourceDay = ref(0);
+const copyDayOptions = computed(() => dayLabels.value.map((label, i) => ({ label, value: i })));
 
 const todayIndex = computed(() => new Date().getDay());
 
@@ -299,6 +335,13 @@ function handleRibbonAction(action: string) {
     case "delete_selected":
       removeDone();
       break;
+    case "copy":
+      copySourceDay.value = activeDay.value;
+      copyDialog.value = true;
+      break;
+    case "clear_day":
+      clearDayDialog();
+      break;
     case "toggle_mark_on_access":
       toggleMarkOnAccess();
       break;
@@ -311,14 +354,44 @@ function handleRibbonAction(action: string) {
   }
 }
 
+function doCopyLiturgy() {
+  const source = copySourceDay.value;
+  const target = activeDay.value;
+  if (source === target) {
+    $alert.info(t("copy.same_day"));
+    return;
+  }
+  const sourceLabel = dayLabels.value[source];
+  const targetLabel = dayLabels.value[target];
+  const confirmText = t("copy.confirm_text")
+    .replace("{source}", sourceLabel)
+    .replace("{target}", targetLabel);
+  $alert.yesno({ title: t("copy.confirm_title"), text: confirmText }, (btn?: string) => {
+    if (btn !== "yes") return;
+    const items = $liturgy.list(source);
+    $liturgy.set(items, target);
+    copyDialog.value = false;
+  });
+}
+
+function clearDayDialog() {
+  const dayLabel = dayLabels.value[activeDay.value];
+  const confirmText = t("clear.confirm_text").replace("{day}", dayLabel);
+  $alert.yesno({ title: t("clear.confirm_title"), text: confirmText }, (btn?: string) => {
+    if (btn !== "yes") return;
+    $liturgy.clear(activeDay.value);
+  });
+}
+
 onMounted(async () => {
   await loadMusicsList();
+  await loadVideosList();
   _broadcastUnlisten = Broadcast.listen((data) => {
     if (data?.type === BROADCAST_TYPE.LITURGY_NEW_ANNOTATION) {
       Modules.open("liturgy");
       nextTick(() => {
         openItemDialog();
-        form.value.tipo = "anotacao";
+        form.value.tipo = LiturgyItemTypeEnum.ANOTACAO;
       });
     } else if (data?.type === BROADCAST_TYPE.LITURGY_RIBBON_ACTION) {
       const action = (data?.payload as { action?: string } | undefined)?.action;

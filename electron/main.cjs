@@ -124,6 +124,9 @@ function createWindow() {
 // Lifecycle da Electron app
 // ---------------------------------------------------------------------------
 
+// Permite autoplay de vídeos (YouTube embarcado) sem gesto do usuário
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
 app.whenReady().then(async () => {
   // Limpa Service Workers herdados de execuções anteriores em modo PWA/dev.
   // Em prod desktop o app é file:// e não usa SW, mas se o usuário já abriu
@@ -159,8 +162,8 @@ app.whenReady().then(async () => {
   // file: precisa estar explícito em prod porque o Chromium trata file://
   // como origem null e NÃO casa com 'self'.
   const scriptSrc = isDev
-    ? "'self' 'unsafe-inline' 'unsafe-eval' louvorja: http://localhost:*"
-    : "'self' file: louvorja:";
+    ? "'self' 'unsafe-inline' 'unsafe-eval' louvorja: http://localhost:* https://www.youtube.com https://*.doubleclick.net https://www.google.com"
+    : "'self' file: louvorja: https://www.youtube.com https://*.doubleclick.net https://www.google.com";
   const styleSrc = isDev
     ? "'self' 'unsafe-inline' louvorja: http://localhost:* https://fonts.googleapis.com"
     : "'self' 'unsafe-inline' file: louvorja: https://fonts.googleapis.com";
@@ -173,9 +176,10 @@ app.whenReady().then(async () => {
           ` script-src ${scriptSrc};` +
           ` style-src ${styleSrc};` +
           " font-src 'self' data: file: louvorja: https://fonts.gstatic.com;" +
-          " img-src 'self' data: https: file: louvorja:" + (isDev ? " http://localhost:*" : "") + ";" +
-          " media-src 'self' blob: https: file: louvorja: http://localhost:*;" +
-          " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:*;" +
+           " img-src 'self' blob: data: https: file: louvorja:" + (isDev ? " http://localhost:*" : "") + " https://*.ytimg.com https://*.youtube.com;" +
+          " media-src 'self' blob: https: file: louvorja: http://localhost:* https://*.googlevideo.com;" +
+           " connect-src 'self' louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com;" +
+          " frame-src https://www.youtube.com https://www.youtube-nocookie.com;" +
           " worker-src 'self' file: louvorja:" + (isDev ? " blob:" : "") + ";",
         ],
       },
@@ -572,6 +576,16 @@ ipcMain.handle("httpServer:localIps", () => {
   return ips;
 });
 
+/**
+ * Retorna o nome da máquina na rede local (ex: "desktop.local").
+ * Usado nas URLs de transmissão quando a opção "usar hostname" está ativa.
+ */
+ipcMain.handle("httpServer:hostname", () => {
+  const os = require("os");
+  const raw = os.hostname();
+  return raw.includes(".") ? raw : `${raw}.local`;
+});
+
 // ---------------------------------------------------------------------------
 // IPC handlers de atalhos globais (D6)
 // ---------------------------------------------------------------------------
@@ -730,6 +744,8 @@ ipcMain.handle("storage:clearJson", () => storage.clearJson());
 ipcMain.handle("storage:clearFiles", () => storage.clearFiles());
 ipcMain.handle("storage:clearUnused", (_e, remoteFiles) => storage.clearUnused(remoteFiles));
 ipcMain.handle("storage:verify", (_e, remoteFiles) => storage.verify(remoteFiles));
+ipcMain.handle("storage:removeFiles", (_e, remotePaths) => storage.removeFiles(remotePaths));
+ipcMain.handle("storage:sizeOfPaths", (_e, remotePaths) => storage.sizeOfPaths(remotePaths));
 ipcMain.handle("storage:openDir", () => storage.openFilesDir());
 ipcMain.handle("storage:setFilesDir", (_e, newDir, opts) => storage.setFilesDir(newDir, opts));
 ipcMain.handle("storage:enforceQuota", (_e, maxBytes) => storage.enforceQuota(maxBytes));
@@ -739,6 +755,32 @@ ipcMain.handle("storage:chooseDir", async (event) => {
   const result = await dialog.showOpenDialog(win, {
     properties: ["openDirectory", "createDirectory"],
     title: "Escolher pasta para mídia",
+  });
+  if (result.canceled || !result.filePaths?.length) return null;
+  return result.filePaths[0];
+});
+
+/** Abre diálogo para selecionar um único arquivo (liturgia). */
+ipcMain.handle("storage:chooseFile", async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(win, {
+    properties: ["openFile"],
+    title: "Selecionar arquivo",
+  });
+  if (result.canceled || !result.filePaths?.length) return null;
+  return result.filePaths[0];
+});
+
+/** Abre diálogo para selecionar uma imagem de fundo com filtro de tipos. */
+ipcMain.handle("storage:chooseImage", async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(win, {
+    properties: ["openFile"],
+    filters: [
+      { name: "Imagens", extensions: ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"] },
+      { name: "Todos os arquivos", extensions: ["*"] },
+    ],
+    title: "Selecionar imagem de fundo",
   });
   if (result.canceled || !result.filePaths?.length) return null;
   return result.filePaths[0];

@@ -1,7 +1,6 @@
 .opt {
   font-family: var(--lj-font-shell);
   color: var(--lj-text);
-  max-width: 720px;
 }
 
 .opt-section {
@@ -71,7 +70,7 @@
 }
 
 .opt-hint {
-  margin: -8px 0 var(--lj-space-3) 28px;
+  /*margin: -8px 0 var(--lj-space-3) 28px;*/
   font-size: var(--lj-text-sm);
   color: var(--lj-text-muted);
   line-height: 1.4;
@@ -222,6 +221,56 @@
   word-break: break-all;
   white-space: normal;
 }
+
+/* Indicador de status de conexão FTP */
+.opt-connection-status {
+  display: flex;
+  align-items: center;
+  gap: var(--lj-space-3);
+  width: 100%;
+}
+
+.opt-connection-box {
+  background: var(--lj-surface-bg);
+  border: 2px solid var(--lj-danger);
+  border-radius: var(--lj-radius-sm);
+  padding: var(--lj-space-2) var(--lj-space-3);
+  font-size: var(--lj-text-sm);
+  font-family: monospace;
+  color: var(--lj-text-muted);
+  word-break: break-all;
+  white-space: normal;
+}
+
+.opt-connection-status--ok .opt-connection-box {
+  border-color: var(--lj-success);
+}
+
+.opt-connection-badge {
+  flex: 0 0 auto;
+  display: inline-block;
+  padding: var(--lj-space-2) var(--lj-space-3);
+  font-size: var(--lj-text-sm);
+  font-weight: var(--lj-weight-medium);
+  border-radius: var(--lj-radius-sm);
+  white-space: nowrap;
+  background: var(--lj-danger);
+  color: white;
+}
+
+.opt-connection-status--ok .opt-connection-badge {
+  background: var(--lj-success);
+}
+
+.opt-connection-status--checking .opt-connection-box {
+  border-color: var(--lj-slide-text-gold);
+}
+
+.opt-connection-status--checking .opt-connection-badge {
+  background: var(--lj-slide-text-gold);
+  color: var(--lj-text);
+}
+
 .opt-folder-actions {
   display: flex;
   gap: var(--lj-space-3);

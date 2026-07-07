@@ -1,6 +1,7 @@
 {
   "title": "Liturgia",
   "ribbon": {
+    "title_ctx": "Configurar Liturgia",
     "add": "Agregar",
     "items": "Ítems",
     "options": "Opciones",
@@ -45,11 +46,12 @@
   },
   "types": {
     "anotacao": "Anotación",
-    "arquivo": "Archivo/Directorio",
+    "arquivo": "Archivo",
     "categoria": "Categoría",
-    "itensagendados": "Ítems Programados",
+    "itens-agendados": "Ítems Programados",
     "musica": "Música",
-    "site": "Sitio"
+    "site": "Sitio",
+    "video-online": "Vídeo Online"
   },
   "inputs": {
     "type": "Tipo",
@@ -70,7 +72,10 @@
     "scheduled_pick": "-- seleccione una categoría --",
     "scheduled_empty": "Ninguna categoría creada. Use el botón de configuración para crear.",
     "category_hint": "Las categorías sirven como separadores visuales entre secciones de la liturgia.",
-    "duration_min": "Duración (min)"
+    "duration_min": "Duración (min)",
+    "video_select": "Vídeo",
+    "video_pick": "-- seleccione un vídeo --",
+    "video_url_or_select": "URL del vídeo o seleccione uno guardado"
   },
   "data": {
     "empty": "Liturgia vacía",
@@ -117,6 +122,9 @@
     "show_lyric_text": "Mostrar letra (texto)",
     "no_audio": "Slides sin audio"
   },
+  "video": {
+    "play": "Reproducir vídeo"
+  },
   "music_search": {
     "title": "Búsqueda de Músicas",
     "find_label": "Localizar Música:",
@@ -153,5 +161,19 @@
     "music_choose_first": "Elija la música primero (clic en el ítem).",
     "scheduled_not_found": "No hay ítem programado para esta fecha en esta categoría.",
     "desktop_only": "Recurso disponible solo en la versión desktop."
+  },
+  "copy": {
+    "title": "Copiar Liturgia",
+    "description": "Seleccione el día de origen para copiar los ítems al día actual.",
+    "select_label": "Día de origen",
+    "cancel": "Cancelar",
+    "confirm": "Copiar",
+    "same_day": "El día de origen no puede ser el mismo que el día actual.",
+    "confirm_title": "Copiar Liturgia",
+    "confirm_text": "¿Desea copiar la liturgia de {source} y sobrescribir la liturgia de {target}?<br><b>¡Esta acción no puede ser deshecha!</b>"
+  },
+  "clear": {
+    "confirm_title": "Limpiar Liturgia",
+    "confirm_text": "¿Desea limpiar TODOS los ítems de la liturgia de <b>{day}</b>?<br><b>¡Esta acción no puede ser deshecha!</b>"
   }
 }

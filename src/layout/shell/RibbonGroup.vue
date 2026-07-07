@@ -1,6 +1,6 @@
 <template>
   <div class="ribbon-group">
-    <div class="ribbon-group-content">
+    <div ref="contentRef" class="ribbon-group-content">
       <slot />
     </div>
     <div class="ribbon-group-label">{{ title }}</div>
@@ -8,8 +8,23 @@
 </template>
 
 <script setup>
+import { onMounted, ref } from "vue";
+
 defineProps({
   title: { type: String, required: true },
+});
+
+const contentRef = ref(null);
+
+//Verificação da largura dos menus para não cortar o conteúdo
+onMounted(() => {
+  const el = contentRef.value;
+  if (!el) return;
+  const anyVisible = Array.from(el.children).some((child) => !child.hasAttribute("hidden"));
+  if (!anyVisible) return;
+  if (el.scrollWidth > el.clientWidth) {
+    el.style.minWidth = el.scrollWidth + "px";
+  }
 });
 </script>
 
@@ -21,6 +36,7 @@ defineProps({
   padding: var(--lj-space-2) var(--lj-space-3) 0;
   flex-shrink: 0;
   height: 100%;
+  width: fit-content;
 }
 
 .ribbon-group:last-child {
@@ -31,7 +47,7 @@ defineProps({
   display: flex;
   flex-flow: column wrap;
   align-items: flex-start;
-  flex: 1;
+  flex: 0 0 auto;
   gap: var(--lj-space-1);
   padding: var(--lj-space-1) 0 0;
   min-height: 0;
@@ -40,11 +56,13 @@ defineProps({
      overflow: hidden previne sobreposição visual com o label do grupo
      se o conteúdo tentar estourar. */
   max-height: calc(var(--lj-ribbon-body-height) - var(--lj-group-label-height) - 8px);
+  min-width: 50px;
   overflow: hidden;
-  align-content: flex-start;
+  align-content: center;
 }
 
 .ribbon-group-label {
+  margin-top: auto;
   height: var(--lj-group-label-height);
   text-align: center;
   font-size: var(--lj-text-xs);

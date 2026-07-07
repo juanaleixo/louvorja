@@ -9,6 +9,8 @@
 # Configuração local do Claude Code
 /.claude/
 
+/.ai/
+
 # Saídas de testes/cobertura
 /coverage/
 /playwright-report/

@@ -46,6 +46,7 @@ const STATEFUL_TYPES = new Set<string>([
   "module_projection_value",
   "module_format_changed",
   "message_board",
+  "file_projection",
 ]);
 
 let channel: BroadcastChannel | null = null;
@@ -60,6 +61,7 @@ function _deliverLocal(msg: BroadcastMessage): void {
     if (msg.type === "media_close") {
       _lastByType.delete("slide_change");
       _lastByType.delete("slides_data");
+      _lastByType.delete("file_projection");
     } else if (STATEFUL_TYPES.has(msg.type)) {
       _lastByType.set(msg.type, msg);
     }
@@ -144,5 +146,12 @@ export default {
     return () => {
       _localListeners.delete(callback);
     };
+  },
+
+  /**
+   * Retorna o último payload de um tipo stateful recebido NESTA janela.
+   */
+  getLastPayload(type: string): any | null {
+    return _lastByType.get(type)?.payload || null;
   },
 };

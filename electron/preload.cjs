@@ -233,12 +233,20 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     openDir: () => ipcRenderer.invoke("storage:openDir"),
     /** Mostra dialog de seleção de pasta. */
     chooseDir: () => ipcRenderer.invoke("storage:chooseDir"),
+    /** Mostra dialog de seleção de arquivo único. Retorna o caminho completo ou null. */
+    chooseFile: () => ipcRenderer.invoke("storage:chooseFile"),
+    /** Mostra dialog de seleção de imagem com filtro de tipos. Retorna o caminho completo ou null. */
+    chooseImage: () => ipcRenderer.invoke("storage:chooseImage"),
     /** Define nova pasta de mídia (com opção de mover conteúdo). */
     setFilesDir: (newDir, opts) => ipcRenderer.invoke("storage:setFilesDir", newDir, opts),
     /** Auto-limpeza FIFO ao ultrapassar maxBytes. */
     enforceQuota: (maxBytes) => ipcRenderer.invoke("storage:enforceQuota", maxBytes),
     /** Verifica quais arquivos remotos já estão no disco. */
     checkLocal: (remotePaths) => ipcRenderer.invoke("storage:checkLocal", remotePaths),
+    /** Remove arquivos de mídia do cache local (paths remotos relativos). */
+    removeFiles: (remotePaths) => ipcRenderer.invoke("storage:removeFiles", remotePaths),
+    /** Soma bytes no disco para uma lista de paths remotos. */
+    sizeOfPaths: (remotePaths) => ipcRenderer.invoke("storage:sizeOfPaths", remotePaths),
     /** Liga/desliga auto-cache ao reproduzir mídia. */
     setAutoCache: (enabled) => ipcRenderer.invoke("storage:setAutoCache", enabled),
   },
@@ -256,6 +264,8 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     status: () => ipcRenderer.invoke("httpServer:status"),
     /** Retorna lista de IPs IPv4 locais (não-loopback). */
     localIps: () => ipcRenderer.invoke("httpServer:localIps"),
+    /** Retorna o nome da máquina na rede local (ex: "MacBook-Pro.local"). */
+    hostname: () => ipcRenderer.invoke("httpServer:hostname"),
     /** Regenera token (revoga acessos antigos). Retorna novo token. */
     resetToken: () => ipcRenderer.invoke("httpServer:resetToken"),
   },

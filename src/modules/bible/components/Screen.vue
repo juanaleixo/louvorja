@@ -62,45 +62,51 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, type ComputedRef } from "vue";
 import manifest from "../manifest.json";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
+import { ModuleState } from "@/types/Module";
 
-defineProps({
-  height: Number,
-});
+interface BibleData {
+  text?: string;
+  scriptural_reference?: string;
+}
 
-const container = ref(null);
+const props = defineProps<{
+  height?: number;
+}>();
+
+const container = ref<HTMLElement | null>(null);
 const sWidth = ref(0);
 const sHeight = ref(0);
 
-const module_ = computed(() => Modules.get(manifest.id));
+const module_ = computed(() => Modules.get(manifest.id) as ModuleState | undefined);
 
-const userdata = computed(
+const userdata: ComputedRef<Record<string, any>> = computed(
   () =>
     new Proxy(
       {},
       {
-        get: (_, key) => UserData.get(`modules.${module_.value.id}.${key}`, null),
+        get: (_, key) => UserData.get(`modules.${module_.value?.id}.${String(key)}`, null),
         set: (_, key, value) => {
-          UserData.set(`modules.${module_.value.id}.${key}`, value);
+          UserData.set(`modules.${module_.value?.id}.${String(key)}`, value);
           return true;
         },
       }
     )
 );
 
-const bible = computed(() => AppData.get("modules.bible.data"));
+const bible: ComputedRef<BibleData | null> = computed(() => AppData.get("modules.bible.data"));
 
-function fontSizePc(pc) {
+function fontSizePc(pc: number): number {
   const v = Math.min(sWidth.value, sHeight.value);
   return (pc * v) / 100 / 2;
 }
 
-function windowResize() {
+function windowResize(): void {
   const el = container.value;
   if (el) {
     sWidth.value = el.offsetWidth;

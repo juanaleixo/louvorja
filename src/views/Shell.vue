@@ -27,6 +27,7 @@
 
     <CommandPalette v-model="cmdPaletteOpen" />
     <MusicSearchSpotlight v-model="musicSearchOpen" />
+    <BibleSearchSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
     <HotkeysCheatsheet v-model="hotkeysOpen" />
   </v-app>
 </template>
@@ -43,6 +44,7 @@ import AppAlert from "@/layout/Alert.vue";
 import AppLoading from "@/layout/Loading.vue";
 import CommandPalette from "@/layout/shell/CommandPalette.vue";
 import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
+import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
 import RibbonBar from "@/layout/shell/RibbonBar.vue";
 import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";
 import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";
@@ -50,6 +52,8 @@ import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $popup from "@/helpers/Popup";
+import Broadcast from "@/helpers/Broadcast";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 import { registerShell } from "@/composables/useShell";
 
@@ -59,6 +63,7 @@ const display = useDisplay();
 
 const cmdPaletteOpen = ref(false);
 const musicSearchOpen = ref(false);
+const bibleSearchOpen = ref(false);
 const hotkeysOpen = ref(false);
 const ready = ref(false);
 
@@ -76,6 +81,9 @@ const onOpenHotkeys = () => {
 const onOpenMusicSearch = () => {
   musicSearchOpen.value = true;
 };
+const onOpenBibleSearch = () => {
+  bibleSearchOpen.value = true;
+};
 
 let beforeUnloadHandler = null;
 let messageHandler = null;
@@ -90,19 +98,31 @@ function openHotkeysCheatsheet() {
 function openMusicSearch() {
   musicSearchOpen.value = true;
 }
+function openBibleSearch() {
+  bibleSearchOpen.value = true;
+}
 
-defineExpose({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch });
+defineExpose({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch, openBibleSearch });
 
 // Registra ações do shell no composable (substitui `$appdata.set("shell._ref")`)
-registerShell({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch });
+registerShell({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch, openBibleSearch });
+
+function onBibleSelect(res) {
+  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+    text: res.text,
+    reference: res.reference,
+    active: true,
+  });
+}
 
 onMounted(() => {
   // Re-registra no mount (importante após HMR)
-  registerShell({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch });
+  registerShell({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch, openBibleSearch });
 
   window.addEventListener("louvorja:open-command-palette", onOpenCommandPalette);
   window.addEventListener("louvorja:open-hotkeys", onOpenHotkeys);
   window.addEventListener("louvorja:open-music-search", onOpenMusicSearch);
+  window.addEventListener("louvorja:open-bible-search", onOpenBibleSearch);
 
   $userdata.load();
 
@@ -192,6 +212,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("louvorja:open-command-palette", onOpenCommandPalette);
   window.removeEventListener("louvorja:open-hotkeys", onOpenHotkeys);
   window.removeEventListener("louvorja:open-music-search", onOpenMusicSearch);
+  window.removeEventListener("louvorja:open-bible-search", onOpenBibleSearch);
 });
 </script>
 

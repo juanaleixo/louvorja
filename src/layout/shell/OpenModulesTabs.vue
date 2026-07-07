@@ -15,13 +15,19 @@
       :aria-selected="isActive(m.id)"
       @click="focus(m.id)"
     >
-      <v-icon :icon="iconFor(m.id)" size="13" class="subtab-icon" aria-hidden="true" />
-      <span class="subtab-label lj-u-truncate">{{ labelFor(m.id) }}</span>
+      <v-icon
+        :icon="getModule(m.id).icon"
+        :color="getModule(m.id).color"
+        size="15"
+        class="subtab-icon"
+        aria-hidden="true"
+      />
+      <span class="subtab-label lj-u-truncate">{{ t(getModule(m.id).title) }}</span>
       <span
         role="button"
         tabindex="-1"
         class="subtab-close"
-        :aria-label="`${$t('alert.close')}: ${labelFor(m.id)}`"
+        :aria-label="`${$t('alert.close')}: ${t(getModule(m.id).title)}`"
         @click.stop="close(m.id)"
       >
         <v-icon icon="mdi-close" size="11" aria-hidden="true" />
@@ -33,12 +39,12 @@
 <script setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { MODULE_ICONS } from "./ribbon-pages.js";
 import $appdata from "@/helpers/AppData";
 import $modules from "@/helpers/Modules";
+import { getModules } from "@/config/module";
 
 const { t } = useI18n();
-
+const modules = getModules;
 const openModules = computed(() => {
   const modules = $appdata.get("modules") || {};
   const skip = new Set(["media", "lyric", "album"]);
@@ -51,14 +57,8 @@ function isActive(id) {
   return $appdata.get("active_module") === id;
 }
 
-function iconFor(id) {
-  return MODULE_ICONS[id] || "mdi-application";
-}
-
-function labelFor(id) {
-  const key = `modules.${id}.title`;
-  const translated = t(key);
-  return translated === key ? id.replace(/_/g, " ") : translated;
+function getModule(id) {
+  return modules[id] || {};
 }
 
 function focus(id) {

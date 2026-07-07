@@ -70,11 +70,20 @@
                     <v-icon icon="mdi-play-box-multiple" size="16" />
                   </button>
                   <l-music-menu-table
-                    v-else
-                    :id_music="item.id_music"
+                    v-else-if="!Platform.isRemote"
+                    :id_music="Number(item.id_music)"
                     :name="item.name"
                     :has_instrumental_music="item.has_instrumental_music"
                   />
+                  <div v-else class="d-flex align-center gap-1">
+                    <v-btn
+                      icon="mdi-play-circle-outline"
+                      size="small"
+                      variant="text"
+                      color="primary"
+                      @click.stop="pickMusic(item)"
+                    />
+                  </div>
                 </div>
               </td>
             </tr>
@@ -89,44 +98,56 @@
   </v-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import LMusicMenuTable from "@/components/MusicMenuTable.vue";
 import Database from "@/helpers/Database";
 import Strings from "@/helpers/Strings";
+import Platform from "@/helpers/Platform";
+import type { MusicItem } from "@/types/Music";
+import type { AlbumItem } from "@/types/Album";
 
-const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-  mode: { type: String, default: "execute" },
-  musicsList: { type: Array, default: null },
-});
+interface SearchMusicItem extends MusicItem {
+  track?: string | number;
+  album?: string;
+  [key: string]: unknown;
+}
 
-const emit = defineEmits(["update:modelValue", "pick"]);
+const props = defineProps<{
+  modelValue: boolean;
+  mode?: "execute" | "pick";
+  musicsList?: SearchMusicItem[] | null;
+}>();
+
+const emit = defineEmits<{
+  (e: "update:modelValue", value: boolean): void;
+  (e: "pick", music: SearchMusicItem): void;
+}>();
 
 const { t: i18nT, locale } = useI18n();
 
-const search = ref("");
-const searchInput = ref(null);
-const loading = ref(false);
-const loadedLocale = ref(null);
-const musics = ref([]);
+const search = ref<string>("");
+const searchInput = ref<HTMLInputElement | null>(null);
+const loading = ref<boolean>(false);
+const loadedLocale = ref<string | null>(null);
+const musics = ref<SearchMusicItem[]>([]);
 
 const open = computed({
   get: () => props.modelValue,
-  set: (value) => emit("update:modelValue", value),
+  set: (value: boolean) => emit("update:modelValue", value),
 });
 
-const sourceMusics = computed(() =>
+const sourceMusics = computed<SearchMusicItem[]>(() =>
   Array.isArray(props.musicsList) ? props.musicsList : musics.value
 );
 
-const filteredMusics = computed(() => {
+const filteredMusics = computed<SearchMusicItem[]>(() => {
   const query = Strings.clean(search.value);
   if (!query) return [];
 
   return sourceMusics.value
-    .filter((music) => {
+    .filter((music: SearchMusicItem) => {
       return (
         Strings.clean(music.name).includes(query) ||
         Strings.clean(albumLabel(music)).includes(query) ||
@@ -136,17 +157,17 @@ const filteredMusics = computed(() => {
     .slice(0, 80);
 });
 
-function t(key) {
+function t(key: string): string {
   return i18nT(`components.music_search.${key}`);
 }
 
-function albumLabel(music) {
+function albumLabel(music: SearchMusicItem): string {
   if (music.albums_names) return music.albums_names;
   if (music.album) return music.album;
   if (Array.isArray(music.albums)) {
     return music.albums
-      .map((album) => {
-        const track = album?.pivot?.track || album?.track;
+      .map((album: AlbumItem) => {
+        const track = album?.pivot?.track;
         return [track, album?.name].filter(Boolean).join(" - ");
       })
       .filter(Boolean)
@@ -155,13 +176,13 @@ function albumLabel(music) {
   return "";
 }
 
-async function loadMusics() {
+async function loadMusics(): Promise<void> {
   if (Array.isArray(props.musicsList)) return;
   if (loading.value || loadedLocale.value === locale.value) return;
 
   loading.value = true;
   try {
-    const data = await Database.get(`${locale.value}_musics`);
+    const data = await Database.get<SearchMusicItem[]>(`${locale.value}_musics`);
     if (Array.isArray(data)) {
       musics.value = data.slice().sort((a, b) => Strings.sort(a.name, b.name));
       loadedLocale.value = locale.value;
@@ -175,18 +196,18 @@ async function loadMusics() {
   }
 }
 
-function pickFirst() {
+function pickFirst(): void {
   const music = filteredMusics.value[0];
   if (music) pickMusic(music);
 }
 
-function pickMusic(music) {
+function pickMusic(music: SearchMusicItem): void {
   if (props.mode !== "pick") return;
   emit("pick", music);
   open.value = false;
 }
 
-watch(open, async (value) => {
+watch(open, async (value: boolean) => {
   if (!value) return;
   search.value = "";
   await loadMusics();

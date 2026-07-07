@@ -53,6 +53,7 @@
     <div class="d-flex flex-no-wrap align-stretch flex-row justify-space-between">
       <div class="w-100">
         <Fullscreen
+          v-if="!isYouTube"
           v-model="fullscreen"
           class="position-sticky w-100"
           :style="`top: 0; height:${preview_height}px; overflow: hidden;`"
@@ -60,9 +61,23 @@
           <l-slide v-if="slide" :slide="slideForRenderer" :title="config?.title || ''" />
           <l-fullscreen-player v-if="fullscreen" />
         </Fullscreen>
+        <div
+          v-else
+          class="position-sticky w-100 d-flex align-center justify-center"
+          :style="`top: 0; height:${preview_height}px; overflow: hidden; background: #000;`"
+        >
+          <img
+            v-if="youtubeThumbnail"
+            :src="youtubeThumbnail"
+            alt=""
+            class="youtube-thumbnail"
+            style="max-width: 100%; max-height: 100%; object-fit: contain"
+          />
+        </div>
       </div>
       <div v-if="width > 600">
-        <v-list class="overflow h-100 ma-0 pa-0" bg-color="black" :width="250">
+        <!-- Slide list for music -->
+        <v-list v-if="!isYouTube" class="overflow h-100 ma-0 pa-0" bg-color="black" :width="250">
           <v-list-item
             v-for="(item, index) in slides"
             :key="index"
@@ -97,6 +112,35 @@
             />
           </v-list-item>
         </v-list>
+        <!-- YouTube info panel -->
+        <div v-else class="pa-4 overflow-y-auto" style="width: 280px">
+          <div class="text-caption text-grey mb-1">{{ $t("modules.media.general.channel") }}</div>
+          <div class="text-body-2 mb-2">
+            <a
+              v-if="ytChannelUrl"
+              :href="ytChannelUrl"
+              target="_blank"
+              class="text-blue-lighten-2"
+              style="text-decoration: none"
+            >
+              {{ ytChannel || "—" }}
+            </a>
+            <span v-else>{{ ytChannel || "—" }}</span>
+          </div>
+          <v-divider class="mb-3" />
+          <div class="text-caption text-grey mb-1">
+            {{ $t("modules.media.general.video_link") }}
+          </div>
+          <a
+            v-if="youtubeWatchUrl"
+            :href="youtubeWatchUrl"
+            target="_blank"
+            class="text-blue-lighten-2 text-body-2"
+            style="text-decoration: none"
+          >
+            {{ youtubeWatchUrl }}
+          </a>
+        </div>
       </div>
     </div>
 
@@ -144,6 +188,50 @@ const slide = computed(() => Media.slide());
 // repassamos o slide bruto. (Ainda mantemos pathFile() em Path.file via
 // computed para o image do <Window>.)
 const slideForRenderer = computed(() => slide.value);
+
+const isYouTube = computed(() => !!config.value?.is_youtube);
+const youtubeId = computed(() => {
+  if (!isYouTube.value) return null;
+  const url = config.value?.youtube_url;
+  if (!url) return null;
+  const m = String(url).match(/\/embed\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+});
+const youtubeThumbnail = computed(() => {
+  return youtubeId.value ? `https://img.youtube.com/vi/${youtubeId.value}/maxresdefault.jpg` : "";
+});
+const youtubeWatchUrl = computed(() => {
+  return youtubeId.value ? `https://www.youtube.com/watch?v=${youtubeId.value}` : "";
+});
+
+const ytChannel = ref("");
+const ytChannelUrl = ref("");
+let ytChannelReq = 0;
+
+function fetchYouTubeChannel(id) {
+  ytChannelReq++;
+  const req = ytChannelReq;
+  if (!id) {
+    ytChannel.value = "";
+    ytChannelUrl.value = "";
+    return;
+  }
+  fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
+    .then((r) => r.json())
+    .then((data) => {
+      if (req !== ytChannelReq) return;
+      ytChannel.value = data.author_name || "";
+      ytChannelUrl.value = data.author_url || "";
+    })
+    .catch(() => {});
+}
+watch(
+  youtubeId,
+  (id) => {
+    fetchYouTubeChannel(id);
+  },
+  { immediate: true }
+);
 
 const fullscreen = computed({
   get: () => module_.value.config?.fullscreen,

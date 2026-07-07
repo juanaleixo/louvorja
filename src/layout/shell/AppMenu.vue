@@ -35,7 +35,7 @@
               :aria-label="$t('alert.close')"
               @click="close"
             >
-              <v-icon icon="mdi-arrow-left" size="20" />
+              <v-icon :icon="ICONS.ACTIONS.CLOSE" size="20" />
             </button>
             <span class="app-menu-header-title">
               {{ activeItem?.label ? $t(activeItem.label) : $t("shell.appmenu") }}
@@ -68,6 +68,7 @@
               <AppMenuTransmitir v-else-if="activeItem?.id === 'transmission'" />
               <AppMenuSincronizar v-else-if="activeItem?.id === 'sync'" />
               <AppMenuAtualizacoes v-else-if="activeItem?.id === 'updates'" />
+              <AppMenuImportExport v-else-if="activeItem?.id === 'import_export'" />
 
               <p v-else class="app-menu-content-placeholder">
                 {{ $t("shell.appmenu_content_placeholder") }}
@@ -87,8 +88,10 @@ import AppMenuSobre from "./AppMenuSobre.vue";
 import AppMenuTransmitir from "./AppMenuTransmitir.vue";
 import AppMenuSincronizar from "./AppMenuSincronizar.vue";
 import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
+import AppMenuImportExport from "./AppMenuImportExport.vue";
 import $modules from "@/helpers/Modules";
 import Platform from "@/helpers/Platform";
+import { ICONS } from "@/constants/Icons";
 
 // Detecta macOS via Platform (Electron) ou navigator (web fallback) —
 // usado para ajustar o header da AppMenu (não sobrepor traffic lights)
@@ -117,7 +120,7 @@ const items = computed(() => [
   {
     id: "import_export",
     label: "shell.appmenu_items.import_export",
-    action: () => $modules.open("liturgy"),
+    inline: true,
   },
   { id: "sync", label: "shell.appmenu_items.sync", inline: true },
   { id: "feedback", label: "shell.appmenu_items.feedback", action: openFeedback },
@@ -237,7 +240,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 .app-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 100;
   background: var(--lj-black-alpha-40);
   font-family: var(--lj-font-shell);
 }
@@ -269,8 +272,6 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 }
 
 .app-menu-back {
-  width: 40px;
-  height: 40px;
   border-radius: 50%;
   border: none;
   background: var(--lj-white-alpha-10);

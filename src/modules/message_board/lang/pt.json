@@ -14,5 +14,8 @@
   "data": {
     "empty": "Nenhum recado. Use o campo acima para adicionar.",
     "showing": "Exibindo na projeção"
+  },
+  "ribbon": {
+    "title_ctx": "Configurar Recados"
   }
 }

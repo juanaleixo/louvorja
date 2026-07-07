@@ -3,7 +3,7 @@
     <div class="d-flex flex-column flex-grow-1">
       <PlayerControls :buttons="buttons" :compact="compact" :loading="mediaLoading" />
       <PlayerProgress
-        v-if="mediaConfig.audio"
+        v-if="hasPlayback"
         :progress="progress"
         :current-time="currentTime"
         :duration="duration"
@@ -33,7 +33,7 @@
         @close="close"
       />
       <PlayerGauge
-        v-if="mediaConfig.audio"
+        v-if="hasPlayback"
         :volume="volume"
         :icon="volume_icon"
         :loading="mediaLoading"
@@ -51,6 +51,7 @@ import PlayerProgress from "@/components/PlayerProgress.vue";
 import PlayerGauge from "@/components/PlayerGauge.vue";
 import PlayerActions from "@/components/PlayerActions.vue";
 import { usePlayerState } from "@/composables/usePlayerState";
+import { MediaConfig } from "@/types/Media";
 
 withDefaults(defineProps<{ location?: string }>(), { location: "" });
 
@@ -72,19 +73,12 @@ const {
   setVolume,
 } = usePlayerState();
 
-// Desestrutura Refs do audio para o nível superior — vue-tsc auto-unwrapa no template
 const { progress, currentTime, duration, buffered, isPaused, volume } = audio;
 
-// Computeds tipados para evitar unknown em media.*
-interface MediaConfig {
-  audio?: unknown;
-  slide_index?: number;
-  last_slide?: number;
-  mode?: string;
-}
 const mediaLoading = computed(() => !!media.value?.loading);
 const mediaMinimized = computed(() => !!media.value?.minimized);
 const mediaConfig = computed((): MediaConfig => (media.value?.config as MediaConfig) ?? {});
+const hasPlayback = computed(() => !!mediaConfig.value.audio || !!mediaConfig.value.is_youtube);
 
 const compactButtons = computed(() => buttons.value.filter((item) => item.compact === true));
 </script>
