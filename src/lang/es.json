@@ -106,6 +106,9 @@
     "migrating": "Migrando datos..."
   },
   "actions": {
+    "play": "Iniciar",
+    "pause": "Pausar",
+    "reset": "Reiniciar",
     "close": "Cerrar",
     "minimize": "Minimizar",
     "maximize": "Maximizar",

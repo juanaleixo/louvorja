@@ -143,6 +143,7 @@ import FormatPanel from "@/components/FormatPanel.vue";
 import { playBeep } from "@/helpers/AudioBeep";
 import AppData from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
+import { KEY_TIMER_WORSHIP_RUNNING } from "@/constants/UserDataKeys";
 import Platform from "@/helpers/Platform";
 import Alert from "@/helpers/Alert";
 import Broadcast from "@/helpers/Broadcast";
@@ -734,6 +735,7 @@ function start(): void {
   startedAt.value = Date.now();
   seconds.value = mode.value === "down" ? durationSeconds.value : 0;
   running.value = true;
+  $userdata.set(KEY_TIMER_WORSHIP_RUNNING, true);
 
   if (UD("sound_start")) playSoundStart();
 
@@ -742,6 +744,7 @@ function start(): void {
 
 function pause(): void {
   running.value = false;
+  $userdata.set(KEY_TIMER_WORSHIP_RUNNING, false);
   if (timer !== null) {
     clearInterval(timer);
     timer = null;

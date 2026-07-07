@@ -7,6 +7,7 @@ import { ICONS } from "@/config/Icons"
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import { KEY_TIMER_WORSHIP_RUNNING } from "@/constants/UserDataKeys";
 
 const moduleId = ModuleEnum.TIMER_WORSHIP;
 const modulePath = $modules.getPath(moduleId);
@@ -53,9 +54,18 @@ export const contextualPages: RibbonPage[] = [
           {
             id: `${moduleId}_toggle`,
             icon: ICONS.PLAYER.PLAY_PAUSE,
-            label: "ribbon.btn.toggle",
+            label: "",
             action: `${moduleId}_toggle`,
             color: "#27ae60",
+            stateBinding: {
+              watchPath: KEY_TIMER_WORSHIP_RUNNING,
+              iconOn: ICONS.PLAYER.PAUSE,
+              iconOff: ICONS.PLAYER.PLAY,
+              colorOn: "#e67e22",
+              colorOff: "#27ae60",
+              labelOn: "actions.pause",
+              labelOff: "actions.play",
+            },
           },
           {
             id: `${moduleId}_reset`,
@@ -208,4 +218,4 @@ export const contextualPages: RibbonPage[] = [
       },
     ],
   },
-]
+];

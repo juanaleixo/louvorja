@@ -30,8 +30,6 @@
   },
   "ribbon": {
     "title_ctx": "Configurar Temporizador de Culto",
-    "toggle": "Iniciar/Pausar",
-    "reset": "Reiniciar",
     "timer_end": "Al finalizar",
     "timer_end_label": "Acción al final",
     "end_nothing": "Nada",
