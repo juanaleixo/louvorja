@@ -1,9 +1,8 @@
-import { openDB, type IDBPDatabase } from "idb";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 import Platform from "@/helpers/Platform";
 
-const DB_NAME = "louvorja_overlay";
-const DB_VERSION = 1;
-const STORE_IMAGES = "images";
+const STORE = DB_TABLE.OVERLAY_IMAGES;
 
 export interface OverlayImageRecord {
   id: string;
@@ -15,45 +14,25 @@ export interface OverlayImageRecord {
   addedAt: number;
 }
 
-let dbPromise: Promise<IDBPDatabase> | null = null;
-
-function getDb(): Promise<IDBPDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_IMAGES)) {
-          db.createObjectStore(STORE_IMAGES, { keyPath: "id" });
-        }
-      },
-    });
-  }
-  return dbPromise;
-}
-
 export function newId(): string {
   return `img_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export async function listImages(): Promise<OverlayImageRecord[]> {
-  const db = await getDb();
-  const all = (await db.getAll(STORE_IMAGES)) as OverlayImageRecord[];
+  const all = await $idb.getAll<OverlayImageRecord>(STORE);
   return all.sort((a, b) => b.addedAt - a.addedAt);
 }
 
 export async function getImage(id: string): Promise<OverlayImageRecord | null> {
-  const db = await getDb();
-  const rec = (await db.get(STORE_IMAGES, id)) as OverlayImageRecord | undefined;
-  return rec || null;
+  return (await $idb.get<OverlayImageRecord>(STORE, id)) ?? null;
 }
 
 export async function saveImage(record: OverlayImageRecord): Promise<void> {
-  const db = await getDb();
-  await db.put(STORE_IMAGES, record);
+  await $idb.put(STORE, record);
 }
 
 export async function deleteImage(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete(STORE_IMAGES, id);
+  await $idb.del(STORE, id);
 }
 
 export function resolveImageUrl(record: OverlayImageRecord | null): string {
@@ -84,8 +63,9 @@ export async function importFile(file: File): Promise<OverlayImageRecord> {
     addedAt: Date.now(),
   };
 
+  // Se tem path (desktop) → salva só o caminho
   if (!record.path) {
-    record.data = await file.arrayBuffer();
+    record.data = await file.arrayBuffer(); // web/PWA: salva o binário
   }
 
   await saveImage(record);

@@ -76,6 +76,9 @@
               <v-icon :icon="file.type === 'image' ? 'mdi-image' : 'mdi-video'" size="32" />
             </div>
             <div class="bg-grid-badge">{{ fileBadge(file) }}</div>
+            <div class="bg-grid-category">
+              {{ file.categoryId }}
+            </div>
             <div v-if="selectedId === file.id && !isPlaying" class="bg-grid-check">
               <v-icon icon="mdi-check-circle" size="22" color="success" />
             </div>
@@ -724,7 +727,6 @@ async function clearProjection(): Promise<void> {
   if (!isPlaying.value) return;
   localStorage.removeItem("lj_background_projection");
   selectedId.value = null;
-  $userdata.set(KEY_BACKGROUND_PROJECTION_IS_PLAYING, false);
   $broadcast.send(BROADCAST_TYPE.BACKGROUND_PROJECTION, { active: false });
 }
 
@@ -869,6 +871,18 @@ onMounted(async () => {
   position: absolute;
   top: 4px;
   right: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+.bg-grid-category {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
   font-size: 9px;
   font-weight: 700;
   background: rgba(0, 0, 0, 0.7);

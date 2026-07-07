@@ -114,10 +114,11 @@ import { ref, reactive, onMounted } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import OverlaySlotEditor from "./OverlaySlotEditor.vue";
-import $userdata from "@/helpers/UserData";
+import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { getImage, resolveImageUrl, deleteImage } from "@/helpers/OverlayImages";
+import { readOverlayConfig, writeOverlayConfig } from "@/helpers/OverlayStorage";
 import {
   OVERLAY_CONFIG_DEFAULTS,
   OVERLAY_STYLE_DEFAULTS,
@@ -137,25 +138,27 @@ const moduleValues = reactive({});
 
 let saveTimer = null;
 
-function loadConfig() {
-  const data = $userdata.get("modules.overlay", OVERLAY_CONFIG_DEFAULTS) ?? OVERLAY_CONFIG_DEFAULTS;
-  globalEnabled.value = !!data.global_enabled;
+async function loadConfig() {
+  const data = await readOverlayConfig();
+  const config = data ?? OVERLAY_CONFIG_DEFAULTS;
+  globalEnabled.value = !!config.global_enabled;
   localSlots.length = 0;
-  for (const s of data.slots || []) {
+  for (const s of config.slots || []) {
     localSlots.push({ ...s, style: { ...OVERLAY_STYLE_DEFAULTS, ...(s.style || {}) } });
   }
 }
 
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    $userdata.set("modules.overlay", {
+  saveTimer = setTimeout(async () => {
+    await writeOverlayConfig({
       global_enabled: globalEnabled.value,
       slots: localSlots.map((s) => ({
         ...s,
         style: { ...s.style },
       })),
     });
+    $broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {});
     saveTimer = null;
   }, 200);
 }
@@ -293,14 +296,9 @@ function previewTextStyle(slot) {
   };
 }
 
-// Escuta mudanças de UserData de outras janelas
-useBroadcastListener("*", (payload, msg) => {
-  if (msg.type === BROADCAST_TYPE.USERDATA_PATCH) {
-    const p = payload;
-    if (p?.path?.startsWith("modules.overlay")) {
-      loadConfig();
-    }
-  }
+// Escuta mudanças de config de outras janelas
+useBroadcastListener(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, () => {
+  loadConfig();
 });
 
 // Ações da Ribbon

@@ -2,14 +2,13 @@ import { ref, computed, onMounted, reactive, watch, type Ref, type ComputedRef }
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import $userdata from "@/helpers/UserData";
+import { readOverlayConfig } from "@/helpers/OverlayStorage";
 import { getImage, resolveImageUrl } from "@/helpers/OverlayImages";
 import {
   OVERLAY_CONFIG_DEFAULTS,
   OVERLAY_STYLE_DEFAULTS,
   buildAnchorStyle,
   type OverlaySlot,
-  type OverlayConfig,
 } from "@/types/Overlay";
 
 interface OverlayStateReturn {
@@ -30,22 +29,18 @@ export function useOverlayState(): OverlayStateReturn {
   const slots = ref<OverlaySlot[]>([]);
   const moduleValues = reactive<Record<string, string>>({});
 
-  function refresh() {
-    const data = $userdata.get<OverlayConfig>("modules.overlay", OVERLAY_CONFIG_DEFAULTS) ?? OVERLAY_CONFIG_DEFAULTS;
-    globalEnabled.value = !!data.global_enabled;
-    slots.value = (data.slots ?? []).map((s) => ({
+  async function refresh() {
+    const data = await readOverlayConfig();
+    const config = data ?? OVERLAY_CONFIG_DEFAULTS;
+    globalEnabled.value = !!config.global_enabled;
+    slots.value = (config.slots ?? []).map((s) => ({
       ...s,
       style: { ...OVERLAY_STYLE_DEFAULTS, ...(s.style || {}) },
     }));
   }
 
-  refresh();
-
-  useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
-    const p = payload as { path?: string; value?: unknown };
-    if (p.path && p.path.startsWith("modules.overlay")) {
-      refresh();
-    }
+  useBroadcastListener(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, () => {
+    refresh();
   });
 
   useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload) => {
@@ -70,6 +65,7 @@ export function useOverlayState(): OverlayStateReturn {
   }
 
   onMounted(() => {
+    refresh();
     $broadcast.send(BROADCAST_TYPE.REQUEST_OVERLAY_STATE);
     requestModuleStates();
   });

@@ -130,6 +130,10 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: useOverlayState (re-lê UserData). */
   REQUEST_OVERLAY_STATE: "request_overlay_state",
 
+  /** Alteração na config do overlay (salva no IndexedDB).
+   *  Recebido por: useOverlayState (re-lê do IndexedDB). */
+  OVERLAY_CONFIG_CHANGED: "overlay_config_changed",
+
   // ─── In-app (hotkeys / HTTP events → módulos) ────────────────────────────
 
   /** Número sorteado via HTTP externo. Recebido por: módulo draw. */

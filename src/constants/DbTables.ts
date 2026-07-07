@@ -10,19 +10,11 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
  *   3. O `upgrade()` criará a store automaticamente
  */
 export const DB_TABLE = {
+  SETTINGS: "settings",
   BACKGROUND_PROJECTION_LIBRARY: ModuleEnum.BACKGROUND_PROJECTION + ".library",
   BACKGROUND_PROJECTION_CATEGORIES: ModuleEnum.BACKGROUND_PROJECTION + ".categories",
   BACKGROUND_SOUND_CATEGORIES: ModuleEnum.BACKGROUND_SOUND + ".categories",
-  SETTINGS: "settings",
-
-  // ─── Futuras migrações (demais módulos) ───
-  // CUSTOM_VIDEOS_VIDEOS: "custom_videos_videos",
-  // CUSTOM_VIDEOS_THUMBNAILS: "custom_videos_thumbnails",
-  // OVERLAY_IMAGES: "overlay_images",
-  // CUSTOM_SONGS_SONGS: "custom_songs",
-  // CUSTOM_SONGS_COLLECTIONS: "collections",
-  // AUDIO_LIBRARY_AUDIO: "audio",
-  // AUDIO_LIBRARY_IMAGES: "images",
+  OVERLAY_IMAGES: ModuleEnum.OVERLAY + ".images",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];

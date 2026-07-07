@@ -13,7 +13,7 @@ import { openDB, type IDBPDatabase } from "idb";
 import { DB_TABLE } from "@/constants/DbTables";
 
 const DB_NAME = "louvorja";
-let DB_VERSION = 3; // Incrementar quando adicionar novas tabelas para poder atualizar o banco
+let DB_VERSION = 5; // Incrementar quando adicionar novas tabelas para poder atualizar o banco
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
