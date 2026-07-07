@@ -47,6 +47,9 @@ export const KEY_TIMER_WORSHIP_RUNNING = `${KEY_MODULES}.${ModuleEnum.TIMER_WORS
 //TIMER
 export const KEY_TIMER_RUNNING = `${KEY_MODULES}.${ModuleEnum.TIMER}.running`;
 
+//STOPWATCH
+export const KEY_STOPWATCH_RUNNING = `${KEY_MODULES}.${ModuleEnum.STOPWATCH}.running`;
+
 export const KEY_DISPLAYS_PREFERRED = "displays.preferred";
 
 //Display

@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import { KEY_STOPWATCH_RUNNING } from "@/constants/UserDataKeys";
 
 const moduleId = ModuleEnum.STOPWATCH;
 const modulePath = $modules.getPath(moduleId);
@@ -48,7 +49,22 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_stopwatch_actions",
         title: "ribbon.groups.actions",
         buttons: [
-          { id: `${moduleId}_toggle`, icon: "mdi-play-pause", label: "ribbon.btn.stopwatch_toggle", action: `${moduleId}_toggle`, color: "#27ae60" },
+          {
+            id: `${moduleId}_toggle`,
+            icon: ICONS.PLAYER.PLAY_PAUSE,
+            label: "",
+            action: `${moduleId}_toggle`,
+            color: "#27ae60",
+            stateBinding: {
+              watchPath: KEY_STOPWATCH_RUNNING,
+              iconOn: ICONS.PLAYER.PAUSE,
+              iconOff: ICONS.PLAYER.PLAY,
+              colorOn: "#e67e22",
+              colorOff: "#27ae60",
+              labelOn: "actions.pause",
+              labelOff: "actions.play",
+            },
+          },
           { id: `${moduleId}_reset`, icon: "mdi-restart", label: "ribbon.btn.stopwatch_reset", action: `${moduleId}_reset`, color: "#7f8c8d" },
         ],
       },
