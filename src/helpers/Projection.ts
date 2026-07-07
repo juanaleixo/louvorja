@@ -13,30 +13,8 @@
 
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
-import { KEY_DISPLAYS_PREFERRED } from "@/constants/UserDataKeys";
-
-export interface DisplayInfo {
-  id: number | null;
-  label: string;
-  primary: boolean;
-  bounds: { x: number; y: number; width: number; height: number };
-}
-
-interface NativeDisplay {
-  id: number;
-  label?: string;
-  primary?: boolean;
-  bounds: { x: number; y: number; width: number; height: number };
-}
-
-interface OpenOptions {
-  route: string;
-  feature: string;
-  monitorId?: number | null;
-  fullscreen?: boolean;
-  alwaysOnTop?: boolean;
-  frame?: boolean;
-}
+import { KEY_DISPLAYS_PREFERRED, KEY_OPTIONS_MONITOR_PRIMARY, KEY_OPTIONS_MONITOR_SECONDARY } from "@/constants/UserDataKeys";
+import { CategorizedDisplays, DisplayInfo, NativeDisplay, OpenOptions } from "@/types/Projection";
 
 const _webWindows: Record<string, Window | null> = {};
 
@@ -116,6 +94,23 @@ export async function listDisplays(): Promise<DisplayInfo[]> {
     ];
   }
   return [];
+}
+
+
+export async function getCategorizedDisplays(): Promise<CategorizedDisplays> {
+  const displays = await listDisplays();
+
+  const primaryId = $userdata.get(KEY_OPTIONS_MONITOR_PRIMARY, null);
+  const secondaryId = $userdata.get(KEY_OPTIONS_MONITOR_SECONDARY, null);
+  const primaryDisplay = displays.find((d) => d.id === primaryId);
+  const secondaryDisplay = displays.find((d) => d.id === secondaryId);
+  return {
+    primaryDisplay,
+    secondaryDisplay,
+    primaryLabel: primaryDisplay?.label || (primaryId ? `Monitor ${primaryId}` : null),
+    secondaryLabel: secondaryDisplay?.label || (secondaryId ? `Monitor ${secondaryId}` : null),
+    otherDisplays: displays.filter((d) => d.id !== primaryId && d.id !== secondaryId),
+  };
 }
 
 async function _getRawPreferred(feature: string): Promise<number | null> {

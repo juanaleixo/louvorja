@@ -64,7 +64,6 @@
               v-else-if="btn.type === 'screen'"
               :feature="btn.feature"
               :route="btn.route"
-              :icon="btn.icon"
               :icon-color="btn.color"
               :label="$t(btn.label)"
               :size="btn.size || 'large'"

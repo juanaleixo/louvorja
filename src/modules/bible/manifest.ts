@@ -74,7 +74,7 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_bible_screen",
         title: "ribbon.groups.expanded_area",
         buttons: [
-          { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: "/projection/bible", icon: ICONS.PROJECTION.START, label: "ribbon.btn.project", color: "#1b4f8a" },
+          { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: "/projection/bible", label: "ribbon.btn.project", color: "#1b4f8a" },
         ],
       },
     ],

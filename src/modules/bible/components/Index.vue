@@ -645,8 +645,6 @@ async function selVerse(event: MouseEvent | null, num: number | string): Promise
     }
   } else {
     if (bible.verses.length === 1 && bible.verses[0] === num) {
-      bible.verses.splice(0, 1);
-      clean();
       return;
     }
     bible.verses = [num];
@@ -862,7 +860,7 @@ function getSelectedVerses(keys: number[]): string {
   return result;
 }
 
-function clean(): void {
+function clearText(): void {
   bible.verses = [];
   Object.assign(select_bible, {
     id_bible_version: null,
@@ -874,7 +872,15 @@ function clean(): void {
     scriptural_reference: null,
     text: null,
   });
-  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, null);
+  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+    text: "",
+    reference: "",
+    active: true,
+  });
+}
+
+function clean(): void {
+  clearText();
   ProjectionWindows.closeProjectionWindows();
 }
 
@@ -894,7 +900,7 @@ function restoreFormat(): void {
 useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
   switch (payload?.action) {
     case "clear":
-      clean();
+      clearText();
       break;
     case "prev_verse":
       prevVerse();
