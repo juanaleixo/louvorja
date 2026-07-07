@@ -44,6 +44,9 @@ export const KEY_TIMER_WORSHIP_END_ACTION_VIDEO = `${KEY_MODULES}.${ModuleEnum.T
 export const KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`;
 export const KEY_TIMER_WORSHIP_RUNNING = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`;
 
+//TIMER
+export const KEY_TIMER_RUNNING = `${KEY_MODULES}.${ModuleEnum.TIMER}.running`;
+
 export const KEY_DISPLAYS_PREFERRED = "displays.preferred";
 
 //Display
