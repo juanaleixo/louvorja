@@ -8,3 +8,10 @@ export interface BackgroundSettings {
   image?: ArrayBuffer
   mime?: string
 }
+
+export interface BackgroundSoundSettings {
+  fadeIn: number;
+  fadeOut: number;
+  autoPause: boolean;
+  repeat: boolean;
+}

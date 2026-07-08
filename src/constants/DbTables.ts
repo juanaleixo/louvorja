@@ -12,9 +12,14 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 export const DB_TABLE = {
   SETTINGS: "settings",
   BACKGROUND_PROJECTION_LIBRARY: ModuleEnum.BACKGROUND_PROJECTION + ".library",
-  BACKGROUND_PROJECTION_CATEGORIES: ModuleEnum.BACKGROUND_PROJECTION + ".categories",
-  BACKGROUND_SOUND_CATEGORIES: ModuleEnum.BACKGROUND_SOUND + ".categories",
-  OVERLAY_IMAGES: ModuleEnum.OVERLAY + ".images",
+  BACKGROUND_PROJECTION_CATEGORIES: ModuleEnum.BACKGROUND_PROJECTION + ".category",
+  BACKGROUND_SOUND_CATEGORY: ModuleEnum.BACKGROUND_SOUND + ".category",
+  BACKGROUND_SOUND_LIBRARY: ModuleEnum.BACKGROUND_SOUND + ".library",
+  OVERLAY_IMAGES: ModuleEnum.OVERLAY + ".image",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
+
+export const SETTINGS_TABLE = {
+  BACKGROUND_SOUND: "background_sound",
+};

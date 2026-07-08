@@ -66,29 +66,47 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import $userdata from "@/helpers/UserData";
 import { ICONS } from "@/config/Icons";
 import $modules from "@/helpers/Modules";
 import { ModuleEnum } from "@/enums/ModuleEnum";
+import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
+import { BackgroundSoundSettings } from "@/types/db/settings/BackgroundSettings";
+import { SETTINGS_TABLE } from "@/constants/DbTables";
 
 const { t } = useI18n();
 
 const LANG_PATH = $modules.getPath(ModuleEnum.BACKGROUND_SOUND);
+
+const DEFAULTS: BackgroundSoundSettings = {
+  fadeIn: 3000,
+  fadeOut: 3000,
+  autoPause: true,
+  repeat: false,
+};
 
 const fadeIn = ref(3000);
 const fadeOut = ref(3000);
 const autoPause = ref(true);
 const repeat_ = ref(false);
 
-function save(key: string, value: unknown): void {
-  $userdata.set(`${LANG_PATH}.${key}`, value);
+async function save(key: string, value: unknown): Promise<void> {
+  const existing = await getSetting<BackgroundSoundSettings & { id: string }>(
+    SETTINGS_TABLE.BACKGROUND_SOUND
+  );
+  const s = existing ?? { id: SETTINGS_TABLE.BACKGROUND_SOUND };
+  (s as any)[key] = value;
+  await saveSetting(s);
 }
 
-onMounted(() => {
-  fadeIn.value = $userdata.get<number>(`${LANG_PATH}.fadeIn`, 3000) ?? 3000;
-  fadeOut.value = $userdata.get<number>(`${LANG_PATH}.fadeOut`, 3000) ?? 3000;
-  autoPause.value = $userdata.get<boolean>(`${LANG_PATH}.autoPause`, true) ?? true;
-  repeat_.value = $userdata.get<boolean>(`${LANG_PATH}.repeat`, false) ?? false;
+onMounted(async () => {
+  const s = await getSetting<BackgroundSoundSettings & { id: string }>(
+    SETTINGS_TABLE.BACKGROUND_SOUND
+  );
+  const cfg = s ? { ...DEFAULTS, ...s } : DEFAULTS;
+  fadeIn.value = cfg.fadeIn;
+  fadeOut.value = cfg.fadeOut;
+  autoPause.value = cfg.autoPause;
+  repeat_.value = cfg.repeat;
 });
 </script>
 

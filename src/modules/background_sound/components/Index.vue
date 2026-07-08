@@ -30,7 +30,9 @@
             <v-img v-else :src="cat.icon" width="14" height="14" />
           </span>
           <span class="bgm-chip-name">{{ cat.name }}</span>
-          <span class="bgs-chip-count">{{ (cat.files || []).length }}</span>
+          <span class="bgs-chip-count">
+            {{ libraryFiles.filter((f) => f.categoryId === cat.id).length }}
+          </span>
           <button class="bgs-chip-add" :title="t('add_audio')" @click.stop="addAudioFiles(cat)">
             <v-icon icon="mdi-plus" size="12" />
           </button>
@@ -262,7 +264,6 @@ import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $appdata from "@/helpers/AppData";
-import $userdata from "@/helpers/UserData";
 import Alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
@@ -270,31 +271,28 @@ import CategoryManagerDialog, { CategoryFileData } from "@/components/CategoryMa
 import { V_COLOR_PRIMARY } from "@/constants/Colors";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
+import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
 import { ModuleEnum } from "@/enums/ModuleEnum";
-import $modules from "@/helpers/Modules";
 import { MediaFile } from "@/types/Media";
 
 /* ------------------------------------------------------------------ */
 /*  IDB Helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-const STORE_CATEGORIES = DB_TABLE.BACKGROUND_SOUND_CATEGORIES;
+const STORE_CATEGORY = DB_TABLE.BACKGROUND_SOUND_CATEGORY;
+const STORE_LIBRARY = DB_TABLE.BACKGROUND_SOUND_LIBRARY;
+
+interface BgSoundFile extends MediaFile {
+  categoryId: string;
+}
 
 async function loadCategories(): Promise<CategoryFileData[]> {
-  return (await $idb.getAll<CategoryFileData>(STORE_CATEGORIES)).sort((a, b) =>
+  return (await $idb.getAll<CategoryFileData>(STORE_CATEGORY)).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
 }
 
-async function saveCategory(cat: CategoryFileData): Promise<void> {
-  const files: MediaFile[] = (cat.files || []).map((f) => ({
-    id: String(f.id),
-    name: String(f.name),
-    fileName: String(f.fileName || f.name),
-    path: String(f.path),
-    ...(f.data && f.data.byteLength > 0 ? { data: f.data } : {}),
-    ...(f.mime ? { mime: String(f.mime) } : {}),
-  }));
+async function saveCategoryRecord(cat: CategoryFileData): Promise<void> {
   const plain = {
     id: String(cat.id),
     name: String(cat.name),
@@ -304,18 +302,42 @@ async function saveCategory(cat: CategoryFileData): Promise<void> {
       ? { iconData: cat.iconData, iconMime: String(cat.iconMime || "image/png") }
       : {}),
     color: String(cat.color),
-    files,
   };
-  try {
-    await $idb.put(STORE_CATEGORIES, plain);
-  } catch (err) {
-    console.error("[bg_music] saveCategory error:", err, "cat.id:", cat.id);
-    throw err;
-  }
+  await $idb.put(STORE_CATEGORY, plain);
 }
 
-async function deleteCategoryById(id: string): Promise<void> {
-  await $idb.del(STORE_CATEGORIES, id);
+async function deleteCategoryRecord(id: string): Promise<void> {
+  await $idb.del(STORE_CATEGORY, id);
+}
+
+async function loadLibrary(): Promise<BgSoundFile[]> {
+  return (await $idb.getAll<BgSoundFile>(STORE_LIBRARY)).sort((a, b) =>
+    (a.name || a.fileName).localeCompare(b.name || b.fileName)
+  );
+}
+
+async function saveLibraryFile(file: BgSoundFile): Promise<void> {
+  const plain: any = {
+    id: String(file.id),
+    categoryId: String(file.categoryId),
+    name: String(file.name),
+    fileName: String(file.fileName || file.name),
+    path: String(file.path),
+  };
+  if (file.data && file.data.byteLength > 0) {
+    plain.data = file.data;
+    plain.mime = String(file.mime || "audio/mpeg");
+  }
+  await $idb.put(STORE_LIBRARY, plain);
+}
+
+async function deleteLibraryFile(id: string): Promise<void> {
+  await $idb.del(STORE_LIBRARY, id);
+}
+
+async function getFilesByCategory(categoryId: string): Promise<BgSoundFile[]> {
+  const all = await loadLibrary();
+  return all.filter((f) => f.categoryId === categoryId);
 }
 
 /* ------------------------------------------------------------------ */
@@ -333,6 +355,7 @@ const t = (key: string, named?: Record<string, unknown>): string =>
 /* ------------------------------------------------------------------ */
 
 const categories = ref<CategoryFileData[]>([]);
+const libraryFiles = ref<BgSoundFile[]>([]);
 const selectedCategoryIds = ref(new Set<string>());
 const showManageDialog = ref(false);
 const showAddAudioDialog = ref(false);
@@ -355,26 +378,62 @@ const editFileForm = ref<{ name: string; fileName: string; newFile: File | null 
 const editFileInput = ref<HTMLInputElement | null>(null);
 
 /* ------------------------------------------------------------------ */
-/*  Settings                                                           */
+/*  Settings via SettingsStorage (IndexedDB)                            */
 /* ------------------------------------------------------------------ */
 
-const BG_KEY = $modules.getPath(ModuleEnum.BACKGROUND_SOUND);
+const SETTINGS_ID = "background_sound";
+
+interface BgSettings {
+  fadeIn: number;
+  fadeOut: number;
+  autoPause: boolean;
+  repeat: boolean;
+}
+
+const BGS_DEFAULTS: BgSettings = {
+  fadeIn: 3000,
+  fadeOut: 3000,
+  autoPause: true,
+  repeat: false,
+};
+
+let cachedSettings: BgSettings = { ...BGS_DEFAULTS };
+
+async function loadSettings(): Promise<void> {
+  const s = await getSetting<BgSettings & { id: string }>(SETTINGS_ID);
+  cachedSettings = s ? { ...BGS_DEFAULTS, ...s } : { ...BGS_DEFAULTS };
+}
+
+async function saveSettings(): Promise<void> {
+  await saveSetting({ id: SETTINGS_ID, ...cachedSettings });
+}
+
 const fadeInDuration = computed({
-  get: () => $userdata.get<number>(`${BG_KEY}.fadeIn`, 3000) ?? 3000,
-  set: (v) => $userdata.set(`${BG_KEY}.fadeIn`, v),
+  get: () => cachedSettings.fadeIn,
+  set: (v: number) => {
+    cachedSettings.fadeIn = v;
+    saveSettings();
+  },
 });
 const fadeOutDuration = computed({
-  get: () => $userdata.get<number>(`${BG_KEY}.fadeOut`, 3000) ?? 3000,
-  set: (v) => $userdata.set(`${BG_KEY}.fadeOut`, v),
+  get: () => cachedSettings.fadeOut,
+  set: (v: number) => {
+    cachedSettings.fadeOut = v;
+    saveSettings();
+  },
 });
 const autoPause = computed({
-  get: () => $userdata.get<boolean>(`${BG_KEY}.autoPause`, true) ?? true,
-  set: (v) => $userdata.set(`${BG_KEY}.autoPause`, v),
+  get: () => cachedSettings.autoPause,
+  set: (v: boolean) => {
+    cachedSettings.autoPause = v;
+    saveSettings();
+  },
 });
 const repeatSetting = computed<boolean>({
-  get: () => $userdata.get<boolean>(`${BG_KEY}.repeat`, false) ?? false,
+  get: () => cachedSettings.repeat,
   set: (v: boolean) => {
-    $userdata.set(`${BG_KEY}.repeat`, v);
+    cachedSettings.repeat = v;
+    saveSettings();
     bg.repeat.value = v;
   },
 });
@@ -424,8 +483,8 @@ const visibleFiles = computed(() => {
   const audioExts = /\.(mp3|wav|ogg|flac|m4a|aac|wma|opus|webm)$/i;
   for (const cat of categories.value) {
     if (!selectedCategoryIds.value.has(cat.id)) continue;
-    for (const f of cat.files || []) {
-      // const fileName = f.fileName || f.name;
+    const catFiles = libraryFiles.value.filter((f) => f.categoryId === cat.id);
+    for (const f of catFiles) {
       const extMatch = f.fileName.match(audioExts);
       result.push({
         file: f,
@@ -468,13 +527,9 @@ function toggleCategoryChip(id: string): void {
 async function handleSaveCategory(cat: CategoryFileData): Promise<void> {
   saving.value = true;
   try {
-    const existingCat = categories.value.find((c) => c.id === cat.id);
-    cat.files = existingCat?.files || [];
-    await saveCategory(cat);
-    const reloaded = await loadCategories();
-    categories.value = reloaded;
-    rebuildAllBlobUrls(categories.value);
-    selectedCategoryIds.value = new Set(reloaded.map((c) => c.id));
+    await saveCategoryRecord(cat);
+    categories.value = await loadCategories();
+    selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
   } finally {
     saving.value = false;
   }
@@ -483,15 +538,16 @@ async function handleSaveCategory(cat: CategoryFileData): Promise<void> {
 async function handleDeleteCategory(id: string): Promise<void> {
   const cat = categories.value.find((c) => c.id === id);
   if (!cat) return;
-  if (bg.currentFile.value) {
-    const currentCat = categories.value.find((c) =>
-      c.files?.some((f) => f.id === bg.currentFile.value?.id)
-    );
-    if (currentCat?.id === cat.id) bg.stop();
+  const catFiles = await getFilesByCategory(id);
+  if (bg.currentFile.value && catFiles.some((f) => f.id === bg.currentFile.value?.id)) {
+    bg.stop();
   }
-  await deleteCategoryById(cat.id);
+  // Remove todos os arquivos da categoria
+  for (const f of catFiles) {
+    await deleteLibraryFile(f.id);
+  }
+  await deleteCategoryRecord(id);
   categories.value = await loadCategories();
-  rebuildAllBlobUrls(categories.value);
   selectedCategoryIds.value = new Set([...selectedCategoryIds.value].filter((cid) => cid !== id));
 }
 
@@ -574,7 +630,6 @@ function openAddAudioMenu(): void {
 }
 
 function addAudioFiles(cat: CategoryFileData): void {
-  pendingAudioFiles.value = cat.files || [];
   pendingCategoryId = cat.id;
   showAddAudioDialog.value = false;
 
@@ -582,82 +637,51 @@ function addAudioFiles(cat: CategoryFileData): void {
     const files = [...pendingDropFiles.value];
     pendingDropFiles.value = [];
     for (const f of files) {
-      const filePath = (f as any).path;
-      const fileId = crypto.randomUUID();
-      const bgFile: MediaFile = {
-        id: fileId,
-        name: "",
-        fileName: f.name,
-        path: filePath || URL.createObjectURL(f),
-      };
-      if (!filePath) {
-        readFileData(f).then(({ data, mime }) => {
-          bgFile.data = data;
-          bgFile.mime = mime;
-        });
-      }
-      pendingAudioFiles.value.push(bgFile);
-    }
-    pendingAudioFiles.value = [];
-    if (pendingCategoryId) {
-      const cat = categories.value.find((c) => c.id === pendingCategoryId);
-      if (cat) saveCategory(cat);
-      pendingCategoryId = null;
+      addFileRecord(f, cat.id);
     }
     return;
   }
   fileInput.value?.click();
 }
 
+async function addFileRecord(f: File, categoryId: string): Promise<BgSoundFile> {
+  const filePath = (f as any).path;
+  const fileId = crypto.randomUUID();
+  const bgFile: BgSoundFile = {
+    id: fileId,
+    name: "",
+    fileName: f.name,
+    path: filePath || URL.createObjectURL(f),
+    categoryId,
+  };
+  if (!filePath) {
+    const { data, mime } = await readFileData(f);
+    bgFile.data = data;
+    bgFile.mime = mime;
+  }
+  await saveLibraryFile(bgFile);
+  return bgFile;
+}
+
 async function onAudioFilesSelected(e: Event): Promise<void> {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
   for (const f of Array.from(input.files)) {
-    const filePath = (f as any).path;
-    const fileId = crypto.randomUUID();
-    const bgFile: MediaFile = {
-      id: fileId,
-      name: "",
-      fileName: f.name,
-      path: filePath || URL.createObjectURL(f),
-    };
-    if (!filePath) {
-      const { data, mime } = await readFileData(f);
-      bgFile.data = data;
-      bgFile.mime = mime;
-    }
-    pendingAudioFiles.value.push(bgFile);
+    await addFileRecord(f, pendingCategoryId!);
   }
   input.value = "";
-  pendingAudioFiles.value = [];
-  if (pendingCategoryId) {
-    const cat = categories.value.find((c) => c.id === pendingCategoryId);
-    if (cat) await saveCategory(cat);
-    pendingCategoryId = null;
-  }
 }
 
 async function removeFile(categoryId: string, file: MediaFile): Promise<void> {
-  const cat = categories.value.find((c) => c.id === categoryId);
-  if (!cat) return;
   Alert.yesno(
     { title: t("remove_title"), text: t("remove_confirm", { name: file.name || file.fileName }) },
-    ((resp: string) => {
-      if (resp !== "yes") return;
-      doRemove(categoryId, file);
-    }) as (...args: any[]) => void
+    () => doRemove(file.id)
   );
 }
 
-async function doRemove(categoryId: string, file: MediaFile): Promise<void> {
-  const cat = categories.value.find((c) => c.id === categoryId);
-  if (!cat) return;
-  if (bg.currentFile.value?.id === file.id) bg.stop();
-  cat.files = (cat.files || []).filter((f) => f.id !== file.id);
-  await saveCategory(cat);
-  categories.value = await loadCategories();
-  rebuildAllBlobUrls(categories.value);
-  selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
+async function doRemove(fileId: string): Promise<void> {
+  if (bg.currentFile.value?.id === fileId) bg.stop();
+  await deleteLibraryFile(fileId);
 }
 
 function openEditFile(item: { file: MediaFile; categoryId: string }): void {
@@ -672,19 +696,14 @@ function onEditFileSelected(e: Event): void {
   if (file) {
     editFileForm.value.newFile = file;
     editFileForm.value.fileName = file.name;
-    // if (!editFileForm.value.name.trim()) {
-    //   editFileForm.value.name = file.name;
-    // }
   }
   input.value = "";
 }
 
 async function saveFileEdit(): Promise<void> {
   if (!editingFileItem.value) return;
-  const { file: originalFile, categoryId } = editingFileItem.value;
-  const cat = categories.value.find((c) => c.id === categoryId);
-  if (!cat) return;
-  const storedFile = cat.files?.find((f) => f.id === originalFile.id);
+  const { file: originalFile } = editingFileItem.value;
+  const storedFile = libraryFiles.value.find((f) => f.id === originalFile.id);
   if (!storedFile) return;
 
   storedFile.name = editFileForm.value.name.trim();
@@ -695,7 +714,7 @@ async function saveFileEdit(): Promise<void> {
     if (filePath) {
       storedFile.path = filePath;
       delete storedFile.data;
-      delete storedFile.mime;
+      storedFile.mime = undefined;
     } else {
       const { data, mime } = await readFileData(editFileForm.value.newFile);
       storedFile.path = URL.createObjectURL(editFileForm.value.newFile);
@@ -704,10 +723,15 @@ async function saveFileEdit(): Promise<void> {
     }
   }
 
-  await saveCategory(cat);
-  categories.value = await loadCategories();
-  rebuildAllBlobUrls(categories.value);
-  selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
+  // Revoke old blob URL if any
+  const urlKey = "file_" + storedFile.id;
+  const oldUrl = createdObjectUrls.get(urlKey);
+  if (oldUrl) URL.revokeObjectURL(oldUrl);
+  createdObjectUrls.delete(urlKey);
+
+  await saveLibraryFile(storedFile);
+  libraryFiles.value = await loadLibrary();
+  rebuildAllBlobUrls(libraryFiles.value);
   showEditFileDialog.value = false;
   editingFileItem.value = null;
 }
@@ -750,9 +774,10 @@ function resolveFilePath(file: MediaFile): string {
 }
 
 function playRandom(cat: CategoryFileData): void {
-  if (!cat.files?.length) return;
-  const idx = Math.floor(Math.random() * cat.files.length);
-  playFile(cat.files[idx]);
+  const catFiles = libraryFiles.value.filter((f) => f.categoryId === cat.id);
+  if (!catFiles.length) return;
+  const idx = Math.floor(Math.random() * catFiles.length);
+  playFile(catFiles[idx]);
 }
 
 function playRandomFromVisible(): void {
@@ -856,28 +881,69 @@ function rebuildIconUrls(list: CategoryFileData[]): void {
   }
 }
 
-function rebuildAllBlobUrls(list: CategoryFileData[]): void {
-  rebuildIconUrls(list);
-  for (const cat of list) {
-    for (const f of cat.files!!) {
-      if (f.data && f.mime && f.path.startsWith("blob:")) {
-        const key = "file_" + f.id;
-        const old = createdObjectUrls.get(key);
-        if (old) URL.revokeObjectURL(old);
-        const blob = new Blob([f.data], { type: f.mime });
-        const url = URL.createObjectURL(blob);
-        createdObjectUrls.set(key, url);
-        f.path = url;
+function rebuildAllBlobUrls(list: BgSoundFile[]): void {
+  for (const f of list) {
+    if (f.data && f.mime && f.path.startsWith("blob:")) {
+      const key = "file_" + f.id;
+      const old = createdObjectUrls.get(key);
+      if (old) URL.revokeObjectURL(old);
+      const blob = new Blob([f.data], { type: f.mime });
+      const url = URL.createObjectURL(blob);
+      createdObjectUrls.set(key, url);
+      f.path = url;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Migration                                                          */
+/* ------------------------------------------------------------------ */
+
+async function migrateFromOldStructure(): Promise<void> {
+  let oldCat: any[] = [];
+  try {
+    oldCat = await $idb.getAll<any>("background_sound.categories");
+  } catch {
+    /* table may not exist */
+  }
+  if (!oldCat.length) return;
+  for (const cat of oldCat) {
+    const newCat: CategoryFileData = {
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon || "mdi-music",
+      iconType: cat.iconType || "icon",
+      iconData: cat.iconData,
+      iconMime: cat.iconMime,
+      color: cat.color || "#1b4f8a",
+    };
+    await saveCategoryRecord(newCat);
+    for (const f of cat.files || []) {
+      const bgFile: BgSoundFile = {
+        id: String(f.id),
+        name: String(f.name || ""),
+        fileName: String(f.fileName || f.name),
+        path: String(f.path),
+        categoryId: String(cat.id),
+      };
+      if (f.data && f.data.byteLength > 0) {
+        bgFile.data = f.data;
+        bgFile.mime = String(f.mime || "audio/mpeg");
       }
+      await $idb.put(STORE_LIBRARY, bgFile as any);
     }
   }
 }
 
 onMounted(async () => {
-  bg.repeat.value = repeatSetting.value;
+  await migrateFromOldStructure();
+  await loadSettings();
+  bg.repeat.value = cachedSettings.repeat;
   categories.value = await loadCategories();
+  libraryFiles.value = await loadLibrary();
+  rebuildIconUrls(categories.value);
+  rebuildAllBlobUrls(libraryFiles.value);
   selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
-  rebuildAllBlobUrls(categories.value);
 });
 
 onBeforeUnmount(() => {
