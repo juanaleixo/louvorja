@@ -264,6 +264,8 @@ import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import Alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
@@ -803,6 +805,13 @@ function stopImmediately(): void {
   bg.stop(0);
 }
 
+watch(
+  () => bg.isPlaying.value,
+  (playing) => {
+    $userdata.set(KEYS.MODULES.BACKGROUND_SOUND.IS_PLAYING, playing);
+  }
+);
+
 function seekProgress(pct: number): void {
   bg.seek(pct);
 }
@@ -866,6 +875,18 @@ watch(
     }
   }
 );
+
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, () => {
+  if (autoPause.value && bg.isPlaying.value) {
+    bg.fadeOut(fadeOutDuration.value, () => bg.pause());
+  }
+});
+
+useBroadcastListener(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, () => {
+  if (autoPause.value && bg.isPlaying.value) {
+    bg.fadeOut(fadeOutDuration.value, () => bg.pause());
+  }
+});
 
 /* ------------------------------------------------------------------ */
 /*  Lifecycle                                                          */

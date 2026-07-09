@@ -35,6 +35,7 @@
   "shuffle": "Aleatório",
   "volume": "Volume",
   "play": "Tocar",
+  "pause": "Pausar",
   "stop": "Parar",
   "stop_immediately": "Parar imediatamente",
   "close": "Fechar",

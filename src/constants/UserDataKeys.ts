@@ -32,6 +32,9 @@ export const KEYS = {
       SHOW_RETURN: `${MODULES}.${ModuleEnum.BIBLE}.show_return`,
       IS_PLAYING: `${MODULES}.${ModuleEnum.BIBLE}.is_playing`,
     },
+    BACKGROUND_SOUND: {
+      IS_PLAYING: `${MODULES}.${ModuleEnum.BACKGROUND_SOUND}.is_playing`,
+    },
     LITURGY: {
       ACTIVE_DAY: `${MODULES}.${ModuleEnum.LITURGY}.active_day`,
       DAYS: `${MODULES}.${ModuleEnum.LITURGY}.days`,

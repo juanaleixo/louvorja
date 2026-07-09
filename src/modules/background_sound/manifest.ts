@@ -4,6 +4,7 @@ import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum";
+import { KEYS } from "@/constants/UserDataKeys";
 import $modules from "@/helpers/Modules";
 import RibbonSettings from "@/modules/background_sound/components/RibbonSettings.vue";
 
@@ -43,6 +44,15 @@ export const contextualPages: RibbonPage[] = [
             label: `${modulePath}.play`,
             action: `${moduleId}_play`,
             color: "#27ae60",
+            stateBinding: {
+              watchPath: KEYS.MODULES.BACKGROUND_SOUND.IS_PLAYING,
+              iconOn: ICONS.PLAYER.PAUSE,
+              iconOff: ICONS.PLAYER.PLAY,
+              colorOn: "#e67e22",
+              colorOff: "#27ae60",
+              labelOn: `${modulePath}.pause`,
+              labelOff: `${modulePath}.play`,
+            },
           },
           {
             id: `${moduleId}_stop`,
