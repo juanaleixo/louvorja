@@ -59,6 +59,7 @@ import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Broadcast from "@/helpers/Broadcast";
 import type { BibleBook, BibleSearchResult, BibleVersePayload } from "@/types/Bible";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { KEYS } from "@/constants/UserDataKeys";
 
 type QuickNavState = "book" | "chapter" | "verse";
 
@@ -205,6 +206,7 @@ async function selectResult(res: BibleSearchResult): Promise<void> {
       verses: [res.verse],
       active: true,
     };
+    UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, true);
     await ProjectionWindows.openBibleWindow();
     Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, payload);
     Modules.open("bible");
@@ -233,6 +235,7 @@ function handleKeydown(e: KeyboardEvent): void {
 
   if (e.key === "Escape") {
     model.value = false;
+    e.stopPropagation();
     return;
   }
 
@@ -240,12 +243,14 @@ function handleKeydown(e: KeyboardEvent): void {
     if (/^[a-zA-Z]$/.test(e.key)) {
       buffer.value += e.key.toLowerCase();
       e.preventDefault();
+      e.stopPropagation();
       checkBookMatch();
       return;
     }
     if (e.key === "Backspace") {
       buffer.value = buffer.value.slice(0, -1);
       e.preventDefault();
+      e.stopPropagation();
       if (buffer.value.length === 0) {
         activeStep.value = 0;
         feedback.value = "";
@@ -256,6 +261,7 @@ function handleKeydown(e: KeyboardEvent): void {
     }
     if (e.key === "Enter" && buffer.value.length > 0 && books.value) {
       e.preventDefault();
+      e.stopPropagation();
       const matches = searchBooks(buffer.value, books.value);
       if (matches.length === 1) commitBook(matches[0]);
       return;
@@ -266,6 +272,7 @@ function handleKeydown(e: KeyboardEvent): void {
     const max = selectedBook.value?.chapters ?? 0;
     if (/^[0-9]$/.test(e.key)) {
       e.preventDefault();
+      e.stopPropagation();
       const candidate = buffer.value + e.key;
       const val = parseInt(candidate, 10);
       if (val < 1 || val > max) return;
@@ -283,6 +290,7 @@ function handleKeydown(e: KeyboardEvent): void {
     }
     if (e.key === "Backspace") {
       e.preventDefault();
+      e.stopPropagation();
       buffer.value = buffer.value.slice(0, -1);
       if (chapterTimer) clearTimeout(chapterTimer);
       chapterTimer = null;
@@ -295,6 +303,7 @@ function handleKeydown(e: KeyboardEvent): void {
     }
     if (e.key === " " || e.key === "." || e.key === "Enter") {
       e.preventDefault();
+      e.stopPropagation();
       if (buffer.value.length > 0) {
         const val = parseInt(buffer.value, 10);
         if (val >= 1 && val <= max) commitChapter(val);
@@ -308,6 +317,7 @@ function handleKeydown(e: KeyboardEvent): void {
     const max = keys.length > 0 ? Math.max(...keys) : 0;
     if (/^[0-9]$/.test(e.key)) {
       e.preventDefault();
+      e.stopPropagation();
       const candidate = buffer.value + e.key;
       const val = parseInt(candidate, 10);
       if (val < 1 || val > max) return;
@@ -318,6 +328,7 @@ function handleKeydown(e: KeyboardEvent): void {
     }
     if (e.key === "Backspace") {
       e.preventDefault();
+      e.stopPropagation();
       buffer.value = buffer.value.slice(0, -1);
       if (buffer.value.length === 0) {
         state.value = "chapter";
@@ -331,6 +342,7 @@ function handleKeydown(e: KeyboardEvent): void {
     }
     if (e.key === "Enter") {
       e.preventDefault();
+      e.stopPropagation();
       const val = parseInt(buffer.value, 10);
       if (val > 0) commitVerse(val);
       return;
