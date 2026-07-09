@@ -69,7 +69,7 @@
                   density="compact"
                   hide-details
                   color="primary"
-                  @update:model-value="onSlotChange"
+                  @update:model-value="persist"
                 />
                 <span class="overlay-slot-name">{{ slot.name }}</span>
                 <v-chip size="x-small" variant="tonal" class="overlay-slot-type">
@@ -109,65 +109,67 @@
   </ModuleContainer>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import OverlaySlotEditor from "./OverlaySlotEditor.vue";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import $userdata from "@/helpers/UserData";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
-import { getImage, resolveImageUrl, deleteImage } from "@/helpers/OverlayImages";
-import { readOverlayConfig, writeOverlayConfig } from "@/helpers/OverlayStorage";
 import {
-  OVERLAY_CONFIG_DEFAULTS,
+  getImage,
+  resolveImageUrl,
+  deleteImage,
+  readAllSlots,
+  writeSlot,
+  deleteSlot,
+} from "@/helpers/Overlay";
+import {
   OVERLAY_STYLE_DEFAULTS,
   createOverlaySlot,
   buildAnchorStyle,
+  type OverlaySlot,
+  type OverlayStyle,
 } from "@/types/Overlay";
 
-const moduleContainer = ref(null);
-const t = (key) => moduleContainer.value?.t(key) || key;
+const moduleContainer = ref<{ t(key: string, named?: Record<string, unknown>): string } | null>(
+  null
+);
+const t = (key: string, named?: Record<string, unknown>): string =>
+  moduleContainer.value?.t(key, named) || key;
 
-const globalEnabled = ref(false);
-const localSlots = reactive([]);
-const editingSlot = ref(null);
-const previewRef = ref(null);
-const previewImageCache = reactive({});
-const moduleValues = reactive({});
+const enabled = ref(false);
+const localSlots = reactive<OverlaySlot[]>([]);
+const editingSlot = ref<OverlaySlot | null>(null);
+const previewRef = ref<HTMLElement | null>(null);
+const previewImageCache = reactive<Record<string, string>>({});
+const moduleValues = reactive<Record<string, string>>({});
 
-let saveTimer = null;
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-async function loadConfig() {
-  const data = await readOverlayConfig();
-  const config = data ?? OVERLAY_CONFIG_DEFAULTS;
-  globalEnabled.value = !!config.global_enabled;
+async function load(): Promise<void> {
+  const slots = await readAllSlots();
   localSlots.length = 0;
-  for (const s of config.slots || []) {
+  for (const s of slots) {
     localSlots.push({ ...s, style: { ...OVERLAY_STYLE_DEFAULTS, ...(s.style || {}) } });
   }
 }
 
-function persist() {
+function persist(): void {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    await writeOverlayConfig({
-      global_enabled: globalEnabled.value,
-      slots: localSlots.map((s) => ({
-        ...s,
-        style: { ...s.style },
-      })),
-    });
+    for (const s of localSlots) {
+      const plain = JSON.parse(JSON.stringify(s));
+      await writeSlot(plain);
+    }
     $broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {});
     saveTimer = null;
   }, 200);
 }
 
-function onToggleGlobal() {
-  persist();
-}
-
-function onSlotChange(updatedSlot) {
+function onSlotChange(updatedSlot: OverlaySlot): void {
   if (updatedSlot?.id) {
     const idx = localSlots.findIndex((s) => s.id === updatedSlot.id);
     if (idx !== -1) {
@@ -177,13 +179,13 @@ function onSlotChange(updatedSlot) {
         });
       }
       Object.assign(localSlots[idx], updatedSlot);
-      if (updatedSlot.style) Object.assign(localSlots[idx].style, updatedSlot.style);
+      if (updatedSlot.style) Object.assign(localSlots[idx].style!, updatedSlot.style);
     }
   }
   persist();
 }
 
-function addSlot() {
+function addSlot(): void {
   const slot = createOverlaySlot();
   slot.name = `Overlay ${localSlots.length + 1}`;
   slot.order = localSlots.length;
@@ -192,16 +194,16 @@ function addSlot() {
   persist();
 }
 
-function editSlot(index) {
+function editSlot(index: number): void {
   editingSlot.value = localSlots[index];
 }
 
-function selectPreviewSlot(slot) {
+function selectPreviewSlot(slot: OverlaySlot): void {
   const idx = localSlots.findIndex((s) => s.id === slot.id);
   if (idx !== -1) editSlot(idx);
 }
 
-function duplicateSlot(index) {
+function duplicateSlot(index: number): void {
   const original = localSlots[index];
   const copy = createOverlaySlot({
     ...JSON.parse(JSON.stringify(original)),
@@ -214,7 +216,7 @@ function duplicateSlot(index) {
   persist();
 }
 
-async function removeSlot(index) {
+async function removeSlot(index: number): Promise<void> {
   const slot = localSlots[index];
   if (slot.file_id) {
     try {
@@ -223,22 +225,23 @@ async function removeSlot(index) {
       /* ignore */
     }
   }
+  await deleteSlot(slot.id);
   localSlots.splice(index, 1);
   if (editingSlot.value?.id === slot.id) editingSlot.value = null;
   persist();
 }
 
-function anchorTextAlign(slot) {
+function anchorTextAlign(slot: OverlaySlot): string {
   const anchor = slot.position?.anchor || "bottom-center";
   if (anchor.endsWith("right")) return "right";
   if (anchor === "center" || anchor.endsWith("center")) return "center";
   return "left";
 }
 
-function previewSlotStyle(slot) {
+function previewSlotStyle(slot: OverlaySlot): Record<string, string | number | undefined> {
   if (!slot.enabled) return { display: "none" };
   const s = slot.style;
-  const out = {
+  const out: Record<string, string | number | undefined> = {
     position: "absolute",
     ...buildAnchorStyle(slot.position),
     zIndex: slot.order + 1,
@@ -259,7 +262,7 @@ function previewSlotStyle(slot) {
   return out;
 }
 
-function previewImageUrl(slot) {
+function previewImageUrl(slot: OverlaySlot): string {
   if (!slot.file_id) return "";
   const cacheKey = `${slot.id}_${slot.file_id}`;
   if (previewImageCache[cacheKey]) return previewImageCache[cacheKey];
@@ -270,7 +273,7 @@ function previewImageUrl(slot) {
   return "";
 }
 
-function previewImageStyle(slot) {
+function previewImageStyle(slot: OverlaySlot): Record<string, string | number> {
   const scale = (slot.style?.image_scale ?? 100) / 100;
   return {
     width: "auto",
@@ -282,9 +285,9 @@ function previewImageStyle(slot) {
   };
 }
 
-function previewTextStyle(slot) {
+function previewTextStyle(slot: OverlaySlot): Record<string, string> {
   const s = slot.style;
-  return {
+  const out: Record<string, string> = {
     fontFamily: s.font || "Arial, sans-serif",
     fontSize: `clamp(5px, ${s.font_size || 5}vh, 80px)`,
     color: s.color || "#FFFFFF",
@@ -292,23 +295,22 @@ function previewTextStyle(slot) {
     lineHeight: "1.3",
     fontWeight: "600",
     letterSpacing: "0.02em",
-    ...(s.text_shadow ? { textShadow: "0 2px 8px rgba(0,0,0,0.8)" } : {}),
   };
+  if (s.text_shadow) {
+    out.textShadow = "0 2px 8px rgba(0,0,0,0.8)";
+  }
+  return out;
 }
 
-// Escuta mudanças de config de outras janelas
-useBroadcastListener(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, () => {
-  loadConfig();
-});
-
 // Ações da Ribbon
-useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
-  const pl = payload;
+useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
+  const pl = payload as { module?: string; action?: string } | null;
   if (pl?.module !== "overlay") return;
   switch (pl.action) {
     case "toggle":
-      globalEnabled.value = !globalEnabled.value;
-      persist();
+      enabled.value = !enabled.value;
+      $userdata.set("modules.overlay.enabled", enabled.value);
+      $broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, { enabled: enabled.value });
       break;
     case "add":
       addSlot();
@@ -317,14 +319,16 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
 });
 
 // Escuta valores de módulos fonte para preview ao vivo
-useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload) => {
-  if (payload?.module) {
-    moduleValues[payload.module] = payload.text || payload.reference || "";
+useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload: unknown) => {
+  const p = payload as { module?: string; text?: string; reference?: string } | null;
+  if (p?.module) {
+    moduleValues[p.module] = p.text || p.reference || "";
   }
 });
 
 onMounted(() => {
-  loadConfig();
+  enabled.value = $userdata.get<boolean>("modules.overlay.enabled", false) === true;
+  load();
 });
 </script>
 

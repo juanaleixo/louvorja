@@ -13,7 +13,7 @@
 
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
-import { KEY_DISPLAYS_PREFERRED, KEY_OPTIONS_MONITOR_PRIMARY, KEY_OPTIONS_MONITOR_SECONDARY } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 import { CategorizedDisplays, DisplayInfo, NativeDisplay, OpenOptions } from "@/types/Projection";
 
 const _webWindows: Record<string, Window | null> = {};
@@ -100,8 +100,8 @@ export async function listDisplays(): Promise<DisplayInfo[]> {
 export async function getCategorizedDisplays(): Promise<CategorizedDisplays> {
   const displays = await listDisplays();
 
-  const primaryId = $userdata.get(KEY_OPTIONS_MONITOR_PRIMARY, null);
-  const secondaryId = $userdata.get(KEY_OPTIONS_MONITOR_SECONDARY, null);
+  const primaryId = $userdata.get(KEYS.OPTIONS.DISPLAYS.PRIMARY, null);
+  const secondaryId = $userdata.get(KEYS.OPTIONS.DISPLAYS.SECONDARY, null);
   const primaryDisplay = displays.find((d) => d.id === primaryId);
   const secondaryDisplay = displays.find((d) => d.id === secondaryId);
   return {
@@ -128,7 +128,7 @@ async function _getRawPreferred(feature: string): Promise<number | null> {
       /* falha silenciosa — usa fallback */
     }
   }
-  const prefs = ($userdata.get(KEY_DISPLAYS_PREFERRED, {}) as Record<string, number | null>) ?? {};
+  const prefs = ($userdata.get(KEYS.OPTIONS.DISPLAYS.PREFERRED, {}) as Record<string, number | null>) ?? {};
   return prefs[feature] ?? null;
 }
 
@@ -181,10 +181,10 @@ export async function setPreferredMonitor(
       /* falha silenciosa — usa fallback */
     }
   }
-  const prefs = { ...(($userdata.get(KEY_DISPLAYS_PREFERRED, {}) as Record<string, number | null>) ?? {}), };
+  const prefs = { ...(($userdata.get(KEYS.OPTIONS.DISPLAYS.PREFERRED, {}) as Record<string, number | null>) ?? {}), };
   if (monitorId == null) delete prefs[feature];
   else prefs[feature] = monitorId;
-  $userdata.set(KEY_DISPLAYS_PREFERRED, prefs);
+  $userdata.set(KEYS.OPTIONS.DISPLAYS.PREFERRED, prefs);
 }
 
 /** Mostra overlay "Monitor N" em todos os displays por durationMs (default 5000). */

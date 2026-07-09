@@ -5,7 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
-import { KEY_OVERLAY_GLOBAL_ENABLED } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const moduleId = ModuleEnum.OVERLAY;
 const modulePath = $modules.getPath(moduleId);
@@ -38,10 +38,31 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_overlay_actions",
         title: "ribbon.groups.actions",
         buttons: [
-          { id: `${moduleId}_toggle`, icon: "mdi-layers-off", label: `${modulePath}.ribbon.btn.overlay_toggle`, action: `${moduleId}_toggle`, color: "#7c3aed", stateBinding: { watchPath: KEY_OVERLAY_GLOBAL_ENABLED, iconOn: "mdi-layers-triple", iconOff: "mdi-layers-off", colorOn: "#10b981", colorOff: "#7c3aed", labelOn: `${modulePath}.ribbon.btn.overlay_on`, labelOff: `${modulePath}.ribbon.btn.overlay_toggle` } },
-          { id: `${moduleId}_add`, icon: ICONS.ACTIONS.ADD, label: `${modulePath}.ribbon.btn.overlay_add`, action: `${moduleId}_add`, color: "#7c3aed" },
+          {
+            id: `${moduleId}_toggle`,
+            icon: "mdi-layers-off",
+            label: `${modulePath}.ribbon.btn.overlay_toggle`,
+            action: `${moduleId}_toggle`,
+            color: "#7c3aed",
+            stateBinding: {
+              watchPath: "modules.overlay.enabled",
+              iconOn: "mdi-layers-triple",
+              iconOff: "mdi-layers-off",
+              colorOn: "#10b981",
+              colorOff: "#7c3aed",
+              labelOn: `${modulePath}.ribbon.btn.overlay_on`,
+              labelOff: `${modulePath}.ribbon.btn.overlay_toggle`,
+            },
+          },
+          {
+            id: `${moduleId}_add`,
+            icon: ICONS.ACTIONS.ADD,
+            label: `${modulePath}.ribbon.btn.overlay_add`,
+            action: `${moduleId}_add`,
+            color: "#7c3aed",
+          },
         ],
       },
     ],
   },
-]
+];

@@ -13,6 +13,7 @@
 
 import { computed, type ComputedRef, type CSSProperties } from "vue";
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 
 /**
  * Defaults que replicam o visual original do Delphi/Projection atual.
@@ -96,23 +97,23 @@ const _readSlideOpts = (): SlideCfg => {
   const merged: SlideCfg = { ...SLIDE_DEFAULTS, ...legacy };
 
   // text_align e show_title_first_slide são chaves planas globais (sempre aplicam)
-  const textAlign = $userdata.get<string>("options.text_align", null);
+  const textAlign = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_ALIGN, null);
   if (textAlign === "top" || textAlign === "center" || textAlign === "bottom") {
     merged.text_align = textAlign;
   }
-  const showTitle = $userdata.get<boolean>("options.show_title_first_slide", null);
+  const showTitle = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.SHOW_TITLE_FIRST_SLIDE, null);
   if (typeof showTitle === "boolean") merged.show_title_first_slide = showTitle;
 
   // Formatação de texto personalizada
-  if ($userdata.get<boolean>("options.custom_text_format", false) === true) {
-    const titleColor = $userdata.get<string>("options.title_color", null);
-    const textColor = $userdata.get<string>("options.text_color", null);
-    const repeatColor = $userdata.get<string>("options.repeat_color", null);
-    const auxColor = $userdata.get<string>("options.aux_color", null);
-    const titleSize = Number($userdata.get<number>("options.title_size", null) ?? NaN);
-    const bodySize = Number($userdata.get<number>("options.body_size", null) ?? NaN);
-    const auxSize = Number($userdata.get<number>("options.aux_size", null) ?? NaN);
-    const textBgTransparent = $userdata.get<boolean>("options.text_bg_transparent", null);
+  if ($userdata.get<boolean>(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false) === true) {
+    const titleColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TITLE_COLOR, null);
+    const textColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_COLOR, null);
+    const repeatColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, null);
+    const auxColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.AUX_COLOR, null);
+    const titleSize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.TITLE_SIZE, null) ?? NaN);
+    const bodySize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.BODY_SIZE, null) ?? NaN);
+    const auxSize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.AUX_SIZE, null) ?? NaN);
+    const textBgTransparent = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, null);
     if (typeof titleColor === "string") merged.color_cover = titleColor;
     if (typeof textColor === "string") merged.color_lyric = textColor;
     if (typeof repeatColor === "string") merged.color_repeat = repeatColor;
@@ -124,16 +125,16 @@ const _readSlideOpts = (): SlideCfg => {
   }
 
   // Flag global de "afetar slides externos"
-  const affectExternal = $userdata.get<boolean>("options.affect_external_slides", null);
+  const affectExternal = $userdata.get(KEYS.OPTIONS.SLIDE.AFFECT_EXTERNAL_SLIDES, null);
   if (typeof affectExternal === "boolean") merged.affect_external_slides = affectExternal;
 
   // Fundo personalizado
-  if ($userdata.get<boolean>("options.custom_background", false) === true) {
+  if ($userdata.get(KEYS.OPTIONS.SLIDE.CUSTOM_BACKGROUND, false) as boolean) {
     merged.custom_background_active = true;
-    const bgTransparent = $userdata.get<boolean>("options.bg_transparent", false) === true;
-    const bgColor = $userdata.get<string>("options.bg_color", null);
-    const bgImage = $userdata.get<string>("options.bg_image", null);
-    const bgPos = $userdata.get<string>("options.bg_position", null);
+    const bgTransparent = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.BG_TRANSPARENT, false) === true;
+    const bgColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.BG_COLOR, null);
+    const bgImage = $userdata.get<string>(KEYS.OPTIONS.SLIDE.BG_IMAGE, null);
+    const bgPos = $userdata.get<string>(KEYS.OPTIONS.SLIDE.BG_POSITION, null);
     merged.background_color = bgTransparent
       ? "transparent"
       : typeof bgColor === "string"
@@ -311,7 +312,7 @@ export function useSlideStyle(): SlideStyleAPI {
   }));
 
   const textTransform = computed(() =>
-    $userdata.get("options.slide_return_text_case", "uppercase") || "uppercase"
+    $userdata.get(KEYS.OPTIONS.SLIDE.RETURN_TEXT_CASE, "uppercase") as string
   );
 
   return { cfg, coverStyle, lyricStyle, auxStyle, nextStyle, bgStyle, rootStyle, repeatColor, textBoxStyle, textTransform };

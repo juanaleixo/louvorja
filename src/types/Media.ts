@@ -70,11 +70,13 @@ export interface YTPlayerOptions {
     rel: number;
     controls: number;
     modestbranding: number;
+    cc_load_policy?: number;
   };
   events: {
     onReady: () => void;
     onStateChange: (e: { data: number }) => void;
     onError?: (e: number) => void;
+    onApiChange?: () => void;
   };
 }
 

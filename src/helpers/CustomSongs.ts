@@ -73,14 +73,10 @@ function getDb(): Promise<IDBPDatabase> {
   return dbPromise;
 }
 
-export function newId(prefix = "id"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function newSlide(overrides: Partial<CustomSlide> = {}): CustomSlide {
   const isFirst = overrides.tipo === "CAPA";
   return {
-    id: newId("slide"),
+    id: crypto.randomUUID(),
     tipo: "LETRA",
     letra: "",
     letra_aux: "",
@@ -101,7 +97,7 @@ export function newSlide(overrides: Partial<CustomSlide> = {}): CustomSlide {
 export function newSong(nome = "Nova música"): CustomSong {
   const now = new Date().toISOString();
   return {
-    id: newId("song"),
+    id: crypto.randomUUID(),
     nome,
     audio_token: "",
     audio_name: "",
@@ -118,7 +114,7 @@ export function newSong(nome = "Nova música"): CustomSong {
 export function newCollection(nome = "Nova coletânea"): CustomCollection {
   const now = new Date().toISOString();
   return {
-    id: newId("col"),
+    id: crypto.randomUUID(),
     nome,
     cor: "#385F73",
     song_ids: [],
@@ -183,7 +179,6 @@ export async function deleteCollection(id: string): Promise<void> {
 }
 
 export default {
-  newId,
   newSlide,
   newSong,
   newCollection,

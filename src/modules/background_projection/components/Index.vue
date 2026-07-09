@@ -76,9 +76,9 @@
               <v-icon :icon="file.type === 'image' ? 'mdi-image' : 'mdi-video'" size="32" />
             </div>
             <div class="bg-grid-badge">{{ fileBadge(file) }}</div>
-            <div class="bg-grid-category">
-              {{ file.categoryId }}
-            </div>
+            <!--            <div class="bg-grid-category">-->
+            <!--              {{ file.categoryId }}-->
+            <!--            </div>-->
             <div v-if="selectedId === file.id && !isPlaying" class="bg-grid-check">
               <v-icon icon="mdi-check-circle" size="22" color="success" />
             </div>
@@ -217,7 +217,8 @@ import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
 import CategoryManagerDialog from "@/components/CategoryManagerDialog.vue";
 import $userdata from "@/helpers/UserData";
-import { KEY_BACKGROUND_PROJECTION_IS_PLAYING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
+import { ModuleEnum } from "@/enums/ModuleEnum";
 
 interface BgFile {
   id: string;
@@ -702,7 +703,7 @@ async function playFile(file: BgFile): Promise<void> {
   const url = resolvePath(file.path);
   const payload = { url, type: file.type, title: file.name };
 
-  localStorage.setItem("lj_background_projection", JSON.stringify(payload));
+  localStorage.setItem(KEYS.PROJECTION.LJ_BACKGROUND_PROJECTION, JSON.stringify(payload));
 
   if (!isPlaying.value) {
     isPlaying.value = true;
@@ -718,22 +719,22 @@ async function togglePlay(): Promise<void> {
     return;
   }
   isPlaying.value = true;
-  $userdata.set(KEY_BACKGROUND_PROJECTION_IS_PLAYING, true);
+  $userdata.set(KEYS.MODULES.BACKGROUND_PROJECTION.IS_PLAYING, true);
   await openBackgroundProjectionWindows();
   $broadcast.send(BROADCAST_TYPE.BACKGROUND_PROJECTION, { active: false });
 }
 
 async function clearProjection(): Promise<void> {
   if (!isPlaying.value) return;
-  localStorage.removeItem("lj_background_projection");
+  localStorage.removeItem(KEYS.PROJECTION.LJ_BACKGROUND_PROJECTION);
   selectedId.value = null;
   $broadcast.send(BROADCAST_TYPE.BACKGROUND_PROJECTION, { active: false });
 }
 
 async function stop(): Promise<void> {
   isPlaying.value = false;
-  localStorage.removeItem("lj_background_projection");
-  $userdata.set(KEY_BACKGROUND_PROJECTION_IS_PLAYING, false);
+  localStorage.removeItem(KEYS.PROJECTION.LJ_BACKGROUND_PROJECTION);
+  $userdata.set(KEYS.MODULES.BACKGROUND_PROJECTION.IS_PLAYING, false);
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
   await closeBackgroundProjectionWindows();
 }
@@ -741,7 +742,7 @@ async function stop(): Promise<void> {
 // Ribbon actions
 useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
   const data = payload as { module?: string; action?: string; payload?: unknown } | null;
-  if (data?.module !== "background_projection") return;
+  if (data?.module !== ModuleEnum.BACKGROUND_PROJECTION) return;
   switch (data.action) {
     case "play":
       togglePlay();

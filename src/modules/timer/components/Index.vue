@@ -75,7 +75,7 @@ import $userdata from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import Icon from "@/components/Icon.vue";
-import { KEY_TIMER_RUNNING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { restoreFormat, show_format } = useModuleFormat("timer", manifest);
 
@@ -212,14 +212,14 @@ function start(): void {
   startedAt.value = Date.now();
   seconds.value = mode.value === "down" ? durationSeconds.value : 0;
   running.value = true;
-  $userdata.set(KEY_TIMER_RUNNING, true);
+  $userdata.set(KEYS.MODULES.TIMER.RUNNING, true);
 
   timer = setInterval(updateRunningTime, 1000);
 }
 
 function pause(): void {
   running.value = false;
-  $userdata.set(KEY_TIMER_RUNNING, false);
+  $userdata.set(KEYS.MODULES.TIMER.RUNNING, false);
   if (timer !== null) {
     clearInterval(timer);
     timer = null;

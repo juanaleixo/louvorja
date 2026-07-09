@@ -47,20 +47,13 @@ import {
   YTAPI,
   YTPlayer,
 } from "@/types/Media";
-import {
-  KEY_LJ_FILE_PROJECTION,
-  KEY_LJ_YOUTUBE_PROJECTION,
-  KEY_OPTIONS_FILE_PROJECTION_BG_ENABLED,
-} from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 import $userdata from "@/helpers/UserData";
 import { getSetting } from "@/helpers/SettingsStorage";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import {
-  MAIN_BACKGROUND_ID,
-  BackgroundSettings,
-  FILE_PROJECTION_BACKGROUND_ID,
-} from "@/types/db/settings/BackgroundSettings";
+import { Settings } from "@/types/Settings";
+import { SETTINGS_TABLE } from "@/constants/DbTables";
 
 GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -181,11 +174,11 @@ function _readPendingProjection(): void {
 
   // Tenta ler projeção de arquivo primeiro
   try {
-    const stored = localStorage.getItem(KEY_LJ_FILE_PROJECTION);
+    const stored = localStorage.getItem(KEYS.PROJECTION.LJ_FILE_PROJECTION);
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
-      localStorage.removeItem(KEY_LJ_FILE_PROJECTION);
+      localStorage.removeItem(KEYS.PROJECTION.LJ_FILE_PROJECTION);
       return;
     }
   } catch {
@@ -194,7 +187,7 @@ function _readPendingProjection(): void {
 
   // Tenta ler projeção de YouTube
   try {
-    const stored = localStorage.getItem(KEY_LJ_YOUTUBE_PROJECTION);
+    const stored = localStorage.getItem(KEYS.PROJECTION.LJ_YOUTUBE_PROJECTION);
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
@@ -241,8 +234,8 @@ useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, async () => {
   pdfDoc = null;
   fileProjection.active = false;
   try {
-    localStorage.removeItem(KEY_LJ_FILE_PROJECTION);
-    localStorage.removeItem(KEY_LJ_YOUTUBE_PROJECTION);
+    localStorage.removeItem(KEYS.PROJECTION.LJ_FILE_PROJECTION);
+    localStorage.removeItem(KEYS.PROJECTION.LJ_YOUTUBE_PROJECTION);
   } catch {
     /* ignore */
   }
@@ -352,15 +345,25 @@ function _initYoutube(): void {
         rel: 0,
         controls: 0,
         modestbranding: 1,
+        cc_load_policy: 0,
       },
       events: {
         onReady: () => {
           _ytInitializing = false;
+          if (ytPlayer) ytPlayer.playVideo();
           setTimeout(() => {
             if (ytPlayer) ytPlayer.playVideo();
           }, 700);
           _broadcastYtState();
           _startYtSync();
+        },
+        onApiChange: () => {
+          try {
+            if (typeof (ytPlayer as any)?.setOption === "function")
+              (ytPlayer as any).setOption("captions", "track", {});
+          } catch {
+            console.error("Erro ao desativar o captions do Youtube");
+          }
         },
         onStateChange: (e: { data: number }) => {
           _broadcastYtState();
@@ -429,9 +432,10 @@ function _onKey(e: KeyboardEvent): void {
 }
 
 async function reloadWallpaper(): Promise<void> {
-  const useCustom = $userdata.get<boolean>(KEY_OPTIONS_FILE_PROJECTION_BG_ENABLED, false) === true;
-  const id = useCustom ? FILE_PROJECTION_BACKGROUND_ID : MAIN_BACKGROUND_ID;
-  const s = await getSetting<BackgroundSettings>(id).catch(() => null);
+  const useCustom =
+    $userdata.get<boolean>(KEYS.OPTIONS.FILE_PROJECTION.BACKGROUND_ENABLED, false) === true;
+  const id = useCustom ? SETTINGS_TABLE.FILE_PROJECTION_BACKGROUND : SETTINGS_TABLE.MAIN_BACKGROUND;
+  const s = await getSetting<Settings>(id).catch(() => null);
   if (s) {
     wpColor.value = s.color || "#000033";
     wpPosition.value = s.position || "cover";

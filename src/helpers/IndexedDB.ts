@@ -13,7 +13,8 @@ import { openDB, type IDBPDatabase } from "idb";
 import { DB_TABLE } from "@/constants/DbTables";
 
 const DB_NAME = "louvorja";
-const DB_VERSION = 1; // Incrementar quando adicionar novas tabelas para poder atualizar o banco
+const DB_VERSION = 10; // Incrementar quando adicionar novas tabelas para poder atualizar o banco
+const TABLE_SETTINGS = DB_TABLE.SETTINGS;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -63,4 +64,25 @@ export default {
   async clear(table: string): Promise<void> {
     await (await getDb()).clear(table);
   },
+
+
+  /**
+   * === Métodos para Tabela Settings
+   */
+
+  /** Retorna um registro de configuração pelo id. */
+  async getSetting<T = Record<string, unknown>>(id: string): Promise<T | undefined> {
+    return this.get<T>(TABLE_SETTINGS, id);
+  },
+
+  /** Salva (insere ou atualiza) um registro de configuração. */
+  async saveSetting<T extends { id: string }>(record: T): Promise<void> {
+    await this.put(TABLE_SETTINGS, record);
+  },
+
+  /** Remove um registro de configuração inteiro. */
+  async removeSetting(id: string): Promise<void> {
+    await this.del(TABLE_SETTINGS, id);
+  }
+
 };

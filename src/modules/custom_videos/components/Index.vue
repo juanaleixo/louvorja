@@ -150,10 +150,6 @@ async function getDb(): Promise<IDBPDatabase> {
   return db;
 }
 
-function newId(): string {
-  return `cv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 function extractYoutubeId(url: string): string | null {
   const m = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
@@ -277,7 +273,7 @@ async function saveVideo(): Promise<void> {
     }
   } else {
     const v: VideoItem = {
-      id: newId(),
+      id: crypto.randomUUID(),
       name,
       url,
       createdAt: new Date().toISOString(),

@@ -52,7 +52,7 @@ import { pickImageData } from "@/helpers/FilePicker";
 import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
-import { MAIN_BACKGROUND_ID, BackgroundSettings } from "@/types/db/settings/BackgroundSettings";
+import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
 
 const { t } = useI18n();
 const modulePrefix = $modules.getPath(ModuleEnum.BACKGROUND_PROJECTION);
@@ -71,8 +71,7 @@ function notifyViews(): void {
 async function scheduleSave(): Promise<void> {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const existing =
-      (await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
+    const existing = (await getSetting<Settings>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
     await saveSetting({
       id: MAIN_BACKGROUND_ID,
       ...existing,
@@ -116,14 +115,13 @@ async function remove(): Promise<void> {
     wpBlobUrl = null;
   }
   wpImageUrl.value = "";
-  const existing =
-    (await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
+  const existing = (await getSetting<Settings>(MAIN_BACKGROUND_ID).catch(() => ({}))) || {};
   await saveSetting({ id: MAIN_BACKGROUND_ID, ...existing, image: null, mime: null });
   notifyViews();
 }
 
 onMounted(async () => {
-  const s = await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => null);
+  const s = await getSetting<Settings>(MAIN_BACKGROUND_ID).catch(() => null);
   if (s) {
     wpColor.value = s.color || "#000033";
     wpPosition.value = s.position || "cover";

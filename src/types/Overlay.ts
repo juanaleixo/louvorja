@@ -21,7 +21,7 @@ export const OVERLAY_MODULE_SOURCES = [
   ModuleEnum.CLOCK,
   ModuleEnum.STOPWATCH,
   ModuleEnum.TIMER_WORSHIP
-] as const;
+];
 
 export const OVERLAY_ANIMATIONS: OverlayAnimation[] = [
   "fade", "slide-up", "slide-down", "slide-left", "slide-right",
@@ -32,6 +32,16 @@ export interface OverlayPosition {
   anchor: OverlayAnchor;
   offset_x: number;
   offset_y: number;
+}
+
+export interface OverlayImageRecord {
+  id: string;
+  name: string;
+  path: string;
+  data?: ArrayBuffer;
+  mime: string;
+  size: number;
+  addedAt: number;
 }
 
 export interface OverlayStyle {
@@ -73,11 +83,6 @@ export interface OverlaySlot {
   order: number;
 }
 
-export interface OverlayConfig {
-  global_enabled: boolean;
-  slots: OverlaySlot[];
-}
-
 export const OVERLAY_STYLE_DEFAULTS: OverlayStyle = {
   font: "Arial, sans-serif",
   font_size: 5,
@@ -104,7 +109,7 @@ export const OVERLAY_STYLE_DEFAULTS: OverlayStyle = {
 
 export function createOverlaySlot(overrides: Partial<OverlaySlot> = {}): OverlaySlot {
   return {
-    id: `overlay_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: crypto.randomUUID(),
     name: "Novo overlay",
     enabled: true,
     type: "text",
@@ -145,8 +150,3 @@ export function buildAnchorStyle(position: OverlayPosition): Record<string, stri
   }
   return base;
 }
-
-export const OVERLAY_CONFIG_DEFAULTS: OverlayConfig = {
-  global_enabled: false,
-  slots: [],
-};

@@ -70,7 +70,7 @@ import { ICONS } from "@/config/Icons";
 import $modules from "@/helpers/Modules";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
-import { BackgroundSoundSettings } from "@/types/db/settings/BackgroundSettings";
+import { BackgroundSoundSettings } from "@/types/Settings";
 import { SETTINGS_TABLE } from "@/constants/DbTables";
 
 const { t } = useI18n();

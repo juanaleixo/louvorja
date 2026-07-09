@@ -16,17 +16,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import MonitorSelect from "@/components/inputs/MonitorSelect.vue";
 import { useDisplays } from "@/composables/useDisplays";
 import { useUserDataStore } from "@/stores/userDataStore";
 import $userdata from "@/helpers/UserData";
-import {
-  KEY_ONLINE_VIDEO,
-  KEY_ONLINE_VIDEO_RETURN,
-  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN,
-} from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { t } = useI18n();
 const { getPreferred, setPreferred } = useDisplays();
@@ -38,20 +34,20 @@ watchEffect(() => {
     useUserDataStore().$state.options?.online_video_projection?.show_return === true;
 });
 
-const videoMonitor = computed(() => getPreferred(KEY_ONLINE_VIDEO) ?? "");
+const videoMonitor = computed(() => getPreferred(KEYS.OPTIONS.DISPLAYS.ONLINE_VIDEO) ?? "");
 function setVideoMonitor(val: string) {
-  setPreferred(KEY_ONLINE_VIDEO, val);
+  setPreferred(KEYS.OPTIONS.DISPLAYS.ONLINE_VIDEO, val);
 }
 
-const returnMonitor = computed(() => getPreferred(KEY_ONLINE_VIDEO_RETURN) ?? "");
+const returnMonitor = computed(() => getPreferred(KEYS.OPTIONS.DISPLAYS.ONLINE_VIDEO_RETURN) ?? "");
 function setReturnMonitor(val: string) {
-  setPreferred(KEY_ONLINE_VIDEO_RETURN, val);
+  setPreferred(KEYS.OPTIONS.DISPLAYS.ONLINE_VIDEO_RETURN, val);
 }
 
 function toggleReturn(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   showReturn.value = checked;
-  $userdata.set(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN, checked);
+  $userdata.set(KEYS.OPTIONS.ONLINE_VIDEO_PROJECTION.SHOW_RETURN, checked);
 }
 </script>
 

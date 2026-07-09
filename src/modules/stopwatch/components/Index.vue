@@ -67,7 +67,7 @@ import AppData from "@/helpers/AppData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import $userdata from "@/helpers/UserData";
-import { KEY_STOPWATCH_RUNNING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { restoreFormat, show_format } = useModuleFormat("stopwatch", manifest);
 
@@ -135,7 +135,7 @@ function start() {
   if (mode.value === "down" && seconds.value <= 0) seconds.value = targetSeconds.value;
   alarmed.value = false;
   running.value = true;
-  $userdata.set(KEY_STOPWATCH_RUNNING, true);
+  $userdata.set(KEYS.MODULES.STOPWATCH.RUNNING, true);
   timer = setInterval(() => {
     if (mode.value === "up") {
       seconds.value++;
@@ -152,7 +152,7 @@ function start() {
 
 function pause() {
   running.value = false;
-  $userdata.set(KEY_STOPWATCH_RUNNING, false);
+  $userdata.set(KEYS.MODULES.STOPWATCH.RUNNING, false);
   clearInterval(timer);
 }
 

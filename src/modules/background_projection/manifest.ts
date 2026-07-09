@@ -6,7 +6,7 @@ import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { V_COLOR_PRIMARY } from "@/constants/Colors";
-import { KEY_BACKGROUND_PROJECTION_IS_PLAYING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 import RibbonWallpaperSettings from "@/modules/background_projection/components/RibbonWallpaperSettings.vue";
 
 const moduleId = ModuleEnum.BACKGROUND_PROJECTION;
@@ -47,7 +47,7 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_play`,
             color: "#27ae60",
             stateBinding: {
-              watchPath: KEY_BACKGROUND_PROJECTION_IS_PLAYING,
+              watchPath: KEYS.MODULES.BACKGROUND_PROJECTION.IS_PLAYING,
               iconOn: ICONS.PROJECTION.STOP,
               iconOff: ICONS.PROJECTION.START,
               colorOn: "#e74c3c",

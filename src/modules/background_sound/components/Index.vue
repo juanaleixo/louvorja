@@ -670,6 +670,8 @@ async function onAudioFilesSelected(e: Event): Promise<void> {
     await addFileRecord(f, pendingCategoryId!);
   }
   input.value = "";
+  libraryFiles.value = await loadLibrary();
+  rebuildAllBlobUrls(libraryFiles.value);
 }
 
 async function removeFile(categoryId: string, file: MediaFile): Promise<void> {
@@ -682,6 +684,8 @@ async function removeFile(categoryId: string, file: MediaFile): Promise<void> {
 async function doRemove(fileId: string): Promise<void> {
   if (bg.currentFile.value?.id === fileId) bg.stop();
   await deleteLibraryFile(fileId);
+  libraryFiles.value = await loadLibrary();
+  rebuildAllBlobUrls(libraryFiles.value);
 }
 
 function openEditFile(item: { file: MediaFile; categoryId: string }): void {

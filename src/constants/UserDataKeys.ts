@@ -5,113 +5,126 @@
  */
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
-const KEY_MODULES = "modules"; // USO LOCAL
+//Variáveis Locais
+const OPTIONS = "options"
+const MODULES = "modules"
+const OPTIONS_DISPLAYS = `${OPTIONS}.displays`
+const OPTIONS_SLIDE = `${OPTIONS}.slide`
+const OPTIONS_FILE_PROJECTION = `${OPTIONS}.file_projection`
+const OPTIONS_ONLINE_VIDEO_PROJECTION = `${OPTIONS}.online_video_projection`
 
 //LITURGIA
 /**
  * Keys Compartilhada com o Electron em electron/main/httpServer/routes.js
  * Caso alterar aqui alterar manualmente lá
  */
-export const KEY_LITURGY_DAYS = `${KEY_MODULES}.${ModuleEnum.LITURGY}.days`;
-export const KEY_LITURGY_ACTIVE_DAY = `${KEY_MODULES}.${ModuleEnum.LITURGY}.active_day`;
-// =====
-export const KEY_LITURGY_CATEGORIES = `${KEY_MODULES}.${ModuleEnum.LITURGY}.scheduled_categories`;
-export const KEY_LITURGY_SCHEDULED = `${KEY_MODULES}.${ModuleEnum.LITURGY}.scheduled_items`;
-export const KEY_LITURGY_DAY_NOTES = `${KEY_MODULES}.${ModuleEnum.LITURGY}.day_notes`;
+export const KEY_LITURGY_DAYS = `${MODULES}.${ModuleEnum.LITURGY}.days`;
+export const KEY_LITURGY_ACTIVE_DAY = `${MODULES}.${ModuleEnum.LITURGY}.active_day`;
 
-//BACKGROUND PROJECTION
-export const KEY_BACKGROUND_PROJECTION_SHOW_RETURN = `${KEY_MODULES}.${ModuleEnum.BACKGROUND_PROJECTION}.show_return`;
-export const KEY_BACKGROUND_PROJECTION_IS_PLAYING = `${KEY_MODULES}.${ModuleEnum.BACKGROUND_PROJECTION}.is_playing`;
 
-//MEDIA DECK
-export const KEY_MEDIA_DECK_IS_PLAYING = `${KEY_MODULES}.${ModuleEnum.MEDIA_DECK}.is_playing`;
+export const KEYS = {
+  MODULES: {
+    BACKGROUND_PROJECTION: {
+      SHOW_RETURN: `${MODULES}.${ModuleEnum.BACKGROUND_PROJECTION}.show_return`,
+      IS_PLAYING: `${MODULES}.${ModuleEnum.BACKGROUND_PROJECTION}.is_playing`,
+    },
+    BIBLE: {
+      SHOW_RETURN: `${MODULES}.${ModuleEnum.BIBLE}.show_return`,
+    },
+    LITURGY: {
+      ACTIVE_DAY: `${MODULES}.${ModuleEnum.LITURGY}.active_day`,
+      DAYS: `${MODULES}.${ModuleEnum.LITURGY}.days`,
+      DAY_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.day_notes`,
+      SCHEDULED_ITEMS: `${MODULES}.${ModuleEnum.LITURGY}.scheduled_items`,
+      SCHEDULED_CATEGORIES: `${MODULES}.${ModuleEnum.LITURGY}.scheduled_categories`,
+    },
+    MEDIA: {
+      FADE_AUDIO: `${MODULES}.${ModuleEnum.MEDIA}.fade_audio`,
+      LAZY_LOAD: `${MODULES}.${ModuleEnum.MEDIA}.lazy_load`,
+    },
+    MEDIA_DECK: {
+      IS_PLAYING: `${MODULES}.${ModuleEnum.MEDIA_DECK}.is_playing`,
+    },
+    STOPWATCH: {
+      RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,
+    },
+    TIMER: {
+      RUNNING: `${MODULES}.${ModuleEnum.TIMER}.running`,
+    },
+    TIMER_WORSHIP: {
+      RUNNING: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`,
+      SOUND_START: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_start`,
+      SOUND_FIVE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_five_min`,
+      SOUND_ONE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_one_min`,
+      SELECTED_SOUND: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.selected_sound`,
+      END_ACTION: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_action`,
+      END_ACTION_AUDIO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_audio`,
+      END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_music`,
+      END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`,
+      END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`,
+    },
+    OVERLAY: {
+      ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
+    },
+  },
+  OPTIONS: {
+    LANGUAGE: `${OPTIONS}.language`,
+    THEME: `${OPTIONS}.theme`,
+    MINIMIZE_ON_START: `${OPTIONS}.minimize_on_start`,
+    SLIDE: {
+      CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,
+      TEXT_ALIGN: `${OPTIONS_SLIDE}.text_align`,
+      TEXT_SIZE: `${OPTIONS_SLIDE}.text_size`,
+      SHOW_TITLE_FIRST_SLIDE: `${OPTIONS_SLIDE}.show_title_first_slide`,
+      CUSTOM_TEXT_FORMAT: `${OPTIONS_SLIDE}.custom_text_format`,
+      TITLE_COLOR: `${OPTIONS_SLIDE}.title_color`,
+      TEXT_COLOR: `${OPTIONS_SLIDE}.text_color`,
+      REPEAT_COLOR: `${OPTIONS_SLIDE}.repeat_color`,
+      TEXT_BG_TRANSPARENT: `${OPTIONS_SLIDE}.text_bg_transparent`,
+      TITLE_SIZE: `${OPTIONS_SLIDE}.title_size`,
+      BODY_SIZE: `${OPTIONS_SLIDE}.body_size`,
+      AUX_SIZE: `${OPTIONS_SLIDE}.aux_size`,
+      AUX_COLOR: `${OPTIONS_SLIDE}.aux_color`,
+      BG_TRANSPARENT: `${OPTIONS_SLIDE}.bg_transparent`,
+      BG_COLOR: `${OPTIONS_SLIDE}.bg_color`,
+      BG_IMAGE: `${OPTIONS_SLIDE}.bg_image`,
+      BG_POSITION: `${OPTIONS_SLIDE}.bg_position`,
 
-//MEDIA
-export const KEY_MEDIA_FADE_AUDIO = `${KEY_MODULES}.${ModuleEnum.MEDIA}.fade_audio`;
-export const KEY_MEDIA_LAZY_LOAD = `${KEY_MODULES}.${ModuleEnum.MEDIA}.lazy_load`;
-
-//OVERLAY
-export const KEY_OVERLAY_GLOBAL_ENABLED = `${KEY_MODULES}.${ModuleEnum.OVERLAY}.global_enabled`;
-
-//TIMER CULTO
-export const KEY_TIMER_WORSHIP_SOUND_START = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_start`;
-export const KEY_TIMER_WORSHIP_SOUND_FIVE_MIN = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_five_min`;
-export const KEY_TIMER_WORSHIP_SOUND_ONE_MIN = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_one_min`;
-export const KEY_TIMER_WORSHIP_END_ACTION = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_action`;
-export const KEY_TIMER_WORSHIP_END_ACTION_AUDIO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_audio`;
-export const KEY_TIMER_WORSHIP_END_ACTION_MUSIC = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_music`;
-export const KEY_TIMER_WORSHIP_END_ACTION_VIDEO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`;
-export const KEY_TIMER_WORSHIP_END_ACTION_ONLINE_VIDEO = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`;
-export const KEY_TIMER_WORSHIP_RUNNING = `${KEY_MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`;
-
-//TIMER
-export const KEY_TIMER_RUNNING = `${KEY_MODULES}.${ModuleEnum.TIMER}.running`;
-
-//STOPWATCH
-export const KEY_STOPWATCH_RUNNING = `${KEY_MODULES}.${ModuleEnum.STOPWATCH}.running`;
-
-export const KEY_DISPLAYS_PREFERRED = "displays.preferred";
-
-//Display
-export const KEY_ONLINE_VIDEO = "online_video";
-export const KEY_ONLINE_VIDEO_RETURN = "online_video_return";
-
-//OPTIONS
-const KEY_OPTIONS = "options" // USO LOCAL
-export const KEY_OPTIONS_START_WITH_OS = `${KEY_OPTIONS}.start_with_os`;
-export const KEY_OPTIONS_MONITOR_PRIMARY = `${KEY_OPTIONS}.monitor_primary`;
-export const KEY_OPTIONS_MONITOR_SECONDARY = `${KEY_OPTIONS}.monitor_secondary`;
-export const KEY_OPTIONS_FULLSCREEN = `${KEY_OPTIONS}.fullscreen`;
-export const KEY_OPTIONS_ALWAYS_ON_TOP = `${KEY_OPTIONS}.always_on_top`;
-export const KEY_OPTIONS_OPEN_RETURN = `${KEY_OPTIONS}.open_return`;
-export const KEY_OPTIONS_OPEN_OPERATOR = `${KEY_OPTIONS}.open_operator`;
-
-//OPTIONS - File Projection
-const KEY_OPTIONS_FILE_PROJECTION = `${KEY_OPTIONS}.file_projection`; // USO LOCAL
-export const KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN = `${KEY_OPTIONS_FILE_PROJECTION}.fullscreen`;
-export const KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP = `${KEY_OPTIONS_FILE_PROJECTION}.always_on_top`;
-export const KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN = `${KEY_OPTIONS_FILE_PROJECTION}.show_return`;
-export const KEY_OPTIONS_FILE_PROJECTION_FADE = `${KEY_OPTIONS_FILE_PROJECTION}.fade`;
-export const KEY_OPTIONS_FILE_PROJECTION_FADE_DURATION = `${KEY_OPTIONS_FILE_PROJECTION}.fade_duration`;
-export const KEY_OPTIONS_FILE_PROJECTION_BG_ENABLED = `${KEY_OPTIONS_FILE_PROJECTION}.background_enabled`;
-
-//OPTIONS - Video Online Projection
-const KEY_OPTIONS_ONLINE_VIDEO_PROJECTION = `${KEY_OPTIONS}.online_video_projection`; // USO LOCAL
-export const KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP = `${KEY_OPTIONS_ONLINE_VIDEO_PROJECTION}.always_on_top`;
-export const KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN = `${KEY_OPTIONS_ONLINE_VIDEO_PROJECTION}.show_return`;
-export const KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN = `${KEY_OPTIONS_ONLINE_VIDEO_PROJECTION}.fullscreen`;
-
-//OPTIONS - Bíblia
-export const KEY_OPTIONS_BIBLE_RETURN = `${KEY_OPTIONS}.open_bible_return`;
-
-//OPTIONS - SLIDE
-export const KEY_THEME = `${KEY_OPTIONS}.theme`;
-export const KEY_LANGUAGE = `${KEY_OPTIONS}.language`;
-export const KEY_OPTIONS_GLOBAL_BG_COLOR = `${KEY_OPTIONS}.global_bg_color`;
-export const KEY_OPTIONS_TEXT_ALIGN = `${KEY_OPTIONS}.text_align`;
-export const KEY_OPTIONS_TEXT_SIZE = `${KEY_OPTIONS}.text_size`;
-export const KEY_OPTIONS_SHOW_TITLE_FIRST_SLIDE = `${KEY_OPTIONS}.show_title_first_slide`;
-export const KEY_OPTIONS_MINIMIZE_ON_START = `${KEY_OPTIONS}.minimize_on_start`;
-export const KEY_OPTIONS_CUSTOM_TEXT_FORMAT = `${KEY_OPTIONS}.custom_text_format`;
-export const KEY_OPTIONS_TITLE_COLOR = `${KEY_OPTIONS}.title_color`;
-export const KEY_OPTIONS_TEXT_COLOR = `${KEY_OPTIONS}.text_color`;
-export const KEY_OPTIONS_REPEAT_COLOR = `${KEY_OPTIONS}.repeat_color`;
-export const KEY_OPTIONS_AUX_COLOR = `${KEY_OPTIONS}.aux_color`;
-export const KEY_OPTIONS_TEXT_BG_TRANSPARENT = `${KEY_OPTIONS}.text_bg_transparent`;
-export const KEY_OPTIONS_TITLE_SIZE = `${KEY_OPTIONS}.title_size`;
-export const KEY_OPTIONS_BODY_SIZE = `${KEY_OPTIONS}.body_size`;
-export const KEY_OPTIONS_AUX_SIZE = `${KEY_OPTIONS}.aux_size`;
-export const KEY_OPTIONS_CUSTOM_RETURN_TEXT_FORMAT = `${KEY_OPTIONS}.custom_return_text_format`;
-export const KEY_OPTIONS_SLIDE_RETURN_TEXT_CASE = `${KEY_OPTIONS}.slide_return_text_case`;
-export const KEY_OPTIONS_SLIDES_FONT_SIZE_NEXT = `${KEY_OPTIONS}.slides.font_size_next`;
-export const KEY_OPTIONS_CUSTOM_BACKGROUND = `${KEY_OPTIONS}.custom_background`;
-export const KEY_OPTIONS_BG_TRANSPARENT = `${KEY_OPTIONS}.bg_transparent`;
-export const KEY_OPTIONS_BG_COLOR = `${KEY_OPTIONS}.bg_color`;
-export const KEY_OPTIONS_BG_IMAGE = `${KEY_OPTIONS}.bg_image`;
-export const KEY_OPTIONS_BG_POSITION = `${KEY_OPTIONS}.bg_position`;
-export const KEY_OPTIONS_AFFECT_EXTERNAL_SLIDES = `${KEY_OPTIONS}.affect_external_slides`;
-export const KEY_OPTIONS_YOUTUBE_ACTION = `${KEY_OPTIONS}.youtube_action`;
-
-//PROJEÇÃO
-export const KEY_LJ_FILE_PROJECTION = "lj_file_projection";
-export const KEY_LJ_YOUTUBE_PROJECTION = "lj_youtube_projection";
+      CUSTOM_RETURN_TEXT_FORMAT: `${OPTIONS_SLIDE}.custom_return_text_format`,
+      RETURN_TEXT_CASE: `${OPTIONS_SLIDE}.return_text_case`,
+      FONT_SIZE_NEXT: `${OPTIONS_SLIDE}.font_size_next`,
+      AFFECT_EXTERNAL_SLIDES: `${OPTIONS}.affect_external_slides`,
+    },
+    ALWAYS_ON_TOP: `${OPTIONS}.always_on_top`,
+    FILE_PROJECTION: {
+      ALWAYS_ON_TOP: `${OPTIONS_FILE_PROJECTION}.always_on_top`,
+      BACKGROUND_ENABLED: `${OPTIONS_FILE_PROJECTION}.background_enabled`,
+      FADE: `${OPTIONS_FILE_PROJECTION}.fade`,
+      FADE_DURATION: `${OPTIONS_FILE_PROJECTION}.fade_duration`,
+      FULLSCREEN: `${OPTIONS_FILE_PROJECTION}.fullscreen`,
+      SHOW_RETURN: `${OPTIONS_FILE_PROJECTION}.show_return`,
+    },
+    FULLSCREEN: `${OPTIONS}.fullscreen`,
+    OPEN_RETURN: `${OPTIONS}.open_return`,
+    OPEN_OPERATOR: `${OPTIONS}.open_operator`,
+    DISPLAYS: {
+      PREFERRED: `${OPTIONS_DISPLAYS}.monitor_preferred`,
+      PRIMARY: `${OPTIONS_DISPLAYS}.monitor_primary`,
+      SECONDARY: `${OPTIONS_DISPLAYS}.monitor_secondary`,
+      ONLINE_VIDEO: `${OPTIONS_DISPLAYS}.online_video`,
+      ONLINE_VIDEO_RETURN: `${OPTIONS_DISPLAYS}.online_video_return`,
+    },
+    START_WITH_OS: `${OPTIONS}.start_with_os`,
+    YOUTUBE_ACTION: `${OPTIONS}.youtube_action`,
+    ONLINE_VIDEO_PROJECTION: {
+      ALWAYS_ON_TOP: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.always_on_top`,
+      SHOW_RETURN: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.show_return`,
+      FULLSCREEN: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.fullscreen`,
+    },
+  },
+  PROJECTION: {
+    LJ_BACKGROUND_PROJECTION: "lj_background_projection",
+    LJ_FILE_PROJECTION: "lj_file_projection",
+    LJ_YOUTUBE_PROJECTION: "lj_youtube_projection",
+  },
+};

@@ -7,7 +7,7 @@ import { ICONS } from "@/config/Icons"
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
-import { KEY_TIMER_WORSHIP_RUNNING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const moduleId = ModuleEnum.TIMER_WORSHIP;
 const modulePath = $modules.getPath(moduleId);
@@ -58,7 +58,7 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_toggle`,
             color: "#27ae60",
             stateBinding: {
-              watchPath: KEY_TIMER_WORSHIP_RUNNING,
+              watchPath: KEYS.MODULES.TIMER_WORSHIP.RUNNING,
               iconOn: ICONS.PLAYER.PAUSE,
               iconOff: ICONS.PLAYER.PLAY,
               colorOn: "#e67e22",
@@ -121,7 +121,7 @@ export const contextualPages: RibbonPage[] = [
           {
             id: "tw_alarm_select",
             type: "select",
-            optionKey: `${modulePath}.selected_alarm`,
+            optionKey: `${modulePath}.selected_sound`,
             label: `${modulePath}.sound.alarm_label`,
             options: [
               {
@@ -157,7 +157,7 @@ export const contextualPages: RibbonPage[] = [
             optionKey: `${modulePath}.timer_end_action`,
             label: `${modulePath}.ribbon.timer_end_label`,
             options: [
-              { value: MediaEnum.NOTHING, label: `${modulePath}.ribbon.end_nothing` },
+              { value: MediaEnum.NONE, label: `${modulePath}.ribbon.end_nothing` },
               { value: MediaEnum.AUDIO, label: `${modulePath}.ribbon.end_audio` },
               { value: MediaEnum.VIDEO, label: `${modulePath}.ribbon.end_video` },
               { value: MediaEnum.ONLINE_VIDEO, label: `${modulePath}.ribbon.end_online_video` },

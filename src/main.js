@@ -11,11 +11,6 @@ import "./assets/styles/utilities.css";
 import "./assets/styles/main.css";
 import "./assets/styles/fonts.css";
 import "./assets/styles/appmenu-options.css";
-
-loadFonts();
-
-const app = createApp(App);
-
 //Modules
 import ModuleManager from "@/helpers/ModuleManager";
 import $storage from "@/helpers/Storage";
@@ -25,17 +20,10 @@ import Platform from "@/helpers/Platform";
 //Helpers
 import Modules from "@/helpers/Modules";
 import Dev from "@/helpers/Dev";
-import Strings from "@/helpers/Strings";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
-import DateTime from "@/helpers/DateTime";
 import Path from "@/helpers/Path";
 import Media from "@/composables/useMedia";
-import Alert from "@/helpers/Alert";
-import Popup from "@/helpers/Popup";
-import Database from "@/helpers/Database";
-import Favorites from "@/helpers/Favorites";
-import History from "@/helpers/History";
 import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
 import $idb from "@/helpers/IndexedDB";
@@ -45,6 +33,10 @@ import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
 import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
 import { ModuleEnum } from "@/enums/ModuleEnum";
+
+loadFonts();
+
+const app = createApp(App);
 
 app.use(createPinia());
 app.use(router);

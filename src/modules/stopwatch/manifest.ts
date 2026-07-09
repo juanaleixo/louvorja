@@ -5,7 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
-import { KEY_STOPWATCH_RUNNING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const moduleId = ModuleEnum.STOPWATCH;
 const modulePath = $modules.getPath(moduleId);
@@ -56,7 +56,7 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_toggle`,
             color: "#27ae60",
             stateBinding: {
-              watchPath: KEY_STOPWATCH_RUNNING,
+              watchPath: KEYS.MODULES.STOPWATCH.RUNNING,
               iconOn: ICONS.PLAYER.PAUSE,
               iconOff: ICONS.PLAYER.PLAY,
               colorOn: "#e67e22",
@@ -65,24 +65,50 @@ export const contextualPages: RibbonPage[] = [
               labelOff: "actions.play",
             },
           },
-          { id: `${moduleId}_reset`, icon: "mdi-restart", label: "ribbon.btn.stopwatch_reset", action: `${moduleId}_reset`, color: "#7f8c8d" },
+          {
+            id: `${moduleId}_reset`,
+            icon: "mdi-restart",
+            label: "ribbon.btn.stopwatch_reset",
+            action: `${moduleId}_reset`,
+            color: "#7f8c8d",
+          },
         ],
       },
       {
         id: "ctx_stopwatch_format",
         title: "ribbon.groups.format",
         buttons: [
-          { id: `${moduleId}_toggle_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: `${moduleId}_toggle_format`, color: "#1b4f8a" },
-          { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.restore", action: `${moduleId}_restore`, color: "#9b59b6" },
+          {
+            id: `${moduleId}_toggle_format`,
+            icon: ICONS.ACTIONS.FORMAT,
+            label: "ribbon.btn.format",
+            action: `${moduleId}_toggle_format`,
+            color: "#1b4f8a",
+          },
+          {
+            id: `${moduleId}_restore`,
+            icon: ICONS.ACTIONS.RESTORE,
+            label: "ribbon.btn.restore",
+            action: `${moduleId}_restore`,
+            color: "#9b59b6",
+          },
         ],
       },
       {
         id: "ctx_stopwatch_screen",
         title: "ribbon.groups.expanded_area",
         buttons: [
-          { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: `/projection/module?module=${moduleId}`, icon: "mdi-projector-screen-outline", label: "ribbon.btn.project", color: "#1b4f8a" },
+          {
+            id: `${moduleId}_project`,
+            type: "screen",
+            feature: moduleId,
+            route: `/projection/module?module=${moduleId}`,
+            icon: "mdi-projector-screen-outline",
+            label: "ribbon.btn.project",
+            color: "#1b4f8a",
+          },
         ],
       },
     ],
   },
-]
+];

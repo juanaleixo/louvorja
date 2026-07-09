@@ -239,7 +239,7 @@ import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import { openDB, type IDBPDatabase } from "idb";
-import { KEY_LJ_FILE_PROJECTION, KEY_MEDIA_DECK_IS_PLAYING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -652,7 +652,7 @@ function savePlaylist(): void {
 }
 
 function loadPlaylist(): void {
-  $userdata.set(KEY_MEDIA_DECK_IS_PLAYING, false);
+  $userdata.set(KEYS.MODULES.MEDIA_DECK.IS_PLAYING, false);
   const saved = $userdata.get<
     { id: string; name: string; path: string; type: "image" | "video" | "pdf" }[]
   >(PLAYLIST_KEY, []);
@@ -713,7 +713,7 @@ async function playIndex(index: number): Promise<void> {
 
   currentIndex.value = index;
   isPlaying.value = true;
-  $userdata.set(KEY_MEDIA_DECK_IS_PLAYING, true);
+  $userdata.set(KEYS.MODULES.MEDIA_DECK.IS_PLAYING, true);
   currentPdfPage.value = 1;
   currentPdfTotalPages.value = 0;
 
@@ -725,7 +725,7 @@ async function playIndex(index: number): Promise<void> {
     payload.page = 1;
   }
 
-  localStorage.setItem(KEY_LJ_FILE_PROJECTION, JSON.stringify(payload));
+  localStorage.setItem(KEYS.PROJECTION.LJ_FILE_PROJECTION, JSON.stringify(payload));
 
   await openFileProjectionWindows();
 
@@ -793,7 +793,7 @@ async function prev(): Promise<void> {
 
 function stop(): void {
   isPlaying.value = false;
-  $userdata.set(KEY_MEDIA_DECK_IS_PLAYING, false);
+  $userdata.set(KEYS.MODULES.MEDIA_DECK.IS_PLAYING, false);
   currentIndex.value = -1;
   localStorage.removeItem("lj_file_projection");
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});

@@ -140,7 +140,7 @@
               <input
                 type="checkbox"
                 :checked="getCheckValue(btn)"
-                @change="setCheckValue(btn, ($event.target as HTMLSelectElement)?.value === 'true')"
+                @change="setCheckValue(btn, ($event.target as HTMLInputElement).checked)"
               />
               <span>{{ $t(btn.label) }}</span>
             </label>

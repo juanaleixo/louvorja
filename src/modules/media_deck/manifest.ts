@@ -5,7 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
-import { KEY_MEDIA_DECK_IS_PLAYING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 import RibbonFileProjectionSettings from "./components/RibbonFileProjectionSettings.vue";
 
 const moduleId = ModuleEnum.MEDIA_DECK;
@@ -66,7 +66,7 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_play`,
             color: "#27ae60",
             stateBinding: {
-              watchPath: KEY_MEDIA_DECK_IS_PLAYING,
+              watchPath: KEYS.MODULES.MEDIA_DECK.IS_PLAYING,
               iconOn: ICONS.PROJECTION.STOP,
               iconOff: ICONS.PROJECTION.START,
               colorOn: "#e74c3c",

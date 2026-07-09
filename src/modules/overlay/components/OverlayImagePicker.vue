@@ -67,7 +67,7 @@ import {
   importFile,
   deleteImage as deleteFromDb,
   resolveImageUrl,
-} from "@/helpers/OverlayImages";
+} from "@/helpers/Overlay";
 import { ICONS } from "@/config/Icons";
 
 const { t: _t } = useI18n();

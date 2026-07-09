@@ -33,12 +33,13 @@
   </div>
 </template>
 
-<script setup>
-import { ref, watch } from "vue";
+<script setup lang="ts">
+import { ref, watch, type Ref } from "vue";
 import { useOverlayState } from "@/composables/useOverlayState";
+import type { OverlaySlot } from "@/types/Overlay";
 
 const {
-  globalEnabled,
+  enabled,
   activeSlots,
   moduleValues,
   slotImage,
@@ -48,12 +49,12 @@ const {
   animationClass,
 } = useOverlayState();
 
-const imageUrls = ref({});
-const showCanvas = ref(false);
-const slotDataById = {};
+const imageUrls = ref<Record<string, string>>({});
+const showCanvas: Ref<boolean> = ref(false);
+const slotDataById: Record<string, OverlaySlot> = {};
 
-async function loadImages(list) {
-  const map = {};
+async function loadImages(list: OverlaySlot[]): Promise<void> {
+  const map: Record<string, string> = {};
   for (const slot of list) {
     if (slot.type === "image") {
       map[slot.id] = await slotImage(slot);
@@ -63,8 +64,8 @@ async function loadImages(list) {
 }
 
 watch(
-  [activeSlots, globalEnabled],
-  ([current, ge]) => {
+  [activeSlots, enabled],
+  ([current, ge]: [OverlaySlot[], boolean]) => {
     if (ge) {
       showCanvas.value = true;
     }
@@ -76,7 +77,7 @@ watch(
   { deep: true, immediate: true }
 );
 
-const EXIT_STYLES = {
+const EXIT_STYLES: Record<string, Record<string, string>> = {
   fade: { opacity: "0" },
   "slide-up": { opacity: "0", transform: "translateY(-20px)" },
   "slide-down": { opacity: "0", transform: "translateY(20px)" },
@@ -89,35 +90,40 @@ const EXIT_STYLES = {
   none: {},
 };
 
-function onLeave(el, done) {
-  const slotId = el.dataset.slotId;
+function onLeave(el: Element, done: () => void): void {
+  const htmlEl = el as HTMLElement;
+  const slotId = htmlEl.dataset.slotId;
+  if (!slotId) {
+    done();
+    return;
+  }
   const slot = slotDataById[slotId];
   const dur = slot?.style?.animation_duration || 300;
   const anim = slot?.style?.animation_exit || "fade";
   const exitStyle = EXIT_STYLES[anim] || EXIT_STYLES.fade;
 
-  el.style.animation = "none";
-  el.style.transition = `opacity ${dur / 1000}s ease, transform ${dur / 1000}s ease`;
+  htmlEl.style.animation = "none";
+  htmlEl.style.transition = `opacity ${dur / 1000}s ease, transform ${dur / 1000}s ease`;
 
-  const currentTransform = window.getComputedStyle(el).transform;
-  el.style.opacity = String((slot?.style?.opacity ?? 100) / 100);
+  const currentTransform = window.getComputedStyle(htmlEl).transform;
+  htmlEl.style.opacity = String((slot?.style?.opacity ?? 100) / 100);
 
-  void el.offsetWidth;
+  void htmlEl.offsetWidth;
 
   if (exitStyle.transform) {
-    el.style.transform =
+    htmlEl.style.transform =
       currentTransform !== "none"
         ? `${currentTransform} ${exitStyle.transform}`
         : exitStyle.transform;
   }
-  el.style.opacity = "0";
+  htmlEl.style.opacity = "0";
 
-  el.addEventListener("transitionend", () => done(), { once: true });
+  htmlEl.addEventListener("transitionend", () => done(), { once: true });
   setTimeout(() => done(), dur + 50);
 }
 
-function onAfterLeave() {
-  if (!globalEnabled.value && activeSlots.value.length === 0) {
+function onAfterLeave(): void {
+  if (!enabled.value && activeSlots.value.length === 0) {
     showCanvas.value = false;
   }
 }

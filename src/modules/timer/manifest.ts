@@ -5,7 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
-import { KEY_TIMER_RUNNING } from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const moduleId = ModuleEnum.TIMER;
 const modulePath = $modules.getPath(moduleId);
@@ -56,7 +56,7 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_toggle`,
             color: "#27ae60",
             stateBinding: {
-              watchPath: KEY_TIMER_RUNNING,
+              watchPath: KEYS.MODULES.TIMER.RUNNING,
               iconOn: ICONS.PLAYER.PAUSE,
               iconOff: ICONS.PLAYER.PLAY,
               colorOn: "#e67e22",

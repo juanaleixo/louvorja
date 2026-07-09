@@ -1,5 +1,5 @@
 {
-  "title": "Timer Culto",
+  "title": "Temporizador de Culto",
   "description": "Temporizador para culto com alertas sonoros configuráveis.",
   "mode": { "up": "Progressivo", "down": "Regressivo" },
   "actions": { "start": "Iniciar", "pause": "Pausar", "reset": "Zerar", "set": "Definir horário" },

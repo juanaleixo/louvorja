@@ -16,10 +16,14 @@ export const DB_TABLE = {
   BACKGROUND_SOUND_CATEGORY: ModuleEnum.BACKGROUND_SOUND + ".category",
   BACKGROUND_SOUND_LIBRARY: ModuleEnum.BACKGROUND_SOUND + ".library",
   OVERLAY_IMAGES: ModuleEnum.OVERLAY + ".image",
+  OVERLAY_SLOTS: ModuleEnum.OVERLAY + ".slots",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
 
 export const SETTINGS_TABLE = {
-  BACKGROUND_SOUND: "background_sound",
+  BACKGROUND_SOUND: ModuleEnum.BACKGROUND_SOUND,
+  FILE_PROJECTION_BACKGROUND: "file_projection_background",
+  MAIN_BACKGROUND: "main_background",
+  OVERLAY: ModuleEnum.OVERLAY,
 };

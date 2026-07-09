@@ -11,9 +11,9 @@ export const PROJECTION_TYPE = {
   BACKGROUND: "background_projection",
   BACKGROUND_RETURN: "background_projection_return",
 };
+
 const RETURN_URL = "/return"
 const URL_BASE = "/projection"
-
 export const PROJECTION_URL = {
   BASE: URL_BASE,
   MUSIC: `${URL_BASE}/${PROJECTION_TYPE.MUSIC}`,

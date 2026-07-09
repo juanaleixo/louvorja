@@ -2,68 +2,82 @@
   <!-- Layer 0: Fundo preto permanente -->
   <div class="return-root-bg"></div>
 
-  <!-- Layer 0a: Background do módulo (com fade) -->
-  <Transition name="fade">
-    <img
-      v-if="curBg.type === 'image'"
-      :key="'img-' + curBg.url"
-      :src="curBg.url"
-      class="return-bg"
-      :style="{ '--fade-ms': fadeDurationMs + 'ms' }"
-      alt=""
-    />
-    <video
-      v-else-if="curBg.type === 'video'"
-      :key="'vid-' + curBg.url"
-      ref="bgVideoRef"
-      :src="curBg.url"
-      class="return-bg"
-      :style="{ '--fade-ms': fadeDurationMs + 'ms' }"
-      autoplay
-      muted
-      loop
-    ></video>
-  </Transition>
+  <!-- Layer: Fundo customizado (wallpaper) -->
+  <div class="return-wallpaper" :style="fallbackStyle"></div>
 
-  <!-- Layer 0b: Wallpaper global (com fade) -->
-  <Transition name="fade">
-    <div
-      v-if="!curBg.active"
-      class="return-bg return-bg--fallback"
-      :style="{ ...fallbackStyle, '--fade-ms': fadeDurationMs + 'ms' }"
-    ></div>
-  </Transition>
+  <!-- MODO FILE PROJECTION -->
+  <template v-if="fileState.active">
+    <div class="file-projection">
+      <img v-if="fileState.type === 'image'" :src="fileState.url" class="return-file" alt="" />
+      <video
+        v-else-if="fileState.type === 'video'"
+        ref="projVideoRef"
+        :src="fileState.url"
+        class="return-file"
+        autoplay
+        muted
+        loop
+      ></video>
+      <div v-else-if="fileState.type === 'youtube'" ref="ytContainer" class="return-file"></div>
+      <canvas
+        v-else-if="fileState.type === 'pdf'"
+        ref="pdfCanvas"
+        class="return-file return-file--pdf"
+      ></canvas>
+    </div>
+  </template>
 
-  <!-- Layer 1: Projeção ativa -->
-  <div v-if="projActive" class="return-projection">
-    <Slide
-      v-if="projType === 'music' || projType === 'bible'"
-      :slide="slide!!"
-      :title="title"
-      :progress="progress"
-      show-progress
-      class="return-slide"
-    />
-    <img v-else-if="projType === 'file_image'" :src="projUrl" class="return-file" alt="" />
-    <video
-      v-else-if="projType === 'file_video'"
-      ref="projVideoRef"
-      :src="projUrl"
-      class="return-file"
-      autoplay
-      muted
-      loop
-    ></video>
-  </div>
+  <!-- MODO BACKGROUND PROJECTION -->
+  <template v-else>
+    <Transition name="fade">
+      <img
+        v-if="curBg.type === 'image'"
+        :key="'img-' + curBg.url"
+        :src="curBg.url"
+        class="return-bg"
+        :style="{ '--fade-ms': fadeDurationMs + 'ms' }"
+        alt=""
+      />
+      <video
+        v-else-if="curBg.type === 'video'"
+        :key="'vid-' + curBg.url"
+        ref="bgVideoRef"
+        :src="curBg.url"
+        class="return-bg"
+        :style="{ '--fade-ms': fadeDurationMs + 'ms' }"
+        autoplay
+        muted
+        loop
+      ></video>
+    </Transition>
+    <Transition name="fade">
+      <div
+        v-if="!curBg.active"
+        class="return-bg return-bg--fallback"
+        :style="{ ...fallbackStyle, '--fade-ms': fadeDurationMs + 'ms' }"
+      ></div>
+    </Transition>
+    <div v-if="projActive" class="return-projection">
+      <Slide
+        v-if="projType === 'music' || projType === 'bible'"
+        :slide="slide!!"
+        :title="title"
+        :progress="progress"
+        show-progress
+        class="return-slide"
+      />
+    </div>
+  </template>
 
   <!-- Layer 2: Overlays -->
   <OverlayRenderer />
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useProjectionState } from "@/composables/useProjectionState";
+import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $userdata from "@/helpers/UserData";
 import $modules from "@/helpers/Modules";
@@ -71,7 +85,14 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 import { getSetting } from "@/helpers/SettingsStorage";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import Slide from "@/components/Slide.vue";
-import { MAIN_BACKGROUND_ID, BackgroundSettings } from "@/types/db/settings/BackgroundSettings";
+import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
+import { KEYS } from "@/constants/UserDataKeys";
+import { SETTINGS_TABLE } from "@/constants/DbTables";
+import type { YTAPI, YTPlayer } from "@/types/Media";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 /* ── Background state ── */
 
@@ -104,8 +125,6 @@ function activateBg(p: BgState): void {
     title: p.title || "",
   });
 }
-
-/* ── Global wallpaper fallback ── */
 
 /* ── Wallpaper via IndexedDB ── */
 
@@ -142,21 +161,28 @@ const { slide, title, progress } = useProjectionState();
 
 const fileState = reactive({ active: false, type: "", url: "" });
 const projVideoRef = ref<HTMLVideoElement | null>(null);
+const ytContainer = ref<HTMLDivElement | null>(null);
+let ytPlayer: YTPlayer | null = null;
 
-const projActive = computed(() => !!slide.value || fileState.active);
+/* ── PDF state ── */
+const pdfCanvas = ref<HTMLCanvasElement | null>(null);
+let pdfDoc: import("pdfjs-dist").PDFDocumentProxy | null = null;
+let currentPdfPage = ref(1);
+let _ytInitializing = false;
+let _ytSyncTimer: ReturnType<typeof setInterval> | null = null;
+
+const projActive = computed(() => !!slide.value);
 const projType = computed(() => {
-  if (fileState.active) return fileState.type === "image" ? "file_image" : "file_video";
   if (slide.value && (slide.value as any).is_bible) return "bible";
   return "music";
 });
-const projUrl = computed(() => fileState.url);
 
 /* ── Broadcast listeners ── */
 
 function readPendingBg(): void {
   if (curBg.active) return;
   try {
-    const stored = localStorage.getItem("lj_background_projection");
+    const stored = localStorage.getItem(KEYS.PROJECTION.LJ_BACKGROUND_PROJECTION);
     if (stored) {
       const p = JSON.parse(stored);
       if (p?.url) activateBg(p);
@@ -174,33 +200,199 @@ useBroadcastListener(BROADCAST_TYPE.BACKGROUND_PROJECTION, (payload: unknown) =>
 });
 
 useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
-  const p = payload as { type?: string; url?: string };
+  const p = payload as { type?: string; url?: string; page?: number };
   if (p?.url) {
+    if (pdfDoc) {
+      try {
+        (pdfDoc as any).destroy();
+      } catch {
+        /* ignore */
+      }
+      pdfDoc = null;
+    }
     fileState.active = true;
     fileState.type = p.type || "image";
     fileState.url = p.url;
+    reloadWallpaper();
+    if (p.type === "pdf") nextTick(() => loadPdf(p.url!, p.page || 1));
   }
 });
 
 useBroadcastListener(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, (payload: unknown) => {
   const p = payload as { type?: string; url?: string };
   if (p?.url) {
+    _destroyYoutube();
     fileState.active = true;
     fileState.type = p.type || "youtube";
     fileState.url = p.url;
+    reloadWallpaper();
+    if (p.type === "youtube") nextTick(() => _initYoutube());
+  }
+});
+
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_PAGE, (payload: unknown) => {
+  const p = payload as { page: number };
+  if (fileState.active && fileState.type === "pdf" && pdfDoc) {
+    currentPdfPage.value = p.page;
+    renderPdfPage(p.page);
   }
 });
 
 useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
+  _destroyYoutube();
+  if (pdfDoc) {
+    try {
+      (pdfDoc as any).destroy();
+    } catch {
+      /* ignore */
+    }
+    pdfDoc = null;
+  }
   fileState.active = false;
   fileState.type = "";
   fileState.url = "";
   try {
-    localStorage.removeItem("lj_file_projection");
+    localStorage.removeItem(KEYS.PROJECTION.LJ_FILE_PROJECTION);
   } catch {
     /* ignore */
   }
+  reloadWallpaper();
 });
+
+useBroadcastListener(BROADCAST_TYPE.YOUTUBE_CONTROL, (payload: unknown) => {
+  if (!ytPlayer || !fileState.active || fileState.type !== "youtube") return;
+  const data = payload as { action?: string; value?: number };
+  switch (data.action) {
+    case "pause":
+      ytPlayer.pauseVideo();
+      break;
+    case "play":
+      ytPlayer.playVideo();
+      break;
+    case "seekTo":
+      if (typeof data.value === "number") ytPlayer.seekTo(data.value, true);
+      break;
+  }
+});
+
+function getYT(): YTAPI | null {
+  return (window as unknown as { YT?: YTAPI }).YT ?? null;
+}
+
+function _embedUrlToId(url: string): string | null {
+  const m = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function _loadYtApi(cb: (YT: YTAPI) => void): void {
+  const yt = getYT();
+  if (yt?.Player) {
+    setTimeout(() => cb(yt), 0);
+    return;
+  }
+  const prev = (window as unknown as { onYouTubeIframeAPIReady?: () => void })
+    .onYouTubeIframeAPIReady;
+  (window as unknown as { onYouTubeIframeAPIReady: () => void }).onYouTubeIframeAPIReady = () => {
+    if (prev) prev();
+    const ytLoaded = getYT();
+    if (ytLoaded) setTimeout(() => cb(ytLoaded), 0);
+  };
+  if (!document.querySelector('script[src*="iframe_api"]')) {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }
+}
+
+function _initYoutube(): void {
+  if (_ytInitializing) return;
+  _ytInitializing = true;
+  _destroyYoutube();
+  const id = _embedUrlToId(fileState.url);
+  if (!id) return;
+  if (!ytContainer.value) return;
+
+  _loadYtApi((YT: YTAPI) => {
+    if (!ytContainer.value) return;
+    ytPlayer = new YT.Player(ytContainer.value, {
+      height: "100%",
+      width: "100%",
+      videoId: id,
+      playerVars: {
+        autoplay: 1,
+        mute: 1,
+        rel: 0,
+        controls: 0,
+        modestbranding: 1,
+        cc_load_policy: 0,
+      },
+      events: {
+        onReady: () => {
+          _ytInitializing = false;
+          if (ytPlayer) ytPlayer.playVideo();
+          _broadcastYtState();
+          _startYtSync();
+        },
+        onApiChange: () => {
+          try {
+            if (typeof (ytPlayer as any)?.setOption === "function")
+              (ytPlayer as any).setOption("captions", "track", {});
+          } catch {
+            console.error("Erro ao desativar o captions do Youtube");
+          }
+        },
+        onStateChange: () => {
+          _broadcastYtState();
+        },
+      },
+    });
+  });
+}
+
+function _destroyYoutube(): void {
+  if (_ytSyncTimer) {
+    clearInterval(_ytSyncTimer);
+    _ytSyncTimer = null;
+  }
+  if (ytPlayer) {
+    try {
+      ytPlayer.destroy();
+    } catch {
+      /* ignore */
+    }
+    ytPlayer = null;
+  }
+  _ytInitializing = false;
+}
+
+function _broadcastYtState(): void {
+  if (!ytPlayer || !ytPlayer.getCurrentTime || !fileState.active) return;
+  const yt = getYT();
+  if (!yt) return;
+  try {
+    $broadcast.send(BROADCAST_TYPE.YOUTUBE_STATE, {
+      currentTime: ytPlayer.getCurrentTime(),
+      isPaused: ytPlayer.getPlayerState() !== yt.PlayerState.PLAYING,
+      duration: ytPlayer.getDuration() || 0,
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+function _startYtSync(): void {
+  _stopYtSync();
+  _ytSyncTimer = setInterval(() => {
+    _broadcastYtState();
+  }, 2000);
+}
+
+function _stopYtSync(): void {
+  if (_ytSyncTimer) {
+    clearInterval(_ytSyncTimer);
+    _ytSyncTimer = null;
+  }
+}
 
 function onKey(e: KeyboardEvent): void {
   if (e.key === "Escape") {
@@ -209,8 +401,39 @@ function onKey(e: KeyboardEvent): void {
   }
 }
 
+/* ── PDF helpers ── */
+
+async function loadPdf(url: string, pageNum: number): Promise<void> {
+  try {
+    const loadingTask = getDocument({ url });
+    pdfDoc = await loadingTask.promise;
+    currentPdfPage.value = pageNum;
+    await renderPdfPage(pageNum);
+  } catch (err) {
+    console.error("BackgroundProjectionReturn: PDF load error", err);
+  }
+}
+
+async function renderPdfPage(pageNum: number): Promise<void> {
+  const canvas = pdfCanvas.value;
+  if (!canvas || !pdfDoc) return;
+  try {
+    const page = await pdfDoc.getPage(pageNum);
+    const vp = page.getViewport({ scale: 1.5 });
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    await page.render({ canvas, viewport: vp }).promise;
+  } catch (err) {
+    console.error("BackgroundProjectionReturn: PDF render error", err);
+  }
+}
+
 async function reloadWallpaper(): Promise<void> {
-  const s = await getSetting<BackgroundSettings>(MAIN_BACKGROUND_ID).catch(() => null);
+  const useCustom =
+    fileState.active &&
+    $userdata.get<boolean>(KEYS.OPTIONS.FILE_PROJECTION.BACKGROUND_ENABLED, false) === true;
+  const id = useCustom ? SETTINGS_TABLE.FILE_PROJECTION_BACKGROUND : MAIN_BACKGROUND_ID;
+  const s = await getSetting<Settings>(id).catch(() => null);
   if (s) {
     wpColor.value = s.color || "#000033";
     wpPosition.value = s.position || "cover";
@@ -229,6 +452,10 @@ async function reloadWallpaper(): Promise<void> {
   }
 }
 
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_BG_UPDATE, () => {
+  reloadWallpaper();
+});
+
 useBroadcastListener(BROADCAST_TYPE.WALLPAPER_UPDATE, () => {
   reloadWallpaper();
 });
@@ -242,11 +469,17 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  _destroyYoutube();
   if (wpBlobUrl) URL.revokeObjectURL(wpBlobUrl);
 });
 </script>
 
 <style scoped>
+.return-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
 .return-root-bg {
   position: fixed;
   inset: 0;
@@ -287,5 +520,15 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.return-file--pdf {
+  object-fit: unset;
+  display: block;
+  margin: 0 auto;
+}
+.file-projection {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
 }
 </style>

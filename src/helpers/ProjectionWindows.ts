@@ -14,23 +14,7 @@
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
 import { PROJECTION_TYPE, PROJECTION_URL } from "@/constants/Projection";
-import {
-  KEY_BACKGROUND_PROJECTION_SHOW_RETURN,
-  KEY_DISPLAYS_PREFERRED,
-  KEY_OPTIONS_ALWAYS_ON_TOP,
-  KEY_OPTIONS_BIBLE_RETURN,
-  KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP,
-  KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN,
-  KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN,
-  KEY_OPTIONS_FULLSCREEN,
-  KEY_OPTIONS_MONITOR_PRIMARY,
-  KEY_OPTIONS_MONITOR_SECONDARY,
-  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP,
-  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN,
-  KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN,
-  KEY_OPTIONS_OPEN_OPERATOR,
-  KEY_OPTIONS_OPEN_RETURN,
-} from "@/constants/UserDataKeys";
+import { KEYS } from "@/constants/UserDataKeys";
 
 interface DisplayPlatform {
   open: (opts: {
@@ -131,11 +115,11 @@ async function _readPrefs(): Promise<Record<string, number | null>> {
       raw = {};
     }
   } else {
-    raw = ($userdata.get(KEY_DISPLAYS_PREFERRED, {}) as Record<string, number | string | null>) ?? {};
+    raw = ($userdata.get(KEYS.OPTIONS.DISPLAYS.PREFERRED, {}) as Record<string, number | string | null>) ?? {};
   }
 
-  const primaryId = ($userdata.get(KEY_OPTIONS_MONITOR_PRIMARY, null) as number | null) ?? null;
-  const secondaryId = ($userdata.get(KEY_OPTIONS_MONITOR_SECONDARY, null) as number | null) ?? null;
+  const primaryId = ($userdata.get(KEYS.OPTIONS.DISPLAYS.PRIMARY, null) as number | null) ?? null;
+  const secondaryId = ($userdata.get(KEYS.OPTIONS.DISPLAYS.SECONDARY, null) as number | null) ?? null;
 
   const resolved: Record<string, number | null> = {};
   for (const [key, val] of Object.entries(raw)) {
@@ -171,10 +155,10 @@ export async function openProjectionWindows(): Promise<void> {
   if (await isBackgroundOpen()) return;
 
   const prefs = await _readPrefs();
-  const fullscreen = $userdata.get(KEY_OPTIONS_FULLSCREEN, true) as boolean;
-  const alwaysOnTop = $userdata.get(KEY_OPTIONS_ALWAYS_ON_TOP, true) as boolean;
-  const openOperator = $userdata.get(KEY_OPTIONS_OPEN_OPERATOR, false) as boolean;
-  const openReturn = ($userdata.get(KEY_OPTIONS_OPEN_RETURN, false) as boolean);
+  const fullscreen = $userdata.get(KEYS.OPTIONS.FULLSCREEN, true) as boolean;
+  const alwaysOnTop = $userdata.get(KEYS.OPTIONS.ALWAYS_ON_TOP, true) as boolean;
+  const openOperator = $userdata.get(KEYS.OPTIONS.OPEN_OPERATOR, false) as boolean;
+  const openReturn = ($userdata.get(KEYS.OPTIONS.OPEN_RETURN, false) as boolean);
 
   const projMonitor = prefs[PROJECTION_TYPE.MUSIC] ?? null;
   if (projMonitor != null) {
@@ -213,8 +197,8 @@ export async function openFileProjectionWindows(): Promise<void> {
   if (await isBackgroundOpen()) return;
 
   const prefs = await _readPrefs();
-  const fullscreen = ($userdata.get(KEY_OPTIONS_FILE_PROJECTION_FULLSCREEN, true) as boolean);
-  const alwaysOnTop = ($userdata.get(KEY_OPTIONS_FILE_PROJECTION_ALWAYS_ON_TOP, true) as boolean);
+  const fullscreen = ($userdata.get(KEYS.OPTIONS.FILE_PROJECTION.FULLSCREEN, true) as boolean);
+  const alwaysOnTop = ($userdata.get(KEYS.OPTIONS.FILE_PROJECTION.ALWAYS_ON_TOP, true) as boolean);
 
   // Projeção de arquivo — fallback para monitor de música se não configurado
   const fileProjMonitor =
@@ -226,7 +210,7 @@ export async function openFileProjectionWindows(): Promise<void> {
   }
 
   // Retorno de arquivo — respeita a opção específica de arquivo
-  const openFileReturn = ($userdata.get(KEY_OPTIONS_FILE_PROJECTION_SHOW_RETURN, false) as boolean);
+  const openFileReturn = $userdata.get(KEYS.OPTIONS.FILE_PROJECTION.SHOW_RETURN, false) as boolean;
   if (openFileReturn) {
     const returnMonitor = prefs[PROJECTION_TYPE.FILE_RETURN];
     if (returnMonitor != null) {
@@ -252,15 +236,15 @@ export async function openVideoProjectionWindows(): Promise<void> {
   if (await isBackgroundOpen()) return;
 
   const prefs = await _readPrefs();
-  const fullscreen = ($userdata.get(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_FULLSCREEN, true) as boolean);
-  const alwaysOnTop = ($userdata.get(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_ALWAYS_ON_TOP, true) as boolean);
+  const fullscreen = ($userdata.get(KEYS.OPTIONS.ONLINE_VIDEO_PROJECTION.FULLSCREEN, true) as boolean);
+  const alwaysOnTop = ($userdata.get(KEYS.OPTIONS.ONLINE_VIDEO_PROJECTION.ALWAYS_ON_TOP, true) as boolean);
 
   const videoMonitor = prefs[PROJECTION_TYPE.ONLINE_VIDEO] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
   if (videoMonitor != null) {
     await _open(PROJECTION_URL.FILE, PROJECTION_TYPE.FILE, videoMonitor, fullscreen, alwaysOnTop, true);
   }
 
-  const openVideoReturn = $userdata.get(KEY_OPTIONS_ONLINE_VIDEO_PROJECTION_SHOW_RETURN, false) as boolean;
+  const openVideoReturn = $userdata.get(KEYS.OPTIONS.ONLINE_VIDEO_PROJECTION.SHOW_RETURN, false) as boolean;
   if (openVideoReturn) {
     const returnMonitor = prefs[PROJECTION_TYPE.ONLINE_VIDEO_RETURN] ?? null;
     if (returnMonitor != null) {
@@ -284,9 +268,9 @@ export async function openBibleWindow(): Promise<void> {
 
   const prefs = await _readPrefs();
   const monitorId = prefs[PROJECTION_TYPE.BIBLE] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
-  const openReturn = ($userdata.get(KEY_OPTIONS_BIBLE_RETURN, false) as boolean);
-  const fullscreen = $userdata.get(KEY_OPTIONS_FULLSCREEN, true) as boolean;
-  const alwaysOnTop = $userdata.get(KEY_OPTIONS_ALWAYS_ON_TOP, true) as boolean;
+  const openReturn = ($userdata.get(KEYS.MODULES.BIBLE.SHOW_RETURN, false) as boolean);
+  const fullscreen = $userdata.get(KEYS.OPTIONS.FULLSCREEN, true) as boolean;
+  const alwaysOnTop = $userdata.get(KEYS.OPTIONS.ALWAYS_ON_TOP, true) as boolean;
 
   if (monitorId != null) {
     await _open(PROJECTION_URL.BIBLE, PROJECTION_TYPE.BIBLE, monitorId, fullscreen, alwaysOnTop);
@@ -313,14 +297,14 @@ export async function openBibleWindow(): Promise<void> {
  * estiver configurado, não projeta.
  */
 export async function openBackgroundProjectionWindows(): Promise<void> {
-  const primaryMonitorId = $userdata.get(KEY_OPTIONS_MONITOR_PRIMARY, null) as number | null;
+  const primaryMonitorId = $userdata.get(KEYS.OPTIONS.DISPLAYS.PRIMARY, null) as number | null;
   if (primaryMonitorId != null) {
     await _open(PROJECTION_URL.BACKGROUND, PROJECTION_TYPE.BACKGROUND, primaryMonitorId, true, false, true);
   }
 
-  const showReturn = $userdata.get(KEY_BACKGROUND_PROJECTION_SHOW_RETURN, false) as boolean;
+  const showReturn = $userdata.get(KEYS.MODULES.BACKGROUND_PROJECTION.SHOW_RETURN, false) as boolean;
   if (showReturn) {
-    const secondaryMonitorId = $userdata.get(KEY_OPTIONS_MONITOR_SECONDARY, null) as number | null;
+    const secondaryMonitorId = $userdata.get(KEYS.OPTIONS.DISPLAYS.SECONDARY, null) as number | null;
     if (secondaryMonitorId != null) {
       await _open(
         PROJECTION_URL.BACKGROUND_RETURN,
