@@ -64,6 +64,7 @@ type QuickNavState = "book" | "chapter" | "verse";
 
 const props = defineProps<{
   modelValue: boolean;
+  initialBuffer?: string;
 }>();
 
 const emit = defineEmits<{
@@ -339,10 +340,15 @@ function handleKeydown(e: KeyboardEvent): void {
 
 watch(model, async (val: boolean) => {
   if (val) {
+    const initial = props.initialBuffer;
     reset();
     await loadBooks();
     await nextTick();
     cardRef.value?.focus();
+    if (initial) {
+      buffer.value = initial;
+      checkBookMatch();
+    }
   }
 });
 </script>

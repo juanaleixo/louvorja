@@ -55,7 +55,7 @@
       </div>
     </template>
 
-    <BibleSpotlight v-model="bibleSpotlightOpen" />
+    <BibleSpotlight v-model="bibleSpotlightOpen" :initial-buffer="spotlightInitialBuffer" />
 
     <div v-if="!compact" class="bible-layout">
       <!-- Coluna Formatar -->
@@ -398,6 +398,11 @@ const version = computed(() =>
 const chapters = computed(() => book.value?.chapters);
 
 const bibleSpotlightOpen = ref(false);
+const spotlightInitialBuffer = ref("");
+
+watch(bibleSpotlightOpen, (val) => {
+  if (!val) spotlightInitialBuffer.value = "";
+});
 
 const versions_list = computed(() =>
   versions.value.map((v) => ({
@@ -527,6 +532,7 @@ function onKeydown(e: KeyboardEvent): void {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key.length === 1 && !bibleSpotlightOpen.value) {
     e.preventDefault();
+    spotlightInitialBuffer.value = e.key.toLowerCase();
     bibleSpotlightOpen.value = true;
   }
 }
