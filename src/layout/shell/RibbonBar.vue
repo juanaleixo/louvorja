@@ -394,6 +394,7 @@ const BIBLE_ACTIONS: LiturgyActionMap = {
   bible_next_verse: "next_verse",
   bible_format: "toggle_format",
   bible_restore: "restore",
+  bible_project: "project",
 };
 
 const EDITOR_ACTIONS = new Set<string>([

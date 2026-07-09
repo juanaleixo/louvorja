@@ -1,8 +1,10 @@
 {
   "title": "Busca Bíblica",
   "description": "Busca de versículos por palavra-chave ou referência",
+  "project_start": "Iniciar Projeção",
+  "project_stop": "Parar Projeção",
+  "results_count": "{n} resultado(s)",
   "ribbon": {
-    "results_count": "{n} resultado(s)",
     "project": "Projetar",
     "prev_result": "Anterior",
     "next_result": "Próximo",

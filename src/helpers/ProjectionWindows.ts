@@ -345,4 +345,11 @@ export async function closeProjectionWindows(): Promise<void> {
   ]);
 }
 
-export default { openProjectionWindows, closeProjectionWindows, openBibleWindow, openFileProjectionWindows, openVideoProjectionWindows, openBackgroundProjectionWindows, closeBackgroundProjectionWindows };
+export async function closeBibleWindows(): Promise<void> {
+  await Promise.all([
+    _close(PROJECTION_TYPE.BIBLE),
+    _close(PROJECTION_TYPE.BIBLE_RETURN),
+  ]);
+}
+
+export default { openProjectionWindows, closeProjectionWindows, closeBibleWindows, openBibleWindow, openFileProjectionWindows, openVideoProjectionWindows, openBackgroundProjectionWindows, closeBackgroundProjectionWindows };

@@ -4,6 +4,7 @@ import type { RibbonPage } from "@/types/Ribbon"
 import { Module } from "@/types/Module"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
+import { KEYS } from "@/constants/UserDataKeys"
 import $modules from "@/helpers/Modules"
 import BookPicker from "@/modules/bible_search/components/BookPicker.vue";
 
@@ -46,7 +47,22 @@ export const contextualPages: RibbonPage[] = [
         title: "ribbon.groups.actions",
         buttons: [
           { id: "go_bible", icon: "mdi-book-open-variant", label: "modules.bible_search.ribbon.go_bible", action: `${moduleId}_go_bible`, color: "#c0392b" },
-          { id: "project_current", icon: ICONS.PROJECTION.START, label: "ribbon.btn.project", action: `${moduleId}_project`, color: "#1b4f8a" },
+          {
+            id: "project_current",
+            icon: ICONS.PROJECTION.START,
+            label: `${modulePath}.project_start`,
+            action: `${moduleId}_project`,
+            color: "#27ae60",
+            stateBinding: {
+              watchPath: KEYS.MODULES.BIBLE.IS_PLAYING,
+              iconOn: ICONS.PROJECTION.STOP,
+              iconOff: ICONS.PROJECTION.START,
+              colorOn: "#e74c3c",
+              colorOff: "#27ae60",
+              labelOn: `${modulePath}.project_stop`,
+              labelOff: `${modulePath}.project_start`,
+            },
+          },
         ],
       },
       {

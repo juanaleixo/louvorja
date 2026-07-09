@@ -4,6 +4,8 @@
   "ribbon": {
     "title_ctx": "Configurar Bíblia"
   },
+  "project_start": "Iniciar Projeção",
+  "project_stop": "Parar Projeção",
   "version": "Versão",
   "book": "Livro",
   "chapter": "Capítulo",

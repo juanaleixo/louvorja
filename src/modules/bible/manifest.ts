@@ -4,6 +4,7 @@ import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
+import { KEYS } from "@/constants/UserDataKeys"
 import $modules from "@/helpers/Modules"
 
 const moduleId = ModuleEnum.BIBLE;
@@ -74,7 +75,22 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_bible_screen",
         title: "ribbon.groups.expanded_area",
         buttons: [
-          { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: "/projection/bible", label: "ribbon.btn.project", color: "#1b4f8a" },
+          {
+            id: `${moduleId}_project`,
+            icon: ICONS.PROJECTION.START,
+            label: `${modulePath}.project_start`,
+            action: `${moduleId}_project`,
+            color: "#27ae60",
+            stateBinding: {
+              watchPath: KEYS.MODULES.BIBLE.IS_PLAYING,
+              iconOn: ICONS.PROJECTION.STOP,
+              iconOff: ICONS.PROJECTION.START,
+              colorOn: "#e74c3c",
+              colorOff: "#27ae60",
+              labelOn: `${modulePath}.project_stop`,
+              labelOff: `${modulePath}.project_start`,
+            },
+          },
         ],
       },
     ],

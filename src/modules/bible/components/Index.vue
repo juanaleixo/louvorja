@@ -290,6 +290,7 @@ import FormatPanel from "@/components/FormatPanel.vue";
 import LSelect from "@/components/inputs/LjSelect.vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { KEYS } from "@/constants/UserDataKeys";
 import Hotkeys from "@/helpers/Hotkeys";
 import Modules from "@/helpers/Modules";
 import AppData from "@/helpers/AppData";
@@ -685,6 +686,7 @@ async function selVerse(event: MouseEvent | null, num: number | string): Promise
     active: true,
   });
 
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, true);
   ProjectionWindows.openBibleWindow();
 
   pushHistory(select_bible);
@@ -867,6 +869,7 @@ function getSelectedVerses(keys: number[]): string {
 }
 
 function clearText(): void {
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, false);
   bible.verses = [];
   Object.assign(select_bible, {
     id_bible_version: null,
@@ -894,6 +897,30 @@ function close(): void {
   clean();
 }
 
+async function toggleProjection(): Promise<void> {
+  const isActive = UserData.get<boolean>(KEYS.MODULES.BIBLE.IS_PLAYING, false);
+  if (isActive) {
+    await stopProjection();
+  } else {
+    await startProjection();
+  }
+}
+
+async function startProjection(): Promise<void> {
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, true);
+  await ProjectionWindows.openBibleWindow();
+}
+
+async function stopProjection(): Promise<void> {
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, false);
+  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+    text: "",
+    reference: "",
+    active: true,
+  });
+  await ProjectionWindows.closeBibleWindows();
+}
+
 function restoreFormat(): void {
   const customization = (manifest as any).customization || {};
   for (const [key, def] of Object.entries(customization)) {
@@ -919,6 +946,9 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
       break;
     case "restore":
       restoreFormat();
+      break;
+    case "project":
+      toggleProjection();
       break;
   }
 });
