@@ -5,25 +5,15 @@
       <div class="ribbon-tabs-row">
         <AppMenu class="ribbon-app-menu" />
 
-        <div class="ribbon-tabs" role="tablist" :aria-label="$t('shell.ribbon_nav')">
-          <button
-            v-for="page in visiblePages"
-            :id="'ribbon-tab-' + page.id"
-            :key="page.id"
-            type="button"
-            role="tab"
-            class="ribbon-tab"
-            :class="{
-              'ribbon-tab--active': ribbonStore.activePage === page.id,
-              'ribbon-tab--ctx': page.contextual,
-              'ribbon-tab--ctx-active': page.contextual && ribbonStore.activePage === page.id,
-            }"
-            :aria-selected="ribbonStore.activePage === page.id"
-            aria-controls="ribbon-tabpanel"
-            @click.stop="ribbonStore.selectPage(page.id)"
-          >
-            {{ $t(page.title) }}
-          </button>
+        <div class="ribbon-tabs-wrap">
+          <RibbonTabs
+            id-prefix="ribbon"
+            style="
+              --rtab-padding-x: var(--lj-space-6);
+              --rtab-font-size: var(--lj-text-md);
+              --rtab-font-weight: var(--lj-weight-medium);
+            "
+          />
         </div>
 
         <div class="ribbon-tools">
@@ -182,15 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  computed,
-  watch,
-  reactive,
-  defineAsyncComponent,
-  type Component,
-  type ComputedRef,
-} from "vue";
+import { computed, type ComputedRef, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import RibbonScreenButton from "./RibbonScreenButton.vue";
 import AppMenu from "./AppMenu.vue";
@@ -208,9 +190,10 @@ import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { getRibbonModules } from "@/config/modules";
-import type { RibbonPage, RibbonGroup, RibbonButton } from "@/types/Ribbon";
+import type { RibbonButton, RibbonGroup, RibbonPage } from "@/types/Ribbon";
 import RibbonButtonComponent from "@/layout/shell/RibbonButtonComponent.vue";
 import RibbonGroupComponent from "@/layout/shell/RibbonGroupComponent.vue";
+import RibbonTabs from "@/components/RibbonTabs.vue";
 
 const { t } = useI18n();
 const shell = useShell();
@@ -539,7 +522,10 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
   font-family: var(--lj-font-shell);
 }
 
-/* ============ Linha de tabs ============ */
+.ribbon-app-menu {
+  height: 100%;
+}
+
 .ribbon-tabs-row {
   display: flex;
   align-items: stretch;
@@ -549,80 +535,10 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
   z-index: 2;
 }
 
-.ribbon-app-menu {
-  height: 100%;
-}
-
-.ribbon-tabs {
-  display: flex;
-  align-items: stretch;
+.ribbon-tabs-wrap {
   flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
-.ribbon-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.ribbon-tab {
-  display: flex;
-  align-items: center;
-  border: none;
-  background: transparent;
-  padding: 0 var(--lj-space-6);
-  height: 100%;
-  font-size: var(--lj-text-md);
-  font-weight: var(--lj-weight-medium);
-  cursor: pointer;
-  color: var(--lj-tabs-color);
-  transition:
-    background var(--lj-transition-fast),
-    color var(--lj-transition-fast);
-  outline: none;
-  user-select: none;
-  white-space: nowrap;
-  position: relative;
-  font-family: inherit;
-}
-
-.ribbon-tab:hover:not(.ribbon-tab--active) {
-  background: var(--lj-tabs-hover-bg);
-  color: var(--lj-tabs-color-hover);
-}
-
-.ribbon-tab--active {
-  background: var(--lj-tabs-active-bg);
-  color: var(--lj-tabs-active-color);
-  font-weight: var(--lj-weight-semibold);
-}
-
-/* Tabs contextuais (laranja sólido — replica skin officetab Delphi) */
-.ribbon-tab--ctx {
-  background: var(--lj-tabs-ctx-bg);
-  color: var(--lj-tabs-ctx-color);
-  font-weight: var(--lj-weight-semibold);
-}
-
-.ribbon-tab--ctx:hover:not(.ribbon-tab--active) {
-  background: var(--lj-tabs-ctx-hover-bg);
-}
-
-/* Quando ATIVA, vira branca (igual tabs normais ativas) com indicador laranja no topo */
-.ribbon-tab--ctx.ribbon-tab--ctx-active {
-  background: var(--lj-tabs-active-bg);
-  color: var(--lj-orange-darker);
-  font-weight: var(--lj-weight-bold);
-}
-
-.ribbon-tab--ctx-active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 2px;
-  background: var(--lj-orange);
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* ============ Toolbar fixa direita ============ */

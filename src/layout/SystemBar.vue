@@ -8,23 +8,7 @@
     <!-- AppMenu + Abas (no-drag) -->
     <div class="systembar-left">
       <AppMenu class="systembar-appmenu" />
-      <div class="systembar-tabs" role="tablist" :aria-label="$t('shell.ribbon_nav')">
-        <button
-          v-for="page in store.visiblePages"
-          :id="'systembar-tab-' + page.id"
-          :key="page.id"
-          type="button"
-          role="tab"
-          class="systembar-tab"
-          :class="{
-            'systembar-tab--active': store.activePage === page.id,
-          }"
-          :aria-selected="store.activePage === page.id"
-          @click.stop="store.selectPage(page.id)"
-        >
-          {{ $t(page.title) }}
-        </button>
-      </div>
+      <RibbonTabs id-prefix="systembar" class="systembar-tabs" />
     </div>
 
     <!-- Título + logo (drag) -->
@@ -76,6 +60,7 @@ import $appdata from "@/helpers/AppData";
 import LjLogo from "@/components/LjLogo.vue";
 import ShellTools from "@/layout/shell/ShellTools.vue";
 import AppMenu from "@/layout/shell/AppMenu.vue";
+import RibbonTabs from "@/components/RibbonTabs.vue";
 import { useRibbonStore } from "@/stores/ribbonStore";
 
 const { t } = useI18n();
@@ -172,50 +157,6 @@ onBeforeUnmount(() => {
 
 .systembar-appmenu {
   height: 100%;
-}
-
-.systembar-tabs {
-  display: flex;
-  align-items: stretch;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
-.systembar-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.systembar-tab {
-  display: flex;
-  align-items: center;
-  border: none;
-  background: transparent;
-  padding: 0 14px;
-  height: 100%;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  color: var(--lj-tabs-color);
-  transition:
-    background 0.15s,
-    color 0.15s;
-  outline: none;
-  user-select: none;
-  white-space: nowrap;
-  position: relative;
-  font-family: inherit;
-  -webkit-app-region: no-drag;
-}
-
-.systembar-tab:hover:not(.systembar-tab--active) {
-  background: var(--lj-tabs-hover-bg);
-  color: var(--lj-tabs-color-hover);
-}
-
-.systembar-tab--active {
-  background: var(--lj-tabs-active-bg);
-  color: var(--lj-tabs-active-color);
-  font-weight: 600;
 }
 
 /* ── Center: title + logo (drag) ── */

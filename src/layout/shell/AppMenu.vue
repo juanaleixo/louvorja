@@ -199,6 +199,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
   padding: 0;
   border: none;
   background: var(--lj-tabs-bg);
+  color: var(--lj-white);
   cursor: pointer;
   user-select: none;
   transition: background var(--lj-transition-fast);
