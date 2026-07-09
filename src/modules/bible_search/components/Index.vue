@@ -262,7 +262,7 @@ async function searchByKeyword(q) {
   const allVerses = await getVersesForSearch();
   const fuse = new Fuse(allVerses, {
     keys: ["text"],
-    threshold: 0.2,
+    threshold: 0.1,
     ignoreLocation: true,
     minMatchCharLength: 3,
   });
