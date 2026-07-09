@@ -153,7 +153,7 @@
         </div>
         <div class="media-playerbar-controls">
           <v-btn
-            icon="mdi-skip-previous"
+            :icon="ICONS.PLAYER.PREV"
             size="small"
             variant="text"
             :disabled="
@@ -163,14 +163,7 @@
             @click="prev"
           />
           <v-btn
-            :icon="isPlaying ? 'mdi-pause-circle' : 'mdi-play-circle'"
-            size="small"
-            variant="text"
-            color="primary"
-            @click="togglePlay"
-          />
-          <v-btn
-            icon="mdi-skip-next"
+            :icon="ICONS.PLAYER.NEXT"
             size="small"
             variant="text"
             :disabled="
@@ -181,7 +174,13 @@
             "
             @click="next"
           />
-          <v-btn icon="mdi-stop" size="small" variant="text" color="error" @click="stop" />
+          <v-btn
+            :icon="ICONS.PLAYER.STOP"
+            size="small"
+            variant="text"
+            color="error"
+            @click="stop"
+          />
         </div>
       </div>
 
