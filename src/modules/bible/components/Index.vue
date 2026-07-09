@@ -280,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onUnmounted, type Ref } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick, type Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDisplay } from "vuetify";
 import { module as manifest } from "../manifest";
@@ -528,10 +528,11 @@ watch(
 
 function onKeydown(e: KeyboardEvent): void {
   if (!show.value) return;
+  if (bibleSpotlightOpen.value) return;
   const tag = (e.target as HTMLElement)?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (e.key.length === 1 && !bibleSpotlightOpen.value) {
+  if (e.key.length === 1) {
     e.preventDefault();
     spotlightInitialBuffer.value = e.key.toLowerCase();
     bibleSpotlightOpen.value = true;
@@ -953,9 +954,31 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
   }
 });
 
-// Sincroniza o estado interno se um versículo for emitido por outro componente (ex: Spotlight).
-useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload: any) => {
+// Sincroniza o estado interno se um versículo for emitido por outro componente (ex: Spotlight, Bible Search).
+useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, async (payload: any) => {
   if (!payload || !payload.text) return;
+
+  // Navegar até o livro/capítulo/versículo quando vindo de fora (bible_search, spotlight)
+  if (payload.bookId && payload.chapter) {
+    const changedBook = payload.bookId !== bible.id_bible_book;
+    const changedChap = payload.chapter !== bible.chapter;
+
+    if (changedBook) await selBook(payload.bookId);
+    if (changedChap || changedBook) await selChapter(payload.chapter);
+
+    if (payload.verses?.length) {
+      bible.verses = payload.verses;
+      last_verse.value = payload.verses[payload.verses.length - 1];
+      bible.verses.sort((a, b) => a - b);
+      Object.assign(select_bible, bible);
+      select_bible.scriptural_reference = scripturalReference(select_bible);
+      select_bible.text = getSelectedVerses(select_bible.verses);
+      nextTick(() => scrollToElement(document.getElementById(`listVerse_${last_verse.value}`)));
+    }
+    return;
+  }
+
+  // Sync projeção (quando o versículo já está na mesma navegação, ex: selVerse local)
   if (
     payload.text !== select_bible.text ||
     payload.reference !== select_bible.scriptural_reference
