@@ -1,76 +1,77 @@
-import { ref, onUnmounted, getCurrentScope } from "vue";
+import { ref } from "vue";
 import { MediaFile } from "@/types/Media";
 
-export function useBackgroundSound() {
-  const audio = new Audio();
-  const isPlaying = ref(false);
-  const currentFile = ref<MediaFile | null>(null);
-  const currentTime = ref(0);
-  const duration = ref(0);
-  const progress = ref(0);
-  const volume = ref(50);
-  const repeat = ref(false);
+const _audio = new Audio();
+const isPlaying = ref(false);
+const currentFile = ref<MediaFile | null>(null);
+const currentTime = ref(0);
+const duration = ref(0);
+const progress = ref(0);
+const volume = ref(50);
+const repeat = ref(false);
 
-  let _rafId: number | null = null;
-  let _fadeTimer: ReturnType<typeof setInterval> | null = null;
+let _rafId: number | null = null;
+let _fadeTimer: ReturnType<typeof setInterval> | null = null;
+let _playFileFn: ((file: MediaFile, fadeInMs?: number) => void) | null = null;
 
-  function _stopRaf(): void {
-    if (_rafId !== null) {
-      cancelAnimationFrame(_rafId);
+function _stopRaf(): void {
+  if (_rafId !== null) {
+    cancelAnimationFrame(_rafId);
+    _rafId = null;
+  }
+}
+
+function _clearFade(): void {
+  if (_fadeTimer !== null) {
+    clearInterval(_fadeTimer);
+    _fadeTimer = null;
+  }
+}
+
+function _startRaf(): void {
+  _stopRaf();
+  const tick = (): void => {
+    if (_audio.paused) {
       _rafId = null;
+      return;
     }
-  }
-
-  function _clearFade(): void {
-    if (_fadeTimer !== null) {
-      clearInterval(_fadeTimer);
-      _fadeTimer = null;
-    }
-  }
-
-  function _startRaf(): void {
-    _stopRaf();
-    const tick = (): void => {
-      if (audio.paused) {
-        _rafId = null;
-        return;
-      }
-      currentTime.value = isNaN(audio.currentTime) ? 0 : audio.currentTime;
-      duration.value = isNaN(audio.duration) || !isFinite(audio.duration) ? 0 : audio.duration;
-      progress.value = duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0;
-      _rafId = requestAnimationFrame(tick);
-    };
+    currentTime.value = isNaN(_audio.currentTime) ? 0 : _audio.currentTime;
+    duration.value = isNaN(_audio.duration) || !isFinite(_audio.duration) ? 0 : _audio.duration;
+    progress.value = duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0;
     _rafId = requestAnimationFrame(tick);
-  }
+  };
+  _rafId = requestAnimationFrame(tick);
+}
 
-  function _revokeBlob(): void {
-    if (audio.src && audio.src.startsWith("blob:")) {
-      try {
-        URL.revokeObjectURL(audio.src);
-      } catch {
-        /* ignora */
-      }
+function _revokeBlob(): void {
+  if (_audio.src && _audio.src.startsWith("blob:")) {
+    try {
+      URL.revokeObjectURL(_audio.src);
+    } catch {
+      /* ignora */
     }
   }
+}
 
-  function _setupEnded(): void {
-    audio.onended = () => {
-      _stopRaf();
-      isPlaying.value = false;
-      if (repeat.value && currentFile.value) {
-        playFile(currentFile.value);
-      }
-    };
-  }
+function _setupEnded(): void {
+  _audio.onended = () => {
+    _stopRaf();
+    isPlaying.value = false;
+    if (repeat.value && currentFile.value && _playFileFn) {
+      _playFileFn(currentFile.value);
+    }
+  };
+}
 
+export function useBackgroundSound() {
   function setVolume(val: number): void {
     volume.value = val;
-    audio.volume = val / 100;
+    _audio.volume = val / 100;
   }
 
   function fadeIn(targetVolume: number, durationMs: number, callback?: () => void): void {
     _clearFade();
-    audio.volume = 0;
+    _audio.volume = 0;
     const target = targetVolume / 100;
     const steps = Math.max(1, Math.round(durationMs / 30));
     const increment = target / steps;
@@ -78,45 +79,46 @@ export function useBackgroundSound() {
     _fadeTimer = setInterval(() => {
       step++;
       if (step >= steps) {
-        audio.volume = target;
+        _audio.volume = target;
         _clearFade();
         if (callback) callback();
       } else {
-        audio.volume = Math.min(audio.volume + increment, target);
+        _audio.volume = Math.min(_audio.volume + increment, target);
       }
     }, 30);
   }
 
   function fadeOut(durationMs: number, callback?: () => void): void {
     _clearFade();
-    const startVolume = audio.volume;
+    const startVolume = _audio.volume;
     const steps = Math.max(1, Math.round(durationMs / 30));
     const decrement = startVolume / steps;
     let step = 0;
     _fadeTimer = setInterval(() => {
       step++;
       if (step >= steps) {
-        audio.volume = 0;
+        _audio.volume = 0;
         _clearFade();
         if (callback) callback();
       } else {
-        audio.volume = Math.max(audio.volume - decrement, 0);
+        _audio.volume = Math.max(_audio.volume - decrement, 0);
       }
     }, 30);
   }
 
   function playFile(file: MediaFile, fadeInMs = 3000): void {
+    _playFileFn = playFile;
     _revokeBlob();
     _stopRaf();
     _clearFade();
 
     currentFile.value = file;
-    audio.loop = repeat.value;
-    audio.src = file.path;
-    audio.load();
+    _audio.loop = repeat.value;
+    _audio.src = file.path;
+    _audio.load();
     isPlaying.value = true;
 
-    const playPromise = audio.play();
+    const playPromise = _audio.play();
     if (playPromise) {
       playPromise
         .then(() => {
@@ -131,48 +133,48 @@ export function useBackgroundSound() {
   }
 
   function stop(fadeOutMs = 0): void {
-    if (fadeOutMs > 0 && !audio.paused) {
+    if (fadeOutMs > 0 && !_audio.paused) {
       isPlaying.value = false;
       fadeOut(fadeOutMs, () => {
         _stopRaf();
         _clearFade();
-        audio.pause();
+        _audio.pause();
         _revokeBlob();
-        audio.src = "";
-        audio.currentTime = 0;
+        _audio.src = "";
+        _audio.currentTime = 0;
         currentFile.value = null;
         currentTime.value = 0;
         duration.value = 0;
         progress.value = 0;
-        audio.onended = null;
+        _audio.onended = null;
       });
     } else {
       _stopRaf();
       _clearFade();
-      audio.pause();
-      audio.currentTime = 0;
+      _audio.pause();
+      _audio.currentTime = 0;
       _revokeBlob();
-      audio.src = "";
+      _audio.src = "";
       currentFile.value = null;
       currentTime.value = 0;
       duration.value = 0;
       progress.value = 0;
       isPlaying.value = false;
-      audio.onended = null;
+      _audio.onended = null;
     }
   }
 
   function pause(): void {
-    if (!audio.paused) {
-      audio.pause();
+    if (!_audio.paused) {
+      _audio.pause();
       _stopRaf();
       isPlaying.value = false;
     }
   }
 
   function resume(): void {
-    if (audio.paused && audio.src) {
-      const playPromise = audio.play();
+    if (_audio.paused && _audio.src) {
+      const playPromise = _audio.play();
       if (playPromise) {
         playPromise
           .then(() => {
@@ -190,35 +192,29 @@ export function useBackgroundSound() {
     if (isPlaying.value) {
       isPlaying.value = false;
       fadeOut(fadeOutMs, () => {
-        audio.pause();
+        _audio.pause();
       });
     } else if (currentFile.value) {
       isPlaying.value = true;
-      audio.play().catch(() => {});
+      _audio.play().catch(() => {});
       fadeIn(volume.value, fadeInMs);
     }
   }
 
   function seek(pct: number): void {
     if (duration.value > 0) {
-      audio.currentTime = (pct / 100) * duration.value;
+      _audio.currentTime = (pct / 100) * duration.value;
     }
   }
 
   function cleanup(): void {
     _stopRaf();
     _clearFade();
-    audio.pause();
+    _audio.pause();
     _revokeBlob();
-    audio.src = "";
-    audio.onended = null;
-    audio.load();
-  }
-
-  if (getCurrentScope()) {
-    onUnmounted(() => {
-      cleanup();
-    });
+    _audio.src = "";
+    _audio.onended = null;
+    _audio.load();
   }
 
   return {
