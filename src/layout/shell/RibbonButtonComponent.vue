@@ -43,7 +43,7 @@ const iconSize = computed(() => {
   background: transparent;
   cursor: pointer;
   border-radius: var(--lj-radius-sm);
-  color: var(--lj-rbtn-color);
+  color: var(--lj-text);
   transition:
     background var(--lj-transition-fast),
     border-color var(--lj-transition-fast),
