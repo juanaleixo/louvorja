@@ -21,7 +21,7 @@ export const module: Module = {
   icon: ICONS.MODULES.BACKGROUND_PROJECTION,
   color: "#655151",
   showInMainMenu: true,
-  category: ModuleCategoryEnum.LIVE,
+  category: ModuleCategoryEnum.WORSHIP,
   group: ModuleGroupEnum.MEDIA,
   order: 2,
   dependencies: [],

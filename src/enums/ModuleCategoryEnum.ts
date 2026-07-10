@@ -1,6 +1,6 @@
 export enum ModuleCategoryEnum {
   COLLECTIONS = "collections",
-  LIVE = "live",
+  WORSHIP = "worship",
   BIBLE = "bible",
   UTILITIES = "utilities",
   FAVORITES = "favorites",

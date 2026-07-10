@@ -19,7 +19,7 @@ export const module: Module = {
   icon: ICONS.MODULES.OVERLAY,
   color: "#7c3aed",
   showInMainMenu: true,
-  category: ModuleCategoryEnum.LIVE,
+  category: ModuleCategoryEnum.WORSHIP,
   group: ModuleGroupEnum.MEDIA,
   order: 10,
   dependencies: [],

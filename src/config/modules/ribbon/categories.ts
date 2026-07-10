@@ -19,9 +19,9 @@ export const categories: Record<string, ModuleCategory> = {
       ModuleGroupEnum.SEARCH,
     ],
   },
-  [ModuleCategoryEnum.LIVE]: {
-    id: ModuleCategoryEnum.LIVE,
-    title: "ribbon.pages.live",
+  [ModuleCategoryEnum.WORSHIP]: {
+    id: ModuleCategoryEnum.WORSHIP,
+    title: "ribbon.pages.worship",
     icon: "mdi-microphone-variant",
     color: "#1b4f8a",
     order: 1,

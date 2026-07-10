@@ -18,7 +18,7 @@ export const module: Module = {
   icon: ICONS.MODULES.LITURGY,
   color: "#27ae60",
   showInMainMenu: true,
-  category: ModuleCategoryEnum.LIVE,
+  category: ModuleCategoryEnum.WORSHIP,
   group: ModuleGroupEnum.CHURCH,
   order: 0,
 }

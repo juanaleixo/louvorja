@@ -20,7 +20,7 @@ export const module: Module = {
   icon: ICONS.MODULES.BACKGROUND_SOUND,
   color: "#00154d",
   showInMainMenu: true,
-  category: ModuleCategoryEnum.LIVE,
+  category: ModuleCategoryEnum.WORSHIP,
   group: ModuleGroupEnum.MEDIA,
   order: 4,
   dependencies: [],

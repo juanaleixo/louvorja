@@ -21,7 +21,7 @@ export const module: Module = {
   icon: ICONS.MODULES.TIMER_WORSHIP,
   color: "#e67e22",
   showInMainMenu: true,
-  category: ModuleCategoryEnum.LIVE,
+  category: ModuleCategoryEnum.WORSHIP,
   group: ModuleGroupEnum.CHURCH,
   order: 2,
   customization: {
