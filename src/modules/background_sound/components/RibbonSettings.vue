@@ -67,6 +67,7 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { ICONS } from "@/config/Icons";
+import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import $modules from "@/helpers/Modules";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
@@ -88,6 +89,7 @@ const fadeIn = ref(3000);
 const fadeOut = ref(3000);
 const autoPause = ref(true);
 const repeat_ = ref(false);
+const bg = useBackgroundSound();
 
 async function save(key: string, value: unknown): Promise<void> {
   const existing = await getSetting<BackgroundSoundSettings & { id: string }>(
@@ -96,6 +98,9 @@ async function save(key: string, value: unknown): Promise<void> {
   const s = existing ?? { id: SETTINGS_TABLE.BACKGROUND_SOUND };
   (s as any)[key] = value;
   await saveSetting(s);
+  if (key === "repeat") bg.repeat.value = value as boolean;
+  if (key === "fadeIn") bg.fadeInMs.value = value as number;
+  if (key === "fadeOut") bg.fadeOutMs.value = value as number;
 }
 
 onMounted(async () => {

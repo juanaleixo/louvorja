@@ -1,5 +1,15 @@
 <template>
-  <footer id="footer-bar" class="footer" :class="{ 'footer--active': hasPlayer }">
+  <footer
+    id="footer-bar"
+    class="footer"
+    style="height: 20px"
+    :class="{
+      'footer--active': hasPlayer || hasBgSound,
+      'footer--bg-sound': hasPlayer && hasBgSound,
+      'footer--bg-only': hasBgSound && !hasPlayer,
+    }"
+  >
+    <BackgroundSoundPlayer v-if="hasBgSound" />
     <div v-if="hasPlayer" class="player">
       <div class="player-title" :class="{ 'player-title--youtube': isYouTube }">
         <v-icon
@@ -149,13 +159,17 @@ import { ref, computed, onMounted } from "vue";
 import packageJson from "@root/package.json";
 import Modules from "@/helpers/Modules";
 import Media from "@/composables/useMedia";
+import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import Database from "@/helpers/Database";
 import DateTime from "@/helpers/DateTime";
+import BackgroundSoundPlayer from "@/components/BackgroundSoundPlayer.vue";
 
 const dbVersion = ref(0);
 
 const version = computed(() => `${packageJson.version}.${dbVersion.value}`);
 const media = computed(() => Modules.get("media"));
+
+const bg = useBackgroundSound();
 
 const hasPlayer = computed(() => {
   try {
@@ -164,6 +178,8 @@ const hasPlayer = computed(() => {
     return false;
   }
 });
+
+const hasBgSound = computed(() => !!bg.currentFile.value);
 
 const hasAudio = computed(() => {
   const url = media.value?.config?.audio;
@@ -260,7 +276,9 @@ onMounted(loadDBVersion);
   right: 0;
   height: var(--lj-player-height);
   transform: translateY(100%);
-  transition: transform 0.3s ease;
+  transition:
+    transform 0.6s ease,
+    height 0.4s ease;
   z-index: 10;
   background: var(--lj-footer-bg);
   border-top: 1px solid var(--lj-footer-border);
@@ -270,8 +288,17 @@ onMounted(loadDBVersion);
   flex-direction: column;
 }
 
+.footer--bg-sound {
+  height: calc(var(--lj-player-height) + 30px);
+}
+
+.footer--bg-only {
+  height: 30px;
+}
+
 .footer--active {
   transform: translateY(0);
+  transition: transform 0.3s ease; /* entrada: 0.3s (rápida) */
 }
 
 /* Player */

@@ -9,6 +9,8 @@ const duration = ref(0);
 const progress = ref(0);
 const volume = ref(50);
 const repeat = ref(false);
+const fadeInMs = ref(3000);
+const fadeOutMs = ref(3000);
 
 let _rafId: number | null = null;
 let _fadeTimer: ReturnType<typeof setInterval> | null = null;
@@ -65,6 +67,7 @@ function _setupEnded(): void {
 
 export function useBackgroundSound() {
   function setVolume(val: number): void {
+    if (!isFinite(val)) return;
     volume.value = val;
     _audio.volume = val / 100;
   }
@@ -72,7 +75,7 @@ export function useBackgroundSound() {
   function fadeIn(targetVolume: number, durationMs: number, callback?: () => void): void {
     _clearFade();
     _audio.volume = 0;
-    const target = targetVolume / 100;
+    const target = isFinite(targetVolume) ? targetVolume / 100 : 0;
     const steps = Math.max(1, Math.round(durationMs / 30));
     const increment = target / steps;
     let step = 0;
@@ -90,7 +93,7 @@ export function useBackgroundSound() {
 
   function fadeOut(durationMs: number, callback?: () => void): void {
     _clearFade();
-    const startVolume = _audio.volume;
+    const startVolume = isFinite(_audio.volume) ? _audio.volume : 0;
     const steps = Math.max(1, Math.round(durationMs / 30));
     const decrement = startVolume / steps;
     let step = 0;
@@ -196,7 +199,8 @@ export function useBackgroundSound() {
       });
     } else if (currentFile.value) {
       isPlaying.value = true;
-      _audio.play().catch(() => {});
+      const promise = _audio.play();
+      if (promise) promise.then(() => _startRaf()).catch(() => {});
       fadeIn(volume.value, fadeInMs);
     }
   }
@@ -225,6 +229,8 @@ export function useBackgroundSound() {
     progress,
     volume,
     repeat,
+    fadeInMs,
+    fadeOutMs,
     setVolume,
     playFile,
     stop,

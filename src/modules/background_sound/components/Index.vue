@@ -100,65 +100,6 @@
         <p>{{ t("no_categories") }}</p>
       </div>
 
-      <!-- Player bar -->
-      <div v-if="bg.currentFile.value" class="bgs-playerbar">
-        <div class="bgs-playerbar-info">
-          <v-icon :icon="ICONS.MEDIA.AUDIO_PLAYER" :color="V_COLOR_PRIMARY" size="25" />
-          <span class="bgs-playerbar-file">{{ bg.currentFile.value.name }}</span>
-          <span class="bgs-playerbar-time">
-            {{ formatTime(bg.currentTime.value) }} / {{ formatTime(bg.duration.value) }}
-          </span>
-        </div>
-        <div class="bgs-playerbar-progress">
-          <v-slider
-            :model-value="bg.progress.value"
-            :max="100"
-            density="compact"
-            hide-details
-            :color="V_COLOR_PRIMARY"
-            class="bgs-progress-slider"
-            @update:model-value="seekProgress"
-          />
-        </div>
-        <div class="bgs-playerbar-controls">
-          <v-btn
-            :icon="repeatSetting ? 'mdi-repeat' : 'mdi-repeat-off'"
-            size="small"
-            variant="text"
-            :color="repeatSetting ? 'primary' : ''"
-            @click="repeatSetting = !repeatSetting"
-          />
-          <v-btn
-            :icon="bg.isPlaying.value ? 'mdi-pause-circle' : 'mdi-play-circle'"
-            size="small"
-            variant="text"
-            color="primary"
-            @click="toggleCurrent"
-          />
-          <v-btn icon="mdi-stop" size="small" variant="text" color="error" @click="stop" />
-          <v-btn
-            icon="mdi-stop-circle-outline"
-            size="small"
-            variant="text"
-            color="error"
-            @click="stopImmediately"
-          />
-        </div>
-        <div class="bgs-playerbar-volume">
-          <v-icon :icon="volumeIcon" size="16" @click="toggleMute" />
-          <v-slider
-            :model-value="bg.volume.value"
-            :min="0"
-            :max="100"
-            density="compact"
-            hide-details
-            class="bgs-volume-slider"
-            :color="V_COLOR_PRIMARY"
-            @update:model-value="bg.setVolume($event)"
-          />
-        </div>
-      </div>
-
       <!-- Category Manager -->
       <CategoryManagerDialog
         v-model="showManageDialog"
@@ -408,6 +349,8 @@ async function loadSettings(): Promise<void> {
 
 async function saveSettings(): Promise<void> {
   await saveSetting({ id: SETTINGS_ID, ...cachedSettings });
+  bg.fadeInMs.value = cachedSettings.fadeIn;
+  bg.fadeOutMs.value = cachedSettings.fadeOut;
 }
 
 const fadeInDuration = computed({
@@ -964,6 +907,8 @@ onMounted(async () => {
   await migrateFromOldStructure();
   await loadSettings();
   bg.repeat.value = cachedSettings.repeat;
+  bg.fadeInMs.value = cachedSettings.fadeIn;
+  bg.fadeOutMs.value = cachedSettings.fadeOut;
   categories.value = await loadCategories();
   libraryFiles.value = await loadLibrary();
   rebuildIconUrls(categories.value);
@@ -991,20 +936,6 @@ onBeforeUnmount(() => {
 .bgm-root--drag-over {
   outline: 2px dashed rgb(var(--v-theme-primary));
   outline-offset: -2px;
-}
-
-/* ── Header ── */
-.bgs-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  flex-shrink: 0;
-}
-.bgs-label {
-  font-size: 20px;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  white-space: nowrap;
 }
 
 /* ── Empty ── */
@@ -1180,176 +1111,5 @@ onBeforeUnmount(() => {
   border-radius: 3px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-}
-
-/* ── Manage dialog ── */
-.bgs-manage-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-.bgs-manage-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--cat-color) 8%, transparent);
-}
-.bgs-manage-item-icon {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--cat-color);
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-.bgs-manage-item-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.bgs-manage-item-name {
-  font-size: 13px;
-  font-weight: 500;
-}
-.bgs-manage-item-count {
-  font-size: 11px;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-}
-
-/* ── Player bar ── */
-.bgs-playerbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-top: 1px solid rgba(var(--v-border-color), 0.2);
-  background: rgba(var(--v-theme-primary), 0.04);
-  flex-shrink: 0;
-}
-.bgs-playerbar-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex-shrink: 0;
-}
-.bgs-playerbar-file {
-  font-size: 12px;
-  font-weight: 500;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.bgs-playerbar-time {
-  font-size: 11px;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-}
-.bgs-playerbar-progress {
-  flex: 1;
-  min-width: 60px;
-}
-.bgs-progress-slider {
-  margin: 0;
-  padding: 0;
-}
-.bgs-playerbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex-shrink: 0;
-}
-.bgs-playerbar-volume {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100px;
-  flex-shrink: 0;
-}
-.bgs-volume-slider {
-  margin: 0;
-  padding: 0;
-}
-
-/* ── Dialog ── */
-.bgs-custom-icon-preview {
-  display: inline-flex;
-  align-items: center;
-  position: relative;
-}
-.bgs-custom-icon-remove {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: rgb(var(--v-theme-surface));
-  border-radius: 50%;
-}
-.bgs-color-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px 0;
-}
-.bgs-color-swatch {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition:
-    transform 0.1s,
-    border-color 0.1s;
-  padding: 0;
-  outline: none;
-}
-.bgs-color-swatch:hover {
-  transform: scale(1.15);
-}
-.bgm-color-swatch--active {
-  border-color: rgba(var(--v-theme-on-surface), 0.6);
-  transform: scale(1.1);
-}
-.bgs-icon-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px 0;
-  max-height: 140px;
-  overflow-y: auto;
-}
-.bgs-icon-btn {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  background: rgba(var(--v-theme-on-surface), 0.04);
-  transition:
-    background 0.1s,
-    border-color 0.1s,
-    transform 0.1s;
-  padding: 0;
-  outline: none;
-  color: rgba(var(--v-theme-on-surface), 0.7);
-}
-.bgs-icon-btn:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-  transform: scale(1.1);
-}
-.bgm-icon-btn--active {
-  background: rgba(var(--v-theme-primary), 0.15);
-  border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-primary));
 }
 </style>
