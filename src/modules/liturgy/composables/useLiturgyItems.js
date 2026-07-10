@@ -52,6 +52,7 @@ export const DEFAULT_FORM = () => ({
   subitem: "",
   cor: DEFAULT_COLOR,
   duration: 0,
+  time: "",
   dir: "",
   dir_info: "E",
   url: "",

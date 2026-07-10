@@ -85,6 +85,16 @@
           </div>
         </div>
 
+        <div class="lit-field lit-field--medium">
+          <label>{{ t("inputs.time") }}:</label>
+          <input
+            :value="form.time"
+            type="time"
+            class="lit-input lit-input--small"
+            @input="setFormField('time', inputVal($event))"
+          />
+        </div>
+
         <div class="lit-field lit-field--small">
           <label>{{ t("inputs.duration_min") }}:</label>
           <input
@@ -408,6 +418,9 @@ function onVideoPicked(e: Event) {
 }
 .lit-field--small input {
   width: 60px;
+}
+.lit-field--medium input {
+  width: 80px;
 }
 .lit-dialog-footer {
   display: flex;

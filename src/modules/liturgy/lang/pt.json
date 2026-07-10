@@ -74,6 +74,7 @@
     "scheduled_empty": "Nenhuma categoria criada. Use o botão de configuração para criar.",
     "category_hint": "Categorias servem como separadores visuais entre seções da liturgia.",
     "duration_min": "Duração (min)",
+    "time": "Horário",
     "video_select": "Vídeo",
     "video_pick": "-- selecione um vídeo --",
     "video_url_or_select": "URL do vídeo ou selecione um salvo"

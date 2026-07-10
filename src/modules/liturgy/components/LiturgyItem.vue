@@ -62,6 +62,10 @@
         <div v-if="subtitleFor(element)" class="lit-card-subtitle">
           {{ subtitleFor(element) }}
         </div>
+        <div>
+          <span v-if="element.time" class="lit-card-time">{{ element.time }}</span>
+          <span v-if="element.duration" class="lit-card-time ml-4">{{ element.duration }} min</span>
+        </div>
       </button>
 
       <!-- Ações específicas de música -->
@@ -322,6 +326,12 @@ const t = (key: string) => _t(key, locale.value);
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
+}
+.lit-card-time {
+  font-size: 10px;
+  color: var(--lj-navy);
+  font-weight: 600;
+  margin-top: 1px;
 }
 .lit-card--checked .lit-card-subtitle {
   text-decoration: line-through;
