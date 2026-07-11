@@ -293,7 +293,7 @@ function executeInputAction(btn: RibbonButton): void {
   const val = inputValues[btn.id]?.trim();
   if (!val) return;
   const m = btn.action?.match(
-    /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_videos|background_sound)_(.+)$/
+    /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_online_videos|background_sound)_(.+)$/
   );
   if (m) {
     Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
@@ -483,7 +483,7 @@ function executeButton(btn: RibbonButton): void {
       "timer",
       "message_board",
       "online_videos",
-      "custom_videos",
+      "custom_online_videos",
       "hymnal",
       "bible_search",
       "music_search",

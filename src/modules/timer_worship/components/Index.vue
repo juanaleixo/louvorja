@@ -158,7 +158,8 @@ import MusicSpotlight from "@/components/MusicSpotlight.vue";
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
-import { openDB } from "idb";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 import { MediaEnum } from "@/enums/MediaEnum";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
 import { ModuleEnum } from "@/enums/ModuleEnum";
@@ -193,14 +194,7 @@ interface CustomVideoItem {
 
 async function loadCustomVideos(): Promise<void> {
   try {
-    const db = await openDB("louvorja_custom_videos", 1, {
-      upgrade(d) {
-        if (!d.objectStoreNames.contains("videos")) {
-          d.createObjectStore("videos", { keyPath: "id" });
-        }
-      },
-    });
-    const all = await db.getAll("videos");
+    const all = await $idb.getAll(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
     customVideos.value = (all as CustomVideoItem[]).map((v) => ({
       name: v.name,
       url: v.url,

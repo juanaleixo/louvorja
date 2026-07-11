@@ -103,7 +103,7 @@ export const ICONS = {
     COUNTER: "mdi-counter",
     CUSTOM_COLLECTONS: "mdi-folder-play",
     CUSTOM_MUSICS: "mdi-playlist-music-outline",
-    CUSTOM_VIDEOS: "mdi-video-box",
+    CUSTOM_ONLINE_VIDEOS: "mdi-video-box",
     DOXOLOGY: "church",
     DRAW: "mdi-dice-multiple",
     FAVORITES: "mdi-star",

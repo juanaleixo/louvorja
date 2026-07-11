@@ -13,7 +13,7 @@ export enum ModuleEnum {
   COLLECTIONS = "collections",
   COUNTER = "counter",
   CUSTOM_COLLECTIONS = "custom_collections",
-  CUSTOM_VIDEOS = "custom_videos",
+  CUSTOM_ONLINE_VIDEOS = "custom_online_videos",
   DRAW = "draw",
   FAVORITES = "favorites",
   HISTORY = "history",
