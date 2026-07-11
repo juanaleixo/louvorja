@@ -1,71 +1,18 @@
 <template>
   <div class="lit-row">
-    <!-- CATEGORIA -->
     <div
-      v-if="element.tipo === 'categoria'"
-      class="lit-category"
-      :style="{ background: element.cor || defaultColor }"
-      @click="!locked && $emit('edit', index)"
-    >
-      <button v-if="!locked" class="lit-card-grip" data-handle="true" :title="t('actions.drag')">
-        <v-icon icon="mdi-drag-vertical" size="16" />
-      </button>
-      <span class="lit-category-text">
-        {{ element.item || t("placeholders.category") }}
-      </span>
-      <button
-        v-if="!locked"
-        class="lit-card-action"
-        :title="t('actions.edit')"
-        @click.stop="$emit('edit', index)"
-      >
-        <v-icon icon="mdi-pencil" size="14" />
-      </button>
-    </div>
-
-    <!-- ITEM NORMAL -->
-    <div
-      v-else
       class="lit-card"
       :class="{
         'lit-card--checked': isChecked(element),
         'lit-card--locked': locked,
       }"
     >
-      <!-- Ícone grande do tipo -->
-      <button
-        class="lit-card-icon"
-        :style="{ background: element.cor || defaultColor }"
-        :title="locked ? '' : t('actions.drag')"
-        data-handle="true"
-      >
-        <v-icon :icon="iconFor(element)" size="28" color="white" />
-      </button>
-
-      <!-- Checkbox grande à esquerda do título -->
-      <label
-        class="lit-card-check lit-card-check--lead"
-        :title="t('actions.mark_done')"
-        @click.stop
-      >
-        <input
-          type="checkbox"
-          :checked="isChecked(element)"
-          @change="$emit('toggle-checked', element)"
-        />
-        <span class="lit-check-mark"><v-icon icon="mdi-check" size="14" /></span>
-      </label>
-
       <!-- Texto -->
-      <button class="lit-card-text" @click="$emit('execute', element)">
-        <div class="lit-card-title">{{ element.item || t("placeholders.untitled") }}</div>
-        <div v-if="subtitleFor(element)" class="lit-card-subtitle">
+      <button class="lit-card-text" data-handle="true" @click="$emit('execute', element)">
+        <span class="lit-card-title">{{ element.item || t("placeholders.untitled") }}</span>
+        <span v-if="subtitleFor(element)" class="lit-card-subtitle">
           {{ subtitleFor(element) }}
-        </div>
-        <div>
-          <span v-if="element.time" class="lit-card-time">{{ element.time }}</span>
-          <span v-if="element.duration" class="lit-card-time ml-4">{{ element.duration }} min</span>
-        </div>
+        </span>
       </button>
 
       <!-- Ações específicas de música -->
@@ -179,10 +126,6 @@
 
           {{ t("actions.delete") }}
         </v-tooltip>
-
-        <button v-if="!locked" class="lit-card-grip" data-handle="true" :title="t('actions.drag')">
-          <v-icon icon="mdi-arrow-up-down" size="16" />
-        </button>
       </div>
     </div>
   </div>
@@ -217,11 +160,12 @@ withDefaults(
     index: number;
     locked?: boolean;
     defaultColor?: string;
+    hideCheckbox?: boolean;
     isChecked: (item: LiturgyItem) => boolean;
     iconFor: (item: LiturgyItem) => string;
     subtitleFor: (item: LiturgyItem) => string;
   }>(),
-  { locked: false, defaultColor: "#00004F" }
+  { locked: false, defaultColor: "#00004F", hideCheckbox: false }
 );
 
 defineEmits<{
@@ -251,9 +195,9 @@ const t = (key: string) => _t(key, locale.value);
   align-items: stretch;
   flex: 1;
   background: var(--lj-surface-bg);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: var(--lj-shadow-2);
-  height: 64px;
+  min-height: 50px;
   transition:
     background 0.15s,
     border-color 0.15s;
@@ -261,39 +205,17 @@ const t = (key: string) => _t(key, locale.value);
   position: relative;
 }
 .lit-card:hover {
-  border-color: rgba(var(--lj-navy-ch), 0.5);
-  background: rgba(var(--lj-navy-ch), 0.03);
+  color: var(--lj-white);
+  border-color: rgb(var(--lj-navy-ch), 50%);
+  background: rgb(var(--lj-navy-ch) / 50%);
 }
 .lit-card--checked {
-  background: rgba(78, 213, 255, 0.06);
-  border-color: rgba(78, 213, 255, 0.4);
+  border-color: rgb(var(--lj-navy-ch) / 60%);
+  background: rgb(var(--lj-navy-ch) / 20%);
 }
-.lit-card--ghost {
-  opacity: 0.4;
-  background: rgba(var(--lj-navy-ch), 0.1);
-}
+
 .lit-card--locked {
   border-left: 3px solid rgba(var(--lj-navy-ch), 0.3);
-}
-
-.lit-card-icon {
-  width: 64px;
-  flex-shrink: 0;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: filter 0.15s;
-}
-.lit-card-icon:hover {
-  filter: brightness(1.15);
-}
-
-.lit-card-check--lead {
-  flex-shrink: 0;
-  width: 40px;
-  border-right: 1px solid rgba(var(--v-border-color), 0.2);
 }
 
 .lit-card-text {
@@ -327,12 +249,7 @@ const t = (key: string) => _t(key, locale.value);
   text-overflow: ellipsis;
   margin-top: 2px;
 }
-.lit-card-time {
-  font-size: 10px;
-  color: var(--lj-navy);
-  font-weight: 600;
-  margin-top: 1px;
-}
+
 .lit-card--checked .lit-card-subtitle {
   text-decoration: line-through;
 }
@@ -437,44 +354,7 @@ const t = (key: string) => _t(key, locale.value);
   background: rgba(var(--lj-on-surface-ch), 0.08);
   color: var(--lj-text);
 }
-.lit-card-grip:hover {
-  background: rgba(var(--lj-on-surface-ch), 0.08);
-  color: var(--lj-text);
-}
-.lit-card-grip--cat {
-  height: 100%;
-  width: 28px;
-  color: rgba(255, 255, 255, 0.7);
-}
-.lit-card-grip--cat:hover {
-  color: white;
-  background: rgba(0, 0, 0, 0.15);
-}
 
-.lit-category {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  height: 36px;
-  margin-top: 12px;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.02em;
-  padding-right: 4px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  box-shadow: var(--lj-shadow-2);
-}
-.lit-category:hover {
-  filter: brightness(1.1);
-}
-.lit-category-text {
-  flex: 1;
-  text-align: center;
-  text-transform: uppercase;
-}
 .lit-category .lit-card-action {
   color: rgba(255, 255, 255, 0.85);
 }

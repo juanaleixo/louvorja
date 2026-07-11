@@ -20,7 +20,7 @@
     />
 
     <div class="liturgy-body">
-      <LiturgyList
+      <LiturgyTimeline
         :items="safeItems"
         :locked="locked ?? false"
         :default-color="defaultColor"
@@ -131,7 +131,7 @@ import Broadcast from "@/helpers/Broadcast";
 import { useLiturgyPersistence } from "../composables/useLiturgyPersistence";
 import { useLiturgyItems, COLORS, DEFAULT_COLOR } from "../composables/useLiturgyItems";
 import LiturgyDayTabs from "./LiturgyDayTabs.vue";
-import LiturgyList from "./LiturgyList.vue";
+import LiturgyTimeline from "./LiturgyTimeline.vue";
 import LiturgyNotesPanel from "./LiturgyNotesPanel.vue";
 import LiturgyItemForm from "./LiturgyItemForm.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
