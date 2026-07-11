@@ -198,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import { useBackgroundSound } from "@/composables/useBackgroundSound";
@@ -574,18 +574,23 @@ function openAddAudioMenu(): void {
   showAddAudioDialog.value = true;
 }
 
-function addAudioFiles(cat: CategoryFileData): void {
+async function addAudioFiles(cat: CategoryFileData): Promise<void> {
   pendingCategoryId = cat.id;
   showAddAudioDialog.value = false;
+
+  await nextTick();
 
   if (pendingDropFiles.value.length) {
     const files = [...pendingDropFiles.value];
     pendingDropFiles.value = [];
     for (const f of files) {
-      addFileRecord(f, cat.id);
+      await addFileRecord(f, cat.id);
     }
+    libraryFiles.value = await loadLibrary();
+    rebuildAllBlobUrls(libraryFiles.value);
     return;
   }
+
   fileInput.value?.click();
 }
 
