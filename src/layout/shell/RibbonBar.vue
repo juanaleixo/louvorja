@@ -487,7 +487,7 @@ function executeButton(btn: RibbonButton): void {
       "hymnal",
       "bible_search",
       "music_search",
-      "media_deck",
+      "media_library",
       "overlay",
       "background_sound",
       "background_projection",

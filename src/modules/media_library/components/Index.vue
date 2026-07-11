@@ -237,7 +237,8 @@ import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
-import { openDB, type IDBPDatabase } from "idb";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 import { KEYS } from "@/constants/UserDataKeys";
 
 /* ------------------------------------------------------------------ */
@@ -267,42 +268,23 @@ interface PlaylistItem {
 /*  IDB helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-const DB_NAME = "louvorja_midia";
-const DB_VERSION = 1;
-const STORE_LIBRARY = "library";
-
-let dbPromise: Promise<IDBPDatabase> | null = null;
-
-function getDb(): Promise<IDBPDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_LIBRARY)) {
-          db.createObjectStore(STORE_LIBRARY, { keyPath: "id" });
-        }
-      },
-    });
-  }
-  return dbPromise;
-}
+const STORE_LIBRARY = DB_TABLE.MEDIA_LIBRARY;
 
 async function loadLibrary(): Promise<MediaFile[]> {
-  const db = await getDb();
-  return (await db.getAll(STORE_LIBRARY)).sort((a, b) => b.addedAt - a.addedAt);
+  const all = await $idb.getAll<MediaFile>(STORE_LIBRARY);
+  return all.sort((a, b) => b.addedAt - a.addedAt);
 }
 
 async function saveFile(file: MediaFile): Promise<void> {
-  const db = await getDb();
   const plain = { ...file };
   if (plain.data && plain.data.byteLength === 0) {
     delete plain.data;
   }
-  await db.put(STORE_LIBRARY, plain);
+  await $idb.put(STORE_LIBRARY, plain);
 }
 
 async function deleteFile(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete(STORE_LIBRARY, id);
+  await $idb.del(STORE_LIBRARY, id);
 }
 
 /* ------------------------------------------------------------------ */
@@ -643,7 +625,7 @@ async function onFilesSelected(e: Event): Promise<void> {
 /*  Playlist                                                           */
 /* ------------------------------------------------------------------ */
 
-const PLAYLIST_KEY = "modules.media_deck.playlist";
+const PLAYLIST_KEY = "modules.media_library.playlist";
 
 function savePlaylist(): void {
   const data = playlist.value.map(({ id, name, path, type }) => ({ id, name, path, type }));
@@ -651,7 +633,7 @@ function savePlaylist(): void {
 }
 
 function loadPlaylist(): void {
-  $userdata.set(KEYS.MODULES.MEDIA_DECK.IS_PLAYING, false);
+  $userdata.set(KEYS.MODULES.MEDIA_LIBRARY.IS_PLAYING, false);
   const saved = $userdata.get<
     { id: string; name: string; path: string; type: "image" | "video" | "pdf" }[]
   >(PLAYLIST_KEY, []);
@@ -712,7 +694,7 @@ async function playIndex(index: number): Promise<void> {
 
   currentIndex.value = index;
   isPlaying.value = true;
-  $userdata.set(KEYS.MODULES.MEDIA_DECK.IS_PLAYING, true);
+  $userdata.set(KEYS.MODULES.MEDIA_LIBRARY.IS_PLAYING, true);
   currentPdfPage.value = 1;
   currentPdfTotalPages.value = 0;
 
@@ -792,7 +774,7 @@ async function prev(): Promise<void> {
 
 function stop(): void {
   isPlaying.value = false;
-  $userdata.set(KEYS.MODULES.MEDIA_DECK.IS_PLAYING, false);
+  $userdata.set(KEYS.MODULES.MEDIA_LIBRARY.IS_PLAYING, false);
   currentIndex.value = -1;
   localStorage.removeItem("lj_file_projection");
   $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
@@ -807,7 +789,7 @@ function stop(): void {
 
 useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
   const data = payload as { module?: string; action?: string; payload?: unknown } | null;
-  if (data?.module !== "media_deck") return;
+  if (data?.module !== "media_library") return;
   switch (data.action) {
     case "add":
       addFiles();

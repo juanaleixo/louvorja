@@ -46,8 +46,8 @@ export const KEYS = {
       FADE_AUDIO: `${MODULES}.${ModuleEnum.MEDIA}.fade_audio`,
       LAZY_LOAD: `${MODULES}.${ModuleEnum.MEDIA}.lazy_load`,
     },
-    MEDIA_DECK: {
-      IS_PLAYING: `${MODULES}.${ModuleEnum.MEDIA_DECK}.is_playing`,
+    MEDIA_LIBRARY: {
+      IS_PLAYING: `${MODULES}.${ModuleEnum.MEDIA_LIBRARY}.is_playing`,
     },
     STOPWATCH: {
       RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,

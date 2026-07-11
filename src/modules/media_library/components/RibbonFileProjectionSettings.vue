@@ -63,7 +63,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
 
 const { t } = useI18n();
-const modulePrefix = $modules.getPath(ModuleEnum.MEDIA_DECK);
+const modulePrefix = $modules.getPath(ModuleEnum.MEDIA_LIBRARY);
 const currentBgImage = computed(() => wpImageUrl.value);
 
 const STORAGE_ID = "file_projection_background";

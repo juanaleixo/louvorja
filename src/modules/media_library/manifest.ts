@@ -8,16 +8,16 @@ import $modules from "@/helpers/Modules"
 import { KEYS } from "@/constants/UserDataKeys";
 import RibbonFileProjectionSettings from "./components/RibbonFileProjectionSettings.vue";
 
-const moduleId = ModuleEnum.MEDIA_DECK;
+const moduleId = ModuleEnum.MEDIA_LIBRARY;
 const modulePath = $modules.getPath(moduleId);
 const moduleCtxId = "ctx_" + moduleId;
 
 export const module: Module = {
   id: moduleId,
-  name: "Mídia Deck",
+  name: "Biblioteca de Mídia",
   description: `${modulePath}.description`,
   title: `${modulePath}.title`,
-  icon: ICONS.MODULES.MEDIA_DECK,
+  icon: ICONS.MODULES.MEDIA_LIBRARY,
   color: "#1b4f8a",
   showInMainMenu: true,
   category: ModuleCategoryEnum.WORSHIP,
@@ -66,7 +66,7 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_play`,
             color: "#27ae60",
             stateBinding: {
-              watchPath: KEYS.MODULES.MEDIA_DECK.IS_PLAYING,
+              watchPath: KEYS.MODULES.MEDIA_LIBRARY.IS_PLAYING,
               iconOn: ICONS.PROJECTION.STOP,
               iconOff: ICONS.PROJECTION.START,
               colorOn: "#e74c3c",

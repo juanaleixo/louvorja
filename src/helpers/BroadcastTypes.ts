@@ -87,7 +87,7 @@ export const BROADCAST_TYPE = Object.freeze({
 
   /** Navegação de página em PDF projetado.
    *  Payload: { page: number }
-   *  Emitido por: media_deck (next/prev em PDF). Recebido por: FileProjection. */
+   *  Emitido por: media_library (next/prev em PDF). Recebido por: FileProjection. */
   FILE_PROJECTION_PAGE: "file_projection_page",
 
   /** Projeção de fundo (imagem/vídeo) do módulo Projeção de Fundo.

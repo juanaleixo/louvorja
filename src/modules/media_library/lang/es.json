@@ -1,5 +1,5 @@
 {
-  "title": "Media Deck",
+  "title": "Biblioteca de Medios",
   "description": "Gestiona y proyecta imágenes y vídeos en secuencia.",
   "library": "Biblioteca",
   "playlist": "Lista de reproducción",
@@ -29,7 +29,7 @@
   "file_added": "Archivo añadido a la biblioteca",
   "added_to_playlist": "Añadido a la lista de reproducción",
   "ribbon": {
-    "title_ctx": "Gestionar Media Deck",
+    "title_ctx": "Gestionar Biblioteca de Medios",
     "background": "Fondo de Proyección"
   }
 }
