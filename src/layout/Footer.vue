@@ -2,7 +2,6 @@
   <footer
     id="footer-bar"
     class="footer"
-    style="height: 20px"
     :class="{
       'footer--active': hasPlayer || hasBgSound,
       'footer--bg-sound': hasPlayer && hasBgSound,
