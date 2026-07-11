@@ -206,7 +206,7 @@ async function fetchAndCacheThumbnail(v: VideoItem, ytId: string): Promise<void>
       objectUrlIndex[v.id] = u;
       return;
     } catch {
-      continue;
+      // ignore
     }
   }
 }
@@ -316,7 +316,6 @@ function close(): void {
 }
 
 onMounted(async () => {
-  await getDb();
   await loadVideos();
 });
 
