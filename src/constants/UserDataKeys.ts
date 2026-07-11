@@ -109,6 +109,7 @@ export const KEYS = {
       SHOW_RETURN: `${OPTIONS_FILE_PROJECTION}.show_return`,
     },
     FULLSCREEN: `${OPTIONS}.fullscreen`,
+    LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
     OPEN_RETURN: `${OPTIONS}.open_return`,
     OPEN_OPERATOR: `${OPTIONS}.open_operator`,
     DISPLAYS: {

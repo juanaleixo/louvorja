@@ -260,6 +260,9 @@
       "download": "Descargar",
       "install": "Instalar y reiniciar",
       "apply": "Actualizar ahora",
+      "current_version": "Versión actual",
+      "db_date": "Fecha de la base",
+      "last_check": "Última comprobación",
       "clear_cache": "Limpiar caché",
       "app_idle": "Listo para verificar actualizaciones.",
       "app_checking": "Verificando…",
@@ -271,7 +274,7 @@
       "db_idle": "Listo para verificar.",
       "db_checking": "Verificando…",
       "db_available": "Nueva versión {version} de la base disponible.",
-      "db_up_to_date": "Base de datos actualizada.",
+      "db_up_to_date": "Base de datos actualizada",
       "db_error": "No se pudo verificar.",
       "cache_cleared": "Caché limpiado."
     },

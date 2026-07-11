@@ -260,6 +260,9 @@
       "download": "Baixar",
       "install": "Instalar e reiniciar",
       "apply": "Atualizar agora",
+      "current_version": "Versão atual",
+      "db_date": "Data do banco",
+      "last_check": "Última verificação",
       "clear_cache": "Limpar cache",
       "app_idle": "Pronto para verificar atualizações.",
       "app_checking": "Verificando…",
@@ -271,7 +274,7 @@
       "db_idle": "Pronto para verificar.",
       "db_checking": "Verificando…",
       "db_available": "Nova versão {version} do banco disponível.",
-      "db_up_to_date": "Banco atualizado.",
+      "db_up_to_date": "Banco atualizado",
       "db_error": "Não foi possível verificar.",
       "cache_cleared": "Cache limpo."
     },
