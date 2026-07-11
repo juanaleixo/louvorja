@@ -13,7 +13,12 @@ import { openDB, type IDBPDatabase } from "idb";
 import { DB_TABLE } from "@/constants/DbTables";
 
 const DB_NAME = "louvorja";
-const DB_VERSION = 13; // Incrementar quando adicionar novas tabelas para poder atualizar o banco
+/**
+ * Incrementar DB_VERSION quando adicionar novas tabelas para poder atualizar o banco somente quando
+ * for fazer a release para PRD.
+ * Para testes, use `indexedDB.deleteDatabase("louvorja")` no console do navegador para resetar o banco
+ */
+const DB_VERSION = 1;
 const TABLE_SETTINGS = DB_TABLE.SETTINGS;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;

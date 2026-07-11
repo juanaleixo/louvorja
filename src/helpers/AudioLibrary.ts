@@ -5,7 +5,7 @@
  * apenas tokens leves (`lib://audio/<hash>.mp3`); bytes vivem fora.
  *
  * Storage:
- *   - Web/PWA: IndexedDB (Blobs)
+ *   - Web/PWA: IndexedDB (Blobs) via $idb (banco unificado `louvorja`)
  *   - Electron (futuro): `userData/audio_library/` via window.louvorjaApi
  *
  * Tokens suportados em resolveAudio():
@@ -15,14 +15,14 @@
  *
  * @category helper-puro — Sem APIs Vue; sem acesso ao store.
  */
-import { openDB, type IDBPDatabase } from "idb";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 
-const DB_NAME = "louvorja_media";
-const DB_VERSION = 1;
-const STORE_AUDIO = "audio";
-const STORE_IMAGES = "images";
+const STORE_AUDIO = DB_TABLE.AUDIO_LIBRARY;
+const STORE_IMAGES = DB_TABLE.IMAGE_LIBRARY;
 
 interface AudioRecord {
+  id: string;
   hash: string;
   blob: Blob;
   name: string;
@@ -32,30 +32,13 @@ interface AudioRecord {
 }
 
 interface ImageRecord {
+  id: string;
   hash: string;
   blob: Blob;
   name: string;
   mime: string;
   size: number;
   addedAt: string;
-}
-
-let dbPromise: Promise<IDBPDatabase> | null = null;
-
-function getDb(): Promise<IDBPDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_AUDIO)) {
-          db.createObjectStore(STORE_AUDIO, { keyPath: "hash" });
-        }
-        if (!db.objectStoreNames.contains(STORE_IMAGES)) {
-          db.createObjectStore(STORE_IMAGES, { keyPath: "hash" });
-        }
-      },
-    });
-  }
-  return dbPromise;
 }
 
 async function sha256(blob: Blob): Promise<string> {
@@ -84,10 +67,10 @@ export async function importAudio(file: File | Blob, name?: string): Promise<str
   const hash = await sha256(blob);
   const fileName = name || (file as File).name || "audio.mp3";
   const ext = extOf(fileName);
-  const db = await getDb();
-  const existing = await db.get(STORE_AUDIO, hash);
+  const existing = await $idb.get<AudioRecord>(STORE_AUDIO, hash);
   if (!existing) {
     const rec: AudioRecord = {
+      id: hash,
       hash,
       blob,
       name: fileName,
@@ -95,7 +78,7 @@ export async function importAudio(file: File | Blob, name?: string): Promise<str
       size: blob.size,
       addedAt: new Date().toISOString(),
     };
-    await db.put(STORE_AUDIO, rec);
+    await $idb.put(STORE_AUDIO, rec);
   }
   return `lib://audio/${hash}.${ext}`;
 }
@@ -105,10 +88,10 @@ export async function importImage(file: File | Blob, name?: string): Promise<str
   const hash = await sha256(blob);
   const fileName = name || (file as File).name || "image.png";
   const ext = extOf(fileName, "png");
-  const db = await getDb();
-  const existing = await db.get(STORE_IMAGES, hash);
+  const existing = await $idb.get<ImageRecord>(STORE_IMAGES, hash);
   if (!existing) {
     const rec: ImageRecord = {
+      id: hash,
       hash,
       blob,
       name: fileName,
@@ -116,7 +99,7 @@ export async function importImage(file: File | Blob, name?: string): Promise<str
       size: blob.size,
       addedAt: new Date().toISOString(),
     };
-    await db.put(STORE_IMAGES, rec);
+    await $idb.put(STORE_IMAGES, rec);
   }
   return `lib://image/${hash}.${ext}`;
 }
@@ -130,8 +113,7 @@ export async function resolveAudio(token: string): Promise<string | null> {
 
   if (token.startsWith("lib://audio/")) {
     const hash = hashFromToken(token);
-    const db = await getDb();
-    const rec = (await db.get(STORE_AUDIO, hash)) as AudioRecord | undefined;
+    const rec = await $idb.get<AudioRecord>(STORE_AUDIO, hash);
     if (!rec) return null;
     const url = URL.createObjectURL(rec.blob);
     urlCache.set(token, url);
@@ -158,8 +140,7 @@ export async function resolveImage(token: string): Promise<string | null> {
 
   if (token.startsWith("lib://image/")) {
     const hash = hashFromToken(token);
-    const db = await getDb();
-    const rec = (await db.get(STORE_IMAGES, hash)) as ImageRecord | undefined;
+    const rec = await $idb.get<ImageRecord>(STORE_IMAGES, hash);
     if (!rec) return null;
     const url = URL.createObjectURL(rec.blob);
     urlCache.set(token, url);
@@ -180,8 +161,7 @@ export async function resolveImage(token: string): Promise<string | null> {
 export async function getAudioBlob(token: string): Promise<Blob | null> {
   if (!token) return null;
   if (token.startsWith("lib://audio/")) {
-    const db = await getDb();
-    const rec = (await db.get(STORE_AUDIO, hashFromToken(token))) as AudioRecord | undefined;
+    const rec = await $idb.get<AudioRecord>(STORE_AUDIO, hashFromToken(token));
     return rec?.blob || null;
   }
   if (token.startsWith("pkg://audio/")) return sessionAudio.get(token) || null;
@@ -191,8 +171,7 @@ export async function getAudioBlob(token: string): Promise<Blob | null> {
 export async function getImageBlob(token: string): Promise<Blob | null> {
   if (!token) return null;
   if (token.startsWith("lib://image/")) {
-    const db = await getDb();
-    const rec = (await db.get(STORE_IMAGES, hashFromToken(token))) as ImageRecord | undefined;
+    const rec = await $idb.get<ImageRecord>(STORE_IMAGES, hashFromToken(token));
     return rec?.blob || null;
   }
   if (token.startsWith("pkg://image/") || token.startsWith("pkg://imagens/")) {
@@ -236,15 +215,13 @@ export function revokeUrl(token: string): void {
 
 export async function removeAudio(token: string): Promise<void> {
   if (!token.startsWith("lib://audio/")) return;
-  const db = await getDb();
-  await db.delete(STORE_AUDIO, hashFromToken(token));
+  await $idb.del(STORE_AUDIO, hashFromToken(token));
   revokeUrl(token);
 }
 
 export async function removeImage(token: string): Promise<void> {
   if (!token.startsWith("lib://image/")) return;
-  const db = await getDb();
-  await db.delete(STORE_IMAGES, hashFromToken(token));
+  await $idb.del(STORE_IMAGES, hashFromToken(token));
   revokeUrl(token);
 }
 
@@ -256,8 +233,7 @@ export interface LibraryItem {
 }
 
 export async function listAudio(): Promise<LibraryItem[]> {
-  const db = await getDb();
-  const all = (await db.getAll(STORE_AUDIO)) as AudioRecord[];
+  const all = await $idb.getAll<AudioRecord>(STORE_AUDIO);
   return all.map((r) => ({
     token: `lib://audio/${r.hash}.${extOf(r.name)}`,
     name: r.name,
@@ -267,8 +243,7 @@ export async function listAudio(): Promise<LibraryItem[]> {
 }
 
 export async function listImages(): Promise<LibraryItem[]> {
-  const db = await getDb();
-  const all = (await db.getAll(STORE_IMAGES)) as ImageRecord[];
+  const all = await $idb.getAll<ImageRecord>(STORE_IMAGES);
   return all.map((r) => ({
     token: `lib://image/${r.hash}.${extOf(r.name, "png")}`,
     name: r.name,

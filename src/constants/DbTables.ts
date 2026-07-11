@@ -22,6 +22,8 @@ export const DB_TABLE = {
   CUSTOM_SONGS: ModuleEnum.CUSTOM_COLLECTIONS + ".songs",
   CUSTOM_COLLECTIONS: ModuleEnum.CUSTOM_COLLECTIONS + ".collections",
   MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY + ".library",
+  AUDIO_LIBRARY: "audio_library",
+  IMAGE_LIBRARY: "image_library",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
