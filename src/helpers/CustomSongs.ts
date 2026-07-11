@@ -9,12 +9,11 @@
  *
  * @category helper-puro — Sem APIs Vue; sem acesso ao store.
  */
-import { openDB, type IDBPDatabase } from "idb";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 
-const DB_NAME = "louvorja_custom";
-const DB_VERSION = 1;
-const STORE_SONGS = "songs";
-const STORE_COLLECTIONS = "collections";
+const STORE_SONGS = DB_TABLE.CUSTOM_SONGS;
+const STORE_COLLECTIONS = DB_TABLE.CUSTOM_COLLECTIONS;
 
 export type SlideTipo = "CAPA" | "LETRA" | "TEXTO";
 export type ImagemPosicao = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
@@ -53,24 +52,6 @@ export interface CustomCollection {
   song_ids: string[];
   createdAt: string;
   updatedAt: string;
-}
-
-let dbPromise: Promise<IDBPDatabase> | null = null;
-
-function getDb(): Promise<IDBPDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_SONGS)) {
-          db.createObjectStore(STORE_SONGS, { keyPath: "id" });
-        }
-        if (!db.objectStoreNames.contains(STORE_COLLECTIONS)) {
-          db.createObjectStore(STORE_COLLECTIONS, { keyPath: "id" });
-        }
-      },
-    });
-  }
-  return dbPromise;
 }
 
 export function newSlide(overrides: Partial<CustomSlide> = {}): CustomSlide {
@@ -124,27 +105,23 @@ export function newCollection(nome = "Nova coletânea"): CustomCollection {
 }
 
 export async function listSongs(): Promise<CustomSong[]> {
-  const db = await getDb();
-  const all = (await db.getAll(STORE_SONGS)) as CustomSong[];
+  const all = await $idb.getAll<CustomSong>(STORE_SONGS);
   return all.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
 }
 
 export async function getSong(id: string): Promise<CustomSong | null> {
-  const db = await getDb();
-  const rec = (await db.get(STORE_SONGS, id)) as CustomSong | undefined;
+  const rec = await $idb.get<CustomSong>(STORE_SONGS, id);
   return rec || null;
 }
 
 export async function saveSong(song: CustomSong): Promise<CustomSong> {
-  const db = await getDb();
   const updated: CustomSong = { ...song, updatedAt: new Date().toISOString() };
-  await db.put(STORE_SONGS, updated);
+  await $idb.put(STORE_SONGS, updated);
   return updated;
 }
 
 export async function deleteSong(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete(STORE_SONGS, id);
+  await $idb.del(STORE_SONGS, id);
   const cols = await listCollections();
   for (const col of cols) {
     if (col.song_ids.includes(id)) {
@@ -155,27 +132,23 @@ export async function deleteSong(id: string): Promise<void> {
 }
 
 export async function listCollections(): Promise<CustomCollection[]> {
-  const db = await getDb();
-  const all = (await db.getAll(STORE_COLLECTIONS)) as CustomCollection[];
+  const all = await $idb.getAll<CustomCollection>(STORE_COLLECTIONS);
   return all.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 export async function getCollection(id: string): Promise<CustomCollection | null> {
-  const db = await getDb();
-  const rec = (await db.get(STORE_COLLECTIONS, id)) as CustomCollection | undefined;
+  const rec = await $idb.get<CustomCollection>(STORE_COLLECTIONS, id);
   return rec || null;
 }
 
 export async function saveCollection(col: CustomCollection): Promise<CustomCollection> {
-  const db = await getDb();
   const updated: CustomCollection = { ...col, updatedAt: new Date().toISOString() };
-  await db.put(STORE_COLLECTIONS, updated);
+  await $idb.put(STORE_COLLECTIONS, updated);
   return updated;
 }
 
 export async function deleteCollection(id: string): Promise<void> {
-  const db = await getDb();
-  await db.delete(STORE_COLLECTIONS, id);
+  await $idb.del(STORE_COLLECTIONS, id);
 }
 
 export default {

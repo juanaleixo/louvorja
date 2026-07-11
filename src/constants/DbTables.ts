@@ -19,6 +19,8 @@ export const DB_TABLE = {
   OVERLAY_SLOTS: ModuleEnum.OVERLAY + ".slots",
   CUSTOM_ONLINE_VIDEOS: ModuleEnum.CUSTOM_ONLINE_VIDEOS + ".videos",
   CUSTOM_ONLINE_VIDEOS_THUMBNAILS: ModuleEnum.CUSTOM_ONLINE_VIDEOS + ".thumbnails",
+  CUSTOM_SONGS: ModuleEnum.CUSTOM_COLLECTIONS + ".songs",
+  CUSTOM_COLLECTIONS: ModuleEnum.CUSTOM_COLLECTIONS + ".collections",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
