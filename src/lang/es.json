@@ -219,9 +219,16 @@
       "http_server": "Servidor",
       "server_running": "En ejecución en el puerto {port}",
       "server_stopped": "Servidor apagado",
+      "server_stopped_hint": "Servidor detenido. La proyección de videos YouTube puede no funcionar. Reinicie para aplicar cambios de puerto.",
       "start_server": "Encender",
       "stop_server": "Apagar",
+      "restart_server": "Reiniciar",
       "auto_start": "Encender automáticamente al iniciar",
+      "external_routes": "Permitir acceso remoto",
+      "external_routes_hint": "Cuando está desactivado, control remoto, transmisión OBS y APIs externas no funcionan. La proyección de videos YouTube continúa normal.",
+      "http_server_hint": "El servidor HTTP es necesario para la proyección de videos de YouTube y para la comunicación entre ventanas (BroadcastChannel).",
+      "port": "Puerto del servidor HTTP",
+      "port_hint": "Reinicie el servidor para aplicar. Puerto predeterminado: 7070",
       "copy": "Copiar",
       "copied": "Copiado",
       "open_window": "Abrir",
@@ -242,7 +249,8 @@
       "win_projection": "Proyección",
       "win_operator": "Operador",
       "win_clock": "Reloj",
-      "remote_control": "Control Remoto"
+      "remote_control": "Control Remoto",
+      "qr_code": "Código QR"
     },
     "module": {
       "bible": {

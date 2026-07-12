@@ -5,9 +5,14 @@
     </section>
 
     <template v-else>
-      <!-- Servidor: status + start/stop + token + auto-start -->
+      <!-- Servidor: start/stop + token + port + external routes toggle -->
       <section class="opt-section">
-        <h3 class="opt-section-title">{{ $t("options.transmission.http_server") }}</h3>
+        <h3 class="opt-section-title">
+          {{ $t("options.transmission.http_server") }}
+          <span class="font-italic text-sm-body-small ml-5">
+            {{ $t("options.transmission.http_server_hint") }}
+          </span>
+        </h3>
 
         <div class="tx-status">
           <span class="tx-dot" :class="{ 'tx-dot--on': httpServer.running }" />
@@ -17,10 +22,12 @@
           <span v-else class="tx-status-text">
             {{ $t("options.transmission.server_stopped") }}
           </span>
-          <button
+          <v-btn
             type="button"
-            class="opt-btn opt-btn--small"
             :disabled="httpServerLoading"
+            size="small"
+            :prepend-icon="httpServer.running ? ICONS.ACTIONS.STOP : ICONS.ACTIONS.START"
+            :color="httpServer.running ? 'error' : 'primary'"
             @click="toggleHttpServer"
           >
             {{
@@ -28,25 +35,47 @@
                 ? $t("options.transmission.stop_server")
                 : $t("options.transmission.start_server")
             }}
-          </button>
+          </v-btn>
         </div>
 
-        <div v-if="httpServer.running" class="tx-token-row">
+        <div class="tx-token-row">
           <span class="tx-token-label">{{ $t("options.transmission.token_label") }}</span>
           <code class="tx-token">{{ httpServer.token }}</code>
-          <button type="button" class="opt-btn opt-btn--small" @click="resetToken">
+          <v-btn
+            size="small"
+            class="opt-btn opt-btn--small"
+            :prepend-icon="ICONS.ACTIONS.RESTART"
+            @click="resetToken"
+          >
             {{ $t("options.transmission.token_reset") }}
-          </button>
+          </v-btn>
+
+          <label class="opt-label ml-10">{{ $t("options.transmission.port") }}</label>
+          <input
+            type="number"
+            class="opt-input opt-input--num"
+            placeholder="7070"
+            :value="httpServerPort"
+            min="1"
+            max="65535"
+            @change="setHttpServerPort(Number($event.target.value))"
+          />
+          <p class="opt-hint">{{ $t("options.transmission.port_hint") }}</p>
         </div>
 
         <label class="opt-checkbox">
           <input
             type="checkbox"
-            :checked="httpServerAutoStart"
-            @change="setHttpServerAutoStart($event.target.checked)"
+            :checked="externalRoutesEnabled"
+            @change="setExternalRoutes($event.target.checked)"
           />
-          <span>{{ $t("options.transmission.auto_start") }}</span>
+          <span>{{ $t("options.transmission.external_routes") }}</span>
         </label>
+        <p v-if="!httpServer.running" class="opt-hint opt-hint--warn">
+          {{ $t("options.transmission.server_stopped_hint") }}
+        </p>
+
+        <p class="opt-hint opt-hint--info"></p>
 
         <div>
           <label class="opt-checkbox">
@@ -70,7 +99,7 @@
       </section>
 
       <!-- URLs de transmissão (compatibilidade Delphi) -->
-      <section v-if="httpServer.running" class="opt-section">
+      <section v-if="httpServer.running && externalRoutesEnabled" class="opt-section">
         <h3 class="opt-section-title">{{ $t("options.transmission.urls_section") }}</h3>
         <p class="opt-hint">{{ $t("options.transmission.urls_hint") }}</p>
 
@@ -80,9 +109,10 @@
               <div class="tx-url-title">{{ $t(link.titleKey) }}</div>
               <code class="tx-url">{{ remoteUrl(link) }}</code>
             </div>
-            <button
-              type="button"
+            <v-btn
+              size="small"
               class="opt-btn opt-btn--small"
+              :prepend-icon="ICONS.ACTIONS.COPY"
               @click="copy(remoteUrl(link), link.alias)"
             >
               {{
@@ -90,7 +120,11 @@
                   ? $t("options.transmission.copied")
                   : $t("options.transmission.copy")
               }}
-            </button>
+            </v-btn>
+            <v-btn size="small" class="opt-btn opt-btn--small" @click="showQrCode(link)">
+              <v-icon icon="mdi-qrcode" size="14" />
+              {{ $t("options.transmission.qr_code") }}
+            </v-btn>
           </div>
         </div>
       </section>
@@ -131,19 +165,53 @@
               {{ d.label || `Monitor ${d.id}` }}
             </option>
           </select>
-          <button type="button" class="opt-btn opt-btn--small" @click="openLocalWindow(win)">
+          <v-btn
+            size="small"
+            class="opt-btn opt-btn--small"
+            prepend-icon="mdi-monitor-multiple"
+            @click="openLocalWindow(win)"
+          >
             {{ $t("options.transmission.open_window") }}
-          </button>
+          </v-btn>
         </div>
       </div>
     </section>
   </div>
+
+  <v-dialog v-model="showQrDialog" max-width="340">
+    <v-card rounded="lg">
+      <header class="qr-header">
+        <v-icon icon="mdi-qrcode" size="20" />
+        <span>{{ $t(qrTitle) }}</span>
+        <v-spacer />
+        <button
+          type="button"
+          class="qr-close"
+          :title="$t('alert.close')"
+          @click="showQrDialog = false"
+        >
+          <v-icon icon="mdi-close" size="16" />
+        </button>
+      </header>
+      <div class="qr-body">
+        <canvas ref="qrCanvas" class="qr-canvas" />
+        <code class="qr-url">{{ qrUrl }}</code>
+      </div>
+      <footer class="qr-footer">
+        <v-btn class="opt-btn" @click="showQrDialog = false">
+          {{ $t("alert.close") }}
+        </v-btn>
+      </footer>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { useDisplays } from "@/composables/useDisplays";
 import Platform from "@/helpers/Platform";
+import { ICONS } from "@/config/Icons";
+import QRCode from "qrcode";
 
 const isDesktop = computed(() => Platform.isDesktop);
 const { displays, getPreferred, setPreferred } = useDisplays();
@@ -162,11 +230,11 @@ const FRAMED_ROUTES = ["/operator"];
 // `fmTransmitir.pas` divulgava — assim tutoriais antigos continuam válidos
 // e os usuários reconhecem os termos "Transmissão" e "Retorno".
 const remoteLinks = [
+  { alias: "/controle", titleKey: "options.transmission.remote_control" },
   { alias: "/musica?transmissao", titleKey: "options.transmission.win_music" },
   { alias: "/musica?retorno", titleKey: "options.transmission.win_return" },
   { alias: "/biblia?retorno", titleKey: "options.transmission.win_bible_return" },
   { alias: "/biblia?transmissao", titleKey: "options.transmission.win_bible" },
-  { alias: "/controle", titleKey: "options.transmission.remote_control" },
 ];
 
 const localWindows = [
@@ -209,12 +277,17 @@ const localWindows = [
 
 const httpServer = ref({ running: false, port: null, token: null });
 const httpServerLoading = ref(false);
-const httpServerAutoStart = ref(false);
+const httpServerPort = ref(7070);
+const externalRoutesEnabled = ref(true);
 const localIps = ref([]);
 const copiedKey = ref(null);
 const globalShortcutsEnabled = ref(false);
 const useHostname = ref(false);
 const hostname = ref("");
+const showQrDialog = ref(false);
+const qrUrl = ref("");
+const qrTitle = ref("");
+const qrCanvas = ref(null);
 
 // IP "público" preferido — primeiro não-loopback. Cai pra 127.0.0.1
 // quando a máquina não tem interface de rede ativa (raro: notebook offline).
@@ -261,12 +334,33 @@ async function copy(text, key) {
   }
 }
 
+function showQrCode(link) {
+  const url = remoteUrl(link);
+  if (!url) return;
+  qrUrl.value = url;
+  qrTitle.value = link.titleKey;
+  showQrDialog.value = true;
+  nextTick(async () => {
+    const canvas = qrCanvas.value;
+    if (!canvas) return;
+    try {
+      await QRCode.toCanvas(canvas, url, {
+        width: 240,
+        margin: 1,
+        color: { dark: "#000", light: "#fff" },
+      });
+    } catch (e) {
+      console.error("[Transmitir] QRCode:", e);
+    }
+  });
+}
+
 async function toggleHttpServer() {
   if (!Platform.httpServer) return;
   httpServerLoading.value = true;
   try {
     if (httpServer.value.running) await Platform.httpServer.stop();
-    else await Platform.httpServer.start({});
+    else await Platform.httpServer.start({ port: httpServerPort.value });
     await refreshStatus();
   } catch (e) {
     console.error("[Transmitir] toggle:", e);
@@ -285,9 +379,33 @@ async function resetToken() {
   }
 }
 
+/**
+ * Alterna a permissão de rotas externas (SSE, API, aliases Delphi).
+ * Quando desativadas, apenas localhost pode acessá-las; a SPA do app
+ * continua disponível de qualquer origem para que YouTube e Broadcast
+ * Channel entre janelas Electron funcionem.
+ */
+async function setExternalRoutes(enabled) {
+  externalRoutesEnabled.value = enabled;
+  if (!Platform.httpServer?.setExternalRoutes) return;
+  try {
+    await Platform.httpServer.setExternalRoutes(enabled);
+  } catch (e) {
+    console.error("[Transmitir] setExternalRoutes:", e);
+  }
+}
+
 async function refreshStatus() {
   if (!Platform.httpServer) return;
-  httpServer.value = await Platform.httpServer.status();
+  try {
+    const s = await Platform.httpServer.status();
+    httpServer.value = s;
+    externalRoutesEnabled.value = s.externalRoutesEnabled !== false;
+  } catch (_) {
+    httpServer.value = { running: false, port: null, token: null };
+    externalRoutesEnabled.value = false;
+  }
+  httpServerLoading.value = false;
   if (!localIps.value.length) {
     try {
       localIps.value = await Platform.httpServer.localIps();
@@ -297,17 +415,16 @@ async function refreshStatus() {
   }
 }
 
-async function setHttpServerAutoStart(enabled) {
-  httpServerAutoStart.value = enabled;
+async function setHttpServerPort(port) {
+  httpServerPort.value = port;
   if (!Platform.userStore) return;
   try {
     const cfg = (await Platform.userStore.read("config")) || {};
     if (!cfg.httpServer) cfg.httpServer = {};
-    cfg.httpServer.autoStart = enabled;
-    if (!cfg.httpServer.port) cfg.httpServer.port = 7070;
+    cfg.httpServer.port = port;
     await Platform.userStore.write("config", cfg);
   } catch (e) {
-    console.warn("[Transmitir] autoStart:", e);
+    console.warn("[Transmitir] setPort:", e);
   }
 }
 
@@ -365,7 +482,7 @@ onMounted(async () => {
     try {
       await refreshStatus();
       const cfg = (await Platform.userStore?.read("config")) || {};
-      httpServerAutoStart.value = cfg.httpServer?.autoStart ?? false;
+      httpServerPort.value = cfg.httpServer?.port ?? 7070;
       useHostname.value = cfg.httpServer?.useHostname ?? false;
       hostname.value = await Platform.httpServer.hostname();
     } catch (e) {
@@ -480,5 +597,58 @@ onMounted(async () => {
 }
 .tx-local-select {
   max-width: 180px;
+}
+
+/* QR Code dialog */
+.qr-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--lj-surface-divider);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.qr-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--lj-text);
+  opacity: 0.6;
+}
+.qr-close:hover {
+  opacity: 1;
+  background: var(--lj-surface-bg-hover);
+}
+.qr-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+.qr-canvas {
+  border-radius: 8px;
+  max-width: 100%;
+}
+.qr-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  word-break: break-all;
+  text-align: center;
+  max-width: 100%;
+}
+.qr-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  border-top: 1px solid var(--lj-surface-divider);
 }
 </style>

@@ -34,6 +34,8 @@ export const ICONS = {
     SAVE_EDIT: "mdi-content-save-edit-outline",
     SEARCH: "mdi-magnify",
     SORT: "mdi-swap-horizontal",
+    START: "mdi-power",
+    STOP: "mdi-power-off",
     UNCHECKED: "mdi-checkbox-blank-outline",
     UNDO: "mdi-undo",
     UPLOAD: "mdi-upload",

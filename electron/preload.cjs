@@ -260,8 +260,10 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     start: (opts) => ipcRenderer.invoke("httpServer:start", opts),
     /** Para o servidor HTTP. */
     stop: () => ipcRenderer.invoke("httpServer:stop"),
-    /** Retorna { running, port, token, sse }. */
+    /** Retorna { running, port, token, sse, externalRoutesEnabled }. */
     status: () => ipcRenderer.invoke("httpServer:status"),
+    /** Ativa/desativa rotas externas (SSE, API, aliases Delphi). */
+    setExternalRoutes: (enabled) => ipcRenderer.invoke("httpServer:setExternalRoutes", enabled),
     /** Retorna lista de IPs IPv4 locais (não-loopback). */
     localIps: () => ipcRenderer.invoke("httpServer:localIps"),
     /** Retorna o nome da máquina na rede local (ex: "MacBook-Pro.local"). */

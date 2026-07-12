@@ -189,17 +189,25 @@ app.whenReady().then(async () => {
 
   // D5 — Iniciar servidor HTTP ANTES de qualquer janela para que todas
   // compartilhem a mesma origem HTTP (BroadcastChannel + YouTube).
-  if (!isDev) {
-    try {
-      const cfg = userStore.read("config") || {};
-      const httpResult = await httpServer.start({
-        port: cfg.httpServer?.port || 7070,
-        mainWindow: null, // will be set after createWindow
-      });
-      HTTP_BASE_URL = `http://localhost:${httpResult.port}`;
-    } catch (e) {
-      console.warn("[main] HTTP server não disponível, usando louvorja://:", e.message);
-    }
+  // O servidor SEMPRE inicia porque as janelas auxiliares do Electron
+  // em produção dependem da origem HTTP para YouTube IFrame API e
+  // BroadcastChannel. O usuário pode desabilitar rotas externas (SSE,
+  // API, aliases Delphi) via httpServer:setExternalRoutes, mas o
+  // servidor em si nunca para — desligá-lo quebraria a projeção de
+  // vídeos online (YouTube).
+  try {
+    const cfg = userStore.read("config") || {};
+    const httpResult = await httpServer.start({
+      port: cfg.httpServer?.port || 7070,
+      mainWindow: null, // will be set after createWindow
+    });
+    HTTP_BASE_URL = `http://localhost:${httpResult.port}`;
+
+    // Aplica preferência de rotas externas salva (default: true)
+    const externalEnabled = cfg.httpServer?.externalRoutesEnabled !== false;
+    httpServer.setExternalRoutesEnabled(externalEnabled);
+  } catch (e) {
+    console.warn("[main] HTTP server não disponível, usando louvorja://:", e.message);
   }
 
   // Mostrar splash imediatamente (antes da janela principal carregar)
@@ -547,8 +555,27 @@ ipcMain.handle("httpServer:start", async (_e, opts) => {
 /** Para o servidor HTTP. No-op se já parado. */
 ipcMain.handle("httpServer:stop", () => httpServer.stop());
 
-/** Retorna o estado atual do servidor { running, port, token, sse }. */
+/** Retorna o estado atual do servidor { running, port, token, sse, externalRoutesEnabled }. */
 ipcMain.handle("httpServer:status", () => httpServer.status());
+
+/**
+ * Ativa/desativa rotas externas do servidor HTTP.
+ *
+ * Quando desativadas, apenas localhost pode acessar SSE, API e aliases
+ * Delphi. A SPA (app Vue) continua acessível de qualquer origem — necessária
+ * para YouTube IFrame API e BroadcastChannel entre janelas Electron.
+ * A preferência é persistida em userStore para o próximo boot.
+ */
+ipcMain.handle("httpServer:setExternalRoutes", (_e, enabled) => {
+  httpServer.setExternalRoutesEnabled(enabled);
+  try {
+    const cfg = userStore.read("config") || {};
+    if (!cfg.httpServer) cfg.httpServer = {};
+    cfg.httpServer.externalRoutesEnabled = !!enabled;
+    userStore.write("config", cfg);
+  } catch (_) { /* noop */ }
+  return { ok: true };
+});
 
 /** Regenera o token e persiste em userStore. Retorna o novo token. */
 ipcMain.handle("httpServer:resetToken", () => httpServer.resetToken());
