@@ -18,7 +18,7 @@
     </div>
 
     <!-- Ferramentas (no-drag) -->
-    <div class="systembar-tools">
+    <div class="systembar-tools" :class="isLinux || isWindows ? 'systembar-tools--win' : ''">
       <ShellTools />
     </div>
 
@@ -71,6 +71,8 @@ let unsubscribe = null;
 
 const isDesktop = computed(() => $appdata.get("is_desktop"));
 const isMac = computed(() => Platform.platform === "darwin");
+const isWindows = computed(() => Platform.platform === "win32");
+const isLinux = computed(() => Platform.platform === "linux");
 
 const activeModuleId = computed(() => {
   const activeId = $appdata.get("active_module");
@@ -151,7 +153,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-.systembar--mac .systembar-left {
+.systembar--mac {
   padding-left: 68px;
 }
 
@@ -189,7 +191,10 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: stretch;
   -webkit-app-region: no-drag;
-  padding-right: var(--lj-space-2);
+}
+
+.systembar-tools--win {
+  padding-right: var(--lj-space-5);
 }
 
 .systembar-tools .shell-tool {
