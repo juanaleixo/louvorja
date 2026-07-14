@@ -186,7 +186,7 @@ function start({ port, mainWindow } = {}) {
   app.get("/events", events.handler);
   
   setupRoutes(app, { 
-    mainWindow: _mainWindow,
+    getMainWindow: () => _mainWindow,
     getUserData: () => getUserData()
   });
 
