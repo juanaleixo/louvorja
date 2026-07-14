@@ -26,7 +26,7 @@ export function buildRibbonPages(): RibbonPage[] {
   const groupOrder = new Map<string, number>();
   const groupTitles = new Map<string, string>();
   groups.forEach((g, i) => {
-    groupOrder.set(g.id, i);
+    groupOrder.set(g.id, g.order);
     groupTitles.set(g.id, g.title);
   });
 
@@ -58,18 +58,15 @@ export function buildRibbonPages(): RibbonPage[] {
       else byGroup.set(m.group, [m]);
     }
 
-    // Ordenar grupos pela ordem definida na categoria (ou fallback para groups global)
+    // Ordenar grupos pelo campo order de cada grupo
     const catDef = categories[categoryId];
-    let sortedGroups: [string, Module[]][];
-    if (catDef?.groups?.length) {
-      sortedGroups = catDef.groups
-        .filter((gId) => byGroup.has(gId))
-        .map((gId) => [gId, byGroup.get(gId)!]);
-    } else {
-      sortedGroups = [...byGroup.entries()].sort((a, b) => {
-        return (groupOrder.get(a[0]) ?? 999) - (groupOrder.get(b[0]) ?? 999);
-      });
-    }
+    const groupIds = catDef?.groups?.length
+      ? catDef.groups.filter((gId) => byGroup.has(gId))
+      : [...byGroup.keys()];
+
+    const sortedGroups: [string, Module[]][] = groupIds
+      .map((gId): [string, Module[]] => [gId, byGroup.get(gId)!])
+      .sort((a, b) => (groupOrder.get(a[0]) ?? 999) - (groupOrder.get(b[0]) ?? 999));
 
     const ribbonGroups: RibbonGroup[] = sortedGroups.map(([groupId, groupModules]) => ({
       id: groupId,

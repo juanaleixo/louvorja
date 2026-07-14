@@ -14,7 +14,7 @@ export const module: Module = {
   title: `${modulePath}.title`,
   name: "Slide",
   description: `${modulePath}.description`,
-  icon: ICONS.UI.PUZZLE,
+  icon: ICONS.MODULES.MEDIA,
   color: "#607d8b",
   category: ModuleCategoryEnum.UTILITIES,
   group: ModuleGroupEnum.MEDIA,

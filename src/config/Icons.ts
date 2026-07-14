@@ -114,6 +114,7 @@ export const ICONS = {
     INTERACTIVE_TEXT: "mdi-format-quote-close",
     KIDS: "kids",
     LITURGY: "liturgy",
+    MEDIA: "mdi-file-music",
     MEDIA_LIBRARY: "mdi-filmstrip",
     MESSAGE_BOARD: "mdi-message-bulleted",
     MUSIC_SEARCH: "mdi-magnify",

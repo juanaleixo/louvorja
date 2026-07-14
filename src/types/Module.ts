@@ -120,6 +120,7 @@ export interface ModuleCategory {
 export interface ModuleGroup {
   id: string;
   title: string;
+  order: number;
 }
 
 export interface ModuleState {

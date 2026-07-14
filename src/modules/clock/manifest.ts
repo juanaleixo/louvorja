@@ -20,7 +20,7 @@ export const module: Module = {
   showInMainMenu: true,
   category: ModuleCategoryEnum.UTILITIES,
   group: ModuleGroupEnum.TIME,
-  order: 0,
+  order: 2,
   customization: {
     font: { type: "font", label: "customization.font", default: "Arial, sans-serif" },
     font_color: { type: "color", label: "customization.color", default: "#FFFFFF" },

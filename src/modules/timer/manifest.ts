@@ -20,8 +20,8 @@ export const module: Module = {
   color: "#1b4f8a",
   showInMainMenu: true,
   category: ModuleCategoryEnum.UTILITIES,
-  group: ModuleGroupEnum.CHURCH,
-  order: 1,
+  group: ModuleGroupEnum.TIME,
+  order: 0,
   customization: {
     font: { type: "font", label: "components.customization.font", default: "Arial, sans-serif" },
     font_color: { type: "color", label: "components.customization.color", default: "#FFFFFF" },
