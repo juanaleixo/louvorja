@@ -8,6 +8,7 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 //Variáveis Locais
 const OPTIONS = "options"
 const MODULES = "modules"
+const STORAGE = "storage";
 const OPTIONS_DISPLAYS = `${OPTIONS}.displays`
 const OPTIONS_SLIDE = `${OPTIONS}.slide`
 const OPTIONS_FILE_PROJECTION = `${OPTIONS}.file_projection`
@@ -126,6 +127,9 @@ export const KEYS = {
       SHOW_RETURN: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.show_return`,
       FULLSCREEN: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.fullscreen`,
     },
+  },
+  STORAGE: {
+    BIBLE_DOWNLOADED_VERSIONS: `${STORAGE}.bible_downloaded_versions`,
   },
   PROJECTION: {
     LJ_BACKGROUND_PROJECTION: "lj_background_projection",

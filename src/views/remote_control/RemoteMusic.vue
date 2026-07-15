@@ -70,6 +70,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { MusicAlbum, MusicItem } from "@/types/Music";
 import type { ChooseLaterItem } from "@/types/Liturgy";
+import { apiFetch } from "@/helpers/ApiClient";
 
 const props = defineProps<{
   token?: string;
@@ -103,7 +104,7 @@ async function onMusicSearch(): Promise<void> {
     try {
       const lang = locale.value || "pt";
       const q = encodeURIComponent(musicSearch.value.trim());
-      const res = await fetch(`/api/music-search?q=${q}&lang=${lang}&token=${props.token}`);
+      const res = await apiFetch(`/api/music-search?q=${q}&lang=${lang}&token=${props.token}`);
       if (res.ok) {
         const data = (await res.json()) as { results?: MusicItem[] };
         musicResults.value = data.results || [];
@@ -128,7 +129,7 @@ async function openMusic(music: MusicAlbum, tag: number = 3): Promise<void> {
       emit("update:choose-later-item", null);
     }
 
-    const res = await fetch(
+    const res = await apiFetch(
       `/api/open-song?id=${music.id_music}&tag=${tag}&token=${props.token}&id_liturgy=${idLiturgy}`
     );
     if (res.ok) {

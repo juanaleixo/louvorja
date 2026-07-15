@@ -68,21 +68,51 @@ async function _listAllFiles(dir) {
 
 /**
  * Retorna estatísticas de uso do armazenamento.
- * @returns {Promise<{filesDir: string, jsonDir: string, files: {bytes, count}, json: {bytes, count}, total: {bytes, count}}>}
+ * Classifica arquivos JSON do cache em: bible (bible_*), music (album_*, music_*),
+ * e json (demais). Media files (mp3/imagens) ficam em files.
+ * @returns {Promise<{filesDir: string, jsonDir: string, files: {bytes, count}, json: {bytes, count}, music: {bytes, count}, bible: {bytes, count}, total: {bytes, count}}>}
  */
 async function stats() {
   const filesDir = paths.filesDir();
   const jsonDir = paths.jsonCacheDir();
   const filesStat = await _dirSize(filesDir);
-  const jsonStat = await _dirSize(jsonDir);
+
+  let bibleBytes = 0;
+  let bibleCount = 0;
+  let musicBytes = 0;
+  let musicCount = 0;
+  let jsonBytes = 0;
+  let jsonCount = 0;
+
+  if (await fs.pathExists(jsonDir)) {
+    const allFiles = await _listAllFiles(jsonDir);
+    for (const f of allFiles) {
+      if (f.relative.startsWith("bible_") && f.relative.endsWith(".json")) {
+        bibleBytes += f.size;
+        bibleCount += 1;
+      } else if (
+        (f.relative.startsWith("album_") || f.relative.startsWith("music_")) &&
+        f.relative.endsWith(".json")
+      ) {
+        musicBytes += f.size;
+        musicCount += 1;
+      } else {
+        jsonBytes += f.size;
+        jsonCount += 1;
+      }
+    }
+  }
+
   return {
     filesDir,
     jsonDir,
     files: { bytes: filesStat.bytes, count: filesStat.files },
-    json: { bytes: jsonStat.bytes, count: jsonStat.files },
+    json: { bytes: jsonBytes, count: jsonCount },
+    music: { bytes: musicBytes, count: musicCount },
+    bible: { bytes: bibleBytes, count: bibleCount },
     total: {
-      bytes: filesStat.bytes + jsonStat.bytes,
-      count: filesStat.files + jsonStat.files,
+      bytes: filesStat.bytes + jsonBytes + musicBytes + bibleBytes,
+      count: filesStat.files + jsonCount + musicCount + bibleCount,
     },
   };
 }
@@ -270,6 +300,49 @@ async function removeFiles(remoteRelPaths = []) {
   return { removed };
 }
 
+/**
+ * Verifica existência de arquivos JSON no cache pelas chaves.
+ * @param {string[]} keys  Ex: ["bible_13_3_22", "bible_14_1_1"]
+ * @returns {Promise<Object<string, boolean>>}
+ */
+async function checkJsonExists(keys = []) {
+  const jsonDir = paths.jsonCacheDir();
+  const out = {};
+  for (const key of keys) {
+    if (typeof key !== "string") { out[key] = false; continue; }
+    const filePath = path.resolve(jsonDir, `${key}.json`);
+    if (!filePath.startsWith(jsonDir + path.sep)) {
+      out[key] = false;
+      continue;
+    }
+    try {
+      out[key] = await fs.pathExists(filePath);
+    } catch {
+      out[key] = false;
+    }
+  }
+  return out;
+}
+
+/** Remove arquivos JSON do cache que começam com um prefixo. */
+async function removeJsonByPrefix(prefix = "") {
+  if (!prefix) return { removed: 0 };
+  const jsonDir = paths.jsonCacheDir();
+  let removed = 0;
+  if (await fs.pathExists(jsonDir)) {
+    const allFiles = await _listAllFiles(jsonDir);
+    for (const f of allFiles) {
+      if (f.relative.startsWith(prefix)) {
+        try {
+          await fs.remove(f.abs);
+          removed += 1;
+        } catch (_) { /* ignore */ }
+      }
+    }
+  }
+  return { removed };
+}
+
 async function enforceQuota(maxBytes) {
   if (!maxBytes || maxBytes <= 0) return { removed: 0 };
   const filesDir = paths.filesDir();
@@ -308,6 +381,8 @@ module.exports = {
   verify,
   sizeOfPaths,
   removeFiles,
+  checkJsonExists,
+  removeJsonByPrefix,
   openFilesDir,
   setFilesDir,
   enforceQuota,

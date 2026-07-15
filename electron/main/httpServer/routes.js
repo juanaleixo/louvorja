@@ -16,7 +16,7 @@ const _sorteios = {
   name: { last: null, history: [] },
 };
 
-function setupRoutes(app, { getMainWindow, getUserData }) {
+function setupRoutes(app, { getMainWindow, getUserData, jsonCache: _cache, getDatabaseUrl, getApiToken }) {
 
   // ---------------------------------------------------------------
   // /api/ping — health check
@@ -377,17 +377,21 @@ function setupRoutes(app, { getMainWindow, getUserData }) {
   /**
    * GET /api/db/:path(*)?token=...
    *
-   * Lê qualquer JSON do cache local (userData/json_db/). Substitui
-   * Database.get() nas páginas de controle remoto, evitando chamadas
-   * à API externa (api.louvorja.com.br) quando acessadas de outro
-   * dispositivo na rede.
+   * Lê qualquer JSON do cache local (userData/json_db/). Se o arquivo
+   * não existir no cache, busca da API remota (VITE_URL_DATABASE), salva
+   * no disco e retorna o conteúdo — funciona como cache-on-read para
+   * capítulos bíblicos e outros JSONs não baixados previamente.
+   *
+   * Substitui Database.get() nas páginas de controle remoto, evitando
+   * chamadas diretas à API externa (api.louvorja.com.br) quando acessadas
+   * de outro dispositivo na rede.
    *
    * O path é sanitizado contra path traversal antes de resolver
    * via jsonCache.safeLocalPath(). O auth middleware (token) já
    * protege este endpoint — apenas clients com token válido ou
    * localhost conseguem acessá-lo.
    */
-  app.get("/api/db/:path(*)", (req, res) => {
+  app.get("/api/db/:path(*)", async (req, res) => {
     const rawPath = req.params.path;
     if (!rawPath) {
       return res.status(400).json({ error: "path é obrigatório" });
@@ -396,14 +400,25 @@ function setupRoutes(app, { getMainWindow, getUserData }) {
     const sanitized = rawPath.replace(/^\/+/g, "").replace(/\.\.\//g, "");
     try {
       const filePath = jsonCache.safeLocalPath(sanitized);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          error: "Arquivo não encontrado no cache local",
-          path: sanitized,
-        });
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf8");
+        return res.json(JSON.parse(raw));
       }
-      const raw = fs.readFileSync(filePath, "utf8");
-      res.json(JSON.parse(raw));
+
+      // Não está em cache — buscar da API remota e salvar no disco
+      const databaseUrl = typeof getDatabaseUrl === "function" ? getDatabaseUrl() : "";
+      const apiToken = typeof getApiToken === "function" ? getApiToken() : "";
+      const headers = apiToken ? { "Api-Token": apiToken } : {};
+
+      const result = await jsonCache.fetchJson(sanitized, databaseUrl, headers);
+      if (result.status === 200 && result.body) {
+        return res.json(JSON.parse(result.body.toString("utf-8")));
+      }
+
+      return res.status(404).json({
+        error: "Arquivo não encontrado no cache local nem no servidor remoto",
+        path: sanitized,
+      });
     } catch (e) {
       console.error("[httpServer] /api/db error:", e.message);
       res.status(500).json({ error: e.message });
