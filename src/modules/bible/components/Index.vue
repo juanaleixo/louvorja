@@ -401,16 +401,23 @@ const chapters = computed(() => book.value?.chapters);
 const bibleSpotlightOpen = ref(false);
 const spotlightInitialBuffer = ref("");
 
-watch(bibleSpotlightOpen, (val) => {
-  if (!val) spotlightInitialBuffer.value = "";
+const downloadedVersions = computed(() => {
+  const ids: number[] = UserData.get(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, []) || [];
+  return new Set(ids);
 });
 
 const versions_list = computed(() =>
   versions.value.map((v) => ({
-    title: v.abbreviation + " - " + v.name,
+    title: downloadedVersions.value.has(v.id_bible_version)
+      ? v.abbreviation + " - " + v.name
+      : "↓ " + v.abbreviation + " - " + v.name,
     value: v.id_bible_version,
   }))
 );
+
+watch(bibleSpotlightOpen, (val) => {
+  if (!val) spotlightInitialBuffer.value = "";
+});
 
 const compact = computed(() => width.value <= 750);
 

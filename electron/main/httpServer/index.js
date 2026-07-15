@@ -187,7 +187,10 @@ function start({ port, mainWindow } = {}) {
   
   setupRoutes(app, { 
     getMainWindow: () => _mainWindow,
-    getUserData: () => getUserData()
+    getUserData: () => getUserData(),
+    jsonCache,
+    getDatabaseUrl: () => protocolModule.getRemoteConfig().databaseUrl,
+    getApiToken: () => protocolModule.getRemoteConfig().apiToken,
   });
 
   // Arquivos legacy do Delphi (`userData/server/*`) — opcional, mantém

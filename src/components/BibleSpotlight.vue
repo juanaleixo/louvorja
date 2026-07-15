@@ -1,6 +1,26 @@
 <template>
   <v-dialog v-model="model" max-width="520">
-    <div ref="cardRef" class="quicknav-card" tabindex="-1" @keydown="handleKeydown">
+    <div
+      ref="cardRef"
+      class="quicknav-card"
+      tabindex="-1"
+      @mousedown.prevent="focusInput"
+      @touchend.prevent="focusInput"
+    >
+      <input
+        ref="inputRef"
+        class="quicknav-hidden-input"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        @keydown="handleKeydown"
+        @input="onInput"
+        @compositionstart="onCompositionStart"
+        @compositionend="onCompositionEnd"
+      />
       <div class="quicknav-steps">
         <div :class="['quicknav-step', { current: activeStep === 0 }]">
           <span class="quicknav-step-num">1</span>
@@ -89,7 +109,10 @@ const selectedBook = ref<BibleBook | null>(null);
 const selectedChapter = ref<number>(0);
 const chapterVerses = ref<Record<string, string>>({});
 const cardRef = ref<HTMLElement | null>(null);
+const inputRef = ref<HTMLInputElement | null>(null);
 let chapterTimer: ReturnType<typeof setTimeout> | null = null;
+let _composing = false;
+let _lastInput = "";
 
 // Data
 const books = ref<BibleBook[] | null>(null);
@@ -350,6 +373,74 @@ function handleKeydown(e: KeyboardEvent): void {
   }
 }
 
+function focusInput(): void {
+  inputRef.value?.focus();
+}
+
+function onCompositionStart(): void {
+  _composing = true;
+}
+
+function onCompositionEnd(e: CompositionEvent): void {
+  _composing = false;
+  if (e.data) {
+    const target = e.target as HTMLInputElement;
+    target.value = "";
+    _handleChars(e.data);
+  }
+}
+
+function onInput(e: Event): void {
+  if (_composing) return;
+  const target = e.target as HTMLInputElement;
+  const val = target.value;
+  target.value = "";
+  if (val.length > _lastInput.length) {
+    const chars = val.slice(_lastInput.length);
+    _handleChars(chars);
+  }
+  _lastInput = "";
+}
+
+function _handleChars(chars: string): void {
+  for (const ch of chars) {
+    if (state.value === "book") {
+      if (/^[a-zA-Z]$/.test(ch)) {
+        buffer.value += ch.toLowerCase();
+        checkBookMatch();
+      }
+    } else if (state.value === "chapter") {
+      if (/^[0-9]$/.test(ch)) {
+        const max = selectedBook.value?.chapters ?? 0;
+        const candidate = buffer.value + ch;
+        const val = parseInt(candidate, 10);
+        if (val < 1 || val > max) continue;
+        buffer.value = candidate;
+        if (chapterTimer) clearTimeout(chapterTimer);
+        if (val * 10 > max) {
+          commitChapter(val);
+        } else {
+          chapterTimer = setTimeout(() => {
+            if (buffer.value) commitChapter(parseInt(buffer.value, 10));
+            chapterTimer = null;
+          }, 600);
+        }
+      }
+    } else if (state.value === "verse") {
+      if (/^[0-9]$/.test(ch)) {
+        const keys = Object.keys(chapterVerses.value).map(Number);
+        const max = keys.length > 0 ? Math.max(...keys) : 0;
+        const candidate = buffer.value + ch;
+        const val = parseInt(candidate, 10);
+        if (val < 1 || val > max) continue;
+        buffer.value = candidate;
+        const base = feedback.value.replace(/:(\s*\d*)$/, "");
+        feedback.value = `${base}:${val}`;
+      }
+    }
+  }
+}
+
 watch(model, async (val: boolean) => {
   if (val) {
     const initial = props.initialBuffer;
@@ -357,6 +448,8 @@ watch(model, async (val: boolean) => {
     await loadBooks();
     await nextTick();
     cardRef.value?.focus();
+    inputRef.value?.focus();
+    _lastInput = "";
     if (initial) {
       buffer.value = initial;
       checkBookMatch();
@@ -526,5 +619,22 @@ watch(model, async (val: boolean) => {
 
 .quicknav-card:focus {
   outline: none;
+}
+
+.quicknav-hidden-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background: transparent;
+  cursor: text;
+  pointer-events: none;
+  resize: none;
+  z-index: 0;
 }
 </style>

@@ -4,7 +4,8 @@
       <label class="book-picker-label">{{ t("modules.bible_search.ribbon.filter.version") }}</label>
       <select v-model="versionId" class="book-picker-version-select" @change="onVersionChange">
         <option v-for="v in versions" :key="v.id_bible_version" :value="v.id_bible_version">
-          {{ v.abbreviation }} - {{ v.name }}
+          {{ downloadedVersions.has(v.id_bible_version) ? "" : "⬇ " }}{{ v.abbreviation }} -
+          {{ v.name }}
         </option>
       </select>
     </div>
@@ -75,6 +76,7 @@ import { ref, computed, reactive, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import type { BibleVersion, BibleBook } from "@/types/Bible";
 import { BOOKS_OT, BOOKS_NT } from "@/constants/Bible";
 
@@ -90,6 +92,11 @@ const popoverRef = ref<HTMLElement | null>(null);
 const allBooks = ref<BibleBook[]>([]);
 const versions = ref<BibleVersion[]>([]);
 const versionId = ref<number | null>(null);
+
+const downloadedVersions = computed(() => {
+  const ids: number[] = $userdata.get(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, []) || [];
+  return new Set(ids);
+});
 
 const sortedOt = computed(() => allBooks.value.filter((b) => b.id_bible_book <= 39));
 const sortedNt = computed(() => allBooks.value.filter((b) => b.id_bible_book > 39));

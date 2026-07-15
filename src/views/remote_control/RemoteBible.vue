@@ -163,7 +163,7 @@ const downloadedVersions = ref<Set<number>>(new Set());
 async function loadDownloadedVersions(): Promise<void> {
   try {
     const res = await apiFetch(
-      `/api/user-data?path=${KEYS.OPTIONS.BIBLE_DOWNLOADED_VERSIONS}&token=${props.token}`
+      `/api/user-data?path=${KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS}&token=${props.token}`
     );
     if (res.ok) {
       const data = await res.json();
