@@ -111,6 +111,7 @@ export const KEYS = {
     },
     FULLSCREEN: `${OPTIONS}.fullscreen`,
     LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
+    SKIP_STARTUP_CHECK: `${OPTIONS}.skip_startup_check`,
     OPEN_RETURN: `${OPTIONS}.open_return`,
     OPEN_OPERATOR: `${OPTIONS}.open_operator`,
     DISPLAYS: {

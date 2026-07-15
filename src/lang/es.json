@@ -305,7 +305,7 @@
       "save_done_hymnal": "Himnario eliminado del disco.",
       "save_done_both": "{n} álbum(es) y el himnario eliminados del disco.",
       "save_nothing": "Nada que eliminar del disco.",
-      "cancel": "Cancelar",
+      "cancel": "Cancelar Download",
       "progress": "{done} de {total} ({percent}%)",
       "hint": "Seleccione álbumes para descargar carátulas, MP3 e imágenes de las músicas para uso offline.",
       "loading": "Cargando colectáneas…",
@@ -344,7 +344,8 @@
       "download_hint": "Descargue los datos de las versiones bíblicas para uso offline y acceso más rápido.",
       "save": "Guardar",
       "saving": "Guardando…",
-      "save_done": "{n} versión(es) eliminada(s) del disco."
+      "save_done": "{n} versión(es) eliminada(s) del disco.",
+      "cancel": "Cancelar Descarga"
     },
     "storage": {
       "title": "Almacenamiento",
@@ -911,5 +912,21 @@
     "bible_prev_verse": "Versículo anterior",
     "bible_next_verse": "Siguiente versículo",
     "bible_clear": "Limpiar versículo seleccionado"
+  },
+  "startup_check": {
+    "title": "Verificación Inicial",
+    "scanning": "Comprobando archivos del sistema...",
+    "connection_status": "Conexión FTP",
+    "collections_status": "Colecciones",
+    "bible_status": "Biblia",
+    "storage_status": "Almacenamiento",
+    "hymnal_downloaded": "Descargado",
+    "hymnal_missing": "No descargado",
+    "albums_count": "{done} de {total} álbumes",
+    "bible_count": "{done} de {total} versiones",
+    "dont_show_again": "No mostrar esta verificación al inicio",
+    "select_files": "Seleccionar Archivos",
+    "download_all": "Descargar Todo",
+    "sync_hint": "Puede descargar álbumes o versiones bíblicas específicas después en el menú Opciones > Sincronizar."
   }
 }

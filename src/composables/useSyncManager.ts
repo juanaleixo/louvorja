@@ -1,0 +1,630 @@
+import { ref, onBeforeUnmount, type Ref } from "vue";
+import { useI18n } from "vue-i18n";
+import Platform from "@/helpers/Platform";
+import Database from "@/helpers/Database";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+import { BOOKS } from "@/constants/Bible";
+import type { BibleVersion } from "@/types/Bible";
+
+interface FileEntry {
+  remote: string;
+  local: string;
+  expectedSize: number;
+}
+
+interface MusicLine {
+  url_image?: string;
+}
+
+interface MusicData {
+  url_music?: string;
+  url_instrumental_music?: string;
+  url_image?: string;
+  lyric?: MusicLine[];
+  musics?: Array<{ id_music: number | string }>;
+}
+
+interface DiskUsage {
+  bytes: number;
+  fileCount: number;
+  albumCount: number;
+  hymnalCached: boolean;
+}
+
+interface StorageSizeResult {
+  bytes: number;
+  count: number;
+}
+
+interface LocalCheckResult {
+  [remote: string]: boolean;
+}
+
+type CleanupFn = () => void;
+
+export interface ScanResult {
+  cachedAlbums: Set<number>;
+  hymnalCached: boolean;
+  downloadedBibles: number[];
+  connectionOk: boolean;
+  albumsTotal: number;
+  bibleVersions: BibleVersion[];
+}
+
+export function useSyncManager() {
+  const { t, locale } = useI18n();
+
+  // FTP
+  const ftpOk = ref(false);
+  const ftpChecking = ref(false);
+  const ftpError = ref("");
+
+  // Scan
+  const scanning = ref(false);
+  const scanProgress = ref({ done: 0, total: 0 });
+
+  // Download (collections)
+  const downloading = ref(false);
+  const downloadProgress = ref({ done: 0, total: 0, currentFile: "" });
+  const downloadFailedCount = ref(0);
+  const downloadCompletedMsg = ref("");
+
+  // Bible download
+  const bibleDownloading = ref(false);
+  const bibleCancelled = ref(false);
+  const bibleProgress = ref({ done: 0, total: 0, currentFile: "" });
+  const bibleCompletedMsg = ref("");
+
+  let _downloadCleanup: CleanupFn[] = [];
+
+  // ─── FTP ────────────────────────────────────────────────────────
+
+  async function checkFtp(): Promise<boolean> {
+    if (!Platform.download) return false;
+    ftpChecking.value = true;
+    ftpOk.value = false;
+    ftpError.value = "";
+    try {
+      const r = await Platform.download.checkConnection() as { ok: boolean; host?: string; msg?: string; error?: string };
+      if (r.ok) {
+        ftpOk.value = true;
+        if (r.msg) {
+          ftpOk.value = false;
+          ftpError.value = r.msg;
+        }
+      } else {
+        ftpError.value = r.error || "Disconnected";
+      }
+    } catch (e) {
+      ftpError.value = (e as Error).message;
+    } finally {
+      ftpChecking.value = false;
+    }
+    return ftpOk.value;
+  }
+
+  // ─── Catalog / Scan ─────────────────────────────────────────────
+
+  async function loadCatalog(lang: string, { fresh = false } = {}): Promise<{ categories: any[]; hymnalIds: number[] }> {
+    const [catsRes, hymRes] = await Promise.allSettled([
+      Database.get(`${lang}_categories`, { fresh }),
+      Database.get(`${lang}_hymnal`, { fresh }),
+    ]);
+    const categories: any[] = [];
+    let hymnalIds: number[] = [];
+
+    if (catsRes.status === "fulfilled" && Array.isArray(catsRes.value)) {
+      categories.push(...(catsRes.value as any[]).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+    }
+    if (hymRes.status === "fulfilled" && Array.isArray(hymRes.value)) {
+      hymnalIds = (hymRes.value as Array<{ id_music: number | string }>)
+        .map((m) => Number(m.id_music))
+        .filter((n) => Number.isFinite(n));
+    }
+
+    return { categories, hymnalIds };
+  }
+
+  async function scanCache(
+    lang: string,
+    categories: any[],
+    hymnalIds: number[]
+  ): Promise<{ cachedAlbums: Set<number>; hymnalCached: boolean }> {
+    if (!Platform.storage?.checkLocal) {
+      return { cachedAlbums: new Set(), hymnalCached: false };
+    }
+
+    const albumIds: number[] = [];
+    categories.forEach((cat: any) => {
+      cat.albums?.forEach((a: any) => albumIds.push(a.id_album));
+    });
+
+    const totalSteps = albumIds.length + (hymnalIds.length ? 1 : 0);
+    if (totalSteps === 0) return { cachedAlbums: new Set(), hymnalCached: false };
+
+    scanning.value = true;
+    scanProgress.value = { done: 0, total: totalSteps };
+
+    const cachedAlbums = new Set<number>();
+    const ALBUM_BATCH = 3;
+
+    for (let i = 0; i < albumIds.length; i += ALBUM_BATCH) {
+      const slice = albumIds.slice(i, i + ALBUM_BATCH);
+      await Promise.all(
+        slice.map(async (id) => {
+          try {
+            const files = await collectAlbumFileList(id);
+            if (files.length > 0 && (await isFileListComplete(files))) {
+              cachedAlbums.add(id);
+            }
+          } catch (e) {
+            console.warn(`[useSyncManager] scan album ${id}:`, e);
+          } finally {
+            scanProgress.value = { ...scanProgress.value, done: scanProgress.value.done + 1 };
+          }
+        })
+      );
+    }
+
+    let hymnalCached = false;
+    if (hymnalIds.length) {
+      try {
+        const hymFiles = await collectHymnalFileList(hymnalIds);
+        hymnalCached = hymFiles.length > 0 && (await isFileListComplete(hymFiles));
+      } catch (e) {
+        console.warn("[useSyncManager] scan hymnal:", e);
+      }
+      scanProgress.value = { ...scanProgress.value, done: scanProgress.value.done + 1 };
+    }
+
+    scanning.value = false;
+    return { cachedAlbums, hymnalCached };
+  }
+
+  async function runScan(lang: string): Promise<{
+    categories: any[];
+    hymnalIds: number[];
+    cachedAlbums: Set<number>;
+    hymnalCached: boolean;
+    bibleVersions: BibleVersion[];
+    downloadedBibles: number[];
+    connectionOk: boolean;
+  }> {
+    const { categories, hymnalIds } = await loadCatalog(lang);
+    const { versions: bibleVersions } = await loadBibleVersions(lang);
+    const { cachedAlbums, hymnalCached } = await scanCache(lang, categories, hymnalIds);
+
+    if (bibleVersions.length > 0) {
+      scanProgress.value = { ...scanProgress.value, total: scanProgress.value.total + bibleVersions.length };
+    }
+
+    const downloadedBibles = await scanBibleVersionsDisk(bibleVersions, lang);
+
+    scanning.value = false;
+    const connectionOk = await checkFtp();
+    return { categories, hymnalIds, cachedAlbums, hymnalCached, bibleVersions, downloadedBibles, connectionOk };
+  }
+
+  // ─── Bible Versions ─────────────────────────────────────────────
+
+  async function loadBibleVersions(lang: string): Promise<{ versions: BibleVersion[]; downloaded: number[] }> {
+    let versions: BibleVersion[] = [];
+    try {
+      const data = await Database.get<BibleVersion[]>(`${lang}_bible_version`);
+      if (data) versions = data;
+    } catch (e) {
+      console.error("[useSyncManager] loadBibleVersions:", e);
+    }
+
+    const saved = $userdata.get<number[]>(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS);
+    return { versions, downloaded: saved || [] };
+  }
+
+  async function scanBibleVersionsDisk(
+    versions: BibleVersion[],
+    lang: string
+  ): Promise<number[]> {
+    if (!versions.length) return [];
+
+    const books = await Database.get<Array<{ id_bible_book: number; chapters?: number }>>(
+      `${lang}_bible_book`
+    );
+    if (!books || books.length === 0) return [];
+
+    const downloaded: number[] = [];
+
+    for (const ver of versions) {
+      const allKeys: string[] = [];
+      for (const book of books) {
+        const n = book.chapters ?? 1;
+        for (let i = 1; i <= n; i++) {
+          allKeys.push(`bible_${ver.id_bible_version}_${book.id_bible_book}_${i}`);
+        }
+      }
+
+      try {
+        if ((Platform.storage as any)?.checkJson) {
+          const exists = await (Platform.storage as any).checkJson(allKeys) as Record<string, boolean>;
+          if (allKeys.every((k) => exists[k])) {
+            downloaded.push(ver.id_bible_version);
+          }
+        }
+      } catch (e) {
+        console.warn(`[useSyncManager] scan bible version ${ver.id_bible_version}:`, e);
+      }
+
+      scanProgress.value = { ...scanProgress.value, done: scanProgress.value.done + 1 };
+    }
+
+    return downloaded;
+  }
+
+  async function downloadBibleVersions(
+    versionIds: number[],
+    bibleVersions: BibleVersion[],
+    lang: string
+  ): Promise<number> {
+    if (versionIds.length === 0) return 0;
+
+    bibleDownloading.value = true;
+    bibleCancelled.value = false;
+    bibleProgress.value = { done: 0, total: 0, currentFile: "" };
+    bibleCompletedMsg.value = "";
+
+    const books = await Database.get<Array<{ id_bible_book: number; chapters?: number }>>(
+      `${lang}_bible_book`
+    );
+    if (!books || books.length === 0) {
+      bibleCompletedMsg.value = "Nenhum livro encontrado.";
+      bibleDownloading.value = false;
+      return 0;
+    }
+
+    const allChapters: { versionId: number; bookId: number; n: number }[] = [];
+    for (const vId of versionIds) {
+      for (const book of books) {
+        const n = book.chapters ?? 1;
+        for (let i = 1; i <= n; i++) {
+          allChapters.push({ versionId: vId, bookId: book.id_bible_book, n: i });
+        }
+      }
+    }
+
+    const allKeys = allChapters.map((c) => `bible_${c.versionId}_${c.bookId}_${c.n}`);
+    let toDownload = allChapters;
+
+    if ((Platform.storage as any)?.checkJson) {
+      const exists = await (Platform.storage as any).checkJson(allKeys) as Record<string, boolean>;
+      toDownload = allChapters.filter((c) => !exists[`bible_${c.versionId}_${c.bookId}_${c.n}`]);
+    }
+
+    bibleProgress.value = { ...bibleProgress.value, total: toDownload.length };
+
+    if (toDownload.length === 0) {
+      bibleDownloading.value = false;
+      bibleCompletedMsg.value = "Nada a baixar (já está em cache).";
+      return 0;
+    }
+
+    for (const ch of toDownload) {
+      if (bibleCancelled.value) break;
+      const key = `bible_${ch.versionId}_${ch.bookId}_${ch.n}`;
+      bibleProgress.value = { ...bibleProgress.value, currentFile: key };
+      try {
+        await Database.get(key, { fresh: true, silent: true });
+      } catch (e) {
+        console.warn(`[useSyncManager] falha ao baixar ${key}:`, e);
+      }
+      bibleProgress.value = { ...bibleProgress.value, done: bibleProgress.value.done + 1 };
+    }
+
+    bibleProgress.value = { ...bibleProgress.value, currentFile: "" };
+    bibleDownloading.value = false;
+    if (bibleCancelled.value) {
+      bibleCompletedMsg.value = "";
+      bibleCancelled.value = false;
+    } else {
+      $userdata.set(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, versionIds);
+    }
+    return bibleProgress.value.done;
+  }
+
+  async function saveBibleSelectionToDisk(toRemove: number[]): Promise<void> {
+    for (const versionId of toRemove) {
+      const prefix = `bible_${versionId}_`;
+      if ((Platform.storage as any)?.removeJsonByPrefix) {
+        await (Platform.storage as any).removeJsonByPrefix(prefix);
+      }
+    }
+  }
+
+  // ─── Collections Download ───────────────────────────────────────
+
+  async function collectFiles(
+    selectedAlbums: Set<number>,
+    selectedHymnal: boolean,
+    hymnalIds: number[]
+  ): Promise<FileEntry[]> {
+    const files = new Map<string, FileEntry>();
+    const albumIds = [...selectedAlbums];
+    const allMusicIds = new Set<number>();
+
+    await Promise.all(
+      albumIds.map(async (id) => {
+        const album = await fetchJson<MusicData>(`album_${id}`);
+        if (!album) return;
+        const f = toFile(album.url_image);
+        if (f) files.set(f.remote, f);
+        album.musics?.forEach((m) => allMusicIds.add(Number(m.id_music)));
+      })
+    );
+
+    if (selectedHymnal) {
+      hymnalIds.forEach((id) => allMusicIds.add(id));
+    }
+
+    const musicIds = [...allMusicIds];
+    await collectMusicFiles(musicIds, files);
+
+    return [...files.values()];
+  }
+
+  async function collectAlbumFileList(albumId: number): Promise<FileEntry[]> {
+    const files = new Map<string, FileEntry>();
+    const album = await fetchJson<MusicData>(`album_${albumId}`);
+    if (!album) return [];
+    const f = toFile(album.url_image);
+    if (f) files.set(f.remote, f);
+    const musicIds = (album.musics || [])
+      .map((m) => Number(m.id_music))
+      .filter((n) => Number.isFinite(n));
+    await collectMusicFiles(musicIds, files);
+    return [...files.values()];
+  }
+
+  async function collectHymnalFileList(hymnalIds: number[]): Promise<FileEntry[]> {
+    const files = new Map<string, FileEntry>();
+    await collectMusicFiles(hymnalIds, files);
+    return [...files.values()];
+  }
+
+  async function collectMusicFiles(musicIds: number[], files: Map<string, FileEntry>): Promise<void> {
+    const BATCH = 16;
+    for (let i = 0; i < musicIds.length; i += BATCH) {
+      const slice = musicIds.slice(i, i + BATCH);
+      await Promise.all(
+        slice.map(async (mid) => {
+          const m = await fetchJson<MusicData>(`music_${mid}`);
+          addMusicToFileMap(m, files);
+        })
+      );
+    }
+  }
+
+  function addMusicToFileMap(m: MusicData | null | undefined, files: Map<string, FileEntry>): void {
+    if (!m) return;
+    [m.url_music, m.url_instrumental_music, m.url_image].forEach((u) => {
+      const f = toFile(u);
+      if (f) files.set(f.remote, f);
+    });
+    m.lyric?.forEach((line: MusicLine) => {
+      const f = toFile(line.url_image);
+      if (f) files.set(f.remote, f);
+    });
+  }
+
+  function toFile(url: string | null | undefined): FileEntry | null {
+    if (!url) return null;
+    const remote = url.startsWith("/") ? url : `/${url}`;
+    return { remote, local: remote.slice(1), expectedSize: 0 };
+  }
+
+  async function fetchJson<T = MusicData>(key: string): Promise<T | null> {
+    return Database.get<T>(key);
+  }
+
+  async function isFileListComplete(files: FileEntry[]): Promise<boolean> {
+    if (!files.length || !Platform.storage?.checkLocal) return false;
+    const remotes = files.map((f) => f.remote);
+    const local = await Platform.storage.checkLocal(remotes) as LocalCheckResult;
+    return remotes.every((r) => local[r] === true);
+  }
+
+  async function removeFilesFromCache(files: FileEntry[]): Promise<void> {
+    if (!files.length || !Platform.storage?.removeFiles) return;
+    await Platform.storage.removeFiles(files.map((f) => f.remote));
+  }
+
+  async function startDownloads(files: FileEntry[]): Promise<void> {
+    if (!Platform.download || files.length === 0) return;
+
+    downloading.value = true;
+    downloadProgress.value = { done: 0, total: files.length, currentFile: "" };
+    downloadFailedCount.value = 0;
+    downloadCompletedMsg.value = "";
+
+    const cleanupFns: CleanupFn[] = [];
+
+    cleanupFns.push(
+      Platform.download.onProgress((d: any) => {
+        downloadProgress.value = {
+          done: downloadProgress.value.done,
+          total: d.total,
+          currentFile: d.file ? (d.file.split("/").pop() ?? "") : "",
+        };
+      })
+    );
+    cleanupFns.push(
+      Platform.download.onFileDone(() => {
+        downloadProgress.value = { ...downloadProgress.value, done: downloadProgress.value.done + 1 };
+      })
+    );
+    cleanupFns.push(
+      Platform.download.onFileError(() => {
+        downloadFailedCount.value += 1;
+      })
+    );
+
+    _downloadCleanup.push(...cleanupFns);
+
+    // Escuta conclusão da fila
+    _downloadCleanup.push(
+      Platform.download.onQueueDone(() => {
+        downloading.value = false;
+      })
+    );
+    _downloadCleanup.push(
+      Platform.download.onQueueCancelled(() => {
+        downloading.value = false;
+      })
+    );
+
+    try {
+      const result = await Platform.download.start(files) as { queued?: number; message?: string; downloaded?: number; failed?: number } | undefined;
+      if (result?.queued === 0) {
+        downloading.value = false;
+        downloadCompletedMsg.value = result.message || "Já está atualizado.";
+      }
+    } catch (e) {
+      downloading.value = false;
+      downloadCompletedMsg.value = (e as Error).message;
+    }
+  }
+
+  async function waitForDownloadQueue(): Promise<void> {
+    if (!downloading.value) return;
+    return new Promise<void>((resolve) => {
+      let unsubDone: CleanupFn | null = null;
+      let unsubCancel: CleanupFn | null = null;
+      const done = () => {
+        unsubDone?.();
+        unsubCancel?.();
+        resolve();
+      };
+      unsubDone = Platform.download!.onQueueDone(done);
+      unsubCancel = Platform.download!.onQueueCancelled(done);
+    });
+  }
+
+  function cancelDownloads(): void {
+    Platform.download?.cancel();
+    bibleCancelled.value = true;
+  }
+
+  // ─── Utilities ──────────────────────────────────────────────────
+
+  function humanSize(bytes: number | null | undefined): string {
+    if (!bytes || bytes <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"] as const;
+    let i = 0;
+    let val = Number(bytes);
+    while (val >= 1024 && i < units.length - 1) {
+      val /= 1024;
+      i += 1;
+    }
+    return `${val.toFixed(val < 10 ? 1 : 0)} ${units[i]}`;
+  }
+
+  function formatBibleKey(key: string, versions: BibleVersion[]): string {
+    if (!key || !key.startsWith("bible_")) return key;
+    const parts = key.split("_");
+    if (parts.length < 4) return key;
+    const versionId = Number(parts[1]);
+    const bookId = Number(parts[2]);
+    const chapter = Number(parts[3]);
+    if (!versionId || !bookId || !chapter) return key;
+
+    const version = versions.find((v) => v.id_bible_version === versionId);
+    const bookSlug = BOOKS[bookId - 1]?.id;
+    if (!version && !bookSlug) return key;
+
+    const abbrev = version?.abbreviation || String(versionId);
+    const bookName = bookSlug ? t("bible.books." + bookSlug) : String(bookId);
+    return `${abbrev} — ${bookName} ${chapter}`;
+  }
+
+  async function refreshDiskUsage(
+    cachedAlbums: Set<number>,
+    hymnalCached: boolean
+  ): Promise<DiskUsage> {
+    if (!Platform.storage?.sizeOfPaths) {
+      return { bytes: 0, fileCount: 0, albumCount: 0, hymnalCached: false };
+    }
+
+    const albumCount = cachedAlbums.size;
+    if (albumCount === 0 && !hymnalCached) {
+      return { bytes: 0, fileCount: 0, albumCount: 0, hymnalCached: false };
+    }
+
+    const remotes = new Set<string>();
+    const ALBUM_BATCH = 3;
+    const albumIds = [...cachedAlbums];
+
+    for (let i = 0; i < albumIds.length; i += ALBUM_BATCH) {
+      const slice = albumIds.slice(i, i + ALBUM_BATCH);
+      await Promise.all(
+        slice.map(async (id) => {
+          const files = await collectAlbumFileList(id);
+          files.forEach((f) => remotes.add(f.remote));
+        })
+      );
+    }
+
+    if (hymnalCached) {
+      const hymFiles = await collectHymnalFileList(albumIds);
+      hymFiles.forEach((f) => remotes.add(f.remote));
+    }
+
+    const { bytes, count } = await Platform.storage.sizeOfPaths([...remotes]) as StorageSizeResult;
+    return { bytes: bytes ?? 0, fileCount: count ?? 0, albumCount, hymnalCached };
+  }
+
+  // ─── Lifecycle ──────────────────────────────────────────────────
+
+  onBeforeUnmount(cleanup);
+
+  function cleanup(): void {
+    _downloadCleanup.forEach((fn) => {
+      try { fn(); } catch { /* noop */ }
+    });
+    _downloadCleanup = [];
+  }
+
+  return {
+    ftpOk,
+    ftpChecking,
+    ftpError,
+    checkFtp,
+    scanning,
+    scanProgress,
+    runScan,
+    loadCatalog,
+    scanCache,
+    downloading,
+    downloadProgress,
+    downloadFailedCount,
+    downloadCompletedMsg,
+    startDownloads,
+    cancelDownloads,
+    waitForDownloadQueue,
+    bibleDownloading,
+    bibleProgress,
+    bibleCompletedMsg,
+    downloadBibleVersions,
+    saveBibleSelectionToDisk,
+    loadBibleVersions,
+    scanBibleVersionsDisk,
+    collectFiles,
+    collectAlbumFileList,
+    collectHymnalFileList,
+    collectMusicFiles,
+    isFileListComplete,
+    removeFilesFromCache,
+    fetchJson,
+    humanSize,
+    formatBibleKey,
+    refreshDiskUsage,
+    cleanup,
+  };
+}

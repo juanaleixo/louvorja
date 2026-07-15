@@ -29,6 +29,7 @@
     <MusicSpotlight v-model="musicSearchOpen" />
     <BibleSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
     <HotkeysCheatsheet v-model="hotkeysOpen" />
+    <StartupCheckDialog v-model="startupCheckOpen" />
   </v-app>
 </template>
 
@@ -49,8 +50,10 @@ import RibbonBar from "@/layout/shell/RibbonBar.vue";
 import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";
 import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";
 import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
+import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import $popup from "@/helpers/Popup";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
@@ -65,6 +68,7 @@ const cmdPaletteOpen = ref(false);
 const musicSearchOpen = ref(false);
 const bibleSearchOpen = ref(false);
 const hotkeysOpen = ref(false);
+const startupCheckOpen = ref(false);
 const ready = ref(false);
 
 const liturgyModuleOpen = computed(() => {
@@ -182,6 +186,14 @@ onMounted(() => {
   } else {
     $appdata.set("is_desktop", false);
     $appdata.set("is_online", true);
+  }
+
+  // Startup check — só no desktop e se não tiver skip ativo
+  if (display.platform.value.electron) {
+    const skip = $userdata.get(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
+    if (!skip) {
+      startupCheckOpen.value = true;
+    }
   }
 
   // Bridge popup → main (replica popup ↔ shell)
