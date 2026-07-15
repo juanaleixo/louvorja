@@ -178,6 +178,8 @@ e pode ser aberto/fechado sem erros no console.
 - [ ] Build production OK (`npm run build`)
 - [ ] Testes passam (`npm run test` -- se existir)
 - [ ] Sem `console.log` / `debugger` no codigo final
+- [ ] UserData usa `KEYS.*` de `src/constants/UserDataKeys.ts` (nunca strings hardcoded)
+- [ ] Ícones usam `ICONS.*` de `src/config/Icons.ts` (nunca `"mdi-*"` inline)
 
 ### Commits
 

@@ -164,5 +164,8 @@ O comando `npm run validate:manifests` valida todos os manifest.ts:
 - `id` vem de `ModuleEnum.<KEY>` (enum em `src/enums/ModuleEnum.ts`)
 - `title`/`description` sempre via i18n (`${modulePath}.title`)
 - `showInMainMenu: boolean` obrigatório (`false` para módulos internos)
-- `icon` prefere `ICONS.*` de `src/config/Icons.ts`
+- `icon` **sempre** via `ICONS.*` de `src/config/Icons.ts` — nunca use strings `"mdi-*"` hardcoded
 - Botões de formatação: `ICONS.ACTIONS.FORMAT` e `ICONS.ACTIONS.RESTORE`
+- Ribbon buttons (`action`, `checkbox`, `switch`, `select`, `slider`): `icon` de `ICONS.*`
+- `$userdata.get/set` **sempre** via `KEYS.*` de `src/constants/UserDataKeys.ts` — nunca strings hardcoded
+- Novas chaves de UserData: adicionar em `KEYS.*` em `src/constants/UserDataKeys.ts` antes de usar

@@ -205,6 +205,44 @@ $userdata.set("theme", "dark");
 
 ---
 
+## Convenções de Código
+
+### `ICONS.*` — ícones sempre por constante
+
+Nunca use strings `"mdi-*"` hardcoded. Ícones de componentes, manifestos e
+ribbon buttons devem usar `ICONS.*` de `src/config/Icons.ts`:
+
+```ts
+import { ICONS } from "@/config/Icons";
+
+// ✅ Correto
+icon: ICONS.PLAYER.PLAY
+
+// ❌ Errado — string hardcoded
+icon: "mdi-play"
+```
+
+### `KEYS.*` — UserData sempre por constante
+
+Toda leitura/escrita em `$userdata.get/set` deve usar `KEYS.*` de
+`src/constants/UserDataKeys.ts`:
+
+```ts
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+
+// ✅ Correto
+$userdata.get(KEYS.OPTIONS.THEME);
+
+// ❌ Errado — string hardcoded
+$userdata.get("theme");
+```
+
+Para adicionar nova chave: edite `src/constants/UserDataKeys.ts` e referencie
+via `KEYS.<GROUP>.<KEY>`.
+
+---
+
 ## Comunicação Entre Janelas
 
 Janelas popup e janelas de projeção se comunicam via `BroadcastChannel`:

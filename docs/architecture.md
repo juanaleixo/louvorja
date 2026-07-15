@@ -123,12 +123,18 @@ export const contextualPages: RibbonPage[] = [
 
 ### UserData (preferências persistidas)
 
-```js
+```ts
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 
-$userdata.get("theme");
-$userdata.set("theme", "dark");
+// Sempre usar KEYS.* — NUNCA strings hardcoded
+$userdata.get(KEYS.OPTIONS.THEME);
+$userdata.set(KEYS.OPTIONS.THEME, "dark");
 ```
+
+Todas as chaves de `$userdata.get/set` **devem** ser referenciadas via `KEYS.*` de
+`src/constants/UserDataKeys.ts`. Nunca use strings literais como `"theme"` ou
+`"options.auto_cache_media"` — isso quebra a rastreabilidade e dificulta refatorações.
 
 Estrutura do `user_data` no Pinia store:
 
@@ -142,6 +148,9 @@ Estrutura do `user_data` no Pinia store:
   options: { /* slides, player, projeção */ }
 }
 ```
+
+Se precisar de uma nova chave, adicione o entry em `KEYS.*` em
+`src/constants/UserDataKeys.ts` antes de usar no código.
 
 ### IndexedDB unificado (`louvorja`)
 
@@ -366,6 +375,46 @@ Aliases em `vite.config.js`:
 | `@constants` | `src/constants/` |
 | `@store` | `src/store/` |
 | `@views` | `src/views/` |
+
+---
+
+## 📐 Convenções de Código
+
+### `ICONS.*` — sempre, nunca `"mdi-*"` hardcoded
+
+Ícones de componentes e manifestos **devem** usar as constantes de `src/config/Icons.ts`:
+
+```ts
+import { ICONS } from "@/config/Icons";
+
+// ✅ Correto
+icon: ICONS.PLAYER.PLAY
+
+// ❌ Errado — string hardcoded
+icon: "mdi-play"
+```
+
+Exceção: templates de módulos com `<v-icon icon="mdi-...">` inline são tolerados
+mas **prefira** extrair para `ICONS.*`.
+
+### `KEYS.*` — UserData nunca com string literal
+
+Toda leitura/escrita em `$userdata.get/set` **deve** usar as constantes de
+`src/constants/UserDataKeys.ts`:
+
+```ts
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+
+// ✅ Correto
+$userdata.get(KEYS.OPTIONS.THEME);
+
+// ❌ Errado — string hardcoded
+$userdata.get("theme");
+```
+
+Para adicionar nova chave: edite `src/constants/UserDataKeys.ts` e referencie
+via `KEYS.<GROUP>.<KEY>` no código.
 
 ---
 
