@@ -887,13 +887,13 @@ const storageStats = ref<StorageStats | null>(null);
 const loading = ref<boolean>(false);
 
 const autoCache = computed({
-  get: (): boolean => $userdata.get("options.auto_cache_media", true) === true,
-  set: (v: boolean) => $userdata.set("options.auto_cache_media", !!v),
+  get: (): boolean => $userdata.get(KEYS.OPTIONS.AUTO_CACHE_MEDIA, true) === true,
+  set: (v: boolean) => $userdata.set(KEYS.OPTIONS.AUTO_CACHE_MEDIA, !!v),
 });
 
 const quotaGb = computed({
-  get: (): number => Number($userdata.get("options.storage_quota_gb", 0)) || 0,
-  set: (v: number) => $userdata.set("options.storage_quota_gb", Number(v) || 0),
+  get: (): number => Number($userdata.get(KEYS.OPTIONS.STORAGE_QUOTA_GB, 0)) || 0,
+  set: (v: number) => $userdata.set(KEYS.OPTIONS.STORAGE_QUOTA_GB, Number(v) || 0),
 });
 
 async function reloadStats(): Promise<void> {
@@ -930,7 +930,7 @@ async function changeFolder(): Promise<void> {
 }
 
 async function toggleAutoCache(enabled: boolean): Promise<void> {
-  $userdata.set("options.auto_cache_media", !!enabled);
+  $userdata.set(KEYS.OPTIONS.AUTO_CACHE_MEDIA, !!enabled);
   if (Platform?.storage?.setAutoCache) {
     await Platform.storage.setAutoCache(!!enabled);
   }
@@ -939,7 +939,7 @@ async function toggleAutoCache(enabled: boolean): Promise<void> {
 }
 
 async function setQuotaGb(gb: number): Promise<void> {
-  $userdata.set("options.storage_quota_gb", gb);
+  $userdata.set(KEYS.OPTIONS.STORAGE_QUOTA_GB, gb);
   const maxBytes = gb > 0 ? gb * 1024 * 1024 * 1024 : 0;
   const cur = (await Platform.userStore?.read("storage")) || {};
   await Platform.userStore?.write("storage", { ...cur, maxBytes });
