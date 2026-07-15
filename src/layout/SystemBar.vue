@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
 }
 
 .systembar--mac {
-  padding-left: 68px;
+  padding-left: 80px;
 }
 
 .systembar-appmenu {
