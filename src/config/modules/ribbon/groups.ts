@@ -21,7 +21,7 @@ export const groups: ModuleGroup[] = [
   { id: ModuleGroupEnum.BIBLE_GENERAL, title: path + "general", order: 7 },
 
   // UTILITIES category
-  { id: ModuleGroupEnum.CHURCH, title: path + "church", order: 8 },
+  { id: ModuleGroupEnum.CHURCH, title: path + "church", order: 1 },
   { id: ModuleGroupEnum.TIME, title: path + "time", order: 9 },
   { id: ModuleGroupEnum.DRAWS, title: path + "draws", order: 10 },
   { id: ModuleGroupEnum.TEXTS, title: path + "texts", order: 11 },

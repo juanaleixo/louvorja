@@ -27,7 +27,7 @@
           :title="$t('shell.appmenu')"
           v-bind="props"
         >
-          <v-icon icon="mdi-menu" size="16" />
+          <v-icon icon="mdi-dots-vertical" size="16" />
         </button>
       </template>
 
@@ -49,10 +49,10 @@
 
         <v-list-item v-for="(item, key) in menu" :key="key" class="cursor-pointer">
           <template #prepend>
-            <v-icon :icon="item.icon"></v-icon>
+            <v-icon icon="mdi-menu-left" size="30"></v-icon>
           </template>
           <template #append>
-            <v-icon icon="mdi-menu-right" size="x-small"></v-icon>
+            <v-icon :icon="item.icon"></v-icon>
           </template>
           <v-list-item-title>{{ item.title }}</v-list-item-title>
 
