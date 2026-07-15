@@ -208,6 +208,7 @@ app.whenReady().then(async () => {
     httpServer.setExternalRoutesEnabled(externalEnabled);
   } catch (e) {
     console.warn("[main] HTTP server não disponível, usando louvorja://:", e.message);
+    HTTP_BASE_URL = "";
   }
 
   // Mostrar splash imediatamente (antes da janela principal carregar)
@@ -519,7 +520,7 @@ ipcMain.handle("windows:open", (_event, options) => {
   //   - prod: http://localhost:PORT (Express server)
   // Isso garante que BroadcastChannel funcione entre todas as janelas
   // e que o YouTube IFrame Player API aceite a origem (HTTP real).
-  const devUrl = isDev ? DEV_URL : `${HTTP_BASE_URL}/#`;
+  const devUrl = isDev ? DEV_URL : (HTTP_BASE_URL ? `${HTTP_BASE_URL}/#` : "");
   const win = windowFactory.openOnMonitor({
     ...options,
     preloadPath,

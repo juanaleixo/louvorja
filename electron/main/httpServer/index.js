@@ -26,6 +26,7 @@ const { app: electronApp } = require("electron");
 
 const paths = require("../paths.js");
 const userStore = require("../userStore.js");
+const jsonCache = require("../jsonCache.js");
 const protocolModule = require("../protocol.js");
 const { setupAuth } = require("./auth.js");
 const { setupRoutes } = require("./routes.js");
