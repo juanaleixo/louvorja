@@ -25,13 +25,33 @@
         </v-list-item>
       </template>
     </v-list>
+
+    <!-- No mobile o rodapé fica escondido (dá lugar à navegação
+         inferior) — a versão fica aqui, abaixo da lista. -->
+    <template v-if="isMobile">
+      <v-divider class="mt-2" />
+      <div class="d-flex align-center flex-wrap px-4 py-3">
+        <span class="text-caption text-medium-emphasis">Versão {{ version }}</span>
+      </div>
+    </template>
   </v-navigation-drawer>
 </template>
 
 <script>
+import packageJson from "../../package.json";
+
 export default {
   name: "MenuLayout",
+  data: () => ({
+    db_version: 0,
+  }),
   computed: {
+    isMobile() {
+      return this.$vuetify.display.width <= 600;
+    },
+    version() {
+      return packageJson.version + "." + this.db_version;
+    },
     show: {
       get() {
         return this.$appdata.get("menu.show");
@@ -74,6 +94,13 @@ export default {
       //Ordena pelo idioma selecionado
       return this.$modules.sort(modules, this.$t);
     },
+    async loadDBVersion() {
+      const config = await this.$database.get("config");
+      this.db_version = config.version_number;
+    },
+  },
+  async mounted() {
+    await this.loadDBVersion();
   },
 };
 </script>
