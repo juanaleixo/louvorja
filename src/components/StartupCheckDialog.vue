@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="model" max-width="640" persistent :scrim="true" @update:model-value="onClose">
+  <v-dialog v-model="model" max-width="650" persistent :scrim="true" @update:model-value="onClose">
     <v-card>
       <v-toolbar color="transparent" density="compact" class="px-2 pt-2">
         <v-icon icon="mdi-sync" class="mr-2" />
@@ -202,18 +202,19 @@
             :text="$t('startup_check.sync_hint')"
             icon="mdi-information-outline"
           />
+        </v-card-text>
 
+        <v-divider />
+
+        <div>
           <v-checkbox
             v-model="dontShowAgain"
             :label="$t('startup_check.dont_show_again')"
             density="compact"
             hide-details
-            class="mt-1"
+            class="mt-1 ml-3"
           />
-        </v-card-text>
-
-        <v-divider />
-
+        </div>
         <v-card-actions class="pa-4">
           <v-btn variant="outlined" prepend-icon="mdi-close" @click="onClose">
             {{ $t("actions.close") }}
