@@ -1,4 +1,6 @@
 <template>
+  <OverlayRenderer />
+  <div class="fp-wallpaper" :style="fallbackStyle"></div>
   <div v-if="fileProjection.active" class="file-projection" @click="fileProjection.active = false">
     <img
       v-if="fileProjection.type === 'image'"
@@ -19,16 +21,22 @@
       ref="ytContainer"
       class="file-projection__youtube"
     />
+    <canvas
+      v-else-if="fileProjection.type === 'pdf'"
+      ref="pdfCanvas"
+      class="file-projection__pdf"
+    />
   </div>
   <div v-else class="file-projection__empty"></div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
 import Media from "@/composables/useMedia";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import {
   FileProjectionState,
   VideoMediaState,
@@ -36,6 +44,15 @@ import {
   YTAPI,
   YTPlayer,
 } from "@/types/Media";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import $userdata from "@/helpers/UserData";
+import { getSetting } from "@/helpers/SettingsStorage";
+import { Settings } from "@/types/Settings";
+import { KEYS } from "@/constants/UserDataKeys";
+import { SETTINGS_TABLE } from "@/constants/DbTables";
+
+GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 function getYT(): YTAPI | null {
   return (window as unknown as { YT?: YTAPI }).YT ?? null;
@@ -46,10 +63,15 @@ const fileProjection = reactive<FileProjectionState>({
   type: "",
   url: "",
   title: "",
+  page: 1,
+  totalPages: 0,
 });
 
 const videoRef = ref<HTMLVideoElement | null>(null);
 const ytContainer = ref<HTMLDivElement | null>(null);
+const pdfCanvas = ref<HTMLCanvasElement | null>(null);
+
+let pdfDoc: import("pdfjs-dist").PDFDocumentProxy | null = null;
 
 let ytPlayer: YTPlayer | null = null;
 let ytSyncTimer: ReturnType<typeof setInterval> | null = null;
@@ -57,22 +79,111 @@ let _ytInitializing = false;
 
 const _YT_SYNC_INTERVAL = 500;
 
+/* ── Wallpaper via IndexedDB ── */
+
+const wpColor = ref("#000033");
+const wpImageUrl = ref("");
+const wpPosition = ref("cover");
+let wpBlobUrl: string | null = null;
+
+const bgSizeMap: Record<string, string> = {
+  cover: "cover",
+  contain: "contain",
+  center: "auto",
+  stretch: "100% 100%",
+  tile: "auto",
+};
+const bgRepeatMap: Record<string, string> = { tile: "repeat" };
+
+const fallbackStyle = computed(() => {
+  const style: Record<string, string> = { background: wpColor.value };
+  if (wpImageUrl.value) {
+    style.backgroundImage = `url(${wpImageUrl.value})`;
+    style.backgroundSize = bgSizeMap[wpPosition.value] || "cover";
+    style.backgroundPosition = wpPosition.value === "tile" ? "0 0" : "center";
+    style.backgroundRepeat = bgRepeatMap[wpPosition.value] || "no-repeat";
+  }
+  return style;
+});
+
+async function renderPdfPage(pageNum: number): Promise<void> {
+  const canvas = pdfCanvas.value;
+  if (!pdfDoc || !canvas) return;
+  try {
+    const page = await pdfDoc.getPage(pageNum);
+    const parent = canvas.parentElement as HTMLElement;
+    if (!parent) return;
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(
+      parent.clientWidth / viewport.width,
+      parent.clientHeight / viewport.height
+    );
+    const scaled = page.getViewport({ scale });
+    canvas.width = scaled.width;
+    canvas.height = scaled.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    await page.render({ canvas, viewport: scaled }).promise;
+    fileProjection.page = pageNum;
+  } catch (e) {
+    console.error("[FileProjection] Erro render página:", e);
+  }
+}
+
+async function loadPdf(url: string, pageNum = 1): Promise<void> {
+  try {
+    if (pdfDoc) {
+      try {
+        await (pdfDoc as any).destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    pdfDoc = null;
+    const data = await fetch(url).then((r) => r.arrayBuffer());
+    pdfDoc = await getDocument({ data }).promise;
+    fileProjection.totalPages = pdfDoc.numPages;
+    await renderPdfPage(pageNum);
+    Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_PAGE, {
+      page: fileProjection.page,
+      totalPages: pdfDoc.numPages,
+    });
+  } catch (e) {
+    console.error("[FileProjection] Erro carregar PDF:", e);
+  }
+}
+
 function _activateProjection(p: FileProjectionState): void {
   fileProjection.active = true;
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";
   fileProjection.title = p.title || "";
+  console.log("[FileProjection] Ativado:", p.type, p.url?.substring(0, 60));
   if (p.type === "youtube") nextTick(() => _initYoutube());
+  if (p.type === "pdf") nextTick(() => loadPdf(p.url, p.page || 1));
 }
 
 function _readPendingProjection(): void {
   if (fileProjection.active) return;
+
+  // Tenta ler projeção de arquivo primeiro
   try {
-    const stored = localStorage.getItem("lj_file_projection");
+    const stored = localStorage.getItem(KEYS.PROJECTION.LJ_FILE_PROJECTION);
     if (stored) {
       const p: FileProjectionState = JSON.parse(stored);
       if (p?.url) _activateProjection(p);
-      localStorage.removeItem("lj_file_projection");
+      return;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  // Tenta ler projeção de YouTube
+  try {
+    const stored = localStorage.getItem(KEYS.PROJECTION.LJ_YOUTUBE_PROJECTION);
+    if (stored) {
+      const p: FileProjectionState = JSON.parse(stored);
+      if (p?.url) _activateProjection(p);
     }
   } catch {
     /* ignore */
@@ -85,11 +196,39 @@ useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION, (payload: unknown) => {
   _activateProjection((payload || {}) as FileProjectionState);
 });
 
-useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
+useBroadcastListener(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, (payload: unknown) => {
+  _activateProjection((payload || {}) as FileProjectionState);
+});
+
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_PAGE, (payload: unknown) => {
+  if (!fileProjection.active || fileProjection.type !== "pdf") return;
+  const data = payload as { page?: number };
+  if (typeof data.page === "number" && pdfDoc) {
+    const clamped = Math.max(1, Math.min(data.page, pdfDoc.numPages));
+    if (clamped !== data.page) {
+      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION_PAGE, {
+        page: clamped,
+        totalPages: pdfDoc.numPages,
+      });
+    }
+    renderPdfPage(clamped);
+  }
+});
+
+useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, async () => {
   _destroyYoutube();
+  if (pdfDoc) {
+    try {
+      await (pdfDoc as any).destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+  pdfDoc = null;
   fileProjection.active = false;
   try {
-    localStorage.removeItem("lj_file_projection");
+    localStorage.removeItem(KEYS.PROJECTION.LJ_FILE_PROJECTION);
+    localStorage.removeItem(KEYS.PROJECTION.LJ_YOUTUBE_PROJECTION);
   } catch {
     /* ignore */
   }
@@ -160,6 +299,9 @@ function _loadYtApi(cb: (YT: YTAPI) => void): void {
   if (!document.querySelector('script[src*="iframe_api"]')) {
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
+    tag.onerror = () => {
+      console.error("[FileProjection] Falha ao carregar YouTube IFrame API script");
+    };
     document.head.appendChild(tag);
   }
 }
@@ -169,8 +311,20 @@ function _initYoutube(): void {
   _ytInitializing = true;
   _destroyYoutube();
   const id = _embedUrlToId(fileProjection.url);
-  if (!id) return;
-  if (!ytContainer.value) return;
+  console.log(
+    "[FileProjection] _initYoutube - videoId:",
+    id,
+    "url:",
+    fileProjection.url?.substring(0, 60)
+  );
+  if (!id) {
+    console.warn("[FileProjection] ID do YouTube não extraído da URL");
+    return;
+  }
+  if (!ytContainer.value) {
+    console.warn("[FileProjection] Container YouTube não encontrado no DOM");
+    return;
+  }
 
   _loadYtApi((YT: YTAPI) => {
     if (!ytContainer.value) return;
@@ -184,10 +338,12 @@ function _initYoutube(): void {
         rel: 0,
         controls: 0,
         modestbranding: 1,
+        cc_load_policy: 0,
       },
       events: {
         onReady: () => {
           _ytInitializing = false;
+          console.log("[FileProjection] YouTube player ready");
           if (ytPlayer) ytPlayer.playVideo();
           setTimeout(() => {
             if (ytPlayer && typeof ytPlayer.unMute === "function") {
@@ -197,6 +353,14 @@ function _initYoutube(): void {
           _broadcastYtState();
           _startYtSync();
         },
+        onApiChange: () => {
+          try {
+            if (typeof (ytPlayer as any)?.setOption === "function")
+              (ytPlayer as any).setOption("captions", "track", {});
+          } catch {
+            console.error("Erro ao desativar o captions do Youtube");
+          }
+        },
         onStateChange: (e: { data: number }) => {
           _broadcastYtState();
           const yt = getYT();
@@ -204,6 +368,9 @@ function _initYoutube(): void {
             Broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE, {});
             Media.close(true);
           }
+        },
+        onError: (e: number) => {
+          console.error("[FileProjection] YouTube player error:", e);
         },
       },
     });
@@ -260,27 +427,75 @@ function _onKey(e: KeyboardEvent): void {
   }
 }
 
-onMounted(() => {
+async function reloadWallpaper(): Promise<void> {
+  const useCustom =
+    $userdata.get<boolean>(KEYS.OPTIONS.FILE_PROJECTION.BACKGROUND_ENABLED, false) === true;
+  const id = useCustom ? SETTINGS_TABLE.FILE_PROJECTION_BACKGROUND : SETTINGS_TABLE.MAIN_BACKGROUND;
+  const s = await getSetting<Settings>(id).catch(() => null);
+  if (s) {
+    wpColor.value = s.color || "#000033";
+    wpPosition.value = s.position || "cover";
+    if (s.image) {
+      if (wpBlobUrl) URL.revokeObjectURL(wpBlobUrl);
+      const blob = new Blob([s.image], { type: s.mime || "image/png" });
+      wpBlobUrl = URL.createObjectURL(blob);
+      wpImageUrl.value = wpBlobUrl;
+    } else {
+      if (wpBlobUrl) {
+        URL.revokeObjectURL(wpBlobUrl);
+        wpBlobUrl = null;
+      }
+      wpImageUrl.value = "";
+    }
+  }
+}
+
+useBroadcastListener(BROADCAST_TYPE.WALLPAPER_UPDATE, () => {
+  reloadWallpaper();
+});
+
+useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_BG_UPDATE, () => {
+  reloadWallpaper();
+});
+
+onMounted(async () => {
   document.body.style.margin = "0";
   document.body.style.overflow = "hidden";
   window.addEventListener("keydown", _onKey);
+  await reloadWallpaper();
 });
 
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
+  if (wpBlobUrl) URL.revokeObjectURL(wpBlobUrl);
+  if (pdfDoc) {
+    try {
+      await (pdfDoc as any).destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+  pdfDoc = null;
   _destroyYoutube();
   window.removeEventListener("keydown", _onKey);
 });
 </script>
 
 <style scoped>
+.fp-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
 .file-projection {
+  position: relative;
+  z-index: 1;
   width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: transparent;
   overflow: hidden;
 }
 .file-projection__empty {
@@ -302,5 +517,10 @@ onBeforeUnmount(() => {
 .file-projection__youtube {
   width: 100vw;
   height: 100vh;
+}
+.file-projection__pdf {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>

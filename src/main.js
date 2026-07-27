@@ -11,11 +11,6 @@ import "./assets/styles/utilities.css";
 import "./assets/styles/main.css";
 import "./assets/styles/fonts.css";
 import "./assets/styles/appmenu-options.css";
-
-loadFonts();
-
-const app = createApp(App);
-
 //Modules
 import ModuleManager from "@/helpers/ModuleManager";
 import $storage from "@/helpers/Storage";
@@ -25,23 +20,23 @@ import Platform from "@/helpers/Platform";
 //Helpers
 import Modules from "@/helpers/Modules";
 import Dev from "@/helpers/Dev";
-import Strings from "@/helpers/Strings";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
-import DateTime from "@/helpers/DateTime";
 import Path from "@/helpers/Path";
 import Media from "@/composables/useMedia";
-import Alert from "@/helpers/Alert";
-import Popup from "@/helpers/Popup";
-import Database from "@/helpers/Database";
-import Favorites from "@/helpers/Favorites";
-import History from "@/helpers/History";
-import Broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
+import $idb from "@/helpers/IndexedDB";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
+import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
+import { ModuleEnum } from "@/enums/ModuleEnum";
+
+loadFonts();
+
+const app = createApp(App);
 
 app.use(createPinia());
 app.use(router);
@@ -116,7 +111,28 @@ function _getActiveModuleId() {
   return null;
 }
 
-/** Retorna true se há media aberta (módulo media visível OU minimizado com música). */
+/** Retorna a lista de módulos embedded abertos (excluindo popups e mídia). */
+function _getOpenEmbeddedModules() {
+  const modules = AppData.get("modules") || {};
+  const skip = new Set(["media", "lyric", "album"]);
+  return Object.values(modules)
+    .filter((m) => m && m.show === true && !skip.has(m.id) && m.popup !== true)
+    .sort((a, b) => a.order - b.order);
+}
+
+/** Alterna para o próximo módulo aberto (direction: 1 = próximo, -1 = anterior). */
+function _cycleModule(direction) {
+  const openModules = _getOpenEmbeddedModules();
+  if (openModules.length < 2) return;
+  const activeId = AppData.get("active_module");
+  const currentIndex = openModules.findIndex((m) => m.id === activeId);
+  if (currentIndex === -1) {
+    Modules.open(openModules[0].id);
+    return;
+  }
+  const nextIndex = (currentIndex + direction + openModules.length) % openModules.length;
+  Modules.open(openModules[nextIndex].id);
+}
 function _mediaIsActive() {
   return AppData.get("modules.media.show", false) || AppData.get("modules.media.minimized", false);
 }
@@ -356,7 +372,7 @@ $storage.hydrate().then(async () => {
 
   createI18nInstance().then(async (i18n) => {
     app.use(i18n);
-    ModuleManager.init(i18n);
+    await ModuleManager.init(i18n);
 
     if (import.meta.env.DEV) {
       try {
@@ -366,6 +382,9 @@ $storage.hydrate().then(async () => {
         console.warn("[main] vue-axe não inicializado:", e.message);
       }
     }
+
+    // Inicializa IndexedDB unificado (cria tabelas se necessário)
+    await $idb.init();
 
     app.mount("#app");
 
@@ -505,13 +524,13 @@ $storage.hydrate().then(async () => {
 
           // Módulos genéricos (counter, timer, etc.)
           const moduleIds = [
-            "counter",
-            "draw",
-            "name_draw",
-            "message_board",
-            "stopwatch",
-            "timer",
-            "clock",
+            ModuleEnum.COUNTER,
+            ModuleEnum.DRAW,
+            ModuleEnum.NAME_DRAW,
+            ModuleEnum.MESSAGE_BOARD,
+            ModuleEnum.STOPWATCH,
+            ModuleEnum.TIMER,
+            ModuleEnum.CLOCK,
           ];
           for (const id of moduleIds) {
             Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, { module: id, active: false });
@@ -588,6 +607,68 @@ $storage.hydrate().then(async () => {
         description: "hotkeys.ctrl_alt_d",
         group: "system",
         label: "Ctrl+Alt+D",
+      }
+    );
+
+    // Ctrl+O: ativar/desativar overlay
+    Hotkeys.register(
+      "Ctrl+o",
+      () => {
+        Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
+          module: ModuleEnum.OVERLAY,
+          action: "toggle",
+        });
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_o",
+        group: "general",
+        label: "Ctrl+O",
+      }
+    );
+
+    // Ctrl+P: iniciar/parar projeção de fundo
+    Hotkeys.register(
+      "Ctrl+p",
+      () => {
+        Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
+          module: ModuleEnum.BACKGROUND_PROJECTION,
+          action: "play",
+        });
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_p",
+        group: "general",
+        label: "Ctrl+P",
+      }
+    );
+
+    // Ctrl+Tab: próximo módulo aberto
+    Hotkeys.register(
+      "Ctrl+Tab",
+      () => {
+        _cycleModule(1);
+      },
+      {
+        context: "global",
+        description: "hotkeys.ctrl_tab",
+        group: "general",
+        label: "Ctrl+Tab",
+      }
+    );
+
+    // Shift+Ctrl+Tab: módulo anterior
+    Hotkeys.register(
+      "Shift+Ctrl+Tab",
+      () => {
+        _cycleModule(-1);
+      },
+      {
+        context: "global",
+        description: "hotkeys.shift_ctrl_tab",
+        group: "general",
+        label: "Shift+Ctrl+Tab",
       }
     );
 

@@ -1,5 +1,6 @@
 {
   "title": "Contador",
+  "description": "Contador simples com incremento e decremento.",
   "ribbon": { "title_ctx": "Configurar Contador" },
   "actions": { "reset": "Zerar" }
 }

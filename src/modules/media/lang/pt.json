@@ -1,4 +1,6 @@
 {
+  "title": "Slide",
+  "description": "Monta o slide da música (função $media.open)",
   "alerts": {
     "not_loaded": "Ocorreu um erro ao carregar este áudio!",
     "close": "Deseja fechar este slide?",

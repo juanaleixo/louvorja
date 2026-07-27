@@ -1,5 +1,6 @@
 {
   "title": "Músicas",
+  "description": "Lista todas las canciones del programa, con filtros de búsqueda.",
   "inputs": {
     "search": "Buscar por...",
     "search_disabled": "Seleccione una opción de búsqueda para habilitar la búsqueda!",

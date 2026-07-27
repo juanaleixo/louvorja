@@ -1,5 +1,6 @@
 {
   "title": "Panel de Avisos",
+  "description": "Muestra mensajes y avisos en pantalla.",
   "inputs": {
     "message": "Texto del aviso...",
     "label": "Etiqueta (opcional)"

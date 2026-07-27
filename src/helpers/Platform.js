@@ -35,8 +35,7 @@ export default {
   /**
    * Referência direta à API injetada pelo preload.
    * null quando rodando no browser/PWA.
-   *
-   * @type {object | null}
+   * @type {LouvorjaApi | null}
    */
   api,
 
@@ -194,7 +193,7 @@ export default {
 
   /**
    * Gerenciamento de armazenamento local (S2): stats, clear, verify,
-   * setFilesDir, openDir, checkLocal, removeFiles, sizeOfPaths, setAutoCache.
+   * setFilesDir, openDir, checkLocal, checkJson, removeFiles, sizeOfPaths, setAutoCache.
    * null no browser/PWA — controle só no desktop.
    */
   get storage() {

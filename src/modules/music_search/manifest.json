@@ -1,8 +1,0 @@
-{
-  "id": "music_search",
-  "name": "Buscar Música",
-  "description": "Busca rápida de músicas no banco de dados.",
-  "category": "musics",
-  "icon": "mdi-music-search",
-  "dependencies": []
-}

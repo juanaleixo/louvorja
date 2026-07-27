@@ -165,7 +165,10 @@ const userdata = computed(() => {
   );
 });
 
-const t = (key) => i18nT(`modules.${moduleId.value}.${key}`);
+const t = (key, named) =>
+  named
+    ? i18nT(`modules.${moduleId.value}.${key}`, named)
+    : i18nT(`modules.${moduleId.value}.${key}`);
 
 defineExpose({ userdata, t, moduleId, module: module_ });
 </script>

@@ -141,7 +141,7 @@ import { useDisplay } from "vuetify";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
 import DateTime from "@/helpers/DateTime";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 const moduleContainer = ref(null);
 const t = (key) => {

@@ -1,5 +1,6 @@
 {
   "title": "Controle Remoto",
+  "description": "Conecta na aplicação desktop para fazer o acionamento remoto das músicas.",
   "messages": {
     "url_not_provided": "Informe o IP da conexão",
     "failed_to_connect": "Falha ao conectar! Verifique se a url está correta e se o programa está transmitindo.",

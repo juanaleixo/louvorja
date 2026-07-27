@@ -1,5 +1,6 @@
 {
   "title": "Título del módulo",
+  "description": "Módulo base para creación de otros módulos",
   "customization": {
     "background": "Fondo",
     "color": "Color",

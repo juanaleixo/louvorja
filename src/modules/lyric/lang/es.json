@@ -1,3 +1,5 @@
 {
+  "title": "Letra",
+  "description": "Muestra la letra de la canción (función $media.openLyric)",
   "track": "Pista"
 }

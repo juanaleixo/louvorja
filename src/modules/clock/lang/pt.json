@@ -1,5 +1,6 @@
 {
   "title": "Relógio",
+  "description": "Relógio digital com data e hora.",
   "ribbon": {
     "title_ctx": "Configurar Relógio"
   },

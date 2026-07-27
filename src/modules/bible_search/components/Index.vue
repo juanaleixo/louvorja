@@ -2,21 +2,46 @@
   <ModuleContainer ref="container" :manifest="manifest" @close="close">
     <template #header>
       <div class="bs-header">
-        <v-text-field
-          v-model="query"
+        <v-combobox
+          v-model="searchTerms"
+          :items="searchHistory"
           :label="t('search_placeholder')"
           variant="outlined"
           density="compact"
           hide-details
           clearable
+          multiple
+          chips
+          no-filter
+          hide-no-data
           class="bs-search-input"
-          @keydown.enter="doSearch"
-        />
+          @keydown.enter="onComboboxEnter"
+        >
+          <template #item="{ item }">
+            <v-list-item
+              :active="searchTerms.includes(item as string)"
+              :title="item as string"
+              @click="toggleHistoryTerm(item as string)"
+            >
+              <template #prepend>
+                <v-icon size="small" class="text-medium-emphasis">mdi-history</v-icon>
+              </template>
+              <template #append>
+                <v-icon
+                  size="x-small"
+                  class="text-medium-emphasis"
+                  @click.stop="removeFromHistory(item as string)"
+                >
+                  mdi-close-circle
+                </v-icon>
+              </template>
+            </v-list-item>
+          </template>
+        </v-combobox>
         <v-btn
           variant="tonal"
           color="primary"
-          :loading="searching"
-          :disabled="!query.trim()"
+          :disabled="!(searchTerms.length && searchTerms.some((t) => t?.trim())) || searching"
           @click="doSearch"
         >
           {{ t("search") }}
@@ -25,71 +50,88 @@
     </template>
 
     <div class="bs-body">
-      <aside v-if="results.length" class="bs-results">
-        <div class="bs-results-header">
-          <small>{{ t("results_count", { n: results.length }) }}</small>
+      <template v-if="searching">
+        <div class="bs-body__loading">
+          <v-progress-circular indeterminate size="40" color="primary" />
+          <span class="mt-2 text-caption text-medium-emphasis">Buscando…</span>
         </div>
-        <div
-          v-for="(res, i) in results"
-          :key="i"
-          class="bs-result-item"
-          :class="{ 'bs-result-item--active': selectedIndex === i }"
-          @click="selectResult(i)"
-        >
-          <div class="bs-result-ref">{{ res.reference }}</div>
-          <div class="bs-result-preview" v-html="highlight(res.text, query)" />
+      </template>
+      <template v-else>
+        <aside v-if="results.length" class="bs-results">
+          <div class="bs-results-header">
+            <small>{{ t("results_count", { n: results.length }) }}</small>
+          </div>
+          <div
+            v-for="(res, i) in results"
+            :key="i"
+            class="bs-result-item"
+            :class="{ 'bs-result-item--active': selectedIndex === i }"
+            @click="selectResult(i)"
+          >
+            <div class="bs-result-ref">{{ res.reference }}</div>
+            <div class="bs-result-preview" v-html="highlight(res.text, searchTerms)" />
+          </div>
+        </aside>
+
+        <main v-if="currentVerse" class="bs-verse">
+          <div class="bs-verse-ref">{{ currentVerse.reference }}</div>
+          <div class="bs-verse-text" v-html="highlight(currentVerse.text, searchTerms)" />
+          <v-btn
+            variant="tonal"
+            :color="isProjecting ? 'error' : 'primary'"
+            :prepend-icon="isProjecting ? ICONS.PROJECTION.STOP : ICONS.PROJECTION.START"
+            class="bs-verse-project"
+            @click="projectCurrent"
+          >
+            {{ t("ribbon.project") }}
+          </v-btn>
+        </main>
+
+        <div v-else-if="noResults" class="bs-empty">
+          <v-icon icon="mdi-book-search" size="48" color="primary" />
+          <p>{{ t("empty_hint") }}</p>
         </div>
-      </aside>
-
-      <main v-if="currentVerse" class="bs-verse">
-        <div class="bs-verse-ref">{{ currentVerse.reference }}</div>
-        <div class="bs-verse-text" v-html="currentVerse.text" />
-        <v-btn
-          variant="tonal"
-          color="primary"
-          prepend-icon="mdi-projector"
-          class="bs-verse-project"
-          @click="projectCurrent"
-        >
-          {{ t("ribbon.btn.project") }}
-        </v-btn>
-      </main>
-
-      <div v-else-if="!searching && !results.length && noResults" class="bs-empty">
-        <v-icon icon="mdi-book-search" size="48" color="primary" />
-        <p>{{ t("empty_hint") }}</p>
-      </div>
+      </template>
     </div>
   </ModuleContainer>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from "vue";
-import manifest from "../manifest.json";
+<script setup lang="ts">
+import { ref, computed, onMounted, type Ref } from "vue";
+import { module as manifest } from "../manifest";
+import type { BibleBook, BibleVersion, BibleSearchResult } from "@/types/Bible";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import $modules from "@/helpers/Modules";
+import { KEYS } from "@/constants/UserDataKeys";
 import Fuse from "fuse.js";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { ICONS } from "@/config/Icons";
 
-const container = ref(null);
-const t = (key, params) => container.value?.t(key, params) || key;
+const container = ref<{ t: (key: string, named?: Record<string, unknown>) => string } | null>(null);
+const t = (key: string, params?: Record<string, unknown>): string =>
+  container.value?.t(key, params) || key;
 
-const query = ref("");
-const results = ref([]);
-const selectedIndex = ref(0);
-const searching = ref(false);
-const noResults = ref(false);
-const books = ref([]);
-const versions = ref([]);
-const selectedVersionId = ref(null);
-const showFormat = ref(false);
+const searchTerms = ref<string[]>([]);
+const searchHistory = ref<string[]>(
+  $userdata.get("modules.bible_search.search_history", []) as unknown as string[]
+);
+const results: Ref<BibleSearchResult[]> = ref([]);
+const selectedIndex = ref<number>(0);
+const searching = ref<boolean>(false);
+const noResults = ref<boolean>(false);
+const books: Ref<BibleBook[]> = ref([]);
+const versions: Ref<BibleVersion[]> = ref([]);
+const selectedVersionId = ref<number | null>(null);
+const showFormat = ref<boolean>(false);
+const isProjecting = computed(() => $userdata.get(KEYS.MODULES.BIBLE.IS_PLAYING, false));
 
 const versionItems = computed(() =>
-  versions.value.map((v) => ({
+  versions.value.map((v: BibleVersion) => ({
     ...v,
     abbreviation: v.abbreviation
       ? `${v.abbreviation}${v.name ? " - " + v.name : ""}`
@@ -97,51 +139,72 @@ const versionItems = computed(() =>
   }))
 );
 
-const currentVerse = computed(() => {
+const currentVerse = computed<BibleSearchResult | null>(() => {
   if (!results.value.length) return null;
   return results.value[selectedIndex.value] ?? null;
 });
 
-function byCanonicalOrder(a, b) {
+function byCanonicalOrder(a: BibleSearchResult, b: BibleSearchResult): number {
   if (a.id_bible_book !== b.id_bible_book) return a.id_bible_book - b.id_bible_book;
   if (a.chapter !== b.chapter) return a.chapter - b.chapter;
   return a.verse - b.verse;
 }
 
-function normalize(s) {
+function normalize(s: string): string {
   return String(s)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
-function highlight(text, q) {
-  if (!text || !q) return text || "";
+function highlight(text: string, terms: string[]): string {
+  if (!text || !terms.length) return text || "";
+  const valid = terms.filter((t: string) => t?.trim());
+  if (!valid.length) return text;
+
   const norm = normalize(text);
-  const qNorm = normalize(q);
-  const idx = norm.indexOf(qNorm);
-  if (idx === -1) return text;
-  const match = text.slice(idx, idx + q.length);
-  return text.slice(0, idx) + "<mark>" + match + "</mark>" + text.slice(idx + q.length);
+  const ranges: Array<[number, number]> = [];
+
+  for (const q of valid) {
+    const qNorm = normalize(q);
+    if (!qNorm) continue;
+    let pos = 0;
+    while ((pos = norm.indexOf(qNorm, pos)) !== -1) {
+      ranges.push([pos, pos + q.length]);
+      pos += qNorm.length;
+    }
+  }
+
+  if (!ranges.length) return text;
+
+  ranges.sort((a, b) => b[0] - a[0]);
+  let result = text;
+  for (const [start, end] of ranges) {
+    result =
+      result.slice(0, start) + "<mark>" + result.slice(start, end) + "</mark>" + result.slice(end);
+  }
+  return result;
 }
 
-async function loadBooks() {
+async function loadBooks(): Promise<void> {
   const lang = "pt";
-  const data = await $database.get(`${lang}_bible_book`, { silent: true });
+  const data: BibleBook[] | null = await $database.get(`${lang}_bible_book`, { silent: true });
   books.value = data || [];
 }
 
-async function loadVersions() {
+async function loadVersions(): Promise<void> {
   const lang = "pt";
-  const data = await $database.get(`${lang}_bible_version`, { silent: true });
+  const data: BibleVersion[] | null = await $database.get(`${lang}_bible_version`, {
+    silent: true,
+  });
   versions.value = data || [];
   if (data?.length) {
     const saved = $userdata.get("modules.bible_search.version", null);
-    selectedVersionId.value = saved || data[0].id_bible_version;
+    selectedVersionId.value = (saved as number | null) || data[0].id_bible_version;
   }
 }
 
-async function getVersionId() {
+async function getVersionId(): Promise<number> {
   if (selectedVersionId.value) return selectedVersionId.value;
   if (versions.value.length) {
     selectedVersionId.value = versions.value[0].id_bible_version;
@@ -150,50 +213,97 @@ async function getVersionId() {
   return 1;
 }
 
-function onVersionChange(val) {
+function onVersionChange(val: number): void {
   $userdata.set("modules.bible_search.version", val);
 }
 
-async function doSearch() {
-  const q = query.value?.trim();
-  if (!q) return;
+async function doSearch(): Promise<void> {
+  const terms = searchTerms.value.filter((t: string) => t?.trim());
+  if (!terms.length) return;
+
   searching.value = true;
   results.value = [];
   selectedIndex.value = 0;
+  noResults.value = false;
+
   try {
-    await searchByReference(q);
-    if (!results.value.length) {
-      await searchByKeyword(q);
+    const merged: BibleSearchResult[] = [];
+    const seen = new Set<string>();
+
+    for (const term of terms) {
+      addToHistory(term);
+
+      let found = await searchByReference(term);
+      if (!found.length) found = await searchByKeyword(term);
+
+      for (const r of found) {
+        const key = `${r.id_bible_book}:${r.chapter}:${r.verse}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          merged.push(r);
+        }
+      }
     }
+
+    results.value = merged.sort(byCanonicalOrder);
   } finally {
     searching.value = false;
-    if (!results.value.length) {
-      noResults.value = true;
-    }
+    if (!results.value.length) noResults.value = true;
   }
 }
 
-async function searchByReference(q) {
+function addToHistory(term: string): void {
+  const list = searchHistory.value.filter((t) => t !== term);
+  list.unshift(term);
+  searchHistory.value = list.slice(0, 10);
+  $userdata.set("modules.bible_search.search_history", searchHistory.value);
+}
+
+function removeFromHistory(term: string): void {
+  searchHistory.value = searchHistory.value.filter((t) => t !== term);
+  $userdata.set("modules.bible_search.search_history", searchHistory.value);
+}
+
+function toggleHistoryTerm(term: string): void {
+  const idx = searchTerms.value.indexOf(term);
+  if (idx >= 0) {
+    searchTerms.value.splice(idx, 1);
+  } else {
+    searchTerms.value.push(term);
+  }
+}
+
+function onComboboxEnter(e: KeyboardEvent): void {
+  const input = (e.target as HTMLInputElement)?.value;
+  if (!input?.trim() && searchTerms.value.length > 0) {
+    e.preventDefault();
+    doSearch();
+  }
+}
+
+async function searchByReference(q: string): Promise<BibleSearchResult[]> {
   const refMatch = q.match(/^(\d?\s*[a-zA-Z\s]+?)\s+(\d+)(?:[\s:]+(\d+))?$/);
-  if (!refMatch) return;
+  if (!refMatch) return [];
   const bookSearch = normalize(refMatch[1].replace(/\s+/g, ""));
   const chapter = parseInt(refMatch[2], 10);
   const verse = refMatch[3] ? parseInt(refMatch[3], 10) : null;
 
-  const book = books.value.find((b) => {
+  const book = books.value.find((b: BibleBook) => {
     const bn = normalize(b.name).replace(/\s+/g, "");
-    const ba = normalize(b.abbreviation).replace(/\s+/g, "");
+    const ba = normalize(b.abbreviation ?? "").replace(/\s+/g, "");
     return bn.includes(bookSearch) || ba === bookSearch;
   });
-  if (!book) return;
+  if (!book) return [];
 
   const versionId = await getVersionId();
   const bibleFile = `bible_${versionId}_${book.id_bible_book}_${chapter}`;
-  const chapterData = await $database.get(bibleFile, { silent: true });
-  if (!chapterData) return;
+  const chapterData: Record<string, string> | null = await $database.get(bibleFile, {
+    silent: true,
+  });
+  if (!chapterData) return [];
 
   if (verse && chapterData[verse]) {
-    results.value = [
+    return [
       {
         id_bible_book: book.id_bible_book,
         id_bible_version: versionId,
@@ -205,7 +315,7 @@ async function searchByReference(q) {
       },
     ];
   } else if (!verse) {
-    results.value = Object.entries(chapterData)
+    return Object.entries(chapterData)
       .map(([v, txt]) => ({
         id_bible_book: book.id_bible_book,
         id_bible_version: versionId,
@@ -217,27 +327,30 @@ async function searchByReference(q) {
       }))
       .sort(byCanonicalOrder);
   }
+  return [];
 }
 
-let versesCache = [];
-let cachedVersionId = null;
-let cachedBookList = null;
+const versesCache: BibleSearchResult[] = [];
+let cachedVersionId: number | null = null;
+let cachedBookList: string | null = null;
 
-async function getVersesForSearch() {
+async function getVersesForSearch(): Promise<BibleSearchResult[]> {
   const versionId = await getVersionId();
-  const selectedBooks = $userdata.get("modules.bible_search.books", []);
+  const selectedBooks: number[] = $userdata.get("modules.bible_search.books", []) || [];
   const bookListKey = selectedBooks.length ? selectedBooks.join(",") : "*";
   if (cachedVersionId === versionId && cachedBookList === bookListKey && versesCache.length) {
     return versesCache;
   }
-  versesCache = [];
+  versesCache.length = 0;
   cachedVersionId = versionId;
   cachedBookList = bookListKey;
   for (const book of books.value) {
     if (selectedBooks.length && !selectedBooks.includes(book.id_bible_book)) continue;
     for (let ch = 1; ch <= (book.chapters || 1); ch++) {
       const bibleFile = `bible_${versionId}_${book.id_bible_book}_${ch}`;
-      const chapterData = await $database.get(bibleFile, { silent: true });
+      const chapterData: Record<string, string> | null = await $database.get(bibleFile, {
+        silent: true,
+      });
       if (!chapterData) continue;
       for (const [v, txt] of Object.entries(chapterData)) {
         versesCache.push({
@@ -250,43 +363,56 @@ async function getVersesForSearch() {
           text: txt,
         });
       }
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise<void>((r) => setTimeout(r, 0));
     }
   }
   return versesCache;
 }
 
-async function searchByKeyword(q) {
+async function searchByKeyword(q: string): Promise<BibleSearchResult[]> {
   const startTime = Date.now();
   const allVerses = await getVersesForSearch();
   const fuse = new Fuse(allVerses, {
     keys: ["text"],
-    threshold: 0.2,
+    threshold: 0.1,
     ignoreLocation: true,
     minMatchCharLength: 3,
   });
   const fuseResults = fuse.search(q);
-  results.value = fuseResults.map((r) => r.item).sort(byCanonicalOrder);
+  const found = fuseResults.map((r) => r.item).sort(byCanonicalOrder);
   console.log(
-    `[BibleSearch] Search "${q}" found ${results.value.length} results in ${Date.now() - startTime}ms (corpus: ${allVerses.length} verses)`
+    `[BibleSearch] Search "${q}" found ${found.length} results in ${Date.now() - startTime}ms (corpus: ${allVerses.length} verses)`
   );
+  return found;
 }
 
-function selectResult(idx) {
+function selectResult(idx: number): void {
   selectedIndex.value = idx;
 }
 
-function prevResult() {
+function prevResult(): void {
   if (selectedIndex.value > 0) selectedIndex.value--;
 }
 
-function nextResult() {
+function nextResult(): void {
   if (selectedIndex.value < results.value.length - 1) selectedIndex.value++;
 }
 
-async function projectCurrent() {
+async function projectCurrent(): Promise<void> {
+  const isActive = $userdata.get(KEYS.MODULES.BIBLE.IS_PLAYING, false);
+  if (isActive) {
+    $userdata.set(KEYS.MODULES.BIBLE.IS_PLAYING, false);
+    $broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+      text: "",
+      reference: "",
+      active: true,
+    });
+    await ProjectionWindows.closeBibleWindows();
+    return;
+  }
   const v = currentVerse.value;
   if (!v) return;
+  $userdata.set(KEYS.MODULES.BIBLE.IS_PLAYING, true);
   await ProjectionWindows.openBibleWindow();
   $broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
     text: v.text,
@@ -298,7 +424,7 @@ async function projectCurrent() {
   });
 }
 
-function openInBible() {
+function openInBible(): void {
   const v = currentVerse.value;
   if (!v) return;
   $broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
@@ -313,43 +439,45 @@ function openInBible() {
   $broadcast.send(BROADCAST_TYPE.RIBBON_SELECT_PAGE, { pageId: "ctx_bible" });
 }
 
-function close() {
-  query.value = "";
+function close(): void {
+  searchTerms.value = [];
   results.value = [];
   selectedIndex.value = 0;
 }
 
-useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
-  if (payload?.module !== "bible_search") return;
-  const exempt = ["bible_search_toggle_format", "bible_search_restore"];
-  if (!results.value.length && !exempt.includes(payload.action)) return;
-  switch (payload.action) {
-    case "bible_search_prev":
+useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
+  const p = payload as { module?: string; action?: string } | null;
+  if (p?.module !== "bible_search") return;
+  const exempt = ["toggle_format", "restore"];
+  if (!results.value.length && !exempt.includes(p.action!)) return;
+  switch (p.action) {
+    case "prev":
       prevResult();
       break;
-    case "bible_search_next":
+    case "next":
       nextResult();
       break;
-    case "bible_search_go_bible":
+    case "go_bible":
       openInBible();
       break;
-    case "bible_search_project":
+    case "project":
       projectCurrent();
       break;
-    case "bible_search_toggle_format":
+    case "toggle_format":
       showFormat.value = !showFormat.value;
       break;
-    case "bible_search_restore":
+    case "restore":
       break;
   }
 });
 
-useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload) => {
-  if (payload?.action === "toggle_format") showFormat.value = !showFormat.value;
-  if (payload?.action === "restore") {
-    const customization = manifest.customization || {};
+useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: unknown) => {
+  const p = payload as { action?: string } | null;
+  if (p?.action === "toggle_format") showFormat.value = !showFormat.value;
+  if (p?.action === "restore") {
+    const customization = (manifest as any).customization || {};
     for (const [key, def] of Object.entries(customization)) {
-      $userdata.set(`modules.bible.${key}`, def?.default ?? null);
+      $userdata.set(`modules.bible.${key}`, (def as any)?.default ?? null);
     }
     $broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, { key: "*", value: null });
   }
@@ -360,7 +488,7 @@ onMounted(async () => {
   await loadVersions();
   const savedVersion = $userdata.get("modules.bible_search.version", null);
   if (savedVersion && versions.value.some((v) => v.id_bible_version === savedVersion)) {
-    selectedVersionId.value = savedVersion;
+    selectedVersionId.value = savedVersion as number;
   }
 });
 </script>
@@ -457,5 +585,13 @@ onMounted(async () => {
   justify-content: center;
   gap: 12px;
   color: var(--lj-text-muted);
+}
+.bs-body__loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 </style>

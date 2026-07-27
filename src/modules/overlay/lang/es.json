@@ -1,0 +1,91 @@
+{
+  "title": "Superposiciones",
+  "description": "Gestiona superposiciones personalizables sobre la proyección.",
+  "ribbon": {
+    "title_ctx": "Superposiciones",
+    "btn": {
+      "overlay_toggle": "Superposición",
+      "overlay_on": "Superposición activa",
+      "overlay_add": "Agregar superposición"
+    }
+  },
+  "global_enabled": "Superposición activa",
+  "add_slot": "Agregar superposición",
+  "slot": {
+    "name": "Nombre",
+    "type": "Tipo",
+    "type_text": "Texto",
+    "type_image": "Imagen",
+    "type_module_mirror": "Reflejo de módulo",
+    "module_source": "Módulo de origen",
+    "content": "Contenido",
+    "image_library": "Biblioteca de imágenes",
+    "drag_drop_hint": "Arrastre imágenes aquí o haga clic para seleccionar",
+    "enabled": "Activo",
+    "delete_confirm": "¿Eliminar esta superposición?"
+  },
+  "position": {
+    "title": "Posición",
+    "anchor": "Ancla",
+    "offset_x": "Desplazamiento X",
+    "offset_y": "Desplazamiento Y"
+  },
+  "style": {
+    "title": "Apariencia",
+    "font": "Fuente",
+    "font_size": "Tamaño del texto",
+    "color": "Color del texto",
+    "background": "Fondo",
+    "background_opacity": "Opacidad del fondo",
+    "opacity": "Opacidad",
+    "padding": "Relleno",
+    "border_radius": "Borde redondeado",
+    "border": "Borde",
+    "text_shadow": "Sombra de texto",
+    "box_shadow": "Sombra de caja",
+    "text_align": "Alineación",
+    "image_scale": "Escala de imagen",
+    "image_fit": "Ajuste de imagen",
+    "fit_contain": "Contenido (contain)",
+    "fit_cover": "Cubrir (cover)",
+    "fit_fill": "Rellenar (fill)",
+    "fit_none": "Original (none)",
+    "fit_scale_down": "Reducir (scale-down)"
+  },
+  "animation": {
+    "title": "Animación",
+    "entrance": "Animación (entrada)",
+    "exit": "Animación (salida)",
+    "duration": "Duración (ms)"
+  },
+  "visibility": {
+    "title": "Visibilidad",
+    "show_on_return": "Mostrar en retorno",
+    "show_on_obs": "Mostrar en OBS"
+  },
+  "empty": "Ninguna superposición configurada. Haga clic en \"Agregar superposición\" para comenzar.",
+  "animations": {
+    "fade": "Desvanecer",
+    "slide-up": "Deslizar arriba",
+    "slide-down": "Deslizar abajo",
+    "none": "Ninguna",
+    "slide-left": "Deslizar izquierda",
+    "slide-right": "Deslizar derecha",
+    "zoom-in": "Acercar",
+    "zoom-out": "Alejar",
+    "bounce": "Rebotar",
+    "flip": "Girar 3D"
+  },
+  "anchors": {
+    "top-left": "Superior izquierda",
+    "top-center": "Superior centro",
+    "top-right": "Superior derecha",
+    "center-left": "Centro izquierda",
+    "center": "Centro",
+    "center-right": "Centro derecha",
+    "bottom-left": "Inferior izquierda",
+    "bottom-center": "Inferior centro",
+    "bottom-right": "Inferior derecha"
+  },
+  "preview": "Vista previa"
+}

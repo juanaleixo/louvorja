@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div class="return-root" :class="{ 'return-root--ready': ready }">
     <!-- Versículo atual ocupa quase toda a tela -->
     <div class="return-current">
@@ -49,6 +50,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { t } = useI18n();
 const MID = "modules.bible";

@@ -8,6 +8,7 @@
       "@/*": ["src/*"],
       "@helpers/*": ["src/helpers/*"],
       "@components/*": ["src/components/*"],
+      "@constants/*": ["src/constants/*"],
       "@modules/*": ["src/modules/*"],
       "@layout/*": ["src/layout/*"],
       "@views/*": ["src/views/*"],

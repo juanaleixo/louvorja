@@ -58,4 +58,21 @@ export default {
     }
     return base + path;
   },
+
+  /**
+   * Converte um caminho absoluto de arquivo local para URL do protocolo
+   * louvorja://local/... Usado pelo seletor de arquivos em FieldImage, Opções, etc.
+   *
+   * Ex: "/Users/user/image.jpg"    → "louvorja://local/Users/user/image.jpg"
+   *     "C:\\Users\\user\\img.jpg" → "louvorja://local/C:/Users/user/img.jpg"
+   */
+  local(filePath: string): string {
+    const normalized = filePath.replace(/\\/g, "/");
+    const withSlash = normalized.startsWith("/") ? normalized : `/${normalized}`;
+    const encoded = withSlash
+      .split("/")
+      .map((p) => encodeURIComponent(p))
+      .join("/");
+    return "louvorja://local" + encoded;
+  },
 };

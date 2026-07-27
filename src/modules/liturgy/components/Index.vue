@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="module_ && module_.show"
+    v-if="module_ && module_.show && isActive"
     ref="el"
     class="liturgy-page"
     @dragover.prevent="onDragOver"
@@ -20,7 +20,7 @@
     />
 
     <div class="liturgy-body">
-      <LiturgyList
+      <LiturgyTimeline
         :items="safeItems"
         :locked="locked ?? false"
         :default-color="defaultColor"
@@ -111,7 +111,7 @@
       </v-card>
     </v-dialog>
 
-    <MusicSearchSpotlight
+    <MusicSpotlight
       v-model="chooseMusicSearchOpen"
       mode="pick"
       :musics-list="musicsList"
@@ -131,15 +131,17 @@ import Broadcast from "@/helpers/Broadcast";
 import { useLiturgyPersistence } from "../composables/useLiturgyPersistence";
 import { useLiturgyItems, COLORS, DEFAULT_COLOR } from "../composables/useLiturgyItems";
 import LiturgyDayTabs from "./LiturgyDayTabs.vue";
-import LiturgyList from "./LiturgyList.vue";
+import LiturgyTimeline from "./LiturgyTimeline.vue";
 import LiturgyNotesPanel from "./LiturgyNotesPanel.vue";
 import LiturgyItemForm from "./LiturgyItemForm.vue";
-import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
 import $alert from "@/helpers/Alert";
 import $liturgy from "@/helpers/Liturgy";
-import type { LiturgyItem, LiturgyMusicItem } from "@/types/Liturgy";
+import $appdata from "@/helpers/AppData";
+import type { LiturgyItem } from "@/types/Liturgy";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
+import MusicSpotlight from "@/components/MusicSpotlight.vue";
+import { SearchMusicItem } from "@/types/Music";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -159,6 +161,7 @@ const t = (key: string) => _t(key, locale.value);
 
 const el = ref<HTMLElement | null>(null);
 const module_ = computed(() => Modules.get("liturgy") as { show: boolean } | null);
+const isActive = computed(() => $appdata.get("active_module") === "liturgy");
 
 const persist = useLiturgyPersistence();
 const litItems = useLiturgyItems(persist.activeDay, persist.scheduledCategories);
@@ -243,7 +246,7 @@ async function openChooseLaterSearch(item: LiturgyItem, mode = "sung") {
   }
 }
 
-function onChooseLaterMusicPicked(music: LiturgyMusicItem) {
+function onChooseLaterMusicPicked(music: SearchMusicItem) {
   const item = chooseLaterItem.value;
   const id = Number(music.id_music);
   if (!item || !Number.isFinite(id)) return;

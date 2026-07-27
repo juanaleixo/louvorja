@@ -1,8 +1,19 @@
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
+
+export interface MediaOpenParams {
+  id_music?: string | number;
+  id_album?: string | number | null;
+  mode?: MusicActionEnum;
+  minimized?: boolean;
+  url?: string;
+  title?: string;
+}
+
 export interface MediaConfig {
   audio?: unknown;
   slide_index?: number;
   last_slide?: number;
-  mode?: string;
+  mode?: MusicActionEnum;
   is_youtube?: boolean;
 }
 
@@ -17,6 +28,17 @@ export interface FileProjectionState {
   type: string;
   url: string;
   title: string;
+  page?: number;
+  totalPages?: number;
+}
+
+export interface MediaFile {
+  id: string;
+  name: string;
+  fileName: string;
+  path: string;
+  data?: ArrayBuffer;
+  mime?: string;
 }
 
 export interface YouTubeControlPayload {
@@ -48,10 +70,13 @@ export interface YTPlayerOptions {
     rel: number;
     controls: number;
     modestbranding: number;
+    cc_load_policy?: number;
   };
   events: {
     onReady: () => void;
     onStateChange: (e: { data: number }) => void;
+    onError?: (e: number) => void;
+    onApiChange?: () => void;
   };
 }
 

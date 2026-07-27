@@ -225,6 +225,9 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     clearJson: () => ipcRenderer.invoke("storage:clearJson"),
     /** Limpa toda a mídia local (mp3, imagens). */
     clearFiles: () => ipcRenderer.invoke("storage:clearFiles"),
+    /** Remove arquivos JSON do cache por prefixo. */
+    checkJson: (keys) => ipcRenderer.invoke("storage:checkJson", keys),
+    removeJsonByPrefix: (prefix) => ipcRenderer.invoke("storage:removeJsonByPrefix", prefix),
     /** Remove arquivos locais que não estão na lista do servidor. */
     clearUnused: (remoteFiles) => ipcRenderer.invoke("storage:clearUnused", remoteFiles),
     /** Compara servidor vs local — retorna { missing, damaged, extra }. */
@@ -260,8 +263,10 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     start: (opts) => ipcRenderer.invoke("httpServer:start", opts),
     /** Para o servidor HTTP. */
     stop: () => ipcRenderer.invoke("httpServer:stop"),
-    /** Retorna { running, port, token, sse }. */
+    /** Retorna { running, port, token, sse, externalRoutesEnabled }. */
     status: () => ipcRenderer.invoke("httpServer:status"),
+    /** Ativa/desativa rotas externas (SSE, API, aliases Delphi). */
+    setExternalRoutes: (enabled) => ipcRenderer.invoke("httpServer:setExternalRoutes", enabled),
     /** Retorna lista de IPs IPv4 locais (não-loopback). */
     localIps: () => ipcRenderer.invoke("httpServer:localIps"),
     /** Retorna o nome da máquina na rede local (ex: "MacBook-Pro.local"). */

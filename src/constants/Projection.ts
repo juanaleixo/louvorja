@@ -1,0 +1,30 @@
+export const PROJECTION_TYPE = {
+  MUSIC: "musicas",
+  OPERATOR: "operador",
+  RETURN: "retorno",
+  BIBLE: "bible",
+  BIBLE_RETURN: "bible_return",
+  FILE: "file_projection",
+  FILE_RETURN: "file_return",
+  ONLINE_VIDEO: "online_video",
+  ONLINE_VIDEO_RETURN: "online_video_return",
+  BACKGROUND: "background_projection",
+  BACKGROUND_RETURN: "background_projection_return",
+};
+
+const RETURN_URL = "/return"
+const URL_BASE = "/projection"
+export const PROJECTION_URL = {
+  BASE: URL_BASE,
+  MUSIC: `${URL_BASE}/${PROJECTION_TYPE.MUSIC}`,
+  OPERATOR: `${URL_BASE}/${PROJECTION_TYPE.OPERATOR}`,
+  RETURN: URL_BASE + RETURN_URL,
+  BIBLE: URL_BASE + "/" + PROJECTION_TYPE.BIBLE,
+  BIBLE_RETURN: URL_BASE + "/" + PROJECTION_TYPE.BIBLE + RETURN_URL,
+  FILE: URL_BASE + "/file",
+  FILE_RETURN: URL_BASE + "/file" + RETURN_URL,
+  ONLINE_VIDEO: `${URL_BASE}/${PROJECTION_TYPE.ONLINE_VIDEO}`,
+  ONLINE_VIDEO_RETURN: `${URL_BASE}/${PROJECTION_TYPE.ONLINE_VIDEO_RETURN}`,
+  BACKGROUND: URL_BASE + "/"+ PROJECTION_TYPE.BACKGROUND,
+  BACKGROUND_RETURN: URL_BASE + "/" + PROJECTION_TYPE.BACKGROUND + RETURN_URL,
+};

@@ -34,7 +34,7 @@ export interface ModuleManifest {
  * Uso (em <script setup>):
  *
  *   import { useModule } from "@/composables/useModule";
- *   import manifest from "../manifest.json";
+ *   import { module as manifest } from "../manifest";
  *
  *   const { moduleId, module, userdata, appdata, t, $t, $i18n, $vuetify, proxy }
  *     = useModule(manifest);

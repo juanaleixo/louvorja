@@ -7,7 +7,7 @@
     <!-- PageControl interno (tabs dos módulos abertos) -->
     <OpenModulesTabs />
 
-    <v-main class="shell-main">
+    <v-main class="shell-main" :class="{ 'shell-main--player-active': playerActive }">
       <div class="shell-grid">
         <div class="shell-center">
           <div class="shell-content">
@@ -26,9 +26,10 @@
     <AppFooter />
 
     <CommandPalette v-model="cmdPaletteOpen" />
-    <MusicSearchSpotlight v-model="musicSearchOpen" />
-    <BibleSearchSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
+    <MusicSpotlight v-model="musicSearchOpen" />
+    <BibleSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
     <HotkeysCheatsheet v-model="hotkeysOpen" />
+    <StartupCheckDialog v-model="startupCheckOpen" />
   </v-app>
 </template>
 
@@ -43,14 +44,16 @@ import AppModules from "@/layout/Modules.vue";
 import AppAlert from "@/layout/Alert.vue";
 import AppLoading from "@/layout/Loading.vue";
 import CommandPalette from "@/layout/shell/CommandPalette.vue";
-import MusicSearchSpotlight from "@/components/MusicSearchSpotlight.vue";
-import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
+import MusicSpotlight from "@components/MusicSpotlight.vue";
+import BibleSpotlight from "@components/BibleSpotlight.vue";
 import RibbonBar from "@/layout/shell/RibbonBar.vue";
 import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";
 import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";
 import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
+import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import $popup from "@/helpers/Popup";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
@@ -65,10 +68,19 @@ const cmdPaletteOpen = ref(false);
 const musicSearchOpen = ref(false);
 const bibleSearchOpen = ref(false);
 const hotkeysOpen = ref(false);
+const startupCheckOpen = ref(false);
 const ready = ref(false);
 
 const liturgyModuleOpen = computed(() => {
   return $appdata.get("modules.liturgy.show", false) === true;
+});
+
+const playerActive = computed(() => {
+  try {
+    return $appdata.get("modules.media.minimized", false) === true;
+  } catch (_) {
+    return false;
+  }
 });
 
 // Listeners externos (eventos globais que substituem acoplamento direto via shell._ref)
@@ -176,6 +188,14 @@ onMounted(() => {
     $appdata.set("is_online", true);
   }
 
+  // Startup check — só no desktop e se não tiver skip ativo
+  if (display.platform.value.electron) {
+    const skip = $userdata.get(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
+    if (!skip) {
+      startupCheckOpen.value = true;
+    }
+  }
+
   // Bridge popup → main (replica popup ↔ shell)
   messageHandler = (event) => {
     if (event.origin !== window.location.origin) return;
@@ -238,6 +258,11 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: padding-bottom 0.3s ease;
+}
+
+.shell-main--player-active {
+  padding-bottom: var(--lj-player-height);
 }
 .shell-grid {
   display: flex;

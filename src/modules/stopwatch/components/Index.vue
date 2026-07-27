@@ -59,13 +59,15 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import FormatPanel from "@/components/FormatPanel.vue";
 import { playBeep } from "@helpers/AudioBeep";
 import AppData from "@/helpers/AppData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { restoreFormat, show_format } = useModuleFormat("stopwatch", manifest);
 
@@ -133,6 +135,7 @@ function start() {
   if (mode.value === "down" && seconds.value <= 0) seconds.value = targetSeconds.value;
   alarmed.value = false;
   running.value = true;
+  $userdata.set(KEYS.MODULES.STOPWATCH.RUNNING, true);
   timer = setInterval(() => {
     if (mode.value === "up") {
       seconds.value++;
@@ -149,6 +152,7 @@ function start() {
 
 function pause() {
   running.value = false;
+  $userdata.set(KEYS.MODULES.STOPWATCH.RUNNING, false);
   clearInterval(timer);
 }
 

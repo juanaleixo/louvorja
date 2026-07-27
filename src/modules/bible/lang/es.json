@@ -1,8 +1,11 @@
 {
   "title": "Biblia",
+  "description": "Biblia",
   "ribbon": {
     "title_ctx": "Configurar Biblia"
   },
+  "project_start": "Iniciar Proyección",
+  "project_stop": "Detener Proyección",
   "version": "Versión",
   "book": "Libro",
   "chapter": "Capítulo",

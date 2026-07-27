@@ -13,32 +13,10 @@
 
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
-
-export interface DisplayInfo {
-  id: number | null;
-  label: string;
-  primary: boolean;
-  bounds: { x: number; y: number; width: number; height: number };
-}
-
-interface NativeDisplay {
-  id: number;
-  label?: string;
-  primary?: boolean;
-  bounds: { x: number; y: number; width: number; height: number };
-}
-
-interface OpenOptions {
-  route: string;
-  feature: string;
-  monitorId?: number | null;
-  fullscreen?: boolean;
-  alwaysOnTop?: boolean;
-  frame?: boolean;
-}
+import { KEYS } from "@/constants/UserDataKeys";
+import { CategorizedDisplays, DisplayInfo, NativeDisplay, OpenOptions } from "@/types/Projection";
 
 const _webWindows: Record<string, Window | null> = {};
-const _PREFS_KEY = "displays.preferred";
 
 /**
  * Fallback hierárquico — quando uma feature não tem monitor explicitamente
@@ -118,6 +96,23 @@ export async function listDisplays(): Promise<DisplayInfo[]> {
   return [];
 }
 
+
+export async function getCategorizedDisplays(): Promise<CategorizedDisplays> {
+  const displays = await listDisplays();
+
+  const primaryId = $userdata.get(KEYS.OPTIONS.DISPLAYS.PRIMARY, null);
+  const secondaryId = $userdata.get(KEYS.OPTIONS.DISPLAYS.SECONDARY, null);
+  const primaryDisplay = displays.find((d) => d.id === primaryId);
+  const secondaryDisplay = displays.find((d) => d.id === secondaryId);
+  return {
+    primaryDisplay,
+    secondaryDisplay,
+    primaryLabel: primaryDisplay?.label || (primaryId ? `Monitor ${primaryId}` : null),
+    secondaryLabel: secondaryDisplay?.label || (secondaryId ? `Monitor ${secondaryId}` : null),
+    otherDisplays: displays.filter((d) => d.id !== primaryId && d.id !== secondaryId),
+  };
+}
+
 async function _getRawPreferred(feature: string): Promise<number | null> {
   const api = await _getDisplaysApi();
   if (api?.getPreferred) {
@@ -133,7 +128,7 @@ async function _getRawPreferred(feature: string): Promise<number | null> {
       /* falha silenciosa — usa fallback */
     }
   }
-  const prefs = ($userdata.get(_PREFS_KEY, {}) as Record<string, number | null>) ?? {};
+  const prefs = ($userdata.get(KEYS.OPTIONS.DISPLAYS.PREFERRED, {}) as Record<string, number | null>) ?? {};
   return prefs[feature] ?? null;
 }
 
@@ -186,10 +181,10 @@ export async function setPreferredMonitor(
       /* falha silenciosa — usa fallback */
     }
   }
-  const prefs = { ...(($userdata.get(_PREFS_KEY, {}) as Record<string, number | null>) ?? {}) };
+  const prefs = { ...(($userdata.get(KEYS.OPTIONS.DISPLAYS.PREFERRED, {}) as Record<string, number | null>) ?? {}), };
   if (monitorId == null) delete prefs[feature];
   else prefs[feature] = monitorId;
-  $userdata.set(_PREFS_KEY, prefs);
+  $userdata.set(KEYS.OPTIONS.DISPLAYS.PREFERRED, prefs);
 }
 
 /** Mostra overlay "Monitor N" em todos os displays por durationMs (default 5000). */

@@ -106,6 +106,9 @@
     "migrating": "Migrando dados..."
   },
   "actions": {
+    "play": "Iniciar",
+    "pause": "Pausar",
+    "reset": "Reiniciar",
     "close": "Fechar",
     "minimize": "Minimizar",
     "maximize": "Maximizar",
@@ -129,20 +132,23 @@
       "start_with_os": "Iniciar com o sistema operacional",
       "themes": {
         "light": "Claro",
-        "darkblue": "Azul-escuro",
+        "dark": "Escuro",
+        "black": "Preto",
         "blue": "Azul",
+        "darkblue": "Azul-escuro",
         "green": "Verde",
         "orange": "Laranja",
         "purple": "Roxo",
         "pink": "Rosa",
-        "black": "Preto",
-        "dark": "Escuro"
+        "terracota": "Terracota"
       }
     },
     "bible": {
       "title": "Bíblia Sagrada",
       "open_at": "Abrir no monitor:",
-      "version": "Versão"
+      "version": "Versão",
+      "show_return": "Exibir na tela de retorno",
+      "open_return_at": "Tela de retorno em:"
     },
     "monitors": {
       "title": "Monitores",
@@ -201,7 +207,10 @@
     },
     "background": {
       "title": "Imagem de Fundo",
-      "color": "Cor do Fundo:"
+      "color": "Cor do Fundo:",
+      "select": "Selecionar imagem",
+      "no_image": "Nenhuma imagem configurada",
+      "position": "Ajuste:"
     },
     "transmission": {
       "title": "Transmissão",
@@ -210,9 +219,16 @@
       "http_server": "Servidor",
       "server_running": "Rodando na porta {port}",
       "server_stopped": "Servidor desligado",
+      "server_stopped_hint": "Servidor parado. Projeção de vídeos YouTube pode não funcionar. Reinicie para aplicar alterações de porta.",
       "start_server": "Ligar",
       "stop_server": "Desligar",
+      "restart_server": "Reiniciar",
       "auto_start": "Ligar automaticamente ao iniciar",
+      "external_routes": "Permitir acesso remoto",
+      "external_routes_hint": "Quando desativado, controle remoto, transmissão OBS e APIs externas não funcionam. A projeção de vídeos YouTube continua normal.",
+      "http_server_hint": "O servidor HTTP é necessário para a projeção de vídeos do YouTube e para a comunicação entre janelas (BroadcastChannel).",
+      "port": "Porta do servidor HTTP",
+      "port_hint": "Reinicie o servidor para aplicar. Porta padrão: 7070",
       "copy": "Copiar",
       "copied": "Copiado",
       "open_window": "Abrir",
@@ -233,7 +249,8 @@
       "win_projection": "Projeção",
       "win_operator": "Operador",
       "win_clock": "Relógio",
-      "remote_control": "Controle Remoto"
+      "remote_control": "Controle Remoto",
+      "qr_code": "QR Code"
     },
     "module": {
       "bible": {
@@ -251,6 +268,9 @@
       "download": "Baixar",
       "install": "Instalar e reiniciar",
       "apply": "Atualizar agora",
+      "current_version": "Versão atual",
+      "db_date": "Data do banco",
+      "last_check": "Última verificação",
       "clear_cache": "Limpar cache",
       "app_idle": "Pronto para verificar atualizações.",
       "app_checking": "Verificando…",
@@ -262,7 +282,7 @@
       "db_idle": "Pronto para verificar.",
       "db_checking": "Verificando…",
       "db_available": "Nova versão {version} do banco disponível.",
-      "db_up_to_date": "Banco atualizado.",
+      "db_up_to_date": "Banco atualizado",
       "db_error": "Não foi possível verificar.",
       "cache_cleared": "Cache limpo."
     },
@@ -285,7 +305,7 @@
       "save_done_hymnal": "Hinário removido do disco.",
       "save_done_both": "{n} álbum(ns) e o hinário removidos do disco.",
       "save_nothing": "Nada a remover do disco.",
-      "cancel": "Cancelar",
+      "cancel": "Cancelar Download",
       "progress": "{done} de {total} ({percent}%)",
       "hint": "Selecione álbuns para baixar capas, MP3s e imagens das músicas para uso offline.",
       "loading": "Carregando coletâneas…",
@@ -306,6 +326,26 @@
       "disk_usage_loading": "Calculando uso em disco…",
       "disk_usage_detail": "{size} · {files} arquivo(s) · {albums} álbum(ns) completo(s){hymnal}",
       "disk_usage_hymnal": " · hinário"
+    },
+    "bible_download": {
+      "title": "Bíblia",
+      "available_versions": "Versões disponíveis",
+      "select_all": "Selecionar todas",
+      "clear": "Limpar seleção",
+      "download": "Baixar selecionadas",
+      "downloading": "Baixando {done} de {total}…",
+      "completed": "Download concluído: {downloaded} arquivos baixados.",
+      "no_selection": "Nenhuma versão selecionada.",
+      "loading": "Carregando versões…",
+      "refresh": "Atualizar versões",
+      "version": "versão",
+      "books": "livros",
+      "bible_version_count": "{n} versículo(s)",
+      "download_hint": "Baixe os dados das versões bíblicas para uso offline e acesso mais rápido.",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "save_done": "{n} versão(ões) removida(s) do disco.",
+      "cancel": "Cancelar Download"
     },
     "storage": {
       "title": "Armazenamento",
@@ -331,6 +371,7 @@
     "videos": {
       "title": "Vídeos On-line",
       "fullscreen": "Exibir em tela cheia",
+      "always_on_top": "Manter sempre no topo",
       "youtube_action": "Ao executar link do YouTube na liturgia, abrir:",
       "action_video": "Vídeo",
       "action_link": "Link no navegador",
@@ -338,16 +379,18 @@
     },
     "player": {
       "title": "Player de Áudio/Vídeo",
+      "fullscreen": "Exibir em tela cheia",
+      "always_on_top": "Manter sempre no topo",
       "fade_audio": "Aplicar fade ao iniciar/parar áudio",
       "fade_audio_hint": "Quando ativado, o áudio aumenta gradualmente ao tocar e diminui antes de parar. Por padrão desligado para resposta imediata.",
       "lazy_load": "Carregar áudios sob demanda",
-      "project_return": "Reproduzir na tela de retorno",
-      "project_return_hint": "Quando ativado, a imagem ou vídeo também é exibida na tela de retorno (stage display)."
+      "show_return": "Exibir na tela de retorno"
     },
     "file_projection": {
       "title": "Projeção de Arquivos",
       "fade": "Usar fade ao abrir/fechar projeção",
-      "fade_duration": "Duração do fade"
+      "fade_duration": "Duração do fade",
+      "custom_background": "Personalizar fundo da projeção"
     }
   },
   "about": {
@@ -355,7 +398,14 @@
     "version": "Versão",
     "build": "Build",
     "platform": "Plataforma",
-    "credits": "Desenvolvido com ❤ para a comunidade Adventista."
+    "credits": "Desenvolvido com ❤ para a comunidade Adventista.",
+    "contributors": {
+      "title": "Contribuidores",
+      "development": "Desenvolvimento",
+      "design": "Design",
+      "translation": "Tradução",
+      "special_thanks": "Agradecimentos Especiais"
+    }
   },
   "remote_control": {
     "tabs": {
@@ -377,6 +427,80 @@
     },
     "sync": {
       "syncing": "Sincronizando..."
+    },
+    "token_invalid": {
+      "title": "Token inválido",
+      "message": "O token de acesso utilizado é inválido ou expirou. Gere um novo token nas Configurações → Transmissão."
+    }
+  },
+  "bible": {
+    "books": {
+      "genesis": "Gênesis",
+      "exodus": "Êxodo",
+      "leviticus": "Levítico",
+      "numbers": "Números",
+      "deuteronomy": "Deuteronômio",
+      "joshua": "Josué",
+      "judges": "Juízes",
+      "ruth": "Rute",
+      "1_samuel": "1 Samuel",
+      "2_samuel": "2 Samuel",
+      "1_kings": "1 Reis",
+      "2_kings": "2 Reis",
+      "1_chronicles": "1 Crônicas",
+      "2_chronicles": "2 Crônicas",
+      "ezra": "Esdras",
+      "nehemiah": "Neemias",
+      "esther": "Ester",
+      "job": "Jó",
+      "psalms": "Salmos",
+      "proverbs": "Provérbios",
+      "ecclesiastes": "Eclesiastes",
+      "song_of_solomon": "Cântico dos Cânticos",
+      "isaiah": "Isaías",
+      "jeremiah": "Jeremias",
+      "lamentations": "Lamentações",
+      "ezekiel": "Ezequiel",
+      "daniel": "Daniel",
+      "hosea": "Oseias",
+      "joel": "Joel",
+      "amos": "Amós",
+      "obadiah": "Obadias",
+      "jonah": "Jonas",
+      "micah": "Miqueias",
+      "nahum": "Naum",
+      "habakkuk": "Habacuque",
+      "zephaniah": "Sofonias",
+      "haggai": "Ageu",
+      "zechariah": "Zacarias",
+      "malachi": "Malaquias",
+      "matthew": "Mateus",
+      "mark": "Marcos",
+      "luke": "Lucas",
+      "john": "João",
+      "acts": "Atos",
+      "romans": "Romanos",
+      "1_corinthians": "1 Coríntios",
+      "2_corinthians": "2 Coríntios",
+      "galatians": "Gálatas",
+      "ephesians": "Efésios",
+      "philippians": "Filipenses",
+      "colossians": "Colossenses",
+      "1_thessalonians": "1 Tessalonicenses",
+      "2_thessalonians": "2 Tessalonicenses",
+      "1_timothy": "1 Timóteo",
+      "2_timothy": "2 Timóteo",
+      "titus": "Tito",
+      "philemon": "Filemom",
+      "hebrews": "Hebreus",
+      "james": "Tiago",
+      "1_peter": "1 Pedro",
+      "2_peter": "2 Pedro",
+      "1_john": "1 João",
+      "2_john": "2 João",
+      "3_john": "3 João",
+      "jude": "Judas",
+      "revelation": "Apocalipse"
     }
   },
   "import_export": {
@@ -403,51 +527,55 @@
   "ribbon": {
     "pages": {
       "collections": "Coletâneas",
-      "collections_online": "Coletâneas On-line",
+      "worship": "Culto",
       "bible": "Bíblia",
       "utilities": "Utilitários",
       "favorites": "Favoritos"
     },
     "groups": {
-      "hymnal_adventist": "Hinário Adventista",
-      "albums": "Álbuns",
-      "categories": "Músicas por Categorias",
-      "user": "Usuário",
-      "search": "Busca",
-      "online_videos": "On-line",
-      "general": "Geral",
-      "church": "Igreja",
-      "draws": "Sorteador",
-      "time": "Tempo",
-      "texts": "Textos",
-      "favorites": "Favoritos",
-      "info": "Informações",
-      "slide": "Slide",
-      "audio_file": "Arquivo de Áudio",
-      "export": "Exportar",
-      "error": "Erro",
-      "add": "Adicionar",
-      "items": "Itens",
-      "delete": "Apagar",
-      "options": "Opções",
-      "controls": "Controles",
-      "format": "Formatação",
-      "filters": "Filtros",
       "actions": "Ações",
-      "projection": "Projeção",
-      "expanded_area": "Área Expandida",
-      "file": "Arquivo",
-      "slides": "Slides",
+      "add": "Adicionar",
+      "albums": "Álbuns",
+      "audio_file": "Arquivo de Áudio",
       "audio_recording": "Áudio/Gravação",
-      "view": "Visualização",
-      "slide_controls": "Controles de Slides",
-      "recording": "Gravação",
-      "background": "Fundo",
-      "replicate_bg": "Replicar Fundo",
-      "main_text": "Texto Principal",
       "aux_text": "Texto Auxiliar",
+      "background": "Fundo",
+      "categories": "Músicas por Categorias",
+      "church": "Igreja",
+      "controls": "Controles",
+      "delete": "Apagar",
+      "draws": "Sorteador",
+      "error": "Erro",
+      "expanded_area": "Área Expandida",
+      "export": "Exportar",
+      "favorites": "Favoritos",
+      "file": "Arquivo",
+      "filters": "Filtros",
+      "format": "Formatação",
+      "general": "Geral",
+      "hymnal_adventist": "Hinário Adventista",
+      "info": "Informações",
+      "items": "Itens",
+      "manage": "Gerenciar",
+      "main_text": "Texto Principal",
+      "media": "Mídia",
+      "online_videos": "On-line",
+      "options": "Opções",
+      "projection": "Projeção",
+      "recording": "Gravação",
+      "replicate_bg": "Replicar Fundo",
+      "replicate_text": "Replicar Formatação de Texto",
+      "search": "Busca",
+      "settings": "Configurações",
+      "slide": "Slide",
+      "slide_controls": "Controles de Slides",
+      "slides": "Slides",
+      "sound": "Som",
       "text_options": "Opções de Texto",
-      "replicate_text": "Replicar Formatação de Texto"
+      "texts": "Textos",
+      "time": "Tempo",
+      "user": "Usuário",
+      "view": "Visualização"
     },
     "fields": {
       "monitor": "Monitor",
@@ -476,9 +604,9 @@
       "counter_decrement": "Decrementar",
       "counter_increment": "Incrementar",
       "counter_reset": "Zerar",
-      "custom_videos": "Meus Vídeos",
-      "custom_videos_add": "Adicionar",
-      "custom_videos_toggle_view": "Lista / Miniatura",
+      "custom_online_videos": "Meus Vídeos Online",
+      "custom_online_videos_add": "Adicionar",
+      "custom_online_videos_toggle_view": "Lista / Miniatura",
       "delete_selected": "Apagar Selecionados",
       "diverse": "Coletâneas Diversas",
       "downloads": "Downloads",
@@ -573,7 +701,11 @@
       "toggle": "Iniciar/Pausar",
       "transmission": "Transmissão",
       "uncheck_all": "Desmarcar Todos",
-      "update": "Atualizar"
+      "update": "Atualizar",
+      "overlay_toggle": "Overlay on/off",
+      "overlay_add": "Adicionar overlay",
+      "audio_only": "Tocar Áudio",
+      "playback_only": "Tocar Playback"
     }
   },
   "shell": {
@@ -671,6 +803,8 @@
     "playing_youtube": "Reproduzindo do YouTube",
     "player": {
       "first": "Primeiro slide",
+      "forward": "Avançar",
+      "rewind": "Retroceder",
       "prev": "Slide anterior",
       "play": "Reproduzir",
       "pause": "Pausar",
@@ -755,6 +889,10 @@
     "ctrl_b": "Abrir busca bíblica rápida",
     "ctrl_m": "Abrir busca de músicas",
     "ctrl_k": "Abrir paleta de comandos",
+    "ctrl_o": "Ativar/desativar overlay",
+    "ctrl_p": "Iniciar/parar projeção de fundo",
+    "ctrl_tab": "Próximo módulo aberto",
+    "shift_ctrl_tab": "Módulo anterior",
     "ctrl_n": "Novo item (liturgia ativa)",
     "ctrl_shift_n": "Nova anotação na liturgia",
     "ctrl_up": "Slide anterior",
@@ -774,5 +912,21 @@
     "bible_prev_verse": "Versículo anterior",
     "bible_next_verse": "Próximo versículo",
     "bible_clear": "Limpar versículo selecionado"
+  },
+  "startup_check": {
+    "title": "Verificação Inicial",
+    "scanning": "Verificando arquivos do sistema...",
+    "connection_status": "Conexão FTP",
+    "collections_status": "Coletâneas",
+    "bible_status": "Bíblia",
+    "storage_status": "Armazenamento",
+    "hymnal_downloaded": "Baixado",
+    "hymnal_missing": "Não baixado",
+    "albums_count": "{done} de {total} álbuns",
+    "bible_count": "{done} de {total} versões",
+    "dont_show_again": "Não exibir esta verificação na inicialização",
+    "select_files": "Selecionar Arquivos",
+    "download_all": "Baixar Tudo",
+    "sync_hint": "Você pode baixar álbuns ou versões bíblicas específicas depois no menu Opções > Sincronizar."
   }
 }

@@ -5,7 +5,7 @@
     role="tablist"
     :aria-label="$t('shell.open_modules')"
   >
-    <button
+    <v-btn
       v-for="m in openModules"
       :key="m.id"
       type="button"
@@ -15,10 +15,10 @@
       :aria-selected="isActive(m.id)"
       @click="focus(m.id)"
     >
-      <v-icon
+      <Icon
         :icon="getModule(m.id).icon"
         :color="getModule(m.id).color"
-        size="15"
+        size="20"
         class="subtab-icon"
         aria-hidden="true"
       />
@@ -32,7 +32,7 @@
       >
         <v-icon icon="mdi-close" size="11" aria-hidden="true" />
       </span>
-    </button>
+    </v-btn>
   </div>
 </template>
 
@@ -41,7 +41,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import $appdata from "@/helpers/AppData";
 import $modules from "@/helpers/Modules";
-import { getModules } from "@/config/module";
+import { getModules } from "@/config/modules";
+import Icon from "@/components/Icon.vue";
 
 const { t } = useI18n();
 const modules = getModules;
@@ -119,9 +120,9 @@ function close(id) {
 
 .subtab--active {
   background: var(--lj-subtab-active-bg);
-  color: var(--lj-subtab-active-color);
+  color: var(--lj-navy);
   font-weight: var(--lj-weight-semibold);
-  border-color: var(--lj-subtabs-border);
+  border-color: var(--lj-navy);
   z-index: 2;
   height: var(--lj-subtabs-height);
   margin-bottom: -1px;
@@ -142,6 +143,7 @@ function close(id) {
 .subtab-icon {
   opacity: 0.85;
   flex-shrink: 0;
+  margin-right: var(--lj-space-2);
 }
 
 .subtab-label {

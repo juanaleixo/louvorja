@@ -1,5 +1,6 @@
 <template>
   <Slide :slide="slide" :title="title" :progress="progress" show-progress class="projection-fill" />
+  <OverlayRenderer />
 </template>
 
 <script setup>
@@ -8,6 +9,7 @@ import { useProjectionState } from "@/composables/useProjectionState";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Slide from "@/components/Slide.vue";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { slide, progress, title, slideIndex, totalSlides } = useProjectionState();
 

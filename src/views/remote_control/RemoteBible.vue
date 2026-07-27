@@ -8,7 +8,7 @@
       class="mb-4"
       @click="bibleSearchOpen = true"
     >
-      {{ t("ribbon.btn.bible_search") }}
+      {{ t("shell.quick_search_short") }}
     </v-btn>
 
     <v-divider class="mb-4" />
@@ -16,14 +16,37 @@
     <v-select
       v-model="bibleSelection.version"
       :items="bibleData.versions"
-      item-title="title"
+      item-title="name"
       item-value="id_bible_version"
       :label="t('options.bible.version')"
       density="compact"
       variant="outlined"
       class="mb-3"
       @update:model-value="onVersionSelect"
-    />
+    >
+      <template #item="{ item, props }">
+        <v-list-item v-bind="props">
+          <template #append>
+            <v-icon
+              v-if="!downloadedVersions.has(item.id_bible_version)"
+              icon="mdi-download-outline"
+              size="small"
+              color="warning"
+            />
+          </template>
+        </v-list-item>
+      </template>
+      <template #selection="{ item }">
+        <span>{{ item.name }}</span>
+        <v-icon
+          v-if="!downloadedVersions.has(item.id_bible_version)"
+          icon="mdi-download-outline"
+          size="small"
+          color="warning"
+          class="ml-1"
+        />
+      </template>
+    </v-select>
 
     <v-select
       v-model="bibleSelection.book"
@@ -36,7 +59,7 @@
       class="mb-3"
       @update:model-value="onBookSelect"
     />
-    <v-row dense>
+    <v-row density="comfortable">
       <v-col cols="6">
         <v-select
           v-model="bibleSelection.chapter"
@@ -85,15 +108,16 @@
       </div>
     </template>
 
-    <bible-search-spotlight v-model="bibleSearchOpen" @select="onBibleSearchSelect" />
+    <bible-spotlight v-model="bibleSearchOpen" @select="onBibleSearchSelect" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import Database from "@/helpers/Database";
-import BibleSearchSpotlight from "@/components/BibleSearchSpotlight.vue";
+import BibleSpotlight from "@/components/BibleSpotlight.vue";
+import { KEYS } from "@/constants/UserDataKeys";
+import { apiFetch } from "@/helpers/ApiClient";
 import type {
   ActiveBibleState,
   Bible,
@@ -134,11 +158,43 @@ const bibleSelection = ref<BibleVerse>({
   verse: null,
 });
 const fullBible = ref<FullBibleCache | null>(null);
+const downloadedVersions = ref<Set<number>>(new Set());
+
+async function loadDownloadedVersions(): Promise<void> {
+  try {
+    const res = await apiFetch(
+      `/api/user-data?path=${KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS}&token=${props.token}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.value)) {
+        downloadedVersions.value = new Set(data.value);
+      }
+    }
+  } catch (e) {
+    console.error("[RemoteBible] loadDownloadedVersions:", e);
+  }
+}
+
+/**
+ * Helper que busca JSON do cache local do host via /api/db/:path.
+ * Substitui Database.get() para páginas de controle remoto, evitando
+ * chamadas à API externa (api.louvorja.com.br).
+ */
+async function dbGet<T>(relPath: string): Promise<T | null> {
+  try {
+    const res = await apiFetch(`/api/db/${relPath}?token=${props.token}`);
+    if (res.ok) return (await res.json()) as T;
+  } catch (e) {
+    console.error(`[RemoteBible] dbGet(${relPath}):`, e);
+  }
+  return null;
+}
 
 async function loadBible(): Promise<void> {
   const lang = locale.value || "pt";
 
-  const params = await Database.get<{ bible_versions: BibleVersion[] }>(`${lang}_params`);
+  const params = await dbGet<{ bible_versions: BibleVersion[] }>(`${lang}_params`);
   if (params?.bible_versions) {
     bibleData.value.versions = params.bible_versions;
     const preferred = await getPreferredBibleVersion();
@@ -148,7 +204,7 @@ async function loadBible(): Promise<void> {
       bibleSelection.value.version = bibleData.value.versions[0].id_bible_version;
     }
   } else {
-    const versions = await Database.get<BibleVersion[]>(`${lang}_bible_version`);
+    const versions = await dbGet<BibleVersion[]>(`${lang}_bible_version`);
     if (versions) {
       bibleData.value.versions = versions;
       if (bibleData.value.versions.length > 0) {
@@ -157,13 +213,13 @@ async function loadBible(): Promise<void> {
     }
   }
 
-  const books = await Database.get<BibleBook[]>(`${lang}_bible_book`);
+  const books = await dbGet<BibleBook[]>(`${lang}_bible_book`);
   bibleData.value.books = books || [];
 }
 
 async function getPreferredBibleVersion(): Promise<number | null> {
   try {
-    const res = await fetch(`/api/user-data?path=id_bible_version&token=${props.token}`);
+    const res = await apiFetch(`/api/user-data?path=id_bible_version&token=${props.token}`);
     if (res.ok) {
       const data = await res.json();
       return data.value;
@@ -200,7 +256,7 @@ async function onBookSelect(id: number | string | null): Promise<void> {
   } else {
     const versionId = bibleSelection.value.version || (await getPreferredBibleVersion());
     const dbKey = versionId ? `bible_${versionId}_${bookId}` : `pt_bible_${bookId}`;
-    const full = await Database.get<{ chapters?: Record<string, unknown> }>(dbKey);
+    const full = await dbGet<{ chapters?: Record<string, unknown> }>(dbKey);
     if (full?.chapters) {
       const chapterKeys = Object.keys(full.chapters)
         .map(Number)
@@ -227,7 +283,7 @@ async function loadChapterVerses(num: number): Promise<void> {
   if (!bookId || !versionId) return;
 
   const dbKey = `bible_${versionId}_${bookId}_${num}`;
-  const chapterData = await Database.get<Record<string, string>>(dbKey);
+  const chapterData = await dbGet<Record<string, string>>(dbKey);
 
   if (chapterData) {
     const verseKeys = Object.keys(chapterData)
@@ -302,7 +358,7 @@ function projectVerse(): void {
 
   emit("update:active-bible", newActive);
 
-  fetch(
+  apiFetch(
     `/api/bible?text=${encodeURIComponent(text)}&reference=${encodeURIComponent(
       reference
     )}&bookId=${bibleSelection.value.book}&chapter=${bibleSelection.value.chapter}&verse=${
@@ -321,7 +377,7 @@ async function onBibleSearchSelect(res: BibleSearchResult): Promise<void> {
   const bookId = res.bookId ?? res.id_bible_book;
 
   try {
-    const resProject = await fetch(
+    const resProject = await apiFetch(
       `/api/bible?text=${encodeURIComponent(res.text)}&reference=${encodeURIComponent(
         res.reference
       )}&bookId=${bookId}&chapter=${res.chapter}&verse=${res.verse}&token=${props.token}`
@@ -369,7 +425,7 @@ function goToVerse(num: number): void {
   const text = props.activeBible.chapterVerses[num - 1];
   const reference = `${book.name} ${props.activeBible.chapter}:${num}`;
 
-  fetch(
+  apiFetch(
     `/api/bible?text=${encodeURIComponent(text)}&reference=${encodeURIComponent(reference)}&bookId=${
       props.activeBible.bookId
     }&chapter=${props.activeBible.chapter}&verse=${num}&token=${props.token}`
@@ -387,6 +443,7 @@ function goToVerse(num: number): void {
 
 onMounted(() => {
   loadBible();
+  loadDownloadedVersions();
 });
 
 defineExpose({

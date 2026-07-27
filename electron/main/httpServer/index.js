@@ -26,6 +26,7 @@ const { app: electronApp } = require("electron");
 
 const paths = require("../paths.js");
 const userStore = require("../userStore.js");
+const jsonCache = require("../jsonCache.js");
 const protocolModule = require("../protocol.js");
 const { setupAuth } = require("./auth.js");
 const { setupRoutes } = require("./routes.js");
@@ -36,6 +37,9 @@ let _server = null;
 let _port = 7070;
 let _token = null;
 let _mainWindow = null;
+let _externalRoutesEnabled = true;
+/** @type {Set<import('net').Socket>} */
+const _sockets = new Set();
 
 /** Caracteres usados para gerar o token. Mesma faixa do `geraToken` do Delphi. */
 const TOKEN_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -119,11 +123,58 @@ function start({ port, mainWindow } = {}) {
   app.disable("x-powered-by");
   app.use(express.json()); // Permite ler JSON no body (necessário para body.token)
 
+  // Rastreia sockets ativos para destruí-los no stop()
+  app.use((req, res, next) => {
+    _sockets.add(req.socket);
+    res.on("finish", () => _sockets.delete(req.socket));
+    next();
+  });
+
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Api-Token");
     if (req.method === "OPTIONS") return res.sendStatus(204);
+    next();
+  });
+
+  /**
+   * Gate de rotas externas.
+   *
+   * Quando _externalRoutesEnabled é false, apenas requests originados de
+   * localhost (127.0.0.1, ::1) podem acessar SSE, API, aliases Delphi e
+   * arquivos legacy. Requests de IPs remotos recebem 404.
+   *
+   * A SPA (servir o app Vue para janelas Electron) permanece acessível
+   * de qualquer origem porque as janelas internas precisam da origem HTTP
+   * para YouTube IFrame API e BroadcastChannel.
+   */
+  const EXTERNAL_PREFIXES = ['/events', '/api', '/legacy'];
+  const EXTERNAL_PATHS = new Set(['/musica', '/biblia', '/controle']);
+
+  function _isLocalhost(ip) {
+    return (
+      ip === "127.0.0.1" ||
+      ip === "::1" ||
+      ip === "::ffff:127.0.0.1" ||
+      ip === "localhost"
+    );
+  }
+
+  app.use((req, res, next) => {
+    if (_externalRoutesEnabled) return next();
+    const p = req.path;
+    if (
+      EXTERNAL_PREFIXES.some(pref => p.startsWith(pref)) ||
+      EXTERNAL_PATHS.has(p)
+    ) {
+      const ip = req.ip || req.socket?.remoteAddress || "";
+      if (!_isLocalhost(ip)) {
+        return res.status(404).json({
+          error: 'Rotas externas desabilitadas. Acesse via localhost.',
+        });
+      }
+    }
     next();
   });
 
@@ -136,8 +187,11 @@ function start({ port, mainWindow } = {}) {
   app.get("/events", events.handler);
   
   setupRoutes(app, { 
-    mainWindow: _mainWindow,
-    getUserData: () => getUserData()
+    getMainWindow: () => _mainWindow,
+    getUserData: () => getUserData(),
+    jsonCache,
+    getDatabaseUrl: () => protocolModule.getRemoteConfig().databaseUrl,
+    getApiToken: () => protocolModule.getRemoteConfig().apiToken,
   });
 
   // Arquivos legacy do Delphi (`userData/server/*`) — opcional, mantém
@@ -179,7 +233,16 @@ function start({ port, mainWindow } = {}) {
 function stop() {
   return new Promise((resolve) => {
     events.closeAll();
+
     if (!_server) return resolve();
+
+    // Destroi sockets ativos para evitar que server.close() trave
+    // com conexões SSE ou keep-alive
+    for (const socket of _sockets) {
+      socket.destroy();
+    }
+    _sockets.clear();
+
     _server.close(() => {
       _server = null;
       _mainWindow = null;
@@ -204,11 +267,29 @@ function resetToken() {
   return _token;
 }
 
+/**
+ * Define se as rotas externas (SSE, API, aliases Delphi) estão ativas.
+ *
+ * Quando desativadas, apenas requests de localhost podem acessá-las.
+ * A SPA (app Vue para janelas Electron) sempre funciona de qualquer
+ * origem — necessária para YouTube IFrame API e BroadcastChannel.
+ *
+ * @param {boolean} enabled
+ */
+function setExternalRoutesEnabled(enabled) {
+  _externalRoutesEnabled = !!enabled;
+}
+
+function getExternalRoutesEnabled() {
+  return _externalRoutesEnabled;
+}
+
 function status() {
   return {
     running: !!_server,
     port: _server ? _port : null,
     token: _token,
+    externalRoutesEnabled: _externalRoutesEnabled,
     sse: events.status(),
   };
 }
@@ -239,4 +320,6 @@ module.exports = {
   setMainWindow,
   publish,
   getUserData,
+  setExternalRoutesEnabled,
+  getExternalRoutesEnabled,
 };

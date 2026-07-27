@@ -1,0 +1,46 @@
+{
+  "title": "Temporizador de Culto",
+  "description": "Temporizador para culto com alertas sonoros configuráveis.",
+  "mode": { "up": "Progressivo", "down": "Regressivo" },
+  "actions": { "start": "Iniciar", "pause": "Pausar", "reset": "Zerar", "set": "Definir horário" },
+  "alarm": { "done": "Tempo esgotado!" },
+  "sound": {
+    "start": "Abertura",
+    "five_min": "5 minutos",
+    "one_min": "1 minuto",
+    "alarm_label": "Reproduzir",
+    "play": "Tocar"
+  },
+  "music": {
+    "sing": "Cantada",
+    "playback": "Playback",
+    "audio": "Audio",
+    "audio_playback": "Audio Playback"
+  },
+  "end_Action": {
+    "audio_not_configured": "Nenhum áudio configurado. Clique em Configurar áudio primeiro.",
+    "music_not_configured": "Nenhuma música configurada. Clique em Configurar música primeiro.",
+    "video_not_configured": "Nenhum vídeo configurado. Clique em Configurar vídeo primeiro.",
+    "online_video_not_configured": "Nenhum vídeo online configurado. Clique em Configurar vídeo online primeiro."
+  },
+  "ribbon": {
+    "title_ctx": "Configurar Timer Culto",
+    "toggle": "Iniciar/Pausar",
+    "reset": "Reiniciar",
+    "timer_end": "Ao terminar",
+    "timer_end_label": "Ação ao final",
+    "end_nothing": "Nada",
+    "end_audio": "Tocar áudio",
+    "end_video": "Projetar vídeo",
+    "end_online_video": "Vídeo online",
+    "end_music": "Tocar música",
+    "media": "Mídia",
+    "file_video": "Configurar vídeo",
+    "file_audio": "Configurar áudio",
+    "online_video": "Configurar vídeo online",
+    "online_video_search": "Buscar vídeo...",
+    "online_video_url": "Ou cole uma URL do YouTube",
+    "music": "Configurar música",
+    "not_configured": "não configurado"
+  }
+}

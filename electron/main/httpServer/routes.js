@@ -2,30 +2,10 @@
 
 const path = require("path");
 const fs = require("fs");
+const jsonCache = require("../jsonCache.js");
 
-// ---------------------------------------------------------------
-// Carregamento dinâmico (DEV + BUILD)
-// ---------------------------------------------------------------
-function loadUserDataKeys() {
-  // Caminho no build (dentro de resources/)
-  const prodPath = process.resourcesPath
-    ? path.join(process.resourcesPath, "constants", "UserDataKeys.js")
-    : null;
-  if (prodPath && fs.existsSync(prodPath)) {
-    return require(prodPath);
-  }
-  // Caminho em DEV (dentro do projeto)
-  const devPath = path.join(__dirname, "../../../src/constants/UserDataKeys.js");
-  if (fs.existsSync(devPath)) {
-    return require(devPath);
-  }
-}
-const keys = loadUserDataKeys();
-if (!keys || !keys.KEY_DAYS || !keys.KEY_ACTIVE_DAY) {
-  console.error("[routes] UserDataKeys.js não encontrado ou incompleto");
-  throw new Error("UserDataKeys.js missing or incomplete");
-}
-const { KEY_DAYS, KEY_ACTIVE_DAY } = keys;
+const KEY_LITURGY_DAYS = "modules.liturgy.days";
+const KEY_LITURGY_ACTIVE_DAY = "modules.liturgy.active_day";
 
 /**
  * Estado em memória para sorteios (replicado entre requests).
@@ -36,7 +16,7 @@ const _sorteios = {
   name: { last: null, history: [] },
 };
 
-function setupRoutes(app, { mainWindow, getUserData }) {
+function setupRoutes(app, { getMainWindow, getUserData, jsonCache: _cache, getDatabaseUrl, getApiToken }) {
 
   // ---------------------------------------------------------------
   // /api/ping — health check
@@ -61,6 +41,7 @@ function setupRoutes(app, { mainWindow, getUserData }) {
   // /api/keyboard?key=N — simular tecla
   // ---------------------------------------------------------------
   app.get("/api/keyboard", (req, res) => {
+    const mainWindow = getMainWindow();
     const key = req.query.key;
     if (!key || !mainWindow) {
       return res.status(400).json({ error: "key faltando ou janela indisponível" });
@@ -85,6 +66,7 @@ function setupRoutes(app, { mainWindow, getUserData }) {
   // Despacha eventos pro renderer via webContents.send
   // ---------------------------------------------------------------
   app.get("/api/song-slides", (req, res) => {
+    const mainWindow = getMainWindow();
     const action = req.query.action;
     if (!mainWindow) {
       return res.status(503).json({ error: "Janela principal não disponível" });
@@ -118,6 +100,7 @@ function setupRoutes(app, { mainWindow, getUserData }) {
   // Projeta um versículo da bíblia ou encerra a projeção
   // ---------------------------------------------------------------
   app.get("/api/bible", (req, res) => {
+    const mainWindow = getMainWindow();
     if (!mainWindow) {
       return res.status(503).json({ error: "Janela principal não disponível" });
     }
@@ -173,6 +156,7 @@ function setupRoutes(app, { mainWindow, getUserData }) {
   // Executa um item da liturgia
   // ---------------------------------------------------------------
   app.get("/api/liturgy-execute", (req, res) => {
+    const mainWindow = getMainWindow();
     if (!mainWindow) {
       return res.status(503).json({ error: "Janela principal não disponível" });
     }
@@ -196,6 +180,7 @@ function setupRoutes(app, { mainWindow, getUserData }) {
   // tag: 1=audio, 2=instrumental, 3=no_audio
   // ---------------------------------------------------------------
   app.get("/api/open-song", (req, res) => {
+    const mainWindow = getMainWindow();
     const id = parseInt(req.query.id, 10);
     const tag = parseInt(req.query.tag || "3", 10);
     const id_liturgy = req.query.id_liturgy;
@@ -212,10 +197,59 @@ function setupRoutes(app, { mainWindow, getUserData }) {
     res.json({ status: "ok", id, mode });
   });
 
+  /**
+   * /api/music-search?q=...&lang=pt&token=...
+   *
+   * Pesquisa músicas no cache JSON local do host. Não depende de API externa.
+   * Retorna no máximo 20 resultados filtrados por nome da música ou álbum.
+   */
+  app.get("/api/music-search", (req, res) => {
+    const q = req.query.q;
+    if (!q || q.length < 2) {
+      return res.json({ status: "ok", results: [] });
+    }
+    const lang = req.query.lang || "pt";
+    const query = q
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    try {
+      const filePath = jsonCache.safeLocalPath(`${lang}_musics`);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          error: "Base de músicas não encontrada localmente. Faça uma atualização do banco.",
+        });
+      }
+      const raw = fs.readFileSync(filePath, "utf8");
+      const all = JSON.parse(raw);
+
+      const results = all
+        .filter((m) => {
+          const name = (m.name || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          const albums = (m.albums_names || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          return name.includes(query) || albums.includes(query);
+        })
+        .slice(0, 20);
+
+      res.json({ status: "ok", results, total: results.length });
+    } catch (e) {
+      console.error("[httpServer] /api/music-search error:", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ---------------------------------------------------------------
   // /api/drawing-number?action=get-last|draw
   // ---------------------------------------------------------------
   app.get("/api/drawing-number", (req, res) => {
+    const mainWindow = getMainWindow();
     const action = req.query.action;
 
     if (action === "get-last") {
@@ -243,6 +277,7 @@ function setupRoutes(app, { mainWindow, getUserData }) {
   // /api/drawing-name?action=get-last|draw&names=A,B,C
   // ---------------------------------------------------------------
   app.get("/api/drawing-name", (req, res) => {
+    const mainWindow = getMainWindow();
     const action = req.query.action;
 
     if (action === "get-last") {
@@ -299,12 +334,12 @@ function setupRoutes(app, { mainWindow, getUserData }) {
 
     // Caminhos fixos conforme solicitado pelo usuário
 
-    const allDays = getByPath(userData, KEY_DAYS, {});
+    const allDays = getByPath(userData, KEY_LITURGY_DAYS, {});
     let items = allDays[day] || [];
 
     // Se a lista do dia estiver vazia, tenta pegar do dia configurado como ativo no sistema
     if (items.length === 0) {
-      const activeDay = getByPath(userData, KEY_ACTIVE_DAY, day);
+      const activeDay = getByPath(userData, KEY_LITURGY_ACTIVE_DAY, day);
       if (activeDay !== day) {
         items = allDays[activeDay] || [];
         return res.json({ status: "ok", day: activeDay, items, is_active_day: true });
@@ -337,6 +372,57 @@ function setupRoutes(app, { mainWindow, getUserData }) {
 
     const value = getByPath(userData, path, null);
     res.json({ status: "ok", path, value });
+  });
+
+  /**
+   * GET /api/db/:path(*)?token=...
+   *
+   * Lê qualquer JSON do cache local (userData/json_db/). Se o arquivo
+   * não existir no cache, busca da API remota (VITE_URL_DATABASE), salva
+   * no disco e retorna o conteúdo — funciona como cache-on-read para
+   * capítulos bíblicos e outros JSONs não baixados previamente.
+   *
+   * Substitui Database.get() nas páginas de controle remoto, evitando
+   * chamadas diretas à API externa (api.louvorja.com.br) quando acessadas
+   * de outro dispositivo na rede.
+   *
+   * O path é sanitizado contra path traversal antes de resolver
+   * via jsonCache.safeLocalPath(). O auth middleware (token) já
+   * protege este endpoint — apenas clients com token válido ou
+   * localhost conseguem acessá-lo.
+   */
+  app.get("/api/db/:path(*)", async (req, res) => {
+    const rawPath = req.params.path;
+    if (!rawPath) {
+      return res.status(400).json({ error: "path é obrigatório" });
+    }
+    // Sanitiza: remove leading slashes e prevent path traversal
+    const sanitized = rawPath.replace(/^\/+/g, "").replace(/\.\.\//g, "");
+    try {
+      const filePath = jsonCache.safeLocalPath(sanitized);
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf8");
+        return res.json(JSON.parse(raw));
+      }
+
+      // Não está em cache — buscar da API remota e salvar no disco
+      const databaseUrl = typeof getDatabaseUrl === "function" ? getDatabaseUrl() : "";
+      const apiToken = typeof getApiToken === "function" ? getApiToken() : "";
+      const headers = apiToken ? { "Api-Token": apiToken } : {};
+
+      const result = await jsonCache.fetchJson(sanitized, databaseUrl, headers);
+      if (result.status === 200 && result.body) {
+        return res.json(JSON.parse(result.body.toString("utf-8")));
+      }
+
+      return res.status(404).json({
+        error: "Arquivo não encontrado no cache local nem no servidor remoto",
+        path: sanitized,
+      });
+    } catch (e) {
+      console.error("[httpServer] /api/db error:", e.message);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Aliases compat-Delphi (`/música`, `/biblia`) e a rota raiz `/` agora

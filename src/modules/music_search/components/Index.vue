@@ -103,17 +103,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from "vue";
-import { useI18n } from "vue-i18n";
 import type { ComponentPublicInstance } from "vue";
-import manifest from "../manifest.json";
+import { nextTick, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import Database from "@/helpers/Database";
 import Modules from "@/helpers/Modules";
 import Media from "@/composables/useMedia";
 import UserData from "@/helpers/UserData";
-import CustomSongs from "@/helpers/CustomSongs";
 import type { CustomSong } from "@/helpers/CustomSongs";
+import CustomSongs from "@/helpers/CustomSongs";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Fuse from "fuse.js";
@@ -121,12 +121,13 @@ import DateTime from "@/helpers/DateTime";
 import MusicMenuTable from "@/components/MusicMenuTable.vue";
 import { Music } from "@/types/Music";
 import { Album } from "@/types/Album";
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
 
 interface SearchResult {
   id_music: number | string;
   name: string;
   albums: Album[];
-  has_instrumental_music?: boolean;
+  has_instrumental_music: boolean;
 
   duration?: number;
   _custom?: boolean;
@@ -307,10 +308,10 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => 
       nextTick(() => searchInput.value?.focus());
       break;
     case "sing":
-      Media.open({ id_music: Number(music.id_music), mode: "audio" });
+      Media.open({ id_music: Number(music.id_music), mode: MusicActionEnum.AUDIO });
       break;
     case "playback":
-      Media.open({ id_music: Number(music.id_music), mode: "instrumental" });
+      Media.open({ id_music: Number(music.id_music), mode: MusicActionEnum.INSTRUMENTAL });
       break;
     case "no_audio":
       Media.open(Number(music.id_music));
@@ -322,7 +323,7 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => 
       Media.openAudio(Number(music.id_music));
       break;
     case "audiofile_playback":
-      Media.openAudio({ id_music: Number(music.id_music), mode: "instrumental" });
+      Media.openAudio({ id_music: Number(music.id_music), mode: MusicActionEnum.INSTRUMENTAL });
       break;
   }
 });

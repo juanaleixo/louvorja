@@ -26,7 +26,7 @@
 /* ########################################################### */
 import { ref, onMounted } from "vue";
 import { useTheme } from "vuetify";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";

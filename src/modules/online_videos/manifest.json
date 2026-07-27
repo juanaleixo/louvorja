@@ -1,9 +1,0 @@
-{
-  "id": "online_videos",
-  "name": "Vídeos On-line",
-  "description": "Coleção de vídeos do YouTube e URLs personalizadas para projeção.",
-  "category": "utilities",
-  "icon": "mdi-youtube",
-  "dependencies": [],
-  "customization": {}
-}

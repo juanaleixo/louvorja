@@ -155,7 +155,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDisplay } from "vuetify";
 import { component as Fullscreen } from "vue-fullscreen";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import Window from "@/components/Window.vue";
 import LSlide from "@/components/Slide.vue";
 import LPlayer from "@/components/Player.vue";

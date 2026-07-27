@@ -11,9 +11,15 @@
       </aside>
       <div class="d-flex flex-column align-center pa-4 flex-grow-1" style="gap: 16px">
         <!-- Seletor de modo -->
-        <v-btn-toggle v-model="mode" mandatory density="compact" divided>
-          <v-btn value="up" size="small">{{ t("mode.up") }}</v-btn>
-          <v-btn value="down" size="small">{{ t("mode.down") }}</v-btn>
+        <v-btn-toggle v-model="mode" color="primary" mandatory density="compact" divided>
+          <v-btn value="down" size="small">
+            <Icon icon="mdi-rotate-left" class="mr-2" />
+            {{ t("mode.down") }}
+          </v-btn>
+          <v-btn value="up" size="small">
+            {{ t("mode.up") }}
+            <Icon icon="mdi-rotate-right" class="ml-2" />
+          </v-btn>
         </v-btn-toggle>
 
         <!-- Horário base/alvo -->
@@ -60,13 +66,16 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import FormatPanel from "@/components/FormatPanel.vue";
 import { playBeep } from "@/helpers/AudioBeep";
 import AppData from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import Icon from "@/components/Icon.vue";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { restoreFormat, show_format } = useModuleFormat("timer", manifest);
 
@@ -203,12 +212,14 @@ function start(): void {
   startedAt.value = Date.now();
   seconds.value = mode.value === "down" ? durationSeconds.value : 0;
   running.value = true;
+  $userdata.set(KEYS.MODULES.TIMER.RUNNING, true);
 
   timer = setInterval(updateRunningTime, 1000);
 }
 
 function pause(): void {
   running.value = false;
+  $userdata.set(KEYS.MODULES.TIMER.RUNNING, false);
   if (timer !== null) {
     clearInterval(timer);
     timer = null;

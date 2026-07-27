@@ -81,9 +81,31 @@ export const BROADCAST_TYPE = Object.freeze({
   MEDIA_CLOSE: "media_close",
 
   /** Projeção de arquivo (imagem/vídeo) vindo de liturgia ou outro módulo.
-   *  Payload: { url: string, type: "image" | "video", title?: string }
+   *  Payload: { url: string, type: "image" | "video" | "pdf", title?: string, page?: number, totalPages?: number }
    *  Emitido por: liturgy (arquivo). Recebido por: Projection. */
   FILE_PROJECTION: "file_projection",
+
+  /** Navegação de página em PDF projetado.
+   *  Payload: { page: number }
+   *  Emitido por: media_library (next/prev em PDF). Recebido por: FileProjection. */
+  FILE_PROJECTION_PAGE: "file_projection_page",
+
+  /** Projeção de fundo (imagem/vídeo) do módulo Projeção de Fundo.
+   *  Payload: { url: string, type: "image" | "video", title?: string }
+   *  Emitido por: background_projection. Recebido por: BackgroundProjection. */
+  BACKGROUND_PROJECTION: "background_projection",
+
+  /** Projeção de vídeo online (YouTube) via useMedia.openYouTube.
+   *  Payload: { url: string, type: "youtube", title?: string }
+   *  Emitido por: useMedia.ts (openYouTube). Recebido por: FileProjection.vue. */
+  ONLINE_VIDEO_PROJECTION: "online_video_projection",
+
+  /** Notifica que o wallpaper/background settings foi alterado.
+   *  Payload: {} (vazio — as views recarregam do IndexedDB)
+   *  Emitido por: RibbonWallpaperSettings.vue, AppMenuOpcoes.vue
+   *  Recebido por: BackgroundProjection, FileProjection, etc. */
+  WALLPAPER_UPDATE: "wallpaper_update",
+  FILE_PROJECTION_BG_UPDATE: "file_projection_bg_update",
 
   /** Sincronização de vídeo entre o player principal e a projeção.
    *  Payload: { currentTime: number, isPaused: boolean }
@@ -101,6 +123,16 @@ export const BROADCAST_TYPE = Object.freeze({
    *  abrem depois ficam vazias até a próxima troca de slide.
    *  Recebido por: useSlides (re-emite SLIDE_CHANGE). */
   REQUEST_SLIDE_STATE: "request_slide_state",
+
+  /** Solicita reemissão do estado atual dos overlays. Emitido por
+   *  OverlayRenderer ao montar em janelas que abriram depois do overlay
+   *  já estar ativo. Payload: {}
+   *  Recebido por: useOverlayState (re-lê UserData). */
+  REQUEST_OVERLAY_STATE: "request_overlay_state",
+
+  /** Alteração na config do overlay (salva no IndexedDB).
+   *  Recebido por: useOverlayState (re-lê do IndexedDB). */
+  OVERLAY_CONFIG_CHANGED: "overlay_config_changed",
 
   // ─── In-app (hotkeys / HTTP events → módulos) ────────────────────────────
 

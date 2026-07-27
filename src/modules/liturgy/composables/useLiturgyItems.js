@@ -1,6 +1,5 @@
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { openDB } from "idb";
 import $liturgy from "@/helpers/Liturgy";
 import $media from "@/composables/useMedia";
 import $database from "@/helpers/Database";
@@ -11,6 +10,8 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 import Platform from "@/helpers/Platform";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
@@ -52,6 +53,7 @@ export const DEFAULT_FORM = () => ({
   subitem: "",
   cor: DEFAULT_COLOR,
   duration: 0,
+  time: "",
   dir: "",
   dir_info: "E",
   url: "",
@@ -411,7 +413,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
 
     const embedUrl = buildEmbedUrl(url);
     if (!embedUrl) {
-      $alert.error({ text: "modules.custom_videos.invalid_url" });
+      $alert.error({ text: "modules.custom_online_videos.invalid_url" });
       return;
     }
     $media.openYouTube(embedUrl, item.item || item.subitem || url);
@@ -648,14 +650,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   async function loadVideosList() {
     let all = [];
     try {
-      const db = await openDB("louvorja_custom_videos", 1, {
-        upgrade(database) {
-          if (!database.objectStoreNames.contains("videos")) {
-            database.createObjectStore("videos", { keyPath: "id" });
-          }
-        },
-      });
-      all = await db.getAll("videos");
+      all = await $idb.getAll(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
       all.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
     } catch {
       all = [];

@@ -1,9 +1,8 @@
-# Contribuindo com o LouvorJA
+# Guia de Contribuição — LouvorJA
 
 Obrigado por querer contribuir! Este guia cobre tudo que você precisa para
 começar: ambiente, comandos, criação de módulos, convenções de commit e
 fluxo de PR.
-
 ---
 
 ## Pré-requisitos
@@ -16,35 +15,65 @@ fluxo de PR.
 node -v   # deve ser >= 18
 npm -v    # deve ser >= 9
 ```
+## Primeiros Passos
 
----
-
-## Configuração inicial
+### 1. Fork & Clone
 
 ```bash
 git clone https://github.com/louvorja/app
+```
+
+### 2. Instalacao
+
+```bash
 cd app
 npm install
 cp .env.example .env          # configure VITE_URL_DATABASE e VITE_URL_FILES
+```
+
+### 3. Branch de Trabalho
+
+```bash
+git checkout -b feat/nome-da-feature
+# ou
+git checkout -b fix/nome-do-bug
 ```
 
 ---
 
 ## Comandos de desenvolvimento
 
-| Comando             | Descrição                                                      |
-|---------------------|----------------------------------------------------------------|
-| `npm run dev`       | Servidor de desenvolvimento em `http://localhost:5002`         |
-| `npm run host`      | Dev exposto na rede local (testes mobile)                      |
-| `npm run build`     | Build de produção para web/PWA                                 |
-| `npm run lint`      | ESLint em todo o projeto                                       |
-| `npm test`          | Vitest (testes unitários)                                      |
-| `npm run files`     | Servidor de arquivos local na porta 7070 (dev offline)         |
+| Comando                | Descrição                                              |
+|------------------------|--------------------------------------------------------|
+| `npm run dev`          | Servidor de desenvolvimento em `http://localhost:5002` |
+| `npm run host`         | Dev exposto na rede local (testes mobile)              |
+| `npm run build`        | Build de produção para web/PWA                         |
+| `npm run lint`         | ESLint em todo o projeto                               |
+| `npm test`             | Vitest (testes unitários)                              |
+| `npm run files`        | Servidor de arquivos local na porta 7070 (dev offline) |
+| `npm run files`        | Servidor de arquivos local na porta 7070 (dev offline) |
+| `npm run electron:dev` | Roda versão desktop do app                             |
 
 > A porta 5002 é deliberada — o Electron usa `DEV_URL=http://localhost:5002`.
 > Não a altere sem atualizar `vite.config.js` e `electron/main.cjs` em conjunto.
 
 ---
+
+---
+
+## Arquitetura Modular
+
+O projeto usa **modulos independentes** em `src/modules/`. Cada modulo tem:
+
+```
+module/
+ ├── index.js          # Ponto de entrada
+ ├── manifest.json     # Metadados (nome, versao, dependencias)
+ ├── interface/        # API publica do modulo
+ ├── components/       # Componentes Vue internos
+ └── lang/             # Traducoes (pt-BR, es)
+```
+
 
 ## Adicionando um módulo novo
 
@@ -141,6 +170,36 @@ e pode ser aberto/fechado sem erros no console.
 
 ---
 
+## Checklist de PR
+
+### Codigo
+
+- [ ] Lint passa (`npm run lint`)
+- [ ] Build production OK (`npm run build`)
+- [ ] Testes passam (`npm run test` -- se existir)
+- [ ] Sem `console.log` / `debugger` no codigo final
+- [ ] UserData usa `KEYS.*` de `src/constants/UserDataKeys.ts` (nunca strings hardcoded)
+- [ ] Ícones usam `ICONS.*` de `src/config/Icons.ts` (nunca `"mdi-*"` inline)
+
+### Commits
+
+- [ ] Mensagens claras (`feat: adiciona modulo X`, `fix: corrige bug Y`)
+- [ ] Um commit por mudanca logica (rebase se necessario)
+
+### Documentacao
+
+- [ ] `README.md` atualizado se mudar instalacao/uso
+- [ ] Comentarios JSDoc em funcoes publicas novas
+- [ ] Traducoes pt-BR + es para strings user-facing
+
+### Arquitetura
+
+- [ ] Modulo segue estrutura padrao (`index.js`, `manifest.json`, `interface/`, `lang/`)
+- [ ] Nao quebra modulos existentes
+- [ ] Estado Vuex imutavel (sem mutacao direta em getters)
+
+---
+
 ## Convenções de commit
 
 Formato: `[NNN] Verbo no imperativo, objeto`
@@ -178,6 +237,50 @@ Fluxo:
 
 ---
 
+## Reportando Bugs
+
+Use o template:
+
+```markdown
+**Descricao**: O que acontece vs. o esperado
+**Passos**: 1. Va em... 2. Clique em... 3. Veja o erro
+**Ambiente**: OS, Node, Browser, Versao do app
+**Logs**: Console / Network / Screenshot
+```
+
+---
+
+## Sugerindo Features
+
+Abra uma **Issue** com label `enhancement` descrevendo:
+
+- Problema que resolve
+- Usuarios impactados
+- Alternativas consideradas
+- Mockup / wireframe (se UI)
+
+---
+
+## Labels Uteis
+
+| Label | Uso |
+|-------|-----|
+| `bug` | Comportamento incorreto |
+| `enhancement` | Nova feature / melhoria |
+| `security` | Vulnerabilidade (privado) |
+| `perf` | Otimizacao de performance |
+| `docs` | Documentacao |
+| `good first issue` | Iniciante-friendly |
+| `help wanted` | Precisa de contribuidor |
+
+---
+
+## Seguranca
+
+**NUNCA** abra issue publica para vulns. Reporte em private para mantenedores.
+
+---
+
 ## Como abrir uma issue
 
 Use o [GitHub Issues](https://github.com/louvorja/app/issues). Inclua:
@@ -186,3 +289,14 @@ Use o [GitHub Issues](https://github.com/louvorja/app/issues). Inclua:
 - **Passos para reproduzir** (se for bug).
 - **Comportamento esperado vs. observado**.
 - **Logs do console** do navegador, se aplicável.
+
+---
+
+## Duvidas?
+
+- Abra `Discussion` no GitHub
+- Marque `@louvorja/maintainers` no PR
+
+---
+
+> **Dica**: Comece por issues com label `good first issue` -- sao pontos de entrada ideais.

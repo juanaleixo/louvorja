@@ -55,51 +55,7 @@
       </div>
     </template>
 
-    <!-- Quick nav overlay -->
-    <div v-if="quickNav.state.value !== 'idle'" class="quicknav-overlay">
-      <div class="quicknav-card">
-        <div class="quicknav-steps">
-          <div :class="['quicknav-step', { current: quickNav.activeStep.value === 0 }]">
-            <span class="quicknav-step-num">1</span>
-            <span>{{ t("quicknav.step_book") }}</span>
-          </div>
-          <div class="quicknav-arrow">→</div>
-          <div :class="['quicknav-step', { current: quickNav.activeStep.value === 1 }]">
-            <span class="quicknav-step-num">2</span>
-            <span>{{ t("quicknav.step_chapter") }}</span>
-          </div>
-          <div class="quicknav-arrow">→</div>
-          <div :class="['quicknav-step', { current: quickNav.activeStep.value === 2 }]">
-            <span class="quicknav-step-num">3</span>
-            <span>{{ t("quicknav.step_verse") }}</span>
-          </div>
-        </div>
-        <div class="quicknav-display">
-          <div class="quicknav-hint">
-            <template v-if="quickNav.activeStep.value === 0">
-              {{ t("quicknav.hint_book") }}
-            </template>
-            <template v-else-if="quickNav.activeStep.value === 1">
-              {{ t("quicknav.hint_chapter") }}
-            </template>
-            <template v-else>{{ t("quicknav.hint_verse") }}</template>
-          </div>
-          <div class="quicknav-buffer">
-            <span class="quicknav-text">{{ quickNav.buffer.value || "—" }}</span>
-            <span class="quicknav-cursor">|</span>
-          </div>
-          <div class="quicknav-preview">{{ quickNav.feedback.value || " " }}</div>
-          <div class="quicknav-footer">
-            <span v-if="quickNav.activeStep.value === 0" v-html="t('quicknav.foot_book')" />
-            <span v-else-if="quickNav.activeStep.value === 1" v-html="t('quicknav.foot_chapter')" />
-            <span v-else v-html="t('quicknav.foot_verse')" />
-          </div>
-        </div>
-        <button class="quicknav-close" @click="quickNav.reset()">
-          <v-icon size="18">mdi-close</v-icon>
-        </button>
-      </div>
-    </div>
+    <BibleSpotlight v-model="bibleSpotlightOpen" :initial-buffer="spotlightInitialBuffer" />
 
     <div v-if="!compact" class="bible-layout">
       <!-- Coluna Formatar -->
@@ -324,16 +280,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onUnmounted, type Ref } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick, type Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDisplay } from "vuetify";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import Screen from "../components/Screen.vue";
 import FormatPanel from "@/components/FormatPanel.vue";
 import LSelect from "@/components/inputs/LjSelect.vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { KEYS } from "@/constants/UserDataKeys";
 import Hotkeys from "@/helpers/Hotkeys";
 import Modules from "@/helpers/Modules";
 import AppData from "@/helpers/AppData";
@@ -349,8 +306,8 @@ import type {
   BibleBook,
   BibleVersion,
 } from "@/types/Bible";
+import BibleSpotlight from "@/components/BibleSpotlight.vue";
 import { ModuleState } from "@/types/Module";
-import { useBibleQuickNav } from "@/composables/useBibleQuickNav";
 
 const HISTORY_MAX = 30;
 
@@ -441,31 +398,26 @@ const version = computed(() =>
 );
 const chapters = computed(() => book.value?.chapters);
 
-const quickNav = useBibleQuickNav({
-  active: show,
-  books: books as Ref<BibleBook[]>,
-  chapters,
-  verses,
-  onSelectBook: async (id: number) => {
-    await selBook(id);
-  },
-  onSelectChapter: async (ch: number) => {
-    await selChapter(ch);
-  },
-  onSelectVerse: (num: number) => {
-    selVerse(null, num);
-  },
-  onProject: () => {
-    /* selVerse already broadcasts; this is just Enter confirmation */
-  },
+const bibleSpotlightOpen = ref(false);
+const spotlightInitialBuffer = ref("");
+
+const downloadedVersions = computed(() => {
+  const ids: number[] = UserData.get(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, []) || [];
+  return new Set(ids);
 });
 
 const versions_list = computed(() =>
   versions.value.map((v) => ({
-    title: v.abbreviation + " - " + v.name,
+    title: downloadedVersions.value.has(v.id_bible_version)
+      ? v.abbreviation + " - " + v.name
+      : "↓ " + v.abbreviation + " - " + v.name,
     value: v.id_bible_version,
   }))
 );
+
+watch(bibleSpotlightOpen, (val) => {
+  if (!val) spotlightInitialBuffer.value = "";
+});
 
 const compact = computed(() => width.value <= 750);
 
@@ -581,11 +533,26 @@ watch(
   { immediate: true }
 );
 
+function onKeydown(e: KeyboardEvent): void {
+  if (!show.value) return;
+  if (bibleSpotlightOpen.value) return;
+  const tag = (e.target as HTMLElement)?.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length === 1) {
+    e.preventDefault();
+    spotlightInitialBuffer.value = e.key.toLowerCase();
+    bibleSpotlightOpen.value = true;
+  }
+}
+
 onMounted(async () => {
+  window.addEventListener("keydown", onKeydown);
   await loadData();
 });
 
 onUnmounted(() => {
+  window.removeEventListener("keydown", onKeydown);
   _unregisterBibleHotkeys();
 });
 
@@ -693,8 +660,6 @@ async function selVerse(event: MouseEvent | null, num: number | string): Promise
     }
   } else {
     if (bible.verses.length === 1 && bible.verses[0] === num) {
-      bible.verses.splice(0, 1);
-      clean();
       return;
     }
     bible.verses = [num];
@@ -729,6 +694,7 @@ async function selVerse(event: MouseEvent | null, num: number | string): Promise
     active: true,
   });
 
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, true);
   ProjectionWindows.openBibleWindow();
 
   pushHistory(select_bible);
@@ -910,7 +876,8 @@ function getSelectedVerses(keys: number[]): string {
   return result;
 }
 
-function clean(): void {
+function clearText(): void {
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, false);
   bible.verses = [];
   Object.assign(select_bible, {
     id_bible_version: null,
@@ -922,12 +889,44 @@ function clean(): void {
     scriptural_reference: null,
     text: null,
   });
-  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, null);
+  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+    text: "",
+    reference: "",
+    active: true,
+  });
+}
+
+function clean(): void {
+  clearText();
   ProjectionWindows.closeProjectionWindows();
 }
 
 function close(): void {
   clean();
+}
+
+async function toggleProjection(): Promise<void> {
+  const isActive = UserData.get<boolean>(KEYS.MODULES.BIBLE.IS_PLAYING, false);
+  if (isActive) {
+    await stopProjection();
+  } else {
+    await startProjection();
+  }
+}
+
+async function startProjection(): Promise<void> {
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, true);
+  await ProjectionWindows.openBibleWindow();
+}
+
+async function stopProjection(): Promise<void> {
+  UserData.set(KEYS.MODULES.BIBLE.IS_PLAYING, false);
+  Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
+    text: "",
+    reference: "",
+    active: true,
+  });
+  await ProjectionWindows.closeBibleWindows();
 }
 
 function restoreFormat(): void {
@@ -942,7 +941,7 @@ function restoreFormat(): void {
 useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
   switch (payload?.action) {
     case "clear":
-      clean();
+      clearText();
       break;
     case "prev_verse":
       prevVerse();
@@ -956,12 +955,37 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
     case "restore":
       restoreFormat();
       break;
+    case "project":
+      toggleProjection();
+      break;
   }
 });
 
-// Sincroniza o estado interno se um versículo for emitido por outro componente (ex: Spotlight).
-useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload: any) => {
+// Sincroniza o estado interno se um versículo for emitido por outro componente (ex: Spotlight, Bible Search).
+useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, async (payload: any) => {
   if (!payload || !payload.text) return;
+
+  // Navegar até o livro/capítulo/versículo quando vindo de fora (bible_search, spotlight)
+  if (payload.bookId && payload.chapter) {
+    const changedBook = payload.bookId !== bible.id_bible_book;
+    const changedChap = payload.chapter !== bible.chapter;
+
+    if (changedBook) await selBook(payload.bookId);
+    if (changedChap || changedBook) await selChapter(payload.chapter);
+
+    if (payload.verses?.length) {
+      bible.verses = payload.verses;
+      last_verse.value = payload.verses[payload.verses.length - 1];
+      bible.verses.sort((a, b) => a - b);
+      Object.assign(select_bible, bible);
+      select_bible.scriptural_reference = scripturalReference(select_bible);
+      select_bible.text = getSelectedVerses(select_bible.verses);
+      nextTick(() => scrollToElement(document.getElementById(`listVerse_${last_verse.value}`)));
+    }
+    return;
+  }
+
+  // Sync projeção (quando o versículo já está na mesma navegação, ex: selVerse local)
   if (
     payload.text !== select_bible.text ||
     payload.reference !== select_bible.scriptural_reference
@@ -1182,155 +1206,5 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   padding: 8px;
   border-top: 1px solid var(--lj-surface-border);
   flex-shrink: 0;
-}
-
-/* Overlay de navegação rápida */
-.quicknav-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
-}
-.quicknav-card {
-  position: relative;
-  width: 480px;
-  max-width: 90vw;
-  background: var(--lj-surface-bg, #1e1e1e);
-  border: 1px solid var(--lj-surface-border, #444);
-  border-radius: 16px;
-  padding: 32px 36px 28px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-}
-.quicknav-steps {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.quicknav-step {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--lj-text-muted, #888);
-  background: transparent;
-  transition: all 0.2s ease;
-}
-.quicknav-step.current {
-  color: #fff;
-  background: var(--lj-primary, #1976d2);
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
-}
-.quicknav-step-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
-  background: currentColor;
-  color: var(--lj-surface-bg, #1e1e1e);
-}
-.quicknav-step.current .quicknav-step-num {
-  background: #fff;
-  color: var(--lj-primary, #1976d2);
-}
-.quicknav-arrow {
-  font-size: 16px;
-  color: var(--lj-text-muted, #555);
-  font-weight: 300;
-}
-.quicknav-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-.quicknav-hint {
-  font-size: 15px;
-  color: var(--lj-text-muted, #888);
-  letter-spacing: 0.3px;
-}
-.quicknav-buffer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 42px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  min-height: 56px;
-  font-variant-numeric: tabular-nums;
-}
-.quicknav-preview {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--lj-text-muted, #999);
-  min-height: 20px;
-  text-align: center;
-}
-.quicknav-text {
-  color: var(--lj-text, #eee);
-}
-.quicknav-text:empty::before {
-  content: "—";
-  color: var(--lj-text-muted, #555);
-}
-.quicknav-cursor {
-  display: inline-block;
-  width: 3px;
-  margin-left: 4px;
-  animation: quicknav-blink 1s step-end infinite;
-}
-@keyframes quicknav-blink {
-  50% {
-    opacity: 0;
-  }
-}
-.quicknav-footer {
-  font-size: 13px;
-  color: var(--lj-text-muted, #666);
-}
-.quicknav-footer kbd {
-  display: inline-block;
-  padding: 1px 6px;
-  font-size: 10px;
-  font-family: inherit;
-  background: var(--lj-surface-border, #333);
-  border-radius: 4px;
-  border: 1px solid var(--lj-text-muted, #555);
-  margin: 0 2px;
-}
-.quicknav-close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  color: var(--lj-text-muted, #888);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
-}
-.quicknav-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--lj-text, #eee);
 }
 </style>

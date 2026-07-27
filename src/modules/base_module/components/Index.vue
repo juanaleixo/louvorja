@@ -6,19 +6,11 @@
 /* ########################################################### */
 /* ####### INSTALAÇÃO DO MODULO ############################## */
 /* ########################################################### */
-import { ref, computed } from "vue";
-import manifest from "../manifest.json";
+defineOptions({ name: "BaseModuleIndex" });
+import { ref } from "vue";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 const moduleContainer = ref(null);
-const t = (key) => {
-  return moduleContainer.value?.t(key) || key;
-};
-const userdata = computed(() => {
-  return moduleContainer.value?.userdata;
-});
-const appdata = computed(() => {
-  return moduleContainer.value?.appdata;
-});
 /* ########################################################### */
 /* ########################################################### */
 /* ########################################################### */

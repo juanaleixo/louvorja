@@ -52,7 +52,7 @@ export function useDisplays(): {
     }
   }
 
-  async function setPreferred(feature: string, displayId: number | string | null): Promise<void> {
+  async function setPreferred(feature: string, displayId: number | string): Promise<void> {
     if (!Platform.displays) return;
     try {
       await Platform.displays.setPreferred(feature, displayId);
@@ -62,8 +62,8 @@ export function useDisplays(): {
     }
   }
 
-  function getPreferred(feature: string): number | string | null {
-    return prefs.value?.[feature] ?? null;
+  function getPreferred(feature: string): number | string {
+    return prefs.value?.[feature] ?? 0;
   }
 
   async function identify(durationMs = 5000): Promise<void> {

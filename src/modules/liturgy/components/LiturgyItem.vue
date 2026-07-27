@@ -1,67 +1,18 @@
 <template>
   <div class="lit-row">
-    <!-- CATEGORIA -->
     <div
-      v-if="element.tipo === 'categoria'"
-      class="lit-category"
-      :style="{ background: element.cor || defaultColor }"
-      @click="!locked && $emit('edit', index)"
-    >
-      <button v-if="!locked" class="lit-card-grip" data-handle="true" :title="t('actions.drag')">
-        <v-icon icon="mdi-drag-vertical" size="16" />
-      </button>
-      <span class="lit-category-text">
-        {{ element.item || t("placeholders.category") }}
-      </span>
-      <button
-        v-if="!locked"
-        class="lit-card-action"
-        :title="t('actions.edit')"
-        @click.stop="$emit('edit', index)"
-      >
-        <v-icon icon="mdi-pencil" size="14" />
-      </button>
-    </div>
-
-    <!-- ITEM NORMAL -->
-    <div
-      v-else
       class="lit-card"
       :class="{
         'lit-card--checked': isChecked(element),
         'lit-card--locked': locked,
       }"
     >
-      <!-- Ícone grande do tipo -->
-      <button
-        class="lit-card-icon"
-        :style="{ background: element.cor || defaultColor }"
-        :title="locked ? '' : t('actions.change_color')"
-        @click.stop="!locked && $emit('change-color', index)"
-      >
-        <v-icon :icon="iconFor(element)" size="28" color="white" />
-      </button>
-
-      <!-- Checkbox grande à esquerda do título -->
-      <label
-        class="lit-card-check lit-card-check--lead"
-        :title="t('actions.mark_done')"
-        @click.stop
-      >
-        <input
-          type="checkbox"
-          :checked="isChecked(element)"
-          @change="$emit('toggle-checked', element)"
-        />
-        <span class="lit-check-mark"><v-icon icon="mdi-check" size="14" /></span>
-      </label>
-
       <!-- Texto -->
-      <button class="lit-card-text" @click="$emit('execute', element)">
-        <div class="lit-card-title">{{ element.item || t("placeholders.untitled") }}</div>
-        <div v-if="subtitleFor(element)" class="lit-card-subtitle">
+      <button class="lit-card-text" data-handle="true" @click="$emit('execute', element)">
+        <span class="lit-card-title">{{ element.item || t("placeholders.untitled") }}</span>
+        <span v-if="subtitleFor(element)" class="lit-card-subtitle">
           {{ subtitleFor(element) }}
-        </div>
+        </span>
       </button>
 
       <!-- Ações específicas de música -->
@@ -73,7 +24,7 @@
               class="lit-music-btn"
               @click.stop="$emit('play-music', element, 'sung')"
             >
-              <v-icon icon="mdi-filmstrip" size="18" color="#c0392b" />
+              <Icon :icon="ICONS.MUSIC.SING" :size="SIZE_ICON_MEDIA" color="#c0392b" />
             </button>
           </template>
 
@@ -91,7 +42,7 @@
               class="lit-music-btn"
               @click.stop="$emit('play-music', element, 'pb')"
             >
-              <v-icon icon="mdi-filmstrip-box" size="18" color="#1b4f8a" />
+              <Icon :icon="ICONS.MUSIC.PLAYBACK" :size="SIZE_ICON_MEDIA" color="#1b4f8a" />
             </button>
           </template>
 
@@ -105,7 +56,7 @@
               class="lit-music-btn"
               @click.stop="$emit('play-music', element, 'no_audio')"
             >
-              <v-icon icon="mdi-music-note-off" size="18" color="#7f8c8d" />
+              <Icon :icon="ICONS.MUSIC.NO_AUDIO" :size="SIZE_ICON_MEDIA" color="#7f8c8d" />
             </button>
           </template>
 
@@ -119,7 +70,7 @@
               class="lit-music-btn"
               @click.stop="$emit('open-lyric', Number(element.musica ?? element.id_music))"
             >
-              <v-icon icon="mdi-text-box-outline" size="18" color="#27ae60" />
+              <Icon :icon="ICONS.MUSIC.LYRIC" :size="SIZE_ICON_MEDIA" color="#27ae60" />
             </button>
           </template>
 
@@ -132,7 +83,7 @@
         <v-tooltip location="top" :open-delay="700">
           <template #activator="{ props }">
             <button v-bind="props" class="lit-music-btn" @click.stop="$emit('execute', element)">
-              <v-icon icon="mdi-play-circle" size="20" color="#e74c3c" />
+              <Icon :icon="ICONS.PLAYER.PLAY" :size="SIZE_ICON_MEDIA" color="#e74c3c" />
             </button>
           </template>
 
@@ -145,7 +96,7 @@
         <v-tooltip v-if="!locked" location="top" :open-delay="500">
           <template #activator="{ props }">
             <button v-bind="props" class="lit-card-action" @click.stop="$emit('edit', index)">
-              <v-icon icon="mdi-pencil" size="16" />
+              <Icon :icon="ICONS.ACTIONS.EDIT" :size="SIZE_ICON_TOOLS" />
             </button>
           </template>
 
@@ -155,7 +106,7 @@
         <v-tooltip v-if="!locked" location="top" :open-delay="500">
           <template #activator="{ props }">
             <button v-bind="props" class="lit-card-action" @click.stop="$emit('clone', index)">
-              <v-icon icon="mdi-content-copy" size="16" />
+              <Icon :icon="ICONS.ACTIONS.COPY" :size="SIZE_ICON_TOOLS" />
             </button>
           </template>
 
@@ -169,16 +120,12 @@
               class="lit-card-action"
               @click.stop="$emit('confirm-remove', index)"
             >
-              <v-icon icon="mdi-delete" color="red" size="16" />
+              <Icon :icon="ICONS.ACTIONS.DELETE" color="red" :size="SIZE_ICON_TOOLS" />
             </button>
           </template>
 
           {{ t("actions.delete") }}
         </v-tooltip>
-
-        <button v-if="!locked" class="lit-card-grip" data-handle="true" :title="t('actions.drag')">
-          <v-icon icon="mdi-arrow-up-down" size="16" />
-        </button>
       </div>
     </div>
   </div>
@@ -189,8 +136,12 @@ import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";
+import { ICONS } from "@/config/Icons";
+import Icon from "@/components/Icon.vue";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
+const SIZE_ICON_TOOLS = "16";
+const SIZE_ICON_MEDIA = "20";
 
 function _t(key: string, locale: string): string {
   const dict = TRANSLATIONS[locale] ?? TRANSLATIONS.pt;
@@ -209,11 +160,12 @@ withDefaults(
     index: number;
     locked?: boolean;
     defaultColor?: string;
+    hideCheckbox?: boolean;
     isChecked: (item: LiturgyItem) => boolean;
     iconFor: (item: LiturgyItem) => string;
     subtitleFor: (item: LiturgyItem) => string;
   }>(),
-  { locked: false, defaultColor: "#00004F" }
+  { locked: false, defaultColor: "#00004F", hideCheckbox: false }
 );
 
 defineEmits<{
@@ -243,9 +195,9 @@ const t = (key: string) => _t(key, locale.value);
   align-items: stretch;
   flex: 1;
   background: var(--lj-surface-bg);
-  border: 1px solid rgba(var(--v-border-color), 0.4);
-  border-radius: 4px;
-  height: 64px;
+  border-radius: 8px;
+  box-shadow: var(--lj-shadow-2);
+  min-height: 50px;
   transition:
     background 0.15s,
     border-color 0.15s;
@@ -253,39 +205,17 @@ const t = (key: string) => _t(key, locale.value);
   position: relative;
 }
 .lit-card:hover {
-  border-color: rgba(var(--lj-navy-ch), 0.5);
-  background: rgba(var(--lj-navy-ch), 0.03);
+  color: var(--lj-white);
+  border-color: rgb(var(--lj-navy-ch), 50%);
+  background: rgb(var(--lj-navy-ch) / 50%);
 }
 .lit-card--checked {
-  background: rgba(78, 213, 255, 0.06);
-  border-color: rgba(78, 213, 255, 0.4);
+  border-color: rgb(var(--lj-navy-ch) / 60%);
+  background: rgb(var(--lj-navy-ch) / 20%);
 }
-.lit-card--ghost {
-  opacity: 0.4;
-  background: rgba(var(--lj-navy-ch), 0.1);
-}
+
 .lit-card--locked {
   border-left: 3px solid rgba(var(--lj-navy-ch), 0.3);
-}
-
-.lit-card-icon {
-  width: 64px;
-  flex-shrink: 0;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: filter 0.15s;
-}
-.lit-card-icon:hover {
-  filter: brightness(1.15);
-}
-
-.lit-card-check--lead {
-  flex-shrink: 0;
-  width: 40px;
-  border-right: 1px solid rgba(var(--v-border-color), 0.2);
 }
 
 .lit-card-text {
@@ -319,6 +249,7 @@ const t = (key: string) => _t(key, locale.value);
   text-overflow: ellipsis;
   margin-top: 2px;
 }
+
 .lit-card--checked .lit-card-subtitle {
   text-decoration: line-through;
 }
@@ -423,44 +354,7 @@ const t = (key: string) => _t(key, locale.value);
   background: rgba(var(--lj-on-surface-ch), 0.08);
   color: var(--lj-text);
 }
-.lit-card-grip:hover {
-  background: rgba(var(--lj-on-surface-ch), 0.08);
-  color: var(--lj-text);
-}
-.lit-card-grip--cat {
-  height: 100%;
-  width: 28px;
-  color: rgba(255, 255, 255, 0.7);
-}
-.lit-card-grip--cat:hover {
-  color: white;
-  background: rgba(0, 0, 0, 0.15);
-}
 
-.lit-category {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  height: 36px;
-  margin-top: 12px;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.02em;
-  padding-right: 4px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  box-shadow: var(--lj-shadow-1);
-}
-.lit-category:hover {
-  filter: brightness(1.1);
-}
-.lit-category-text {
-  flex: 1;
-  text-align: center;
-  text-transform: uppercase;
-}
 .lit-category .lit-card-action {
   color: rgba(255, 255, 255, 0.85);
 }

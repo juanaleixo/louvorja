@@ -22,15 +22,29 @@ export default async ({ mode }) => {
   // com origem null do file:// no Chromium, então precisamos liberar
   // file: e louvorja: explicitamente. No web/PWA, mantém estrito.
   const cspExtra = isDesktop ? " file: louvorja:" : "";
+  // YouTube domains needed for script-src and frame-src only on desktop
+  // (Electron projection windows carregam o IFrame Player API e criam
+  // iframes do YouTube). No web/PWA a projeção de vídeos pode não estar
+  // disponível ou usar rota diferente.
+  const cspDesktopYt = isDesktop
+    ? " https://www.youtube.com https://*.doubleclick.net https://www.google.com"
+    : "";
+  // frame-src só é necessário no desktop (Electron), onde as janelas de
+  // projeção criam iframes do YouTube via YT.Player API. No web/PWA a
+  // projeção de vídeos não usa iframes embarcados.
+  const cspDesktopFrame = isDesktop
+    ? " frame-src https://www.youtube.com https://www.youtube-nocookie.com;"
+    : "";
   const cspMeta =
     `<meta http-equiv="Content-Security-Policy" content="` +
     `default-src 'self'${cspExtra};` +
-    ` script-src 'self'${cspExtra};` +
+    ` script-src 'self'${cspExtra}${cspDesktopYt};` +
     ` style-src 'self' 'unsafe-inline'${cspExtra} https://fonts.googleapis.com;` +
     ` font-src 'self' data:${cspExtra} https://fonts.gstatic.com;` +
     ` img-src 'self' data: https:${cspExtra};` +
     ` media-src 'self' blob: https:${cspExtra};` +
-    ` connect-src 'self'${cspExtra} https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://www.google.com https://*.google.com;` +
+    ` connect-src 'self' blob:${cspExtra} https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://www.google.com https://*.google.com;` +
+    `${cspDesktopFrame}` +
     ` worker-src 'self'${cspExtra};` +
     `">`;
 
@@ -41,13 +55,20 @@ export default async ({ mode }) => {
     vuetify({
       autoImport: true,
     }),
-    {
-      name: "louvorja-csp-prod",
-      apply: "build",
-      transformIndexHtml(html) {
-        return html.replace("<!--CSP_PROD-->", cspMeta);
-      },
-    },
+    // No desktop (Electron), CSP é gerenciado via session.webRequest no
+    // main process, com política relaxada para janelas de projeção de vídeo
+    // (YouTube IFrame Player API precisa de 'unsafe-inline' no script-src).
+    ...(isDesktop
+      ? []
+      : [
+          {
+            name: "louvorja-csp-prod",
+            apply: "build",
+            transformIndexHtml(html) {
+              return html.replace("<!--CSP_PROD-->", cspMeta);
+            },
+          },
+        ]),
   ];
 
   // Bundle visualizer — gera dist/stats.html a cada build

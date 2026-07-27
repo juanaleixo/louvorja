@@ -1,4 +1,6 @@
 {
+  "title": "Álbum",
+  "description": "Exibe as músicas de um álbum (função $media.openAlbum)",
   "table": {
     "track": "Faixa",
     "music_name": "Nome",

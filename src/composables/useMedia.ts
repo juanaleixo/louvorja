@@ -8,15 +8,17 @@ import $alert from "@/helpers/Alert";
 import $modules from "@/helpers/Modules";
 import $database from "@/helpers/Database";
 import $history from "@/helpers/History";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import { useAudioPlayback } from "@/composables/useAudioPlayback";
 import { useSlides } from "@/composables/useSlides";
 import type { Slide } from "@/composables/useSlides";
 import { useLyric } from "@/composables/useLyric";
 import { useAlbum } from "@/composables/useAlbum";
-import { openProjectionWindows, openFileProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import { openProjectionWindows, openVideoProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
 import { Music } from "@/types/Music";
 import { LyricOpenParams } from "@/types/Lyric";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { MediaOpenParams } from "@/types/Media";
 
 const _audio = useAudioPlayback();
 const _slides = useSlides();
@@ -160,15 +162,6 @@ _audio.onTimeUpdate((ct, d) => {
   }
 
 });
-
-export interface MediaOpenParams {
-  id_music?: string | number;
-  id_album?: string | number | null;
-  mode?: "audio" | "instrumental" | "no_audio";
-  minimized?: boolean;
-  url?: string;
-  title?: string;
-}
 
 function _buildSlidesFrom(data: Music): Slide[] {
   let prev_image: string | undefined = data?.url_image as string | undefined;
@@ -340,6 +333,13 @@ const _self = {
     });
   },
 
+  stop(): void {
+    _audio.stop();
+    this.clearVariables();
+    _slides.reset();
+    $appdata.set("modules.media.minimized", false);
+  },
+
   close(force = false): void {
     if (_isYouTube()) {
       if (!force) {
@@ -358,6 +358,7 @@ const _self = {
 
       try {
         localStorage.removeItem("lj_file_projection");
+        localStorage.removeItem("lj_youtube_projection");
       } catch {
         /* ignore */
       }
@@ -462,20 +463,11 @@ const _self = {
       const audioUrl = params.url;
       $appdata.set("modules.media.config.audio", audioUrl);
 
-      const self = this;
-      _audio.getElement().onerror = function () {
-        _audio.getElement().onerror = null;
-        self.close(true);
-        $alert.error("modules.media.alerts.file_not_found");
-      };
-
       const volume = $appdata.get("modules.media.config.volume");
       _audio.setVolume(volume as number);
       _audio.getElement().currentTime = 0;
 
-      _audio.setSrc(audioUrl, true);
-      $appdata.set("modules.media.loading", false);
-      this.pause(false);
+      _loadAudioSrc(audioUrl, null, () => {});
       this.minimize();
       return;
     }
@@ -541,14 +533,14 @@ const _self = {
     this.minimize();
 
     try {
-      localStorage.setItem("lj_file_projection", JSON.stringify({ url, type: "youtube", title }));
+      localStorage.setItem("lj_youtube_projection", JSON.stringify({ url, type: "youtube", title }));
     } catch {
       /* ignore */
     }
 
-    await openFileProjectionWindows();
+    await openVideoProjectionWindows();
 
-    $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { url, type: "youtube", title });
+    $broadcast.send(BROADCAST_TYPE.ONLINE_VIDEO_PROJECTION, { url, type: "youtube", title });
 
     _ytUnlisten = $broadcast.listen((msg) => {
       if (msg.type !== BROADCAST_TYPE.YOUTUBE_STATE) return;

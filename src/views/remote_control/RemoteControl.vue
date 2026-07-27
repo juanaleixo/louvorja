@@ -121,6 +121,25 @@
       </div>
     </v-footer>
 
+    <!-- Diálogo de token inválido -->
+    <v-dialog v-model="isTokenInvalid" persistent max-width="420">
+      <v-card>
+        <v-card-title class="text-error d-flex align-center ga-2">
+          <v-icon icon="mdi-alert-circle" size="24" />
+          <span>{{ t("remote_control.token_invalid.title") }}</span>
+        </v-card-title>
+        <v-card-text class="text-body-2">
+          {{ t("remote_control.token_invalid.message") }}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" variant="tonal" @click="isTokenInvalid = false">
+            {{ t("alert.close") }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Snackbar de feedback -->
     <v-snackbar v-model="snackbar.show" :timeout="2000" :color="snackbar.color">
       {{ snackbar.text }}
@@ -134,6 +153,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { isTokenInvalid, apiFetch } from "@/helpers/ApiClient";
 import RemoteMusic from "./RemoteMusic.vue";
 import RemoteBible from "./RemoteBible.vue";
 import RemoteLiturgy from "./RemoteLiturgy.vue";
@@ -147,6 +167,8 @@ const route = useRoute();
 const tab = ref("music");
 const snackbar = ref({ show: false, text: "", color: "" });
 const token = computed(() => getToken());
+
+isTokenInvalid.value = false;
 
 const bibleRef = ref(null);
 const liturgyRef = ref(null);
@@ -234,7 +256,12 @@ async function loadBibleChapter() {
   if (!activeBible.value.bookId || !activeBible.value.chapter) return;
 
   const bookId = Number(activeBible.value.bookId);
-  const versionId = activeBible.value.versionId;
+  let versionId = activeBible.value.versionId;
+  if (!versionId) {
+    versionId = await getPreferredBibleVersion();
+  }
+  if (!versionId) return;
+
   const dbKey = `bible_${versionId}_${bookId}_${activeBible.value.chapter}`;
 
   const Database = (await import("@helpers/Database")).default;
@@ -252,6 +279,19 @@ async function loadBibleChapter() {
   }
 }
 
+async function getPreferredBibleVersion() {
+  try {
+    const res = await apiFetch(`/api/user-data?path=id_bible_version&token=${token.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.value;
+    }
+  } catch (e) {
+    console.error("Erro ao buscar versão da bíblia:", e);
+  }
+  return null;
+}
+
 function nextVerseRemote() {
   const current = activeBible.value.verse || 1;
   const total = activeBible.value.chapterVerses.length;
@@ -260,7 +300,7 @@ function nextVerseRemote() {
     activeBible.value.verse = newVerse;
     updateVerseReference(newVerse);
   }
-  fetch(`/api/bible?action=next&token=${token.value}`).catch(() =>
+  apiFetch(`/api/bible?action=next&token=${token.value}`).catch(() =>
     showSnackbar(t("remote_control.errors.generic"), "error")
   );
 }
@@ -272,7 +312,7 @@ function prevVerseRemote() {
     activeBible.value.verse = newVerse;
     updateVerseReference(newVerse);
   }
-  fetch(`/api/bible?action=prev&token=${token.value}`).catch(() =>
+  apiFetch(`/api/bible?action=prev&token=${token.value}`).catch(() =>
     showSnackbar(t("remote_control.errors.generic"), "error")
   );
 }
@@ -286,7 +326,7 @@ function updateVerseReference(verse) {
 
 async function closeBible() {
   try {
-    await fetch(`/api/bible?action=close&token=${token.value}`);
+    await apiFetch(`/api/bible?action=close&token=${token.value}`);
     activeBible.value.active = false;
     showSnackbar(t("remote_control.bible.screen_cleaned"));
   } catch (e) {
@@ -295,7 +335,7 @@ async function closeBible() {
 }
 async function closeProjection() {
   try {
-    await fetch(`/api/song-slides?action=close&token=${token.value}`);
+    await apiFetch(`/api/song-slides?action=close&token=${token.value}`);
     activeBible.value.active = false;
     activeBible.value.chapterVerses = [];
     showSnackbar(t("remote_control.bible.projection_closed"));
@@ -318,14 +358,14 @@ function prevSlide() {
 
 function goToSlide(index) {
   currentSlideIndex.value = index;
-  fetch(`/api/song-slides?action=go-to-slide&index=${index}&token=${token.value}`).catch(() =>
+  apiFetch(`/api/song-slides?action=go-to-slide&index=${index}&token=${token.value}`).catch(() =>
     showSnackbar(t("remote_control.slides.error_change"), "error")
   );
 }
 
 async function closeMedia() {
   try {
-    await fetch(`/api/song-slides?action=close&token=${token.value}`);
+    await apiFetch(`/api/song-slides?action=close&token=${token.value}`);
     slides.value = [];
     currentTitle.value = "";
     showSnackbar(t("remote_control.slides.projection_closed"));

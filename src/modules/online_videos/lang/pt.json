@@ -1,5 +1,6 @@
 {
   "title": "Vídeos On-line",
+  "description": "Coleção de vídeos do YouTube e URLs personalizadas para projeção.",
   "collection": "Coletânea",
   "personal": "URL Personalizada",
   "personal_hint": "Cole uma URL do YouTube para projetar",

@@ -1,5 +1,6 @@
 {
   "title": "Buscar Canción",
+  "description": "Búsqueda rápida de canciones en la base de datos.",
   "search_placeholder": "Escribe el nombre de la canción...",
   "search": "Buscar",
   "music": "Canción",

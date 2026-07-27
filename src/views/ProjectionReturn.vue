@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div class="return-root" :class="{ 'return-root--ready': ready }">
     <!-- Slide atual ocupa quase toda a tela (alClient) -->
     <div class="return-current">
@@ -67,6 +68,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { useProjectionState } from "@/composables/useProjectionState";
 import { useSlideStyle } from "@/composables/useSlideStyle";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { t } = useI18n();
 const { slide, isCover, progress, slideProgress, title, slideIndex, totalSlides, nextSlide } =

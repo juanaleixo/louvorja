@@ -68,10 +68,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
-import Database from "@/helpers/Database";
-import Strings from "@/helpers/Strings";
 import { MusicAlbum, MusicItem } from "@/types/Music";
 import type { ChooseLaterItem } from "@/types/Liturgy";
+import { apiFetch } from "@/helpers/ApiClient";
 
 const props = defineProps<{
   token?: string;
@@ -90,7 +89,7 @@ const { t, locale } = useI18n();
 const musicSearch = ref<string>("");
 const musicResults = ref<MusicItem[]>([]);
 const loadingMusics = ref<boolean>(false);
-let allMusics: MusicItem[] = [];
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 async function onMusicSearch(): Promise<void> {
   if (!musicSearch.value || musicSearch.value.length < 2) {
@@ -98,19 +97,27 @@ async function onMusicSearch(): Promise<void> {
     return;
   }
   loadingMusics.value = true;
-  if (allMusics.length === 0) {
-    const lang = locale.value || "pt";
-    allMusics = (await Database.get<MusicItem[]>(`${lang}_musics`)) || [];
-  }
-  const q = Strings.clean(musicSearch.value);
-  musicResults.value = allMusics
-    .filter(
-      (m: MusicItem) =>
-        Strings.clean(m.name).includes(q) ||
-        (m.albums_names && Strings.clean(m.albums_names).includes(q))
-    )
-    .slice(0, 20);
-  loadingMusics.value = false;
+
+  // Debounce: aguarda 300ms da última digitação
+  if (searchTimeout) clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    try {
+      const lang = locale.value || "pt";
+      const q = encodeURIComponent(musicSearch.value.trim());
+      const res = await apiFetch(`/api/music-search?q=${q}&lang=${lang}&token=${props.token}`);
+      if (res.ok) {
+        const data = (await res.json()) as { results?: MusicItem[] };
+        musicResults.value = data.results || [];
+      } else {
+        musicResults.value = [];
+      }
+    } catch (e) {
+      console.error("[RemoteMusic] search error:", e);
+      musicResults.value = [];
+    } finally {
+      loadingMusics.value = false;
+    }
+  }, 300);
 }
 
 async function openMusic(music: MusicAlbum, tag: number = 3): Promise<void> {
@@ -122,7 +129,7 @@ async function openMusic(music: MusicAlbum, tag: number = 3): Promise<void> {
       emit("update:choose-later-item", null);
     }
 
-    const res = await fetch(
+    const res = await apiFetch(
       `/api/open-song?id=${music.id_music}&tag=${tag}&token=${props.token}&id_liturgy=${idLiturgy}`
     );
     if (res.ok) {

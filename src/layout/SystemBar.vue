@@ -5,15 +5,24 @@
     :class="{ 'systembar--mac': isMac }"
     @dblclick="toggleMaximize"
   >
+    <!-- AppMenu + Abas (no-drag) -->
+    <div class="systembar-left">
+      <AppMenu class="systembar-appmenu" />
+      <RibbonTabs id-prefix="systembar" class="systembar-tabs" />
+    </div>
+
+    <!-- Título + logo (drag) -->
     <div class="systembar-drag">
       <LjLogo :size="16" class="systembar-logo" />
       <span class="systembar-title">{{ title }}</span>
     </div>
 
-    <div class="systembar-tools">
+    <!-- Ferramentas (no-drag) -->
+    <div class="systembar-tools" :class="isLinux || isWindows ? 'systembar-tools--win' : ''">
       <ShellTools />
     </div>
 
+    <!-- Window controls Win/Linux (no-drag) -->
     <div v-if="!isMac" class="systembar-controls">
       <button
         type="button"
@@ -50,16 +59,24 @@ import Platform from "@/helpers/Platform";
 import $appdata from "@/helpers/AppData";
 import LjLogo from "@/components/LjLogo.vue";
 import ShellTools from "@/layout/shell/ShellTools.vue";
+import AppMenu from "@/layout/shell/AppMenu.vue";
+import RibbonTabs from "@/components/RibbonTabs.vue";
+import { useRibbonStore } from "@/stores/ribbonStore";
 
 const { t } = useI18n();
+const store = useRibbonStore();
 
 const isMaximized = ref(false);
 let unsubscribe = null;
 
 const isDesktop = computed(() => $appdata.get("is_desktop"));
 const isMac = computed(() => Platform.platform === "darwin");
+const isWindows = computed(() => Platform.platform === "win32");
+const isLinux = computed(() => Platform.platform === "linux");
 
 const activeModuleId = computed(() => {
+  const activeId = $appdata.get("active_module");
+  if (activeId) return activeId;
   const modules = $appdata.get("modules") || {};
   const skip = new Set(["media", "lyric", "album"]);
   const ids = Object.keys(modules).reverse();
@@ -128,6 +145,23 @@ onBeforeUnmount(() => {
   font-family: var(--lj-font-shell);
 }
 
+/* ── Left: AppMenu + tabs (no-drag) ── */
+.systembar-left {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.systembar--mac {
+  padding-left: 80px;
+}
+
+.systembar-appmenu {
+  height: 100%;
+}
+
+/* ── Center: title + logo (drag) ── */
 .systembar-drag {
   flex: 1;
   display: flex;
@@ -146,22 +180,21 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
-.systembar--mac .systembar-drag {
-  padding-left: 78px;
-  padding-right: var(--lj-space-5);
-}
-
 .systembar-title {
   font-weight: var(--lj-weight-medium);
   letter-spacing: 0.02em;
   opacity: 0.95;
 }
 
+/* ── Right: tools (no-drag) ── */
 .systembar-tools {
   display: flex;
   align-items: stretch;
   -webkit-app-region: no-drag;
-  padding-right: var(--lj-space-2);
+}
+
+.systembar-tools--win {
+  padding-right: var(--lj-space-5);
 }
 
 .systembar-tools .shell-tool {
@@ -172,6 +205,7 @@ onBeforeUnmount(() => {
   background: var(--lj-white-alpha-18);
 }
 
+/* ── Window controls Win/Linux (no-drag) ── */
 .systembar-controls {
   display: flex;
   align-items: stretch;

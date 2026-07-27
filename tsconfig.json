@@ -8,7 +8,7 @@
     "checkJs": false,
     "jsx": "preserve",
     "lib": ["ESNext", "DOM"],
-    "paths": { "@/*": ["./src/*"] },
+    "paths": { "@/*": ["./src/*"], "@modules/*": ["./src/modules/*"] },
     "types": ["node"],
     "skipLibCheck": true
   },

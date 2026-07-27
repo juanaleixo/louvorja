@@ -1,58 +1,136 @@
 <template>
-  <div class="about">
-    <div class="about-hero">
-      <div class="about-logo">
-        <LjLogo :size="72" />
+  <v-row>
+    <v-col cols="8">
+      <v-sheet class="pa-2">
+        <div class="about-hero">
+          <div class="about-logo">
+            <LjLogo :size="72" />
+          </div>
+          <div class="about-hero-text">
+            <h1 class="about-product">
+              Louvor
+              <b>JA</b>
+            </h1>
+            <p class="about-tagline">{{ $t("about.tagline") }}</p>
+          </div>
+        </div>
+      </v-sheet>
+      <p class="about-credits">{{ $t("about.credits") }}</p>
+    </v-col>
+    <v-col cols="4">
+      <v-sheet class="pa-2">
+        <div class="about-info">
+          <div class="about-info-row">
+            <span class="about-info-label">{{ $t("about.version") }}</span>
+            <span class="about-info-value">{{ versionLabel }}</span>
+          </div>
+          <div class="about-info-row">
+            <span class="about-info-label">{{ $t("about.build") }}</span>
+            <span class="about-info-value">
+              {{ buildInfo }}
+            </span>
+          </div>
+          <div class="about-info-row">
+            <span class="about-info-label">{{ $t("about.platform") }}</span>
+            <span class="about-info-value">{{ platformLabel }}</span>
+          </div>
+        </div>
+      </v-sheet>
+    </v-col>
+    <v-col cols="12">
+      <div class="about-actions">
+        <a
+          class="about-link"
+          href="https://www.louvorja.com.br"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-web" size="16" />
+          Website
+        </a>
+        <a
+          class="about-link"
+          href="https://app.louvorja.com.br"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-cast-variant" size="16" />
+          LouvorJA On-line
+        </a>
+        <a class="about-link" href="mailto:contato@louvorja.com.br" rel="noopener noreferrer">
+          <v-icon icon="mdi-mail" size="16" />
+          Email
+        </a>
+        <a
+          class="about-link"
+          href="https://www.facebook.com/louvorja"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-facebook" color="blue" size="16" />
+          Facebook
+        </a>
+        <a
+          class="about-link"
+          href="https://www.instagram.com/louvorja.app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-instagram" color="purple" size="16" />
+          Instagram
+        </a>
+        <a
+          class="about-link"
+          href="https://www.louvorja.com.br/whatsapp"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-whatsapp" color="green" size="16" />
+          Whatsapp
+        </a>
+        <a
+          class="about-link"
+          href="https://www.louvorja.com.br/telegram"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-send" class="mdi-rotate-315" color="blue" size="16" />
+          Telegram
+        </a>
+        <a
+          class="about-link"
+          href="https://github.com/juanaleixo/louvorja/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <v-icon icon="mdi-bug-outline" color="orange" size="16" />
+          {{ $t("shell.appmenu_items.feedback") }}
+        </a>
       </div>
-      <div class="about-hero-text">
-        <h1 class="about-product">
-          Louvor
-          <b>JA</b>
-        </h1>
-        <p class="about-tagline">{{ $t("about.tagline") }}</p>
-      </div>
-    </div>
+    </v-col>
+  </v-row>
+  <v-divider class="my-4" />
 
-    <div class="about-info">
-      <div class="about-info-row">
-        <span class="about-info-label">{{ $t("about.version") }}</span>
-        <span class="about-info-value">{{ versionLabel }}</span>
-      </div>
-      <div class="about-info-row">
-        <span class="about-info-label">{{ $t("about.build") }}</span>
-        <span class="about-info-value">
-          {{ buildInfo }}
-        </span>
-      </div>
-      <div class="about-info-row">
-        <span class="about-info-label">{{ $t("about.platform") }}</span>
-        <span class="about-info-value">{{ platformLabel }}</span>
-      </div>
-    </div>
+  <v-row>
+    <v-col cols="12">
+      <h2 class="about-section-title">{{ $t("about.contributors.title") }}</h2>
+    </v-col>
+  </v-row>
 
-    <div class="about-actions">
-      <a
-        class="about-link"
-        href="https://www.louvorja.com.br"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <v-icon icon="mdi-web" size="16" />
-        louvorja.com.br
-      </a>
-      <a
-        class="about-link"
-        href="https://github.com/juanaleixo/louvorja/issues"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <v-icon icon="mdi-bug-outline" size="16" />
-        {{ $t("shell.appmenu_items.feedback") }}
-      </a>
-    </div>
-
-    <p class="about-credits">{{ $t("about.credits") }}</p>
-  </div>
+  <template v-for="cat in contributors" :key="cat.name">
+    <v-row v-if="cat.contributors.length > 0" class="mb-2">
+      <v-col cols="12">
+        <h3 class="about-category-title">{{ $t(cat.name) }}</h3>
+      </v-col>
+    </v-row>
+    <v-row>
+      <ContributorCard
+        v-for="contrib in cat.contributors"
+        :key="contrib.name"
+        :contributor="contrib"
+      />
+    </v-row>
+  </template>
 </template>
 
 <script setup>
@@ -61,6 +139,8 @@ import packageJson from "@root/package.json";
 import Platform from "@/helpers/Platform";
 import $database from "@/helpers/Database";
 import LjLogo from "@/components/LjLogo.vue";
+import ContributorCard from "@/components/ContributorCard.vue";
+import { CONTRIBUTORS } from "@/config/contributors";
 
 const dbVersion = ref(0);
 
@@ -81,6 +161,8 @@ const platformLabel = computed(() => {
   const map = { darwin: "macOS", win32: "Windows", linux: "Linux" };
   return map[Platform.platform] || (Platform.isDesktop ? "Desktop" : "Browser");
 });
+
+const contributors = CONTRIBUTORS;
 
 async function loadDBVersion() {
   try {
@@ -176,7 +258,6 @@ onMounted(loadDBVersion);
   display: flex;
   gap: var(--lj-space-5);
   margin-bottom: var(--lj-space-7);
-  flex-wrap: wrap;
 }
 
 .about-link {
@@ -187,7 +268,7 @@ onMounted(loadDBVersion);
   color: var(--lj-link-color);
   font-size: var(--lj-text-base);
   font-weight: var(--lj-weight-medium);
-  padding: var(--lj-space-3) var(--lj-space-5);
+  padding: var(--lj-space-2) var(--lj-space-2);
   background: var(--lj-surface-bg-soft);
   border: 1px solid var(--lj-surface-border);
   border-radius: var(--lj-radius-sm);
@@ -206,5 +287,21 @@ onMounted(loadDBVersion);
   color: var(--lj-text-subtle);
   font-style: italic;
   margin: 0;
+}
+
+.about-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--lj-text, #1a1a1a);
+  margin: 0 0 8px;
+}
+
+.about-category-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--lj-text-muted, #666);
+  margin: 0 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--lj-surface-divider, #eee);
 }
 </style>

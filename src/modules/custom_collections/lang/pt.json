@@ -1,5 +1,6 @@
 {
   "title": "Coletâneas Pessoais",
+  "description": "Suas músicas e coletâneas pessoais (criadas no Editor de Músicas).",
   "tabs": {
     "songs": "Minhas Músicas",
     "collections": "Coletâneas"

@@ -45,8 +45,9 @@
 <script setup>
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const { t } = useI18n();
 const root = ref(null);

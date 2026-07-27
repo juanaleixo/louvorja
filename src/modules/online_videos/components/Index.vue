@@ -36,13 +36,13 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import { BROADCAST_TYPE } from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import $alert from "@/helpers/Alert";
 import { RibbonAction } from "@/types/Ribbon";
 import Media from "@/composables/useMedia";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 interface VideoItem {
   title: string;

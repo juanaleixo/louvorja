@@ -1,0 +1,27 @@
+{
+  "title": "Meus Vídeos Online",
+  "description": "Vídeos do YouTube salvos por você.",
+  "add": "Adicionar Vídeo",
+  "add_title": "Novo Vídeo",
+  "edit_title": "Editar Vídeo",
+  "edit": "Editar",
+  "delete": "Excluir",
+  "name": "Nome",
+  "url": "URL do YouTube",
+  "name_placeholder": "Ex: Louvor 123",
+  "url_placeholder": "https://www.youtube.com/watch?v=...",
+  "project": "Projetar",
+  "stop": "Parar Projeção",
+  "projecting": "Projetando...",
+  "list": "Lista",
+  "grid": "Miniaturas",
+  "empty": "Nenhum vídeo salvo. Clique em \"Adicionar Vídeo\" para começar.",
+  "confirm_delete": "Excluir este vídeo?",
+  "invalid_url": "URL do YouTube inválida.",
+  "save": "Salvar",
+  "cancel": "Cancelar",
+  "name_required": "Informe um nome para o vídeo.",
+  "ribbon": {
+    "title_ctx": "Meus Vídeos Online"
+  }
+}

@@ -10,6 +10,7 @@ export interface LiturgyItem {
   subitem: string
   cor: string
   duration: number
+  time?: string
   dir: string
   dir_info: string
   url: string

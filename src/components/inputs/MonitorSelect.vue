@@ -9,22 +9,23 @@
     <option value="">{{ $t("options.slides.same_window") }}</option>
     <option value="primary">
       {{ $t("options.monitors.primary") }}
-      <template v-if="primaryLabel">- {{ primaryLabel }}</template>
+      <template v-if="categorized.primaryLabel">- {{ categorized.primaryLabel }}</template>
     </option>
     <option value="secondary">
       {{ $t("options.monitors.secondary") }}
-      <template v-if="secondaryLabel">- {{ secondaryLabel }}</template>
+      <template v-if="categorized.secondaryLabel">- {{ categorized.secondaryLabel }}</template>
     </option>
-    <option v-for="d in availableDisplays" :key="d.id" :value="d.id">
+    <option v-for="d in categorized.otherDisplays" :key="String(d.id)" :value="d.id">
       {{ d.label || `Monitor ${d.id}` }}
     </option>
   </select>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, watch } from "vue";
 import { useDisplays } from "@/composables/useDisplays";
-import $userdata from "@/helpers/UserData";
+import { getCategorizedDisplays } from "@/helpers/Projection";
+import { CategorizedDisplays } from "@/types/Projection";
 
 defineProps<{
   id?: string;
@@ -37,25 +38,21 @@ defineEmits<{
 }>();
 
 const { displays } = useDisplays();
+const categorized = ref<CategorizedDisplays>({
+  primaryDisplay: undefined,
+  secondaryDisplay: undefined,
+  primaryLabel: null,
+  secondaryLabel: null,
+  otherDisplays: [],
+});
 
-const monitorPrimary = computed(() => $userdata.get("options.monitor_primary", null));
-const monitorSecondary = computed(() => $userdata.get("options.monitor_secondary", null));
-
-const availableDisplays = computed(() =>
-  displays.value.filter((d) => d.id !== monitorPrimary.value && d.id !== monitorSecondary.value)
-);
-
-const primaryDisplay = computed(() => displays.value.find((d) => d.id === monitorPrimary.value));
-const secondaryDisplay = computed(() =>
-  displays.value.find((d) => d.id === monitorSecondary.value)
-);
-const primaryLabel = computed(
-  () =>
-    primaryDisplay.value?.label || (monitorPrimary.value ? `Monitor ${monitorPrimary.value}` : null)
-);
-const secondaryLabel = computed(
-  () =>
-    secondaryDisplay.value?.label ||
-    (monitorSecondary.value ? `Monitor ${monitorSecondary.value}` : null)
+watch(
+  displays,
+  async (list) => {
+    if (list?.length) {
+      categorized.value = await getCategorizedDisplays();
+    }
+  },
+  { immediate: true }
 );
 </script>

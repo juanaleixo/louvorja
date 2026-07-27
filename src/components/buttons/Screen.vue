@@ -3,7 +3,8 @@
     <v-btn
       :size="size"
       :active="is_active"
-      :icon="iconName"
+      :icon="is_active ? ICONS.PROJECTION.START : ICONS.PROJECTION.START"
+      :color="btnColor"
       :title="$t('options.slides.open_at')"
       @click="primaryClick()"
     />
@@ -42,8 +43,49 @@
           <v-list-item-title>{{ $t("options.slides.same_window") }}</v-list-item-title>
         </v-list-item>
 
+        <!-- Tela principal -->
         <v-list-item
-          v-for="d in displays"
+          v-if="monitorPrimary !== null"
+          :active="explicit_id === monitorPrimary"
+          @click="choose(monitorPrimary)"
+        >
+          <template #prepend>
+            <v-icon size="18">
+              {{ effective_id === monitorPrimary ? "mdi-check" : "mdi-monitor" }}
+            </v-icon>
+          </template>
+          <v-list-item-title>
+            {{ $t("options.monitors.primary") }}
+            <span v-if="primaryLabel" class="text-caption ms-1">- {{ primaryLabel }}</span>
+          </v-list-item-title>
+          <v-list-item-subtitle v-if="primaryDisplay">
+            {{ primaryDisplay.bounds.width }}×{{ primaryDisplay.bounds.height }}
+          </v-list-item-subtitle>
+        </v-list-item>
+
+        <!-- Tela de retorno -->
+        <v-list-item
+          v-if="monitorSecondary !== null"
+          :active="explicit_id === monitorSecondary"
+          @click="choose(monitorSecondary)"
+        >
+          <template #prepend>
+            <v-icon size="18">
+              {{ effective_id === monitorSecondary ? "mdi-check" : "mdi-monitor" }}
+            </v-icon>
+          </template>
+          <v-list-item-title>
+            {{ $t("options.monitors.secondary") }}
+            <span v-if="secondaryLabel" class="text-caption ms-1">- {{ secondaryLabel }}</span>
+          </v-list-item-title>
+          <v-list-item-subtitle v-if="secondaryDisplay">
+            {{ secondaryDisplay.bounds.width }}×{{ secondaryDisplay.bounds.height }}
+          </v-list-item-subtitle>
+        </v-list-item>
+
+        <!-- Demais monitores -->
+        <v-list-item
+          v-for="d in otherDisplays"
           :key="d.id ?? 'web'"
           :active="explicit_id === d.id"
           @click="choose(d.id)"
@@ -85,7 +127,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AppData from "@/helpers/AppData";
 import Platform from "@/helpers/Platform";
 import Popup from "@/helpers/Popup";
-import Projection, {
+import { ICONS } from "@/config/Icons";
+import { useCategorizedDisplays } from "@/composables/useCategorizedDisplays";
+import {
   listDisplays,
   getPreferredMonitor,
   setPreferredMonitor,
@@ -108,8 +152,6 @@ const props = defineProps({
   variant: { type: String, default: "text" },
   fullscreen: { type: Boolean, default: true },
   alwaysOnTop: { type: Boolean, default: false },
-  /** Ícone ativo quando aberto / inativo quando fechado. */
-  icon: { type: String, default: "mdi-projector-screen-outline" },
 });
 
 const ROUTE_BY_MODULE = {
@@ -161,10 +203,13 @@ const fallback_label = computed(() => {
 const is_active = computed(() =>
   isProjectionMode.value ? projection_open.value : is_popup_selected.value
 );
-
-const iconName = computed(() => props.icon);
+computed(() => (is_active.value ? ICONS.PROJECTION.STOP : props.icon));
+const btnColor = computed(() => (is_active.value ? "error" : undefined));
 
 const can_identify = computed(() => Platform.isDesktop && displays.value.length > 1);
+
+const { primaryDisplay, secondaryDisplay, primaryLabel, secondaryLabel, otherDisplays } =
+  useCategorizedDisplays(displays);
 
 async function refreshDisplays() {
   if (!isProjectionMode.value) return;

@@ -4,17 +4,17 @@
       type="button"
       class="ribbon-btn ribbon-btn--main"
       :class="[`ribbon-btn--${size}`, { 'ribbon-btn--active': is_active }]"
-      :title="label"
+      :title="dynamicLabel"
       :data-testid="testid"
       @click="primaryClick"
     >
       <v-icon
-        :icon="icon"
+        :icon="dynamicIcon"
         :size="size === 'large' ? 32 : 16"
-        :style="iconColor ? { color: iconColor } : null"
+        :style="dynamicIconColor ? { color: dynamicIconColor } : null"
         class="ribbon-btn-icon"
       />
-      <span class="ribbon-btn-label">{{ label }}</span>
+      <span class="ribbon-btn-label">{{ dynamicLabel }}</span>
     </button>
 
     <v-menu location="bottom end">
@@ -54,8 +54,57 @@
           <v-list-item-title>{{ $t("options.slides.same_window") }}</v-list-item-title>
         </v-list-item>
 
+        <!-- Tela principal -->
         <v-list-item
-          v-for="d in displays"
+          v-if="categorized.primaryDisplay"
+          :active="explicit_id === categorized.primaryDisplay.id"
+          @click="choose(categorized.primaryDisplay.id)"
+        >
+          <template #prepend>
+            <v-icon size="18">
+              {{ effective_id === categorized.primaryDisplay.id ? "mdi-check" : "mdi-monitor" }}
+            </v-icon>
+          </template>
+          <v-list-item-title>
+            {{ $t("options.monitors.primary") }}
+            <span v-if="categorized.primaryLabel" class="text-caption ms-1">
+              - {{ categorized.primaryLabel }}
+            </span>
+          </v-list-item-title>
+          <v-list-item-subtitle v-if="categorized.primaryDisplay">
+            {{ categorized.primaryDisplay.bounds?.width }}×{{
+              categorized.primaryDisplay.bounds?.height
+            }}
+          </v-list-item-subtitle>
+        </v-list-item>
+
+        <!-- Tela de retorno -->
+        <v-list-item
+          v-if="categorized.secondaryDisplay"
+          :active="explicit_id === categorized.secondaryDisplay.id"
+          @click="choose(categorized.secondaryDisplay.id)"
+        >
+          <template #prepend>
+            <v-icon size="18">
+              {{ effective_id === categorized.secondaryDisplay.id ? "mdi-check" : "mdi-monitor" }}
+            </v-icon>
+          </template>
+          <v-list-item-title>
+            {{ $t("options.monitors.secondary") }}
+            <span v-if="categorized.secondaryLabel" class="text-caption ms-1">
+              - {{ categorized.secondaryLabel }}
+            </span>
+          </v-list-item-title>
+          <v-list-item-subtitle v-if="categorized.secondaryDisplay">
+            {{ categorized.secondaryDisplay.bounds?.width }}×{{
+              categorized.secondaryDisplay.bounds?.height
+            }}
+          </v-list-item-subtitle>
+        </v-list-item>
+
+        <!-- Demais monitores -->
+        <v-list-item
+          v-for="d in categorized.otherDisplays"
           :key="d.id ?? 'web'"
           :active="explicit_id === d.id"
           @click="choose(d.id)"
@@ -69,7 +118,7 @@
               ({{ $t("options.monitors.primary_short") }})
             </span>
           </v-list-item-title>
-          <v-list-item-subtitle>{{ d.bounds.width }}×{{ d.bounds.height }}</v-list-item-subtitle>
+          <v-list-item-subtitle>{{ d.bounds?.width }}×{{ d.bounds?.height }}</v-list-item-subtitle>
         </v-list-item>
 
         <v-divider class="my-1" />
@@ -92,9 +141,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import Platform from "@/helpers/Platform";
+import { ICONS } from "@/config/Icons";
 import {
   listDisplays,
   getPreferredMonitor,
@@ -105,13 +155,14 @@ import {
   close as closeProjection,
   getFallbackFeature,
   isUsingFallback,
+  getCategorizedDisplays,
 } from "@/helpers/Projection";
+import { useI18n } from "vue-i18n";
+import { CategorizedDisplays } from "@/types/Projection";
 
 const props = defineProps({
-  feature: { type: String, required: true },
-  route: { type: String, required: true },
-  icon: { type: String, default: "mdi-projector-screen-outline" },
-  label: { type: String, default: "" },
+  feature: { type: String, default: "" },
+  route: { type: String, default: "" },
   iconColor: { type: String, default: null },
   size: { type: String, default: "large" },
   testid: { type: String, default: null },
@@ -119,10 +170,29 @@ const props = defineProps({
   alwaysOnTop: { type: Boolean, default: false },
 });
 
+const { t } = useI18n();
 const projection_open = ref(false);
-const displays = ref([]);
-const effective_id = ref(null);
-const explicit_id = ref(undefined);
+const displays = ref<any[]>([]);
+const effective_id = ref<number | null>(null);
+const explicit_id = ref<number | undefined>(undefined);
+
+const categorized = ref<CategorizedDisplays>({
+  primaryDisplay: undefined,
+  secondaryDisplay: undefined,
+  primaryLabel: null,
+  secondaryLabel: null,
+  otherDisplays: [],
+});
+
+watch(
+  displays,
+  async (list) => {
+    if (list?.length) {
+      categorized.value = await getCategorizedDisplays();
+    }
+  },
+  { immediate: true }
+);
 
 const fallback_feature = computed(() => getFallbackFeature(props.feature));
 const fallback_label = computed(() => {
@@ -137,11 +207,20 @@ const fallback_label = computed(() => {
 const is_active = computed(() => projection_open.value);
 const can_identify = computed(() => Platform.isDesktop && displays.value.length > 1);
 
+const dynamicIcon = computed(() =>
+  is_active.value ? ICONS.PROJECTION.STOP : ICONS.PROJECTION.START
+);
+
+const dynamicIconColor = computed(() => (is_active.value ? "#e74c3c" : props.iconColor));
+const dynamicLabel = computed(() =>
+  is_active.value ? t("ribbon.btn.stop_projection") : t("ribbon.btn.project")
+);
+
 async function refresh() {
   displays.value = await listDisplays();
   const explicit = await getPreferredMonitor(props.feature, { explicit: true });
   const usingFallback = await isUsingFallback(props.feature);
-  explicit_id.value = usingFallback ? undefined : explicit;
+  explicit_id.value = usingFallback ? undefined : (explicit as number | undefined);
   effective_id.value = await getPreferredMonitor(props.feature);
   projection_open.value = await isProjectionOpen(props.feature);
 }
@@ -161,8 +240,8 @@ async function primaryClick() {
   await refresh();
 }
 
-async function choose(displayId) {
-  const toSave = displayId === undefined ? null : displayId;
+async function choose(displayId: number | string | null | undefined) {
+  const toSave = displayId === undefined ? null : (displayId as number | null);
   await setPreferredMonitor(props.feature, toSave);
   await refresh();
   if (effective_id.value == null) {
@@ -189,7 +268,7 @@ async function identify() {
   await identifyDisplays(5000);
 }
 
-let pollTimer = null;
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
 onMounted(async () => {
   await refresh();
   // Defensiva: se onMounted disparar mais de uma vez (HMR / v-if remount /

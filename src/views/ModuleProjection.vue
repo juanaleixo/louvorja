@@ -1,4 +1,5 @@
 <template>
+  <OverlayRenderer />
   <div
     ref="root"
     class="module-projection"
@@ -67,6 +68,8 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import { ModuleEnum } from "@/enums/ModuleEnum";
 
 const route = useRoute();
 
@@ -124,7 +127,12 @@ const border_spacing_px = computed(() => pcToPx(border_spacing.value));
 // Módulos com valor que muda continuamente (clock, stopwatch) — desabilita
 // a transição fade pra não "piscar" a cada segundo. A `key` fica estável
 // (apenas troca quando active passa para true/false).
-const LIVE_MODULES = new Set(["clock", "stopwatch", "timer"]);
+const LIVE_MODULES = new Set([
+  ModuleEnum.CLOCK,
+  ModuleEnum.STOPWATCH,
+  ModuleEnum.TIMER,
+  ModuleEnum.TIMER_WORSHIP,
+]);
 const isLive = computed(() => LIVE_MODULES.has(moduleId.value));
 const transitionKey = computed(() =>
   isLive.value ? `live:${active.value}` : `${text.value}|${extra.value}`

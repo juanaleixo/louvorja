@@ -117,14 +117,15 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from "vue";
-import manifest from "../manifest.json";
+import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import FormatPanel from "@/components/FormatPanel.vue";
-import $broadcast, { BROADCAST_TYPE } from "@/helpers/Broadcast";
+import $broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const { restoreFormat, show_format } = useModuleFormat("message_board", manifest);
 

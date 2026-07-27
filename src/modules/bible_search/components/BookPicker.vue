@@ -2,11 +2,42 @@
   <div class="bible-search-filter">
     <div class="bible-search-filter-row">
       <label class="book-picker-label">{{ t("modules.bible_search.ribbon.filter.version") }}</label>
-      <select v-model="versionId" class="book-picker-version-select" @change="onVersionChange">
-        <option v-for="v in versions" :key="v.id_bible_version" :value="v.id_bible_version">
-          {{ v.abbreviation }} - {{ v.name }}
-        </option>
-      </select>
+      <v-select
+        v-model="versionId"
+        :items="versions"
+        item-title="name"
+        item-value="id_bible_version"
+        density="compact"
+        variant="outlined"
+        hide-details
+        class="book-picker-version-vselect"
+        @update:model-value="onVersionChange"
+      >
+        <template #item="{ props, item }">
+          <v-list-item v-bind="props">
+            <template #prepend>
+              <v-icon
+                v-if="!downloadedVersions.has(item.id_bible_version)"
+                icon="mdi-download"
+                size="small"
+                class="mr-2"
+              />
+            </template>
+            <v-list-item-title>{{ item.abbreviation }} - {{ item.name }}</v-list-item-title>
+          </v-list-item>
+        </template>
+        <template #selection="{ item }">
+          <div class="d-flex align-center overflow-hidden">
+            <v-icon
+              v-if="!downloadedVersions.has(item.id_bible_version)"
+              icon="mdi-download"
+              size="x-small"
+              class="mr-1"
+            />
+            <span class="text-truncate">{{ item.abbreviation }} - {{ item.name }}</span>
+          </div>
+        </template>
+      </v-select>
     </div>
     <div ref="triggerRef" class="bible-search-filter-row">
       <label class="book-picker-label">{{ t("modules.bible_search.ribbon.filter.books") }}</label>
@@ -75,6 +106,7 @@ import { ref, computed, reactive, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import type { BibleVersion, BibleBook } from "@/types/Bible";
 import { BOOKS_OT, BOOKS_NT } from "@/constants/Bible";
 
@@ -90,6 +122,11 @@ const popoverRef = ref<HTMLElement | null>(null);
 const allBooks = ref<BibleBook[]>([]);
 const versions = ref<BibleVersion[]>([]);
 const versionId = ref<number | null>(null);
+
+const downloadedVersions = computed(() => {
+  const ids: number[] = $userdata.get(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, []) || [];
+  return new Set(ids);
+});
 
 const sortedOt = computed(() => allBooks.value.filter((b) => b.id_bible_book <= 39));
 const sortedNt = computed(() => allBooks.value.filter((b) => b.id_bible_book > 39));
@@ -239,6 +276,42 @@ onUnmounted(() => document.removeEventListener("click", onDocClick, true));
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: rgba(var(--lj-on-surface-ch), 0.55);
+}
+.book-picker-version-vselect {
+  height: 24px;
+}
+.book-picker-version-vselect :deep(.v-field) {
+  --v-field-padding-start: 6px;
+  --v-field-padding-end: 6px;
+  border-radius: 3px;
+  background: var(--lj-surface-bg);
+}
+.book-picker-version-vselect :deep(.v-field__input) {
+  min-height: 24px;
+  height: 24px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 11px;
+  color: var(--lj-text);
+}
+.book-picker-version-vselect :deep(.v-field--focused .v-field__outline) {
+  --v-field-border-opacity: 1;
+  color: var(--lj-navy);
+}
+.book-picker-version-vselect :deep(.v-field__outline) {
+  --v-field-border-opacity: 0.4;
+}
+.book-picker-version-vselect :deep(.v-input__details) {
+  display: none;
+}
+.book-picker-version-vselect :deep(.v-field__append-inner) {
+  padding-top: 0;
+  align-items: center;
+}
+.book-picker-version-vselect :deep(.v-select__selection-text) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .book-picker-version-select {
   height: 24px;
