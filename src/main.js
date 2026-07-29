@@ -31,6 +31,12 @@ import Media from "@/helpers/Media";
 import Alert from "@/helpers/Alert";
 import Popup from "@/helpers/Popup";
 import Database from "@/helpers/Database";
+import Screen from "@/helpers/Screen";
+import Liturgy from "@/helpers/Liturgy";
+import Sermon from "@/helpers/Sermon";
+import Announcement from "@/helpers/Announcement";
+import Egw from "@/helpers/Egw";
+import Flashcards from "@/helpers/Flashcards";
 app.mixin({
   beforeCreate() {
     this.$userdata = UserData;
@@ -45,6 +51,12 @@ app.mixin({
     this.$alert = Alert;
     this.$popup = Popup;
     this.$database = Database;
+    this.$screen = Screen;
+    this.$liturgy = Liturgy;
+    this.$sermon = Sermon;
+    this.$announcement = Announcement;
+    this.$egw = Egw;
+    this.$flashcards = Flashcards;
   },
 });
 

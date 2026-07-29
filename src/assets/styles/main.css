@@ -11,6 +11,10 @@ body {
     overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
+    /* Sem "puxar para atualizar" nem bounce de scroll — comportamento de
+       app instalado, não de aba de navegador. */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* SCROLL */
@@ -75,4 +79,39 @@ body {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+}
+
+/* Fundo de trabalho: gradiente sutil com as cores oficiais da igreja */
+.bg-main {
+    background-image:
+        radial-gradient(at 15% 0%, rgba(0, 51, 102, 0.10) 0px, transparent 55%),
+        radial-gradient(at 85% 15%, rgba(62, 131, 145, 0.10) 0px, transparent 55%),
+        radial-gradient(at 50% 100%, rgba(75, 32, 127, 0.06) 0px, transparent 60%);
+    background-attachment: fixed;
+}
+
+/* Áreas seguras (notch/home indicator) quando instalado como PWA no iOS */
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* Alvos de toque maiores em telas sensíveis ao toque (celular/tablet) */
+@media (pointer: coarse) {
+    .v-btn--icon.v-btn--density-compact {
+        --v-btn-height: 40px;
+    }
+
+    .v-btn--icon.v-btn--density-default {
+        --v-btn-height: 44px;
+    }
+}
+
+.v-theme--dark .bg-main {
+    background-image:
+        radial-gradient(at 15% 0%, rgba(0, 51, 102, 0.35) 0px, transparent 55%),
+        radial-gradient(at 85% 15%, rgba(62, 131, 145, 0.18) 0px, transparent 55%),
+        radial-gradient(at 50% 100%, rgba(75, 32, 127, 0.16) 0px, transparent 60%);
 }

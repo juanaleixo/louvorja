@@ -3,7 +3,7 @@
     <template v-slot:prepend>
       <v-app-bar-nav-icon @click="$appdata.toogle('menu.show')" />
     </template>
-    <v-app-bar-title>{{ $t("app.name") }}</v-app-bar-title>
+    <v-app-bar-title class="brand-font lj-app-title">{{ $t("app.name") }}</v-app-bar-title>
     <v-spacer />
 
     <v-bottom-sheet v-if="remote">
@@ -35,23 +35,33 @@
 
     <v-divider v-if="remote" vertical />
 
-    <v-btn
-      :icon="layout == 'apps' ? 'mdi-tab' : 'mdi-apps'"
-      @click="changeLayout()"
-    />
+    <!-- Escolher tela de projeção e alternar layout só fazem sentido no PC
+         que está de fato rodando a projeção — em celular/tablet só poluem o cabeçalho. -->
+    <template v-if="!isMobile">
+      <ScreenSelector />
+      <v-btn
+        :icon="layout == 'apps' ? 'mdi-tab' : 'mdi-apps'"
+        @click="changeLayout()"
+      />
+    </template>
     <LanguageSelector />
   </v-app-bar>
 </template>
 
 <script>
 import LanguageSelector from "@/components/LanguageSelector.vue";
+import ScreenSelector from "@/components/ScreenSelector.vue";
 
 export default {
   name: "HeaderLayout",
   components: {
     LanguageSelector,
+    ScreenSelector,
   },
   computed: {
+    isMobile() {
+      return this.$vuetify.display.width <= 600;
+    },
     layout() {
       return this.$userdata.get("layout");
     },
@@ -112,5 +122,18 @@ export default {
 #header-bar {
   position: initial !important;
   flex: 0 !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+:deep(#header-bar .v-toolbar__content) {
+  background: rgba(var(--v-theme-primary), 0.92);
+}
+
+.lj-app-title {
+  letter-spacing: 0.02em;
 }
 </style>
