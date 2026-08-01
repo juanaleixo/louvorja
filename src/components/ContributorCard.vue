@@ -1,6 +1,6 @@
 <template>
   <v-col cols="12" sm="6" md="4" lg="3">
-    <v-card class="contributor-card" variant="outlined" :ripple="false">
+    <v-card class="contributor-card" :ripple="false">
       <div class="contributor-card-body">
         <v-avatar size="72" class="contributor-avatar">
           <v-img
@@ -60,8 +60,38 @@
           rel="noopener noreferrer"
         />
         <v-btn
+          v-if="contributor.x"
+          :href="`https://x.com/${contributor.x}`"
+          icon="mdi-twitter"
+          variant="text"
+          size="small"
+          density="comfortable"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+        <v-btn
           v-if="contributor.website"
           :href="contributor.website"
+          icon="mdi-web"
+          variant="text"
+          size="small"
+          density="comfortable"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+        <v-btn
+          v-if="contributor.whatsapp"
+          :href="`https://wa.me/${contributor.whatsapp}`"
+          icon="mdi-whatsapp"
+          variant="text"
+          size="small"
+          density="comfortable"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+        <v-btn
+          v-if="contributor.website2"
+          :href="contributor.website2"
           icon="mdi-web"
           variant="text"
           size="small"
