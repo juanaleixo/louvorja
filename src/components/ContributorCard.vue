@@ -14,7 +14,28 @@
         <div class="contributor-info">
           <div class="contributor-name">{{ contributor.name }}</div>
           <div v-if="contributor.description" class="contributor-description">
-            {{ contributor.description }}
+            <template v-if="isRoleContribuitor(contributor.description)">
+              <v-tooltip
+                v-for="role in contributor.description"
+                :key="role.name"
+                location="bottom"
+                :open-delay="300"
+              >
+                <template #activator="{ props: tooltipProps }">
+                  <v-icon
+                    v-bind="tooltipProps"
+                    :icon="role.icon"
+                    :color="role.color"
+                    size="18"
+                    class="ma-1"
+                  />
+                </template>
+                {{ role.name }}
+              </v-tooltip>
+            </template>
+            <template v-else>
+              {{ contributor.description }}
+            </template>
           </div>
         </div>
       </div>
@@ -116,7 +137,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Contributors } from "@/config/contributors";
+import { Contributors, RoleContribuitor } from "@/config/contributors";
 
 const props = defineProps<{
   contributor: Contributors;
@@ -124,6 +145,10 @@ const props = defineProps<{
 
 const avatarFallbackIndex = ref(0);
 const showFallbackAvatar = ref(false);
+
+function isRoleContribuitor(d: RoleContribuitor[] | string): d is RoleContribuitor[] {
+  return Array.isArray(d) && d.length > 0 && typeof d[0] === "object";
+}
 
 const avatarSources = computed<string[]>(() => {
   const c = props.contributor;

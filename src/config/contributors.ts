@@ -1,6 +1,44 @@
+import { ICONS } from "@/config/Icons";
+
+export interface RoleContribuitor {
+  name: RoleContribuitorEnum;
+  icon: string;
+  color: string;
+}
+
+enum RoleContribuitorEnum {
+  web = "Web",
+  electron = "Electron",
+  delphi = "Delphi",
+  api = "API",
+}
+
+const ROLE_CONTRIBUTOR: Record<RoleContribuitorEnum, RoleContribuitor> = {
+  [RoleContribuitorEnum.web]: {
+    name: RoleContribuitorEnum.web,
+    icon: ICONS.PROJETOS.WEB,
+    color: "#1673c8",
+  },
+  [RoleContribuitorEnum.electron]: {
+    name: RoleContribuitorEnum.electron,
+    icon: ICONS.PROJETOS.ELECTRON,
+    color: "#0fb0d3",
+  },
+  [RoleContribuitorEnum.delphi]: {
+    name: RoleContribuitorEnum.delphi,
+    icon: ICONS.PROJETOS.DELPHI,
+    color: "#e53935",
+  },
+  [RoleContribuitorEnum.api]: {
+    name: RoleContribuitorEnum.api,
+    icon: ICONS.PROJETOS.API,
+    color: "#43a047",
+  },
+};
+
 export interface Contributors {
   name: string;
-  description?: string;
+  description?: RoleContribuitor[] | string;
   image?: string;
 
   email?: string;
@@ -76,6 +114,7 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
     contributors: [
       {
         name: "Allan Anjos",
+        description: [ROLE_CONTRIBUTOR[RoleContribuitorEnum.web]],
         website: "https://allananjos.dev.br",
         github: "anjosdevpython",
         linkedin: "allanfelipe-ti",
@@ -83,22 +122,32 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       },
       {
         name: "Diego Menezes",
+        description: [
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.web],
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.electron],
+        ],
         website: "https://79team.com",
         github: "diego-menezes",
         linkedin: "menezes-diego",
       },
       {
         name: "Gabriel Kramer Mota",
+        description: [ROLE_CONTRIBUTOR[RoleContribuitorEnum.web]],
         email: "kramermota55@gmail.com",
         github: "gabrielkramermota",
       },
       {
         name: "Henry Ávila",
+        description: [ROLE_CONTRIBUTOR[RoleContribuitorEnum.delphi]],
         github: "henryavila",
         website: "https://henryavila.com",
       },
       {
         name: "Juan Aleixo",
+        description: [
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.web],
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.electron],
+        ],
         github: "juanaleixo",
         linkedin: "juanaleixo",
       },
@@ -110,6 +159,10 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       },
       {
         name: "Rafael Dias Zendron",
+        description: [
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.web],
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.api],
+        ],
         email: "rafael.zendron22@gmail.com",
         website: "https://portfoliodev-blush-pi.vercel.app",
         github: "rafaumeu",
@@ -118,6 +171,10 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       },
       {
         name: "Savio Gabriel Santos",
+        description: [
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.web],
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.delphi],
+        ],
         email: "sg.ferreirasantos@gmail.com",
         website: "https://savio.dev.br/?id=1",
         github: "santos-savio",
@@ -126,6 +183,7 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       },
       {
         name: "Tiago Lima",
+        description: [ROLE_CONTRIBUTOR[RoleContribuitorEnum.web]],
         email: "tiagolimadbvs7@gmail.com",
         website: "https://tiagolimadev.netlify.app/",
         github: "tiagoadv7",
@@ -135,26 +193,36 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       },
       {
         name: "Victor Hugo Ventura Rodrigues",
+        description: [
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.web],
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.delphi],
+        ],
         email: "victor_hugo_ventura@hotmail.com",
         github: "corugo",
         facebook: "victor.hugo.ventura",
       },
       {
         name: "Vitório Augusto Cavalheiro",
+        description: [ROLE_CONTRIBUTOR[RoleContribuitorEnum.web]],
         email: "victor_hugo_ventura@hotmail.com",
         website: "https://vitorio-a-cavalheiro.vercel.app",
+        github: "oVitorio-ac",
         linkedin: "vitorio-ac",
       },
     ],
   },
 
   {
-    name: "Assets",
+    name: "Assets / UI",
     contributors: [
       {
         name: "Blog Daniel Gonçalves",
         description: "Áudio Escola Sabatina",
         website: "http://daniellocutor.com.br",
+      },
+      {
+        name: "Elomar",
+        description: "Remasterização e UI",
       },
     ],
   },
