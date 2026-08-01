@@ -223,6 +223,7 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       {
         name: "Elomar",
         description: "Remasterização e UI",
+        github: "ElomarXA",
       },
     ],
   },
