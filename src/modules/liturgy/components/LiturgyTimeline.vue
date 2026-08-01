@@ -24,66 +24,86 @@
         class="liturgy-tl-list"
         :animation="150"
         ghost-class="tl-card--ghost"
+        @start="onDragStart"
+        @end="onDragEnd"
+        @move="onDragMove"
         @update:model-value="onReorder"
+        @change="onDragChange"
       >
         <template #item="{ element, index }">
           <div
             :class="[
-              element.tipo === 'categoria' ? 'tl-item-cat' : 'tl-item',
-              { 'tl-item--checked': element.tipo !== 'categoria' && isChecked(element) },
+              element.tipo === LiturgyItemTypeEnum.BLOCO ? 'tl-item-bloco' : 'tl-item',
+              {
+                'tl-item--checked':
+                  element.tipo !== LiturgyItemTypeEnum.BLOCO && isChecked(element),
+                'tl-item--in-bloco': element.blocoId,
+                'tl-item--bloco-collapsed': element.blocoId && collapsedBlocos.has(element.blocoId),
+                'tl-item--dragging-with-bloco':
+                  draggingBlocoId && element.blocoId === draggingBlocoId,
+              },
             ]"
             :data-item-id="element.id"
+            :style="element.blocoId ? { '--bloco-color': getBlocoColor(element.blocoId) } : {}"
           >
-            <!-- Category -->
+            <!--            // Item BLoco-->
             <div
-              v-if="element.tipo === 'categoria'"
-              class="tl-category"
+              v-if="element.tipo === LiturgyItemTypeEnum.BLOCO"
+              class="tl-bloco"
+              :class="{ 'tl-bloco--collapsed': collapsedBlocos.has(element.id) }"
               :style="{ '--cat-color': element.cor || defaultColor }"
               data-handle="true"
             >
-              <span class="tl-cat-line" />
-              <span class="tl-category-text">
-                {{ element.item || t("placeholders.category") }}
+              <span class="tl-bloco-line" />
+              <span class="tl-bloco-text">
+                <span v-if="element.time" class="tl-bloco-time">{{ element.time }}</span>
+                {{ element.item || t("placeholders.bloco") }}
                 <button
                   v-if="!locked"
-                  class="tl-cat-action"
+                  class="tl-bloco-action"
                   :title="t('actions.edit')"
                   @click.stop="openItemDialog(index)"
                 >
                   <v-icon icon="mdi-pencil" size="14" />
                 </button>
+                <button
+                  class="tl-bloco-action tl-bloco-collapse"
+                  :title="collapsedBlocos.has(element.id) ? 'Expandir' : 'Colapsar'"
+                  @click.stop="toggleBlocoCollapse(element.id)"
+                >
+                  <v-icon
+                    :icon="collapsedBlocos.has(element.id) ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+                    size="16"
+                  />
+                </button>
               </span>
-              <span class="tl-cat-line" />
+              <span class="tl-bloco-line" />
             </div>
 
-            <!-- Regular item -->
             <template v-else>
-              <label class="tl-check" @click.stop>
-                <input
-                  type="checkbox"
-                  :checked="isChecked(element)"
-                  @change="toggleChecked(element)"
-                />
-                <span class="tl-check-mark"><v-icon icon="mdi-check" size="14" /></span>
-              </label>
-              <div class="tl-track">
-                <Icon :icon="iconForItem(element)" size="40" :color="element.cor || defaultColor" />
-                <div class="tl-line" />
-              </div>
-              <div>
-                <div class="tl-time">{{ element.time || "-:-" }}</div>
-                <div class="tl-duration">{{ element.duration + " min" || "-" }}</div>
-              </div>
-              <div class="tl-card">
+              <v-expand-transition>
+                <div
+                  v-if="!element.blocoId || !collapsedBlocos.has(element.blocoId)"
+                  class="tl-item-meta"
+                >
+                  <div class="tl-time">{{ element.time || "-:-" }}</div>
+                  <div class="tl-line" />
+                </div>
+              </v-expand-transition>
+              <div
+                class="tl-card"
+                :class="{
+                  'tl-card--hidden': element.blocoId && collapsedBlocos.has(element.blocoId),
+                }"
+              >
                 <LiturgyItemComponent
                   :element="element"
                   :index="index"
                   :locked="locked"
                   :default-color="defaultColor"
-                  :is-checked="isChecked"
+                  :checked="isChecked(element)"
                   :icon-for="iconForItem"
                   :subtitle-for="subtitleFor"
-                  :hide-checkbox="true"
                   @edit="openItemDialog"
                   @clone="cloneItem"
                   @confirm-remove="confirmRemove"
@@ -103,13 +123,14 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import draggable from "vuedraggable";
 import LiturgyItemComponent from "./LiturgyItem.vue";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";
-import Icon from "@/components/Icon.vue";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -124,7 +145,7 @@ function _t(key: string, locale: string): string {
   return typeof cur === "string" ? cur : key;
 }
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     items: LiturgyItem[];
     locked?: boolean;
@@ -134,6 +155,7 @@ withDefaults(
     iconForItem: (item: LiturgyItem) => string;
     subtitleFor: (item: LiturgyItem) => string;
     onReorder: (items: LiturgyItem[]) => void;
+    onBlocoAssign?: (itemId: string) => void;
     openItemDialog: (index?: number) => void;
     cloneItem: (index: number) => void;
     confirmRemove: (index?: number) => void;
@@ -152,6 +174,56 @@ withDefaults(
 
 const { locale } = useI18n();
 const t = (key: string) => _t(key, locale.value);
+
+const draggingBlocoId = ref<string | null>(null);
+const collapsedBlocos = ref(new Set<string>());
+
+function toggleBlocoCollapse(blocoId: string) {
+  const s = collapsedBlocos.value;
+  if (s.has(blocoId)) s.delete(blocoId);
+  else s.add(blocoId);
+  collapsedBlocos.value = new Set(s);
+}
+
+function getBlocoColor(blocoId: string): string {
+  const bloco = props.items.find((i) => i.tipo === LiturgyItemTypeEnum.BLOCO && i.id === blocoId);
+  return bloco?.cor || props.defaultColor;
+}
+
+function onDragStart(evt: { item: HTMLElement; oldIndex: number }) {
+  const element = props.items[evt.oldIndex];
+  if (!element || element.tipo !== LiturgyItemTypeEnum.BLOCO) return;
+  draggingBlocoId.value = element.id;
+}
+
+function onDragEnd() {
+  draggingBlocoId.value = null;
+}
+
+function onDragChange(evt: {
+  moved?: { element: LiturgyItem; oldIndex: number; newIndex: number };
+}) {
+  const item = evt.moved?.element;
+  if (item?.id) props.onBlocoAssign?.(item.id);
+}
+
+function onDragMove(evt: Record<string, unknown>): boolean | void {
+  const el: HTMLElement | null = (evt.dragged || evt.item) as HTMLElement | null;
+  const rel: HTMLElement | null = evt.related as HTMLElement | null;
+  if (!el || !rel) return;
+
+  const draggedId = el.getAttribute("data-item-id") || el.dataset?.itemId;
+  const relatedId = rel.getAttribute("data-item-id") || rel.dataset?.itemId;
+  if (!draggedId || !relatedId) return;
+
+  const dragged = props.items.find((i) => i.id === draggedId);
+  const related = props.items.find((i) => i.id === relatedId);
+  if (!dragged || !related) return;
+
+  if (dragged.tipo === LiturgyItemTypeEnum.BLOCO && related.blocoId) {
+    return false;
+  }
+}
 </script>
 
 <style scoped>
@@ -203,63 +275,53 @@ const t = (key: string) => _t(key, locale.value);
 /* ── Item wrapper ── */
 .tl-item {
   display: flex;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 0;
   position: relative;
 }
-.tl-item-cat {
+.tl-item-bloco {
   position: relative;
 }
 
-/* ── Track (dot + line) ── */
-.tl-track {
+/* ── Item nested inside a Bloco ── */
+.tl-item--in-bloco {
+  margin-left: 24px;
+  padding: 4px 0 4px 12px;
+  background: color-mix(in srgb, var(--bloco-color, var(--lj-surface-border)) 6%, transparent);
+  border-radius: 6px;
+}
+.tl-item--bloco-collapsed {
+  padding: 0 !important;
+  border-left: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ── Timeline meta (time + dot + line) ── */
+.tl-item-meta {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 20px;
+  align-self: center;
+  width: 64px;
   flex-shrink: 0;
-  padding-top: 6px;
-  padding-left: 20px;
-}
-.tl-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2.5px solid;
-  background: var(--lj-surface-bg);
   z-index: 1;
-  flex-shrink: 0;
+}
+.tl-time {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--lj-navy);
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1;
 }
 .tl-line {
   width: 2px;
   flex: 1;
   background: var(--lj-divider);
-  min-height: calc(100% - 14px);
+  min-height: 12px;
 }
-
-/* ── Time label ── */
-.tl-time {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--lj-navy);
-  white-space: nowrap;
-  min-width: 44px;
-  text-align: center;
-  padding-top: 10px;
-  padding-left: 20px;
-  flex-shrink: 0;
-}
-.tl-duration {
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--lj-navy);
-  white-space: nowrap;
-  min-width: 44px;
-  text-align: right;
-  padding-top: 5px;
-  flex-shrink: 0;
-}
-.tl-item--checked .tl-time,
-.tl-item--checked .tl-duration {
+.tl-item--checked .tl-time {
   text-decoration: line-through;
   opacity: 0.6;
 }
@@ -268,32 +330,34 @@ const t = (key: string) => _t(key, locale.value);
 .tl-card {
   flex: 1;
   min-width: 0;
-  padding: 4px 0;
+  padding: 4px 10px;
 }
 
-/* ── Category (divider style) ── */
-.tl-category {
+/* ── Bloco (divider style) ── */
+.tl-bloco {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 16px 0;
-  padding: 0 4px;
+  margin: 16px 0 4px 0;
+  padding: 6px 12px;
   cursor: grab;
   user-select: none;
+  background: color-mix(in srgb, var(--cat-color, var(--lj-divider)) 10%, transparent);
+  border-radius: 8px;
 }
-.tl-category:active {
+.tl-bloco:active {
   cursor: grabbing;
 }
-.tl-cat-line {
+.tl-bloco-line {
   flex: 1;
   height: 3px;
   background: var(--cat-color, var(--lj-divider));
   opacity: 0.7;
 }
-.tl-category-text {
+.tl-bloco-text {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   font-size: 15px;
   font-weight: 700;
   color: var(--cat-color, var(--lj-text));
@@ -301,7 +365,19 @@ const t = (key: string) => _t(key, locale.value);
   letter-spacing: 0.08em;
   white-space: nowrap;
 }
-.tl-cat-action {
+.tl-bloco-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lj-orange);
+  background: var(--lj-orange-soft);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.tl-bloco-action {
   opacity: 0;
   transition: opacity 0.15s;
   border: none;
@@ -316,45 +392,11 @@ const t = (key: string) => _t(key, locale.value);
   border-radius: 3px;
   flex-shrink: 0;
 }
-.tl-category:hover .tl-cat-action {
+.tl-bloco:hover .tl-bloco-action {
   opacity: 1;
 }
-.tl-cat-action:hover {
+.tl-bloco-action:hover {
   background: rgba(var(--lj-on-surface-ch), 0.1);
-}
-
-/* ── Checkbox ── */
-.tl-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  flex-shrink: 0;
-  cursor: pointer;
-  position: relative;
-}
-.tl-check input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 1;
-}
-.tl-check-mark {
-  width: 26px;
-  height: 26px;
-  border: 1.5px solid rgba(var(--v-border-color), 0.55);
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-  background: transparent;
-}
-.tl-check input:checked ~ .tl-check-mark {
-  border-color: var(--lj-navy);
-  background: var(--lj-navy);
-  color: white;
 }
 
 /* ── Ghost ── */
@@ -394,5 +436,28 @@ const t = (key: string) => _t(key, locale.value);
 }
 .mt-4 {
   margin-top: 16px;
+}
+
+/* ── Bloco drag ghost feedback ── */
+.tl-item--dragging-with-bloco {
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* ── Bloco collapse ── */
+.tl-card--hidden {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+}
+.tl-bloco--collapsed {
+  margin-bottom: 12px;
 }
 </style>

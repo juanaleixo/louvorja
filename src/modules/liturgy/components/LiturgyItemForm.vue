@@ -29,7 +29,7 @@
           >
             <option :value="LiturgyItemTypeEnum.ANOTACAO">{{ t("types.anotacao") }}</option>
             <option :value="LiturgyItemTypeEnum.ARQUIVO">{{ t("types.arquivo") }}</option>
-            <option :value="LiturgyItemTypeEnum.CATEGORIA">{{ t("types.categoria") }}</option>
+            <option :value="LiturgyItemTypeEnum.BLOCO">{{ t("types.bloco") }}</option>
             <option :value="LiturgyItemTypeEnum.ITENS_AGENDADOS">
               {{ t("types.itens-agendados") }}
             </option>
@@ -87,7 +87,20 @@
 
         <div class="lit-field lit-field--medium">
           <label>{{ t("inputs.time") }}:</label>
+          <v-tooltip v-if="form.blocoId" location="top" :open-delay="300">
+            <template #activator="{ props: tipProps }">
+              <input
+                :value="form.time"
+                type="time"
+                class="lit-input lit-input--small"
+                disabled
+                v-bind="tipProps"
+              />
+            </template>
+            {{ t("inputs.time_managed_by_bloco") }}
+          </v-tooltip>
           <input
+            v-else
             :value="form.time"
             type="time"
             class="lit-input lit-input--small"
@@ -104,6 +117,25 @@
             class="lit-input lit-input--small"
             @input="setFormField('duration', inputNum($event))"
           />
+        </div>
+      </div>
+
+      <div
+        v-if="form.tipo !== LiturgyItemTypeEnum.BLOCO && blocoItems && blocoItems.length > 0"
+        class="lit-dialog-header"
+      >
+        <div class="lit-field lit-field--grow">
+          <label>{{ t("inputs.bloco_select") }}:</label>
+          <select
+            :value="form.blocoId || ''"
+            class="lit-select"
+            @change="setFormField('blocoId', inputVal($event))"
+          >
+            <option value="">{{ t("inputs.bloco_pick") }}</option>
+            <option v-for="b in blocoItems" :key="b.id" :value="b.id">
+              {{ b.item }} {{ b.time ? "— " + b.time : "" }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -202,6 +234,18 @@
             </button>
           </div>
         </div>
+        <div v-if="!form.escolha && form.musica > 0" class="lit-field lit-field--inline mt-2">
+          <label class="lit-label-inline">{{ t("inputs.music_version_label") }}:</label>
+          <select
+            :value="form.subtipo"
+            class="lit-select lit-select--full"
+            @change="onVersionChange($event)"
+          >
+            <option v-for="opt in availableVersions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <!-- Painel ITENS AGENDADOS -->
@@ -258,10 +302,10 @@
         </div>
       </div>
 
-      <!-- CATEGORIA -->
-      <div v-if="form.tipo === 'categoria'" class="lit-panel">
-        <div class="lit-panel-title">{{ t("types.categoria") }}</div>
-        <div class="lit-hint">{{ t("inputs.category_hint") }}</div>
+      <!-- BLOCO -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.BLOCO" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.bloco") }}</div>
+        <div class="lit-hint">{{ t("inputs.bloco_hint") }}</div>
       </div>
 
       <LiturgyMusicSearch v-model="searchOpen" :musics-list="musicsList" @pick="onMusicPicked" />
@@ -293,11 +337,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import Liturgy from "@/helpers/Liturgy";
+import DateTime from "@/helpers/DateTime";
 import LiturgyMusicSearch from "./LiturgyMusicSearch.vue";
 import type { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
@@ -323,6 +368,7 @@ const props = withDefaults(
     colors?: string[];
     musicsList?: LiturgyMusicItem[];
     scheduledCategories?: ScheduledCategory[];
+    blocoItems?: LiturgyItem[];
     videosList?: { id: string; name: string; url: string }[];
     setFormField: (key: string, value: unknown) => void;
     onTypeChange: () => void;
@@ -341,6 +387,7 @@ const props = withDefaults(
     colors: () => [],
     musicsList: () => [],
     scheduledCategories: () => [],
+    blocoItems: () => [],
     videosList: () => [],
   }
 );
@@ -349,6 +396,49 @@ defineEmits<{ "update:modelValue": [value: boolean] }>();
 
 const { locale } = useI18n();
 const t = (key: string) => _t(key, locale.value);
+
+watch(
+  () => (props.form as LiturgyItem).musica,
+  (newVal, oldVal) => {
+    if (newVal > 0 && newVal !== oldVal && !(props.form as LiturgyItem).escolha) {
+      const sub = (props.form as LiturgyItem).subtipo;
+      const hasInstr = hasInstrumental(Number(newVal));
+      if (!sub || sub === "ja" || sub === "div") {
+        props.setFormField("subtipo", "sung");
+      } else if ((sub === "pb" || sub === "audio_pb") && !hasInstr) {
+        props.setFormField("subtipo", "sung");
+      }
+      updateDurationForVersion((props.form as LiturgyItem).subtipo || "sung");
+    }
+  }
+);
+
+interface VersionOption {
+  value: string;
+  label: string;
+}
+
+const availableVersions = computed((): VersionOption[] => {
+  const base: VersionOption[] = [
+    { value: "sung", label: t("inputs.music_version_sung") },
+    { value: "lyric", label: t("inputs.music_version_lyric") },
+    { value: "audio", label: t("inputs.music_version_audio-only") },
+  ];
+
+  const musicId = (props.form as LiturgyItem).musica;
+  if (musicId > 0 && hasInstrumental(Number(musicId))) {
+    base.splice(1, 0, { value: "pb", label: t("inputs.music_version_pb") });
+    base.push({ value: "audio_pb", label: t("inputs.music_version_playback-only") });
+  }
+
+  return base;
+});
+
+function hasInstrumental(musicId: number): boolean {
+  const m = props.musicsList?.find((x) => Number(x.id_music) === musicId);
+  if (!m) return false;
+  return !!(m as Record<string, unknown>).has_instrumental_music;
+}
 
 function inputVal(e: Event): string {
   return (e.target as HTMLInputElement).value;
@@ -360,11 +450,21 @@ function inputNum(e: Event): number {
 const presetsOpen = ref(false);
 const searchOpen = ref(false);
 
-function onMusicPicked(music: LiturgyMusicItem) {
-  const id = Number(music.id_music);
-  if (!Number.isFinite(id)) return;
-  props.setFormField("musica", id);
-  props.onMusicChange();
+function updateDurationForVersion(version: string, _music?: LiturgyMusicItem) {
+  if (version === "lyric") return;
+  const musicId = (props.form as LiturgyItem).musica;
+  if (musicId <= 0) return;
+  const m = _music || props.musicsList?.find((x) => Number(x.id_music) === musicId);
+  if (!m) return;
+  const raw = m as Record<string, unknown>;
+  const useInstrumental = version === "pb" || version === "audio_pb";
+  const timeStr: string = useInstrumental
+    ? (raw.instrumental_duration as string) || (raw.duration as string) || ""
+    : (raw.duration as string) || (raw.instrumental_duration as string) || "";
+  if (!timeStr) return;
+  const totalSeconds = DateTime.toNumber(timeStr);
+  const minutes = Math.ceil(totalSeconds / 60);
+  props.setFormField("duration", minutes);
 }
 
 function onVideoPicked(e: Event) {
@@ -374,6 +474,22 @@ function onVideoPicked(e: Event) {
   if (url) {
     const video = props.videosList?.find((v) => v.url === url);
     if (video) props.setFormField("item", video.name);
+  }
+}
+
+function onVersionChange(e: Event) {
+  const version = (e.target as HTMLSelectElement).value;
+  props.setFormField("subtipo", version);
+  updateDurationForVersion(version);
+}
+
+function onMusicPicked(music: LiturgyMusicItem) {
+  const id = Number(music.id_music);
+  if (!Number.isFinite(id)) return;
+  props.setFormField("musica", id);
+  props.onMusicChange();
+  if (!(props.form as LiturgyItem).escolha) {
+    updateDurationForVersion((props.form as LiturgyItem).subtipo || "sung", music);
   }
 }
 </script>
@@ -488,6 +604,11 @@ function onVideoPicked(e: Event) {
 .lit-select:focus {
   border-color: var(--lj-navy);
   box-shadow: var(--lj-shadow-focus-navy-sm);
+}
+.lit-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(var(--lj-on-surface-ch), 0.04);
 }
 textarea.lit-input {
   height: auto;

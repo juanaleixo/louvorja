@@ -32,7 +32,7 @@
             :index="index"
             :locked="locked"
             :default-color="defaultColor"
-            :is-checked="isChecked"
+            :checked="isChecked(element)"
             :icon-for="iconForItem"
             :subtitle-for="subtitleFor"
             @edit="openItemDialog"

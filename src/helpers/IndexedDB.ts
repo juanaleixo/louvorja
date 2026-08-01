@@ -18,7 +18,7 @@ const DB_NAME = "louvorja";
  * for fazer a release para PRD.
  * Para testes, use `indexedDB.deleteDatabase("louvorja")` no console do navegador para resetar o banco
  */
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const TABLE_SETTINGS = DB_TABLE.SETTINGS;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;

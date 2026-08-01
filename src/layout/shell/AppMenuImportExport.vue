@@ -56,7 +56,7 @@
 import { ref } from "vue";
 import $liturgy from "@/helpers/Liturgy";
 import SljaConverter from "@/helpers/SljaConverter";
-import { LiturgyItem } from "@/types/Liturgy";
+import { LiturgyItem, ScheduledCategory, type ScheduledItem } from "@/types/Liturgy";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 /* ---- Tipos ---- */
@@ -326,10 +326,10 @@ async function onFileSelected(e: Event): Promise<void> {
       }
     }
     if (Array.isArray(parsed.data.scheduled_categories)) {
-      $liturgy.setScheduledCategories(parsed.data.scheduled_categories);
+      $liturgy.setScheduledCategories(parsed.data.scheduled_categories as ScheduledCategory[]);
     }
     if (Array.isArray(parsed.data.scheduled_items)) {
-      $liturgy.setScheduledItems(parsed.data.scheduled_items);
+      $liturgy.setScheduledItems(parsed.data.scheduled_items as ScheduledItem[]);
     }
     importResult.value = { ok: true, msg: "Liturgia importada com sucesso!" };
   } catch (e) {

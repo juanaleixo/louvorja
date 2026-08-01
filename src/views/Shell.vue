@@ -13,6 +13,7 @@
           <div class="shell-content">
             <AppLoading />
             <AppAlert />
+            <AppSnackbar />
             <AppModules />
           </div>
         </div>
@@ -42,6 +43,7 @@ import AppSystemBar from "@/layout/SystemBar.vue";
 import AppFooter from "@/layout/Footer.vue";
 import AppModules from "@/layout/Modules.vue";
 import AppAlert from "@/layout/Alert.vue";
+import AppSnackbar from "@/layout/SnackbarBar.vue";
 import AppLoading from "@/layout/Loading.vue";
 import CommandPalette from "@/layout/shell/CommandPalette.vue";
 import MusicSpotlight from "@components/MusicSpotlight.vue";

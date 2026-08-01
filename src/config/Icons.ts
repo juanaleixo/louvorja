@@ -180,7 +180,7 @@ export const ICONS = {
   TIMER: {
     ALARM: "mdi-alarm",
     CALL_MERGE: "mdi-call-merge",
-    CLOCK_OUTLINE: "mdi-clock-outline",
+    CLOCK: "mdi-clock-outline",
     COUNTER: "mdi-counter",
     HOURS_24: "mdi-hours-24",
     STOPWATCH: "mdi-timer-outline",

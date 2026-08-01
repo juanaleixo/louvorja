@@ -42,6 +42,12 @@ export const KEYS = {
       DAY_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.day_notes`,
       SCHEDULED_ITEMS: `${MODULES}.${ModuleEnum.LITURGY}.scheduled_items`,
       SCHEDULED_CATEGORIES: `${MODULES}.${ModuleEnum.LITURGY}.scheduled_categories`,
+      LEGACY_ITEMS: `${MODULES}.${ModuleEnum.LITURGY}.items`,
+      LEGACY_WEEKS: `${MODULES}.${ModuleEnum.LITURGY}.weeks`,
+      LEGACY_ACTIVE_WEEK: `${MODULES}.${ModuleEnum.LITURGY}.active_week`,
+      LEGACY_WEEKDAY_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.weekday_notes`,
+      CURRENT_LITURGY_ID: `${MODULES}.${ModuleEnum.LITURGY}.current_liturgy_id`,
+      DAY_LITURGIES: `${MODULES}.${ModuleEnum.LITURGY}.day_liturgies`,
     },
     MEDIA: {
       FADE_AUDIO: `${MODULES}.${ModuleEnum.MEDIA}.fade_audio`,
@@ -71,6 +77,7 @@ export const KEYS = {
     OVERLAY: {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
     },
+    OPEN_ORDER: `${MODULES}._openOrder`,
   },
   OPTIONS: {
     LANGUAGE: `${OPTIONS}.language`,

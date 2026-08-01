@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { ref, computed, type Ref, type WritableComputedRef } from "vue";
 import { useI18n } from "vue-i18n";
 import $liturgy from "@/helpers/Liturgy";
 import $media from "@/composables/useMedia";
@@ -16,15 +16,29 @@ import Platform from "@/helpers/Platform";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
+import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import type { LiturgyItem, ScheduledCategory, LiturgyMusicItem } from "@/types/Liturgy";
 
-const TRANSLATIONS = { pt, es };
+interface VideoItem {
+  id: string;
+  name: string;
+  url: string;
+  createdAt?: string;
+}
 
-function _t(key, locale) {
-  const dict = TRANSLATIONS[locale] || TRANSLATIONS.pt;
+interface OnlineVideoDefaultItem {
+  title: string;
+  url: string;
+}
+
+const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
+
+function _t(key: string, locale: string): string {
+  const dict = TRANSLATIONS[locale] ?? TRANSLATIONS.pt;
   const path = key.split(".");
-  let cur = dict;
+  let cur: unknown = dict;
   for (const k of path) {
-    if (cur && typeof cur === "object" && k in cur) cur = cur[k];
+    if (cur && typeof cur === "object" && k in cur) cur = (cur as Record<string, unknown>)[k];
     else return key;
   }
   return typeof cur === "string" ? cur : key;
@@ -46,7 +60,7 @@ export const COLORS = [
 ];
 export const DEFAULT_COLOR = "#00004F";
 
-export const DEFAULT_FORM = () => ({
+export const DEFAULT_FORM = (): LiturgyItem => ({
   id: "",
   tipo: LiturgyItemTypeEnum.ANOTACAO,
   item: "",
@@ -61,30 +75,90 @@ export const DEFAULT_FORM = () => ({
   escolha: false,
   has_instrumental_music: false,
   subtipo: "",
+  blocoId: "",
 });
 
-/**
- * @param {import('vue').Ref<number>} activeDay
- * @param {import('vue').ComputedRef<Array>} scheduledCategories
- */
-export function useLiturgyItems(activeDay, scheduledCategories) {
+function _groupItemsByBloco(list: LiturgyItem[]): LiturgyItem[] {
+  const result: LiturgyItem[] = [];
+  let pending: LiturgyItem[] = [];
+  let currentBloco: LiturgyItem | null = null;
+
+  for (const item of list) {
+    if (item.tipo === LiturgyItemTypeEnum.BLOCO) {
+      if (currentBloco) {
+        result.push(currentBloco);
+        result.push(...pending);
+      } else if (pending.length > 0) {
+        result.push(...pending);
+      }
+      currentBloco = item;
+      pending = [];
+    } else {
+      pending.push(item);
+    }
+  }
+  if (currentBloco) {
+    result.push(currentBloco);
+    result.push(...pending);
+  } else if (pending.length > 0) {
+    result.push(...pending);
+  }
+
+  return result;
+}
+
+function _addMinutes(time: string, minutes: number): string {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return time;
+  const total = h * 60 + m + minutes;
+  const newH = Math.floor(total / 60) % 24;
+  const newM = total % 60;
+  return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
+}
+
+function _autoAssignTimes(list: LiturgyItem[]): LiturgyItem[] {
+  const result: LiturgyItem[] = [];
+  let prevEnd = "";
+
+  for (const item of list) {
+    if (item.tipo === LiturgyItemTypeEnum.BLOCO) {
+      prevEnd = item.time || "";
+      result.push(item);
+    } else if (item.blocoId) {
+      const newTime = prevEnd || "";
+      const dur = Number(item.duration) || 0;
+      prevEnd = newTime ? _addMinutes(newTime, dur) : "";
+      result.push({ ...item, time: newTime });
+    } else {
+      result.push(item);
+    }
+  }
+
+  return result;
+}
+
+export function useLiturgyItems(
+  activeDay: Ref<number>,
+  scheduledCategories: Ref<ScheduledCategory[]>
+) {
   const i18n = useI18n();
-  const getLocale = () => (typeof i18n.locale.value === "string" ? i18n.locale.value : "pt");
-  const t = (key) => _t(key, getLocale());
+  const getLocale = (): string => (typeof i18n.locale.value === "string" ? i18n.locale.value : "pt");
+  const t = (key: string): string => _t(key, getLocale());
 
   const dialog = ref(false);
   const editIndex = ref(-1);
-  const form = ref(DEFAULT_FORM());
-  const musicsCache = ref(null);
+  const form = ref<LiturgyItem>(DEFAULT_FORM());
+  const musicsCache = ref<LiturgyMusicItem[] | null>(null);
   const isDraggingOver = ref(false);
   const menuOpen = ref(false);
 
-  const items = computed({
+  const items: WritableComputedRef<LiturgyItem[]> = computed({
     get() {
-      return $liturgy.list(activeDay.value);
+      return _autoAssignTimes(_groupItemsByBloco($liturgy.list(activeDay.value)));
     },
-    set(val) {
-      $liturgy.set(val, activeDay.value);
+    set(val: LiturgyItem[]) {
+      $liturgy.set(_autoAssignTimes(_groupItemsByBloco(val)), activeDay.value);
     },
   });
 
@@ -92,24 +166,93 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     items.value.reduce((s, i) => s + (Number(i.duration) || 0), 0)
   );
 
-  const musicsList = computed(() => musicsCache.value || []);
+  const musicsList = computed<LiturgyMusicItem[]>(() => musicsCache.value || []);
 
-  /* ============== Listagem ============== */
-  function isChecked(item) {
+  /* ============== Listing ============== */
+  function isChecked(item: LiturgyItem): boolean {
     return $liturgy.isCheckedToday(item);
   }
 
-  function toggleChecked(item) {
+  function toggleChecked(item: LiturgyItem): void {
     $liturgy.toggleChecked(item.id, activeDay.value);
     items.value = [...items.value];
   }
 
-  function onReorder(value) {
-    items.value = value;
+  function onReorder(value: LiturgyItem[]): void {
+    const oldMap = new Map(items.value.map((item, i) => [item.id, i]));
+
+    const movedBlocoIds = new Set<string>();
+    for (let i = 0; i < value.length; i++) {
+      const item = value[i];
+      if (item.tipo === LiturgyItemTypeEnum.BLOCO) {
+        const oldIdx = oldMap.get(item.id);
+        if (oldIdx !== undefined && oldIdx !== i) {
+          movedBlocoIds.add(item.id);
+        }
+      }
+    }
+
+    const childrenByBloco = new Map<string, LiturgyItem[]>();
+    const childIds = new Set<string>();
+    for (const item of value) {
+      if (item.tipo !== LiturgyItemTypeEnum.BLOCO && item.blocoId && movedBlocoIds.has(item.blocoId)) {
+        childIds.add(item.id);
+        if (!childrenByBloco.has(item.blocoId)) childrenByBloco.set(item.blocoId, []);
+        childrenByBloco.get(item.blocoId)!.push(item);
+      }
+    }
+
+    const withoutChildren = value.filter((x) => !childIds.has(x.id));
+    const repositioned: LiturgyItem[] = [];
+    for (const item of withoutChildren) {
+      repositioned.push(item);
+      if (childrenByBloco.has(item.id)) {
+        repositioned.push(...childrenByBloco.get(item.id)!);
+      }
+    }
+
+    items.value = _groupItemsByBloco(repositioned);
   }
 
-  function iconForItem(item) {
-    const map = {
+  function adjustBlocoAssignment(itemId: string): void {
+    const list = items.value;
+    const idx = list.findIndex((i) => i.id === itemId);
+    if (idx < 0) return;
+
+    const item = list[idx];
+
+    let nearestBloco: LiturgyItem | null = null;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (list[i].tipo === LiturgyItemTypeEnum.BLOCO) {
+        nearestBloco = list[i];
+        break;
+      }
+    }
+    const currBlocoId = nearestBloco?.id;
+
+    const prev = list[idx - 1];
+    const next = list[idx + 1];
+    const prevInBloco =
+      (prev?.tipo === LiturgyItemTypeEnum.BLOCO && prev.id === currBlocoId) ||
+      prev?.blocoId === currBlocoId;
+    const nextInBloco = next?.blocoId === currBlocoId;
+
+    if (item.blocoId && item.blocoId === currBlocoId) {
+      if (!prevInBloco && !nextInBloco) {
+        $liturgy.update(itemId, { blocoId: undefined }, activeDay.value);
+        items.value = [...items.value];
+      }
+      return;
+    }
+
+    if (currBlocoId && prevInBloco && nextInBloco) {
+      $liturgy.update(itemId, { blocoId: currBlocoId }, activeDay.value);
+      items.value = [...items.value];
+    }
+  }
+
+  function iconForItem(item: LiturgyItem): string {
+    const map: Record<string, string> = {
       [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
       [LiturgyItemTypeEnum.ARQUIVO]:
         item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
@@ -117,24 +260,24 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
       [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
       [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
       [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
-      [LiturgyItemTypeEnum.CATEGORIA]: "mdi-format-section",
+      [LiturgyItemTypeEnum.BLOCO]: "mdi-view-dashboard",
     };
     return map[item.tipo] || "mdi-circle-medium";
   }
 
-  function isYoutube(url) {
+  function isYoutube(url: string | undefined | null): boolean {
     if (!url) return false;
     return /youtu\.?be/i.test(url);
   }
 
-  function subtitleFor(item) {
+  function subtitleFor(item: LiturgyItem): string {
     if (item.tipo === LiturgyItemTypeEnum.MUSICA && item.escolha)
       return t("placeholders.music_choose");
     return item.subitem || "";
   }
 
-  /* ============== Cor ============== */
-  function changeColor(index) {
+  /* ============== Color ============== */
+  function changeColor(index: number): void {
     const current = items.value[index]?.cor || DEFAULT_COLOR;
     const idx = COLORS.findIndex((c) => c.toLowerCase() === current.toLowerCase());
     const next = COLORS[(idx + 1) % COLORS.length];
@@ -142,11 +285,11 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     items.value = [...items.value];
   }
 
-  /* ============== Ações em massa ============== */
-  function markAll(checked) {
+  /* ============== Bulk actions ============== */
+  function markAll(checked: boolean): void {
     menuOpen.value = false;
     items.value.forEach((item) => {
-      if (item.tipo === "categoria") return;
+      if (item.tipo === LiturgyItemTypeEnum.BLOCO) return;
       const isCheckedNow = $liturgy.isCheckedToday(item);
       if (checked !== isCheckedNow) {
         $liturgy.toggleChecked(item.id, activeDay.value);
@@ -155,38 +298,41 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     items.value = [...items.value];
   }
 
-  function invertSelection() {
+  function invertSelection(): void {
     menuOpen.value = false;
     items.value.forEach((item) => {
-      if (item.tipo === "categoria") return;
+      if (item.tipo === LiturgyItemTypeEnum.BLOCO) return;
       $liturgy.toggleChecked(item.id, activeDay.value);
     });
     items.value = [...items.value];
   }
 
-  function removeDone() {
+  function removeDone(): void {
     menuOpen.value = false;
     if (!confirm(t("dialog.remove_done_confirm"))) return;
     const toRemove = items.value
-      .filter((i) => i.tipo !== LiturgyItemTypeEnum.CATEGORIA && $liturgy.isCheckedToday(i))
+      .filter((i) => i.tipo !== LiturgyItemTypeEnum.BLOCO && $liturgy.isCheckedToday(i))
       .map((i) => i.id);
     toRemove.forEach((id) => $liturgy.remove(id, activeDay.value));
     items.value = [...items.value];
   }
 
   /* ============== Dialog ============== */
-  function openItemDialog(index = -1) {
+  function openItemDialog(index = -1): void {
     editIndex.value = index;
     form.value = index >= 0 ? { ...DEFAULT_FORM(), ...items.value[index] } : DEFAULT_FORM();
+    if (form.value.subtipo === "ja" || form.value.subtipo === "div") {
+      form.value.subtipo = "sung";
+    }
     dialog.value = true;
   }
 
-  function quickAdd(tipo) {
+  function quickAdd(tipo: LiturgyItemTypeEnum): void {
     openItemDialog();
     form.value.tipo = tipo;
   }
 
-  function onTypeChange() {
+  function onTypeChange(): void {
     if (form.value.tipo !== LiturgyItemTypeEnum.MUSICA) {
       form.value.musica = -1;
       form.value.escolha = false;
@@ -198,14 +344,17 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     if (form.value.tipo === LiturgyItemTypeEnum.MUSICA && form.value.musica === -1) {
       form.value.escolha = true;
     }
+    if (form.value.tipo === LiturgyItemTypeEnum.BLOCO) {
+      form.value.blocoId = undefined;
+    }
   }
 
-  function setMusicChoice(later) {
-    form.value.escolha = later;
+  function setMusicChoice(later: boolean | string): void {
+    form.value.escolha = !!later;
     if (later) form.value.musica = -1;
   }
 
-  function onMusicChange() {
+  function onMusicChange(): void {
     const m = musicsList.value.find((x) => x.id_music === form.value.musica);
     if (m) {
       form.value.has_instrumental_music = !!m.has_instrumental_music;
@@ -213,28 +362,28 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     }
   }
 
-  function onScheduledCategoryChange() {
+  function onScheduledCategoryChange(): void {
     const c = scheduledCategories.value.find((x) => x.id === form.value.id);
     if (c) form.value.item = c.nome;
   }
 
-  function saveItem() {
+  function saveItem(): void {
     const f = form.value;
 
     if (!f.tipo) {
-      $alert?.warning?.({ text: t("dialog.choose_type") });
+      ($alert as unknown as { warning?: (data: Record<string, unknown>) => void }).warning?.({ text: t("dialog.choose_type") });
       return;
     }
     if (f.tipo !== LiturgyItemTypeEnum.ITENS_AGENDADOS && !String(f.item || "").trim()) {
-      $alert?.warning?.({ text: t("dialog.set_name") });
+      ($alert as unknown as { warning?: (data: Record<string, unknown>) => void }).warning?.({ text: t("dialog.set_name") });
       return;
     }
     if (f.tipo === LiturgyItemTypeEnum.ITENS_AGENDADOS && !f.id) {
-      $alert?.warning?.({ text: t("dialog.choose_scheduled") });
+      ($alert as unknown as { warning?: (data: Record<string, unknown>) => void }).warning?.({ text: t("dialog.choose_scheduled") });
       return;
     }
 
-    const built = { ...f };
+    const built: Partial<LiturgyItem> = { ...f };
     switch (f.tipo) {
       case LiturgyItemTypeEnum.ANOTACAO:
         built.subitem = f.subitem || "";
@@ -258,7 +407,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         } else {
           const m = musicsList.value.find((x) => x.id_music === Number(f.musica));
           built.escolha = false;
-          built.subtipo = built.has_instrumental_music ? "ja" : "div";
+          built.subtipo = f.subtipo || (built.has_instrumental_music ? "ja" : "div");
           built.subitem = t("data.music_prefix") + " " + (m?.name || `#${f.musica}`);
           built.id_music = Number(f.musica);
         }
@@ -275,8 +424,9 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         built.url = f.url || "";
         built.subitem = "URL: " + built.url;
         break;
-      case LiturgyItemTypeEnum.CATEGORIA:
+      case LiturgyItemTypeEnum.BLOCO:
         built.subitem = "";
+        built.blocoId = undefined;
         break;
     }
 
@@ -290,27 +440,39 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     dialog.value = false;
   }
 
-  function confirmRemove(index, fromDialog = false) {
+  function confirmRemove(index?: number, fromDialog = false): void {
+    if (index === undefined || index < 0 || index >= items.value.length) return;
     if (!confirm(t("dialog.remove_confirm"))) return;
-    const id = items.value[index].id;
+    const item = items.value[index];
+    const id = item.id;
+
+    if (item.tipo === LiturgyItemTypeEnum.BLOCO) {
+      const list = $liturgy.list(activeDay.value);
+      for (const child of list) {
+        if (child.blocoId === id) {
+          $liturgy.update(child.id, { blocoId: undefined }, activeDay.value);
+        }
+      }
+    }
+
     $liturgy.remove(id, activeDay.value);
     items.value = [...items.value];
     if (fromDialog) dialog.value = false;
   }
 
-  function cloneItem(index) {
+  function cloneItem(index: number): void {
     if (index < 0 || index >= items.value.length) return;
 
     const itemToClone = items.value[index];
 
-    const { id, checked_days, ...cloned } = itemToClone;
+    const { id, checked_days: _, ...cloned } = itemToClone as LiturgyItem & { checked_days?: string };
 
     $liturgy.insert(cloned, activeDay.value, index + 1);
 
     items.value = $liturgy.list(activeDay.value);
   }
 
-  function confirmClear(stopTimer) {
+  function confirmClear(stopTimer?: () => void): void {
     if (!items.value.length) return;
     if (!confirm(t("dialog.clear_confirm"))) return;
     $liturgy.clear(activeDay.value);
@@ -318,11 +480,11 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     if (stopTimer) stopTimer();
   }
 
-  /* ============== Execução do item ============== */
-  function executeItem(item) {
+  /* ============== Item execution ============== */
+  function executeItem(item: LiturgyItem): void {
     switch (item.tipo) {
       case LiturgyItemTypeEnum.MUSICA:
-        playMusic(item, "sung");
+        playMusic(item, item.subtipo || "sung");
         break;
       case LiturgyItemTypeEnum.SITE:
         executeSite(item);
@@ -332,7 +494,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
         break;
       case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
         const sched = $liturgy.findScheduledForToday(item.id);
-        if (sched && sched.arquivo) openUrl(sched.arquivo);
+        if (sched && (sched as Record<string, unknown>).arquivo) openUrl((sched as Record<string, string>).arquivo);
         else alert(t("dialog.scheduled_not_found"));
         break;
       }
@@ -345,54 +507,61 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     }
   }
 
-  function playMusic(item, mode = "sung") {
+  async function playMusic(item: LiturgyItem, mode = "sung"): Promise<void> {
     if (item.escolha || !item.id_music) {
       alert(t("dialog.music_choose_first"));
       return;
     }
-    const map = {
-      sung: { id_music: item.id_music, mode: "audio" },
-      pb: { id_music: item.id_music, mode: "instrumental" },
-      lyric: { id_music: item.id_music, mode: "no_audio" },
-      no_audio: { id_music: item.id_music, mode: "no_audio" },
+
+    if (mode === "audio" || mode === "audio_pb") {
+      $media.stop();
+      await $media.openAudio({
+        id_music: item.id_music,
+        mode: (mode === "audio_pb" ? "instrumental" : "audio") as MusicActionEnum,
+      });
+      return;
+    }
+
+    const map: Record<string, { id_music: number; mode: MusicActionEnum }> = {
+      sung: { id_music: item.id_music, mode: MusicActionEnum.AUDIO },
+      pb: { id_music: item.id_music, mode: MusicActionEnum.INSTRUMENTAL },
+      lyric: { id_music: item.id_music, mode: "no_audio" as MusicActionEnum },
+      no_audio: { id_music: item.id_music, mode: "no_audio" as MusicActionEnum },
     };
     $media.open(map[mode] || map.sung);
   }
 
-  // Abre a visualização da letra (usa useMedia.openLyric)
-  function openLyric(musica) {
+  function openLyric(musica: number): void {
     if (!musica || Number.isNaN(musica) || musica === -1) {
-      // mantém a mesma mensagem usada em playMusic
       alert(t("dialog.music_choose_first"));
       return;
     }
 
-    // Chama o composable de mídia para abrir a letra
-    $media.openLyric({ id_music: musica }).catch((err) => {
+    $media.openLyric({ id_music: musica }).catch((err: unknown) => {
       console.warn("[useLiturgyItems] openLyric falhou:", err);
     });
   }
 
-  function openUrl(url) {
+  function openUrl(url: string): void {
     if (!url) return;
     const valid = $liturgy.validateUrl(url);
     window.open(valid, "_blank", "noopener,noreferrer");
   }
 
-  function extractYoutubeId(url) {
+  function extractYoutubeId(url: string): string | null {
     const m = url.match(
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
     );
     return m ? m[1] : null;
   }
 
-  function buildEmbedUrl(url) {
+  function buildEmbedUrl(url: string): string | null {
     const id = extractYoutubeId(url);
     if (!id) return null;
     return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`;
   }
 
-  function executeSite(item) {
+  function executeSite(item: LiturgyItem): void {
     const url = item.url || "";
     if (!url) return;
 
@@ -407,7 +576,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     openUrl(url);
   }
 
-  function executeOnlineVideo(item) {
+  function executeOnlineVideo(item: LiturgyItem): void {
     const url = item.url || "";
     if (!url) return;
 
@@ -423,12 +592,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
   const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
 
-  /**
-   * Persiste o payload de FILE_PROJECTION em sessionStorage para que janelas
-   * de projeção que abrirem depois do broadcast (e portanto perderam a mensagem)
-   * possam restaurar o estado ao montar.
-   */
-  function _persistFileProjection(payload) {
+  function _persistFileProjection(payload: Record<string, unknown>): void {
     try {
       localStorage.setItem("lj_file_projection", JSON.stringify(payload));
     } catch (e) {
@@ -436,33 +600,21 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     }
   }
 
-  /**
-   * Resolve caminho de arquivo para URL acessível pelo navegador.
-   * - URLs absolutas (http://, file://, etc) retornam como estão
-   * - Caminhos absolutos do sistema de arquivos (/) → file:// no desktop
-   * - Demais caminhos passam por $path.file() (relativos ao banco)
-   */
-  function _resolveFileUrl(dir) {
+  function _resolveFileUrl(dir: string): string {
     if (!dir) return "";
     if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) return dir;
     if (Platform.isDesktop) {
-      // Caminho absoluto → louvorja://local/ (protocolo customizado que
-      // serve arquivos locais sem as restrições de file://)
-      // Unix: /Users/... → louvorja://local/Users/...
       if (dir.startsWith("/")) return "louvorja://local" + dir;
-      // Windows: C:\... → louvorja://local/C:/...  (substitui \ por /)
       if (/^[A-Za-z]:\\/.test(dir)) return "louvorja://local/" + dir.replace(/\\/g, "/");
     }
     return $path.file(dir);
   }
 
-  async function openFile(item) {
+  async function openFile(item: LiturgyItem): Promise<void> {
     const dir = item.dir || "";
-    const ext = dir.split(".").pop().toLowerCase();
+    const ext = dir.split(".").pop()?.toLowerCase() || "";
     const url = _resolveFileUrl(dir);
 
-    // Se o caminho não tem "/" nem protocolo, é um nome de arquivo sem caminho
-    // (ex: arrastado sem file.path) — não é possível localizá-lo
     if (
       !url ||
       (!dir.includes("/") &&
@@ -475,28 +627,27 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     }
 
     if (IMAGE_EXTS.includes(ext)) {
-      // Inclui duração do fade no payload para evitar race cross-window
       const fadeDur =
-        $userdata.get("options.file_projection.fade", true) !== false
-          ? $userdata.get("options.file_projection.fade_duration", 500) || 500
+        ($userdata.get("options.file_projection.fade", true) as boolean) !== false
+          ? ($userdata.get("options.file_projection.fade_duration", 500) as number) || 500
           : 0;
       const payload = { url, type: "image", title: item.item || "", fadeDuration: fadeDur };
       _persistFileProjection(payload);
 
-      await openFileProjectionWindows().catch((e) => {
-        $alert.error(e);
+      await openFileProjectionWindows().catch((e: unknown) => {
+        $alert.error(e as string);
         console.error(e);
       });
       $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
     } else if (VIDEO_EXTS.includes(ext)) {
       const fadeDur =
-        $userdata.get("options.file_projection.fade", true) !== false
-          ? $userdata.get("options.file_projection.fade_duration", 500) || 500
+        ($userdata.get("options.file_projection.fade", true) as boolean) !== false
+          ? ($userdata.get("options.file_projection.fade_duration", 500) as number) || 500
           : 0;
       const payload = { url, type: "video", title: item.item || "", fadeDuration: fadeDur };
       _persistFileProjection(payload);
-      await openFileProjectionWindows().catch((e) => {
-        $alert.error(e);
+      await openFileProjectionWindows().catch((e: unknown) => {
+        $alert.error(e as string);
         console.error(e);
       });
       $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
@@ -505,56 +656,58 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     } else if (AUDIO_EXTS.includes(ext)) {
       $media.openAudio({ url, title: item.item || "" });
     } else {
-      if (Platform.isDesktop && Platform.api?.openPath) {
-        Platform.api.openPath(dir);
+      if (Platform.isDesktop && (Platform.api as unknown as Record<string, unknown>)?.openPath) {
+        ((Platform.api as unknown as Record<string, unknown>).openPath as (path: string) => void)(dir);
       } else {
         openUrl(dir);
       }
     }
   }
 
-  function openSite() {
+  function openSite(): void {
     openUrl(form.value.url);
   }
 
-  /* ============== Browse arquivo ============== */
-  async function chooseFile() {
-    if (Platform.isDesktop && Platform.api?.storage?.chooseFile) {
-      const file = await Platform.api.storage.chooseFile();
+  /* ============== Browse file ============== */
+  async function chooseFile(): Promise<void> {
+    const api = Platform.api;
+    if (Platform.isDesktop && api?.storage?.chooseFile) {
+      const file = await api.storage.chooseFile();
       if (file) form.value.dir = file;
-    } else if (Platform.isDesktop && Platform.api?.chooseFile) {
-      const file = await Platform.api.chooseFile();
+    } else if (Platform.isDesktop && (api as unknown as Record<string, unknown>)?.chooseFile) {
+      const file = await (api as unknown as { chooseFile: () => Promise<string | null> }).chooseFile();
       if (file) form.value.dir = file;
     } else {
       const inp = document.createElement("input");
       inp.type = "file";
-      inp.onchange = (e) => {
-        const f = e.target.files[0];
-        if (f) form.value.dir = f.path || f.name;
+      inp.onchange = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const f = target.files?.[0];
+        if (f) form.value.dir = (f as unknown as { path?: string }).path || f.name;
       };
       inp.click();
     }
   }
 
-  /* ============== Drag-and-drop de arquivos externos ============== */
-  function onDragOver(e) {
+  /* ============== External file drag-and-drop ============== */
+  function onDragOver(e: DragEvent): void {
     if (
-      e.dataTransfer.types.includes("Files") ||
-      e.dataTransfer.types.includes("application/x-moz-file")
+      e.dataTransfer?.types.includes("Files") ||
+      e.dataTransfer?.types.includes("application/x-moz-file")
     ) {
       isDraggingOver.value = true;
     }
   }
 
-  function onDragLeave(el, e) {
-    if (!el?.contains(e.relatedTarget)) {
+  function onDragLeave(el: HTMLElement | null, e: DragEvent): void {
+    if (!el?.contains(e.relatedTarget as Node | null)) {
       isDraggingOver.value = false;
     }
   }
 
-  async function onDrop(e) {
+  async function onDrop(e: DragEvent): Promise<void> {
     isDraggingOver.value = false;
-    const files = Array.from(e.dataTransfer.files || []);
+    const files = Array.from(e.dataTransfer?.files || []);
     if (!files.length) return;
     for (const file of files) {
       await _addDroppedFile(file, e);
@@ -562,25 +715,26 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     items.value = [...items.value];
   }
 
-  async function _addDroppedFile(file, e) {
+  async function _addDroppedFile(file: File, e: DragEvent): Promise<void> {
     const name = file.name;
-    // No Electron, file.path contém o caminho absoluto completo
-    const filePath = file.path || name;
-    const ext = name.split(".").pop().toLowerCase();
+    const filePath = (file as unknown as { path?: string }).path || name;
+    const ext = name.split(".").pop()?.toLowerCase() || "";
     const textExts = ["txt", "rtf"];
 
-    if (e.dataTransfer.items) {
+    if (e.dataTransfer?.items) {
       const entries = Array.from(e.dataTransfer.items);
       for (const dtItem of entries) {
-        if (dtItem.webkitGetAsEntry) {
-          const entry = dtItem.webkitGetAsEntry();
+        if ((dtItem as unknown as { webkitGetAsEntry?: () => FileSystemEntry | null }).webkitGetAsEntry) {
+          const entry = (dtItem as unknown as { webkitGetAsEntry: () => FileSystemEntry | null }).webkitGetAsEntry();
           if (entry && entry.isDirectory) {
-            const dirPath = file.path ? file.path + "/" : entry.name + "/";
+            const dirPath = (file as unknown as { path?: string }).path
+              ? (file as unknown as { path: string }).path + "/"
+              : entry.name + "/";
             $liturgy.add(
               {
                 tipo: LiturgyItemTypeEnum.ARQUIVO,
                 item: entry.name,
-                subitem: "Pasta " + (file.path || entry.name),
+                subitem: "Pasta " + ((file as unknown as { path?: string }).path || entry.name),
                 subtipo: "dir",
                 dir: dirPath,
                 dir_info: "E",
@@ -595,9 +749,9 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     }
 
     if (textExts.includes(ext)) {
-      const text = await new Promise((resolve) => {
+      const text = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target.result || "");
+        reader.onload = (ev) => resolve((ev.target?.result as string) || "");
         reader.onerror = () => resolve("");
         reader.readAsText(file);
       });
@@ -627,18 +781,20 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
   }
 
   /* ============== Music list ============== */
-  async function loadMusicsList() {
+  async function loadMusicsList(): Promise<void> {
     try {
-      const data = await $database.get(`${getLocale()}_musics`);
+      const data = await $database.get<LiturgyMusicItem[] | { data: LiturgyMusicItem[] }>(
+        `${getLocale()}_musics`
+      );
       musicsCache.value = Array.isArray(data) ? data : data?.data || [];
     } catch {
       musicsCache.value = [];
     }
   }
 
-  const videosCache = ref([]);
+  const videosCache = ref<VideoItem[]>([]);
 
-  const ONLINE_VIDEO_DEFAULTS = [
+  const ONLINE_VIDEO_DEFAULTS: OnlineVideoDefaultItem[] = [
     {
       title: "Vitória (Adoradores 5) [Ao Vivo]",
       url: "https://www.youtube.com/watch?v=nlNluQp7cFI",
@@ -647,16 +803,14 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     { title: "Só o Começo - Vocal Livre", url: "https://www.youtube.com/watch?v=XktoQTwHSK4" },
   ];
 
-  async function loadVideosList() {
-    let all = [];
+  async function loadVideosList(): Promise<void> {
+    let all: VideoItem[] = [];
     try {
-      all = await $idb.getAll(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
-      all.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+      all = await $idb.getAll<VideoItem>(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
+      all.sort((a, b) => (a.createdAt! > b.createdAt! ? -1 : 1));
     } catch {
       all = [];
     }
-    // Mescla com os defaults do módulo online_videos (evita duplicatas por URL)
-    //TODO remover esse trecho quando implementar a biblioteca de coletanea online
     const seen = new Set(all.map((v) => v.url));
     for (const def of ONLINE_VIDEO_DEFAULTS) {
       if (!seen.has(def.url)) {
@@ -667,15 +821,15 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     videosCache.value = all;
   }
 
-  function setFormField(field, value) {
-    form.value[field] = value;
+  function setFormField(field: string, value: unknown): void {
+    (form.value as Record<string, unknown>)[field] = value;
   }
 
-  function toggleMenuOpen() {
+  function toggleMenuOpen(): void {
     menuOpen.value = !menuOpen.value;
   }
 
-  function closeMenu() {
+  function closeMenu(): void {
     menuOpen.value = false;
   }
 
@@ -693,6 +847,7 @@ export function useLiturgyItems(activeDay, scheduledCategories) {
     isChecked,
     toggleChecked,
     onReorder,
+    adjustBlocoAssignment,
     iconForItem,
     isYoutube,
     subtitleFor,

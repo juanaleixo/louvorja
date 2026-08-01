@@ -1,6 +1,8 @@
 /** @category deve-virar-composable — Usa AppData (Pinia); requer renderer inicializado. */
 import $dev from "@/helpers/Dev";
 import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 
 /**
  * Modules — runtime de módulos (open / close / query).
@@ -38,6 +40,13 @@ export default {
 
     $appdata.set(`modules.${id}.show`, true);
     $appdata.set("active_module", id);
+
+    // Track tab opening order (first opened = leftmost)
+    const order = $userdata.get(KEYS.MODULES.OPEN_ORDER, []);
+    const idx = order.indexOf(id);
+    if (idx !== -1) order.splice(idx, 1);
+    order.push(id);
+    $userdata.set(KEYS.MODULES.OPEN_ORDER, order);
   },
 
   /**
@@ -49,6 +58,14 @@ export default {
     $dev.write("close", id);
 
     $appdata.set(`modules.${id}.show`, false);
+
+    // Remove from open order
+    const order = $userdata.get(KEYS.MODULES.OPEN_ORDER, []);
+    const idx = order.indexOf(id);
+    if (idx !== -1) {
+      order.splice(idx, 1);
+      $userdata.set(KEYS.MODULES.OPEN_ORDER, order);
+    }
 
     if ($appdata.get("active_module") === id) {
       const all = $appdata.get("modules") || {};

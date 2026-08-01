@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import LiturgyRibbonInfo from "./components/LiturgyRibbonInfo.vue"
 
 const moduleId = ModuleEnum.LITURGY;
 const modulePath = $modules.getPath(moduleId);
@@ -61,8 +62,25 @@ export const contextualPages: RibbonPage[] = [
           { id: "mark_done", icon: "mdi-check-circle", label: "ribbon.btn.mark_done", action: "lit_mark_done", size: "small" },
           { id: "show_notes", icon: "mdi-note-text", label: "ribbon.btn.show_notes", action: "lit_show_notes", size: "small" },
           { id: "lock_items", icon: ICONS.ACTIONS.LOCK, label: "ribbon.btn.lock_items", action: "lit_lock", size: "small" },
-          { id: "copy_liturgy", icon: ICONS.ACTIONS.COPY, label: "ribbon.btn.copy_liturgy", action: "lit_copy", size: "small" },
+        ],
+      },
+      {
+        id: `${moduleCtxId}_library`,
+        title: "ribbon.groups.library",
+        buttons: [
+          { id: "save_liturgy", icon: "mdi-content-save", label: modulePath+".library.save_title", action: "lit_save", size: "small" },
+          { id: "load_liturgy", icon: "mdi-folder-open", label: modulePath+".library.load_title", action: "lit_load", size: "small" },
           { id: "clear_liturgy", icon: ICONS.ACTIONS.CLEAN, label: "ribbon.btn.clear_liturgy", action: "lit_clear", size: "small", color: "#e74c3c" },
+          { id: "export_liturgy", icon: "mdi-export", label: modulePath+".library.export_title", action: "lit_export", size: "small" },
+          { id: "import_liturgy", icon: "mdi-import", label: modulePath+".library.import_title", action: "lit_import", size: "small" },
+          { id: "manage_liturgy", icon: "mdi-file-cog-outline", label: modulePath+".library.manage_title", action: "lit_manage", size: "small" },
+        ],
+      },
+      {
+        id: `${moduleCtxId}_info`,
+        title: "ribbon.groups.info",
+        buttons: [
+          { id: "liturgy_info", customButton: LiturgyRibbonInfo, label: "" },
         ],
       },
     ],

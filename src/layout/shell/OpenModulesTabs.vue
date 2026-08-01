@@ -40,18 +40,22 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import $appdata from "@/helpers/AppData";
+import $userdata from "@/helpers/UserData";
 import $modules from "@/helpers/Modules";
 import { getModules } from "@/config/modules";
 import Icon from "@/components/Icon.vue";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { t } = useI18n();
 const modules = getModules;
 const openModules = computed(() => {
   const modules = $appdata.get("modules") || {};
   const skip = new Set(["media", "lyric", "album"]);
-  return Object.values(modules).filter(
-    (m) => m && m.show === true && !skip.has(m.id) && m.popup !== true
-  );
+  const order = $userdata.get(KEYS.MODULES.OPEN_ORDER, []);
+  const orderMap = new Map(order.map((id, i) => [id, i]));
+  return Object.values(modules)
+    .filter((m) => m && m.show === true && !skip.has(m.id) && m.popup !== true)
+    .sort((a, b) => (orderMap.get(a.id) ?? Infinity) - (orderMap.get(b.id) ?? Infinity));
 });
 
 function isActive(id) {
