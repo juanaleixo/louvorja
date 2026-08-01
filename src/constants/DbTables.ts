@@ -1,5 +1,7 @@
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
+export const DB_NAME = "louvorja";
+export const DB_VERSION = 2;
 /**
  * Nomes de todas as tabelas do banco IndexedDB unificado `louvorja`.
  * Cada módulo usa o prefixo do módulo seguido do nome da entidade.
