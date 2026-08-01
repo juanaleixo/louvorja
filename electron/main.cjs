@@ -99,7 +99,24 @@ function createWindow() {
   // D8 — Registrar janela principal no updater e inicializar (apenas em produção)
   updater.setMainWindow(mainWindow);
   if (app.isPackaged) {
-    updater.init({ channel: "latest", autoCheck: true, autoDownload: true });
+    // Lê as opções da tela Atualizações (persistidas em user_data).
+    // O check ao iniciar NÃO roda aqui — o renderer (Shell.vue) dispara o
+    // check no boot para poder mostrar a snackbar clicável quando encontrar
+    // versão nova. Aqui apenas configuramos useBeta/autoDownload.
+    let ud = {};
+    try {
+      ud = userStore.read("user_data") || {};
+    } catch (_) { /* userStore indisponível no boot */ }
+    const opts = (ud && ud.options) || {};
+    // TODO: remover o default true abaixo quando a versão estável for publicada.
+    // "Usar versões beta" fica ativo por padrão durante o ciclo de preview.
+    const useBeta = opts.use_beta_updates == null ? true : opts.use_beta_updates;
+    updater.init({
+      channel: "latest",
+      autoCheck: false,
+      autoDownload: opts.auto_download_updates === true,
+      useBeta,
+    });
   }
 
   // Sinalizar mudanças de estado de maximização para o renderer (SystemBar)
@@ -727,13 +744,34 @@ ipcMain.handle("window:isMaximized", (event) => {
 ipcMain.handle("updater:check", () => updater.checkForUpdates());
 
 /** Inicia o download da atualização disponível (quando autoDownload=false). */
-ipcMain.handle("updater:download", () => updater.downloadUpdate());
+ipcMain.handle("updater:download", (event) => updater.downloadUpdate(event.sender));
 
 /** Fecha o app e instala a atualização baixada. */
 ipcMain.handle("updater:install", () => updater.quitAndInstall());
 
 /** Retorna o estado atual do updater (snapshot). */
 ipcMain.handle("updater:status", () => updater.status());
+
+/** Aplica as opções da tela Atualizações (useBeta/autoCheck/autoDownload). */
+ipcMain.handle("updater:setOptions", (_e, opts) => {
+  updater.setOptions(opts || {});
+  return { ok: true };
+});
+
+/**
+ * Linux deb/rpm: baixa o asset .deb/.rpm com progresso
+ * (eventos "updater:package-progress"). Retorna { ok, path }.
+ */
+ipcMain.handle("updater:downloadPackage", (event) => updater.downloadPackage(event.sender));
+
+/** Abre o .deb/.rpm baixado no gerenciador de pacotes. */
+ipcMain.handle("updater:openPackage", () => updater.openPackage());
+
+/** Abre a página da release no browser (fallback). */
+ipcMain.handle("updater:openReleasePage", () => updater.openReleasePage());
+
+/** Retorna o tipo de instalação atual: "appimage" | "deb" | "rpm" (linux). */
+ipcMain.handle("updater:getInstallType", () => updater.getInstallType());
 
 // ---------------------------------------------------------------------------
 // IPC: Login item (F5.1) — iniciar com Windows/macOS

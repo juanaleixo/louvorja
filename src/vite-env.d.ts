@@ -51,7 +51,37 @@ declare global {
     windows: Record<string, unknown>;
     httpServer: Record<string, unknown>;
     shortcuts: Record<string, unknown>;
-    updater: Record<string, unknown>;
+    updater: {
+      check: () => Promise<{ ok: boolean; state?: unknown; error?: string }>;
+      download: () => Promise<{ ok: boolean; error?: string }>;
+      install: () => void;
+      status: () => Promise<{
+        status: string;
+        version: string | null;
+        newVersion: string | null;
+        progress: number;
+        error: string | null;
+        packagePath?: string | null;
+      }>;
+      setOptions: (opts: {
+        useBeta?: boolean;
+        autoCheck?: boolean;
+        autoDownload?: boolean;
+      }) => Promise<{ ok: boolean }>;
+      downloadPackage: () => Promise<{ ok: boolean; path?: string; error?: string }>;
+      openPackage: () => Promise<{ ok: boolean; error?: string }>;
+      openReleasePage: () => Promise<unknown>;
+      getInstallType: () => Promise<"appimage" | "deb" | "rpm">;
+      onPackageProgress: (cb: (d: { percent: number; received: number; total: number }) => void) => () => void;
+      onStateChange: (cb: (state: {
+        status: string;
+        version: string | null;
+        newVersion: string | null;
+        progress: number;
+        error: string | null;
+        packagePath?: string | null;
+      }) => void) => () => void;
+    };
     powerBlocker: Record<string, unknown>;
     window: Record<string, unknown>;
     userdata: Record<string, unknown>;

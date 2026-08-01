@@ -257,6 +257,12 @@ export const ICONS = {
     CLOSING: "mdi-stop-circle-outline",
     JA: "ja",
   },
+  PROJETOS: {
+    WEB: "mdi-web",
+    ELECTRON: "mdi-electron-framework",
+    DELPHI: "mdi-desktop-classic",
+    API: "mdi-api",
+  },
   /**
    * Ícones SVG  da pasta /assets/icons usados no componente Icon
    */

@@ -110,6 +110,8 @@
 }
 .opt-btn--primary:hover {
   filter: brightness(1.1);
+  background: var(--lj-navy-active);
+  border-color: var(--lj-white-alpha-08);
 }
 .opt-btn--small {
   padding: 4px 10px;

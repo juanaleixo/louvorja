@@ -429,7 +429,6 @@ import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 import { useSyncManager } from "@/composables/useSyncManager";
 import type { BibleVersion } from "@/types/Bible";
-import { V_COLOR_PRIMARY, V_COLOR_SECONDARY, V_COLOR_SURFACE } from "@/constants/Colors";
 import { ICONS } from "@/config/Icons";
 
 interface Category {

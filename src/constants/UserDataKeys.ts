@@ -118,7 +118,11 @@ export const KEYS = {
     },
     FULLSCREEN: `${OPTIONS}.fullscreen`,
     LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
+    LAST_APP_CHECK: `${OPTIONS}.last_app_check`,
     SKIP_STARTUP_CHECK: `${OPTIONS}.skip_startup_check`,
+    USE_BETA_UPDATES: `${OPTIONS}.use_beta_updates`,
+    CHECK_UPDATES_ON_START: `${OPTIONS}.check_updates_on_start`,
+    AUTO_DOWNLOAD_UPDATES: `${OPTIONS}.auto_download_updates`,
     AUTO_CACHE_MEDIA: `${OPTIONS}.auto_cache_media`,
     STORAGE_QUOTA_GB: `${OPTIONS}.storage_quota_gb`,
     OPEN_RETURN: `${OPTIONS}.open_return`,
@@ -140,6 +144,11 @@ export const KEYS = {
   },
   STORAGE: {
     BIBLE_DOWNLOADED_VERSIONS: `${STORAGE}.bible_downloaded_versions`,
+  },
+  SHELL: {
+    IS_DARK: "is_dark",
+    APP_UPDATE_AVAILABLE: "app_update_available",
+    APP_UPDATE_VERSION: "app_update_version",
   },
   PROJECTION: {
     LJ_BACKGROUND_PROJECTION: "lj_background_projection",

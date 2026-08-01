@@ -55,6 +55,8 @@ import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
 import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
+import $snackbar from "@/helpers/Snackbar";
+import Platform from "@/helpers/Platform";
 import { KEYS } from "@/constants/UserDataKeys";
 import $popup from "@/helpers/Popup";
 import Broadcast from "@/helpers/Broadcast";
@@ -62,7 +64,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 import { registerShell } from "@/composables/useShell";
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const vuetifyTheme = useTheme();
 const display = useDisplay();
 
@@ -101,6 +103,66 @@ const onOpenBibleSearch = () => {
 
 let beforeUnloadHandler = null;
 let messageHandler = null;
+
+// ---------------------------------------------------------------------------
+// Auto-update (D8): verificação ao iniciar + badge na ShellTools
+// ---------------------------------------------------------------------------
+// Quando "Verificar novas versões ao iniciar" está ativo, o app checa no boot.
+// Se houver versão nova: snackbar clicável + flag app_update_available (ícone
+// na ShellTools). Se "baixar automaticamente" estiver ativo, o main baixa em
+// background e o estado "downloaded" também acende o ícone.
+// ---------------------------------------------------------------------------
+let _updaterUnsub = null;
+let _startupCheckPending = false;
+
+function _openUpdatesScreen() {
+  window.dispatchEvent(new CustomEvent("louvorja:open-updates"));
+}
+
+function _handleUpdaterState(state) {
+  if (!state) return;
+  if (state.status === "available") {
+    const autoDownload = $userdata.get(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
+    $appdata.set("app_update_available", true);
+    $appdata.set("app_update_version", state.newVersion || "");
+    // Snackbar apenas no check de INÍCIO (não em check manual na tela) e
+    // quando NÃO há auto-download (senão o main baixa sozinho e o "available"
+    // é só um estado transitório até "downloading").
+    if (_startupCheckPending && !autoDownload) {
+      _startupCheckPending = false;
+      $snackbar.show({
+        text: t("options.updates.app_available_snackbar", { version: state.newVersion || "" }),
+        color: "warning",
+        icon: "mdi-download",
+        timeout: 8000,
+        action: _openUpdatesScreen,
+      });
+    }
+  } else if (state.status === "downloaded") {
+    $appdata.set("app_update_available", true);
+    $appdata.set("app_update_version", state.newVersion || "");
+  } else if (state.status === "not-available" || state.status === "error") {
+    $appdata.set("app_update_available", false);
+    _startupCheckPending = false;
+  }
+}
+
+async function _runStartupUpdateCheck() {
+  if (!Platform.isDesktop || !Platform.updater) return;
+  const checkOnStart = $userdata.get(KEYS.OPTIONS.CHECK_UPDATES_ON_START, true) === true;
+  if (!checkOnStart) return;
+  _startupCheckPending = true;
+  try {
+    const res = await Platform.updater.check();
+    // Só registra a última verificação quando o check concluiu com sucesso.
+    if (res && res.ok) {
+      $userdata.set(KEYS.OPTIONS.LAST_APP_CHECK, new Date().toISOString());
+    }
+  } catch (e) {
+    _startupCheckPending = false;
+    console.warn("[Shell] startup update check falhou:", e);
+  }
+}
 
 // Métodos expostos via shell._ref para outros componentes
 function openCommandPalette() {
@@ -198,6 +260,23 @@ onMounted(() => {
     }
   }
 
+  // Auto-update: assina mudanças de estado do updater para acender o badge
+  // da ShellTools e mostrar a snackbar quando o check ao iniciar encontra
+  // versão nova.
+  if (Platform.isDesktop && Platform.updater) {
+    try {
+      _updaterUnsub = Platform.updater.onStateChange(_handleUpdaterState);
+    } catch (e) {
+      console.warn("[Shell] updater.onStateChange falhou:", e);
+    }
+    // Reaplica o estado atual caso o update já tenha sido encontrado antes do mount
+    Platform.updater
+      .status()
+      .then((s) => _handleUpdaterState(s))
+      .catch(() => {});
+    _runStartupUpdateCheck();
+  }
+
   // Bridge popup → main (replica popup ↔ shell)
   messageHandler = (event) => {
     if (event.origin !== window.location.origin) return;
@@ -230,6 +309,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (beforeUnloadHandler) window.removeEventListener("beforeunload", beforeUnloadHandler);
   if (messageHandler) window.removeEventListener("message", messageHandler);
+
+  if (_updaterUnsub) {
+    try {
+      _updaterUnsub();
+    } catch (_) {
+      /* ignore */
+    }
+  }
 
   window.removeEventListener("louvorja:open-command-palette", onOpenCommandPalette);
   window.removeEventListener("louvorja:open-hotkeys", onOpenHotkeys);

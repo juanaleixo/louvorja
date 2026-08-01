@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import AppMenuOpcoes from "./AppMenuOpcoes.vue";
 import AppMenuSobre from "./AppMenuSobre.vue";
 import AppMenuTransmitir from "./AppMenuTransmitir.vue";
@@ -136,6 +136,16 @@ function openMenu() {
   document.addEventListener("keydown", onKeydown);
 }
 
+/**
+ * Abre o AppMenu já na tela de um item específico (ex: "updates").
+ * Usado pela snackbar de atualização e pelo ícone da ShellTools.
+ */
+function openAt(itemId) {
+  open.value = true;
+  activeItem.value = items.value.find((i) => i.id === itemId) || items.value[0];
+  document.addEventListener("keydown", onKeydown);
+}
+
 function close() {
   open.value = false;
   document.removeEventListener("keydown", onKeydown);
@@ -176,7 +186,18 @@ function exitApp() {
   else window.close();
 }
 
-onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
+onMounted(() => {
+  window.addEventListener("louvorja:open-updates", onOpenUpdates);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("louvorja:open-updates", onOpenUpdates);
+  document.removeEventListener("keydown", onKeydown);
+});
+
+function onOpenUpdates() {
+  openAt("updates");
+}
 </script>
 
 <style scoped>

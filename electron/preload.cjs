@@ -378,6 +378,19 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     install: () => ipcRenderer.invoke("updater:install"),
     /** Retorna o estado atual do updater (snapshot). */
     status: () => ipcRenderer.invoke("updater:status"),
+    /** Aplica opções da tela Atualizações: { useBeta, autoCheck, autoDownload }. */
+    setOptions: (opts) => ipcRenderer.invoke("updater:setOptions", opts),
+
+    // Linux deb/rpm — download manual do asset
+    downloadPackage: () => ipcRenderer.invoke("updater:downloadPackage"),
+    openPackage: () => ipcRenderer.invoke("updater:openPackage"),
+    openReleasePage: () => ipcRenderer.invoke("updater:openReleasePage"),
+    getInstallType: () => ipcRenderer.invoke("updater:getInstallType"),
+    onPackageProgress: (cb) => {
+      const handler = (_e, data) => cb(data);
+      ipcRenderer.on("updater:package-progress", handler);
+      return () => ipcRenderer.off("updater:package-progress", handler);
+    },
 
     /**
      * Escuta mudanças de estado do updater enviadas pelo main process.
