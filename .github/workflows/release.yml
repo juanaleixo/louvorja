@@ -35,6 +35,8 @@ jobs:
             artifact: installer-linux
             artifact_glob: |
               dist_electron/*.AppImage
+              dist_electron/*.deb
+              dist_electron/*.rpm
               dist_electron/latest-linux.yml
     runs-on: ${{ matrix.os }}
     steps:

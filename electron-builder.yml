@@ -106,6 +106,9 @@ mac:
 # Linux — AppImage
 # ---------------------------------------------------------------------------
 linux:
-  target: AppImage
+  target:
+    - AppImage
+    - deb
+    - rpm
   icon: build/icon-512.png
   category: AudioVideo
