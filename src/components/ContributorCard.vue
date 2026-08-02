@@ -1,6 +1,6 @@
 <template>
   <v-col cols="12" sm="6" md="4" lg="3">
-    <v-card class="contributor-card" variant="outlined" :ripple="false">
+    <v-card class="contributor-card" :ripple="false">
       <div class="contributor-card-body">
         <v-avatar size="72" class="contributor-avatar">
           <v-img
@@ -14,7 +14,28 @@
         <div class="contributor-info">
           <div class="contributor-name">{{ contributor.name }}</div>
           <div v-if="contributor.description" class="contributor-description">
-            {{ contributor.description }}
+            <template v-if="isRoleContribuitor(contributor.description)">
+              <v-tooltip
+                v-for="role in contributor.description"
+                :key="role.name"
+                location="bottom"
+                :open-delay="300"
+              >
+                <template #activator="{ props: tooltipProps }">
+                  <v-icon
+                    v-bind="tooltipProps"
+                    :icon="role.icon"
+                    :color="role.color"
+                    size="18"
+                    class="ma-1"
+                  />
+                </template>
+                {{ role.name }}
+              </v-tooltip>
+            </template>
+            <template v-else>
+              {{ contributor.description }}
+            </template>
           </div>
         </div>
       </div>
@@ -60,8 +81,38 @@
           rel="noopener noreferrer"
         />
         <v-btn
+          v-if="contributor.x"
+          :href="`https://x.com/${contributor.x}`"
+          icon="mdi-twitter"
+          variant="text"
+          size="small"
+          density="comfortable"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+        <v-btn
           v-if="contributor.website"
           :href="contributor.website"
+          icon="mdi-web"
+          variant="text"
+          size="small"
+          density="comfortable"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+        <v-btn
+          v-if="contributor.whatsapp"
+          :href="`https://wa.me/${contributor.whatsapp}`"
+          icon="mdi-whatsapp"
+          variant="text"
+          size="small"
+          density="comfortable"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+        <v-btn
+          v-if="contributor.website2"
+          :href="contributor.website2"
           icon="mdi-web"
           variant="text"
           size="small"
@@ -86,7 +137,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Contributors } from "@/config/contributors";
+import { Contributors, RoleContribuitor } from "@/config/contributors";
 
 const props = defineProps<{
   contributor: Contributors;
@@ -94,6 +145,10 @@ const props = defineProps<{
 
 const avatarFallbackIndex = ref(0);
 const showFallbackAvatar = ref(false);
+
+function isRoleContribuitor(d: RoleContribuitor[] | string): d is RoleContribuitor[] {
+  return Array.isArray(d) && d.length > 0 && typeof d[0] === "object";
+}
 
 const avatarSources = computed<string[]>(() => {
   const c = props.contributor;

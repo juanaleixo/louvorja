@@ -145,7 +145,25 @@ Estrutura do `user_data` no Pinia store:
   layout: "apps" | "ribbon",
   remote: { is_connected, url, token },
   modules: { [moduleId]: { search, filter, ...customization } },
-  options: { /* slides, player, projeção */ }
+  options: {
+    /* slides, player, projeção */
+    // Auto-update (KEYS.OPTIONS.*):
+    use_beta_updates: boolean,          // considera pré-releases
+    check_updates_on_start: boolean,    // verifica ao iniciar
+    auto_download_updates: boolean,     // baixa automaticamente
+    last_app_check: string | null,      // última verificação (ISO)
+  }
+}
+```
+
+Estado volátil da shell (AppData, não persistido):
+
+```js
+// appdata (KEYS.SHELL.*)
+{
+  is_dark: boolean,
+  app_update_available: boolean,
+  app_update_version: string,
 }
 ```
 
@@ -218,6 +236,7 @@ Helpers principais:
 | `FilePicker.ts` | `pickImage()` e `pickImageData()` — seletor de imagens |
 | `UserData.ts` | Preferências do usuário (Pinia + persistência) |
 | `Hotkeys.js` | Atalhos de teclado in-window |
+| `Snackbar.ts` | Snackbar global; aceita `action?: () => void` opcional (executada no clique) |
 | `Platform.js` | Adapter web/desktop |
 
 ---
@@ -248,6 +267,87 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 
 ---
 
+## 🔄 Auto-update do app (D8)
+
+O auto-update é gerenciado por `electron/main/updater.js` e exposto ao renderer
+via `Platform.updater`. O comportamento varia conforme a plataforma:
+
+| Instalação | Check | Download / Instalação |
+|---|---|---|
+| **Windows (NSIS)** | electron-updater (provider GitHub) | electron-updater — `.exe` + blockmap (diferencial) + instalação silenciosa |
+| **macOS (DMG/zip)** | electron-updater | electron-updater — `.zip` (substitui o `.app`) |
+| **Linux AppImage** | electron-updater | electron-updater — substitui o AppImage |
+| **Linux deb/rpm** | GitHub API (`checkGithubRelease`) | download manual do asset `.deb`/`.rpm` → abre no gerenciador de pacotes |
+
+### Opções da tela de Atualizações
+
+Persistidas em `user_data.options` e aplicadas em runtime via `Platform.updater.setOptions()`:
+
+| Opção | Chave (`KEYS.OPTIONS`) | Efeito |
+|---|---|---|
+| Usar versões beta | `USE_BETA_UPDATES` | `autoUpdater.allowPrerelease` (GitHub provider). Default `true` durante preview — **TODO: remover default ao publicar versão estável** |
+| Verificar novas versões ao iniciar | `CHECK_UPDATES_ON_START` | Check no boot (disparado pelo renderer em `Shell.vue`) |
+| Baixar atualizações automaticamente | `AUTO_DOWNLOAD_UPDATES` | Baixa em background quando encontra versão nova |
+| Última verificação | `LAST_APP_CHECK` | Timestamp do último check bem-sucedido (não grava em erro) |
+
+### Fluxo no boot
+
+1. `Shell.vue` (renderer) dispara o check ao iniciar (`Platform.updater.check()`).
+2. Em **dev** (app não empacotado) ou **deb/rpm**, o check cai para a **GitHub API**
+   (`checkGithubAndSetState`), que funciona em qualquer ambiente.
+3. Se houver versão nova e **auto-download desligado**: snackbar clicável com o número
+   da versão → abre a tela de Atualizações (`AppMenuAtualizacoes`).
+4. Se houver versão nova e **auto-download ligado**: baixa em background e acende o
+   badge de atualização na `ShellTools`.
+5. Estado propagado ao renderer via IPC `updater:state` (`Platform.updater.onStateChange`).
+
+### Badge da ShellTools
+
+`ShellTools.vue` mostra um ícone **amarelo pulsante** (`mdi-download-circle`) quando
+`appdata app_update_available` é verdadeiro. O clique abre a tela de Atualizações via
+evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
+
+### IPC handlers principais
+
+| Canal | Função |
+|---|---|
+| `updater:check` | Check (electron-updater ou GitHub API conforme plataforma) |
+| `updater:download` | Download (electron-updater) |
+| `updater:downloadPackage` | Download manual do asset `.deb`/`.rpm` (Linux) com progresso |
+| `updater:openPackage` | Abre o pacote baixado no gerenciador de pacotes |
+| `updater:openReleasePage` | Abre a release no browser (fallback) |
+| `updater:getInstallType` | Retorna `"appimage"` \| `"deb"` \| `"rpm"` |
+| `updater:setOptions` | Aplica `{ useBeta, autoCheck, autoDownload }` em runtime |
+| `updater:install` | Fecha o app e instala a atualização baixada |
+| `updater:status` | Snapshot do estado atual |
+
+---
+
+## 🌐 Servidor HTTP embarcado (D5)
+
+Express servindo a SPA Vue + API `/api/*` + SSE `/events` (OBS/celular),
+com aliases Delphi (`/musica`, `/biblia`). Roda sempre — janelas auxiliares
+do Electron dependem da origem HTTP para YouTube IFrame API e BroadcastChannel.
+
+### Fallback de porta
+
+A porta base é **7070** (ou a salva no `userStore`). Se estiver em uso:
+
+1. **Probe de porta** (`_probePort`) — testa TCP em `127.0.0.1` e `[::1]`
+   antes de escolher. Detecta qualquer listener na porta, incluindo o
+   servidor da versão Delphi do LouvorJA (que pode escutar em IPv6 e não
+   geraria `EADDRINUSE` no bind IPv4 do Express).
+2. Se ocupada, sorteia uma **porta aleatória no range 7000–9000**
+   (até 100 tentativas), com `EADDRINUSE` como rede de segurança.
+3. A porta efetiva é persistida e propagada ao renderer (`httpServer.status()`),
+   `HTTP_BASE_URL` do main e tela Transmitir.
+4. Se **todas** as tentativas falharem: o app exibe um dialog de erro
+   ("Não foi possível iniciar o aplicativo — não foi possível reservar uma
+   porta") e fecha ao clicar OK.
+
+
+---
+
 ## 🗂 Estrutura de Diretórios
 
 ```
@@ -270,6 +370,7 @@ src/
 │   ├── IndexedDB.ts
 │   ├── FilePicker.ts
 │   ├── SettingsStorage.ts
+│   ├── Snackbar.ts           # Snackbar global (suporta action opcional)
 │   └── ...
 ├── modules/                  # 30+ módulos do sistema
 │   ├── background_projection/    # Projeção de fundo

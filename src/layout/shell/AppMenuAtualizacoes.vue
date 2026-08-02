@@ -4,17 +4,22 @@
       <h3 class="opt-section-title">{{ $t("options.updates.app") }}</h3>
 
       <div class="opt-row opt-row--col">
-        <label class="opt-label">v{{ appUpdate.version || "?" }}</label>
+        <label class="opt-label">v{{ appVersion }}</label>
         <div class="opt-folder-path">{{ appUpdateStatusText }}</div>
+        <div v-if="lastAppCheck" class="opt-row opt-row--spread">
+          <label class="opt-label">{{ $t("options.updates.last_check") }}</label>
+          <span>{{ formatLastCheck(lastAppCheck) }}</span>
+        </div>
         <div v-if="appUpdate.status === 'downloading'" class="opt-progress">
           <div class="opt-progress-bar" :style="{ width: appUpdate.progress + '%' }" />
           <span class="opt-progress-label">{{ appUpdate.progress }}%</span>
         </div>
         <div class="opt-folder-actions">
           <button
-            v-if="['idle', 'not-available', 'available', 'error'].includes(appUpdate.status)"
+            v-if="['idle', 'not-available', 'error'].includes(appUpdate.status)"
             type="button"
             class="opt-btn"
+            :disabled="appUpdate.status === 'checking'"
             @click="checkAppUpdate"
           >
             <v-icon icon="mdi-refresh" size="14" class="mr-1" />
@@ -24,21 +29,58 @@
             v-if="appUpdate.status === 'available'"
             type="button"
             class="opt-btn opt-btn--primary"
-            @click="downloadAppUpdate"
+            @click="startDownload"
           >
             <v-icon icon="mdi-download" size="14" class="mr-1" />
-            {{ $t("options.updates.download") }}
+            {{ $t("options.updates.app_update_button", { version: appUpdate.newVersion }) }}
           </button>
           <button
             v-if="appUpdate.status === 'downloaded'"
             type="button"
             class="opt-btn opt-btn--primary"
-            @click="installAppUpdate"
+            @click="installUpdate"
           >
             <v-icon icon="mdi-restart" size="14" class="mr-1" />
             {{ $t("options.updates.install") }}
           </button>
+          <button
+            v-if="appUpdate.status === 'downloaded' && isDebRpm"
+            type="button"
+            class="opt-btn"
+            @click="openPackageFile"
+          >
+            <v-icon icon="mdi-folder-open" size="14" class="mr-1" />
+            {{ $t("options.updates.open_package") }}
+          </button>
         </div>
+      </div>
+
+      <!-- Opções de atualização -->
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input type="checkbox" :checked="useBeta" @change="onUseBetaChange($c($event))" />
+          <span>{{ $t("options.updates.use_beta_updates") }}</span>
+        </label>
+      </div>
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="checkOnStart"
+            @change="onCheckOnStartChange($c($event))"
+          />
+          <span>{{ $t("options.updates.check_updates_on_start") }}</span>
+        </label>
+      </div>
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="autoDownload"
+            @change="onAutoDownloadChange($c($event))"
+          />
+          <span>{{ $t("options.updates.auto_download_updates") }}</span>
+        </label>
       </div>
     </section>
 
@@ -93,6 +135,7 @@
 import { computed, onMounted, onBeforeUnmount, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
+import $alert from "@/helpers/Alert";
 import $database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
@@ -103,6 +146,7 @@ interface AppUpdateState {
   progress: number;
   newVersion: string | null;
   error: string | null;
+  packagePath?: string | null;
 }
 
 interface DbConfig {
@@ -125,6 +169,7 @@ const appUpdate = ref<AppUpdateState>({
   error: null,
 });
 let _appUpdateUnsub: (() => void) | null = null;
+let _pkgProgressUnsub: (() => void) | null = null;
 
 const dbChecking = ref<boolean>(false);
 const dbStatus = ref<UpdateStatus>("idle");
@@ -132,6 +177,16 @@ const dbCurrentConfig = ref<DbConfig | null>(null);
 const dbLatestConfig = ref<DbConfig | null>(null);
 const dbCacheCleared = ref<boolean>(false);
 const lastDbCheck = ref<string | null>(null);
+const lastAppCheck = ref<string | null>(null);
+
+// Instalação Linux (deb/rpm) — download manual via GitHub API
+const isDebRpm = ref(false);
+const installType = ref<string>("");
+
+// Opções da tela
+const useBeta = ref(false);
+const checkOnStart = ref(false);
+const autoDownload = ref(false);
 
 const dbHasUpdate = computed<boolean>(
   () =>
@@ -139,6 +194,8 @@ const dbHasUpdate = computed<boolean>(
     !!dbCurrentConfig.value &&
     dbLatestConfig.value.version_number !== dbCurrentConfig.value.version_number
 );
+
+const appVersion = computed<string>(() => appUpdate.value.version || Platform.api?.version || "?");
 
 const appUpdateStatusText = computed<string>(() => {
   switch (appUpdate.value.status) {
@@ -171,21 +228,129 @@ const dbUpdateStatusText = computed<string>(() => {
   return t("options.updates.db_idle");
 });
 
+/* ---- Helpers de evento (TypeScript strict) ---- */
+function $c(e: Event): boolean {
+  return (e.target as HTMLInputElement).checked;
+}
+
+/* ---- Opções ---- */
+function pushOptions(): void {
+  if (!Platform.updater) return;
+  Platform.updater.setOptions({
+    useBeta: useBeta.value,
+    autoCheck: checkOnStart.value,
+    autoDownload: autoDownload.value,
+  });
+}
+
+function onUseBetaChange(v: boolean): void {
+  useBeta.value = v;
+  $userdata.set(KEYS.OPTIONS.USE_BETA_UPDATES, v);
+  pushOptions();
+}
+
+function onCheckOnStartChange(v: boolean): void {
+  checkOnStart.value = v;
+  $userdata.set(KEYS.OPTIONS.CHECK_UPDATES_ON_START, v);
+  pushOptions();
+}
+
+function onAutoDownloadChange(v: boolean): void {
+  autoDownload.value = v;
+  $userdata.set(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, v);
+  pushOptions();
+}
+
+/* ---- App update ---- */
 async function checkAppUpdate(): Promise<void> {
   if (!Platform.updater) return;
   try {
-    await Platform.updater.check();
-    appUpdate.value = await Platform.updater.status();
+    const res = await Platform.updater.check();
+    // Só registra a última verificação quando o check concluiu com sucesso.
+    if (res && res.ok) {
+      const ts = new Date().toISOString();
+      lastAppCheck.value = ts;
+      $userdata.set(KEYS.OPTIONS.LAST_APP_CHECK, ts);
+    }
   } catch (e) {
     console.error("[Atualizações] checkApp:", e);
   }
 }
 
-async function downloadAppUpdate(): Promise<void> {
-  await Platform.updater?.download();
+async function startDownload(): Promise<void> {
+  if (!Platform.updater) return;
+  if (isDebRpm.value) {
+    try {
+      const res = await Platform.updater.downloadPackage();
+      if (res && res.ok) {
+        $alert.yesno(
+          {
+            title: t("options.updates.app_install_title"),
+            text: t("options.updates.app_downloaded_to", { path: res.path || "" }),
+            translate: false,
+          },
+          (btn?: string) => {
+            if (btn === "yes") openPackageFile();
+          }
+        );
+      } else if (res && !res.ok && res.error) {
+        // Asset não encontrado — abre a página da release
+        $alert.yesno(
+          {
+            title: t("options.updates.app_install_title"),
+            text: t("options.updates.app_asset_missing"),
+            translate: false,
+          },
+          (btn?: string) => {
+            if (btn === "yes") Platform.updater?.openReleasePage();
+          }
+        );
+      }
+    } catch (e) {
+      console.error("[Atualizações] downloadPackage:", e);
+      const msg = String(e && (e as Error).message ? (e as Error).message : e);
+      // Falha ao baixar asset (ex: não encontrado) → oferece abrir a release
+      $alert.yesno(
+        {
+          title: t("options.updates.app_install_title"),
+          text: `${t("options.updates.app_asset_missing")}\n\n${msg}`,
+          translate: false,
+        },
+        (btn?: string) => {
+          if (btn === "yes") Platform.updater?.openReleasePage();
+        }
+      );
+    }
+    return;
+  }
+
+  // Win/mac/AppImage — electron-updater baixa em background
+  try {
+    await Platform.updater.download();
+  } catch (e) {
+    console.error("[Atualizações] download:", e);
+  }
 }
-async function installAppUpdate(): Promise<void> {
+
+async function installUpdate(): Promise<void> {
+  // deb/rpm: abre o pacote no gerenciador de pacotes
+  if (isDebRpm.value) {
+    await openPackageFile();
+    return;
+  }
   await Platform.updater?.install();
+}
+
+async function openPackageFile(): Promise<void> {
+  if (!Platform.updater) return;
+  try {
+    const res = await Platform.updater.openPackage();
+    if (res && !res.ok) {
+      $alert.error({ text: res.error || t("options.updates.app_error") });
+    }
+  } catch (e) {
+    console.error("[Atualizações] openPackage:", e);
+  }
 }
 
 async function checkDbUpdate(): Promise<void> {
@@ -241,12 +406,48 @@ async function loadCurrentDbVersion(): Promise<void> {
 
 onMounted(async () => {
   lastDbCheck.value = $userdata.get<string>(KEYS.OPTIONS.LAST_DB_CHECK, null);
+  lastAppCheck.value = $userdata.get<string>(KEYS.OPTIONS.LAST_APP_CHECK, null);
+
+  // Opções persistidas.
+  // TODO: remover o default true do useBeta quando a versão estável for publicada.
+  const savedBeta = $userdata.get<boolean | null>(KEYS.OPTIONS.USE_BETA_UPDATES, null);
+  useBeta.value = savedBeta == null ? true : savedBeta === true;
+  checkOnStart.value = $userdata.get<boolean>(KEYS.OPTIONS.CHECK_UPDATES_ON_START, true) === true;
+  autoDownload.value = $userdata.get<boolean>(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
+
   if (Platform.isDesktop && Platform.updater) {
     try {
-      appUpdate.value = await Platform.updater.status();
+      // Tipo de instalação Linux (deb/rpm)
+      installType.value = (await Platform.updater.getInstallType()) || "";
+      isDebRpm.value = installType.value === "deb" || installType.value === "rpm";
+
+      appUpdate.value = (await Platform.updater.status()) as AppUpdateState;
+      let prevStatus = appUpdate.value.status;
       _appUpdateUnsub = Platform.updater.onStateChange((s: AppUpdateState) => {
         appUpdate.value = s;
+        // Ao concluir o download do electron-updater, avisa para reiniciar.
+        // Mostra apenas na TRANSIÇÃO para "downloaded" (senão ao abrir a tela
+        // com download já concluído em background repetiria o prompt).
+        if (s.status === "downloaded" && prevStatus !== "downloaded" && !isDebRpm.value) {
+          $alert.yesno(
+            {
+              title: t("options.updates.app_install_title"),
+              text: t("options.updates.app_restart_prompt", { version: s.newVersion }),
+              translate: false,
+            },
+            (btn?: string) => {
+              if (btn === "yes") installUpdate();
+            }
+          );
+        }
+        prevStatus = s.status;
       });
+      _pkgProgressUnsub = Platform.updater.onPackageProgress((d: { percent: number }) => {
+        if (d && typeof d.percent === "number") {
+          appUpdate.value = { ...appUpdate.value, status: "downloading", progress: d.percent };
+        }
+      });
+      pushOptions();
     } catch (e) {
       console.warn("[Atualizações] init:", e);
     }
@@ -257,5 +458,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (_appUpdateUnsub) _appUpdateUnsub();
+  if (_pkgProgressUnsub) _pkgProgressUnsub();
 });
 </script>

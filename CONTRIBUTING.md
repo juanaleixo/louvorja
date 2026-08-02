@@ -3,18 +3,22 @@
 Obrigado por querer contribuir! Este guia cobre tudo que você precisa para
 começar: ambiente, comandos, criação de módulos, convenções de commit e
 fluxo de PR.
+
 ---
 
 ## Pré-requisitos
 
-- **Node.js 18+** — [download](https://nodejs.org/pt-br/download)
-- **npm 9+** (já incluso no Node 18)
+- **Node.js 24+** — [download](https://nodejs.org/pt-br/download)
+- **npm 9+**
 - Git
 
 ```bash
-node -v   # deve ser >= 18
+node -v   # deve ser >= 24
 npm -v    # deve ser >= 9
 ```
+
+---
+
 ## Primeiros Passos
 
 ### 1. Fork & Clone
@@ -23,7 +27,7 @@ npm -v    # deve ser >= 9
 git clone https://github.com/louvorja/app
 ```
 
-### 2. Instalacao
+### 2. Instalação
 
 ```bash
 cd app
@@ -43,83 +47,120 @@ git checkout -b fix/nome-do-bug
 
 ## Comandos de desenvolvimento
 
-| Comando                | Descrição                                              |
-|------------------------|--------------------------------------------------------|
-| `npm run dev`          | Servidor de desenvolvimento em `http://localhost:5002` |
-| `npm run host`         | Dev exposto na rede local (testes mobile)              |
-| `npm run build`        | Build de produção para web/PWA                         |
-| `npm run lint`         | ESLint em todo o projeto                               |
-| `npm test`             | Vitest (testes unitários)                              |
-| `npm run files`        | Servidor de arquivos local na porta 7070 (dev offline) |
-| `npm run files`        | Servidor de arquivos local na porta 7070 (dev offline) |
-| `npm run electron:dev` | Roda versão desktop do app                             |
+| Comando                      | Descrição                                                                    |
+|------------------------------|------------------------------------------------------------------------------|
+| `npm run dev`                | Servidor web/PWA em `http://localhost:5002`                                  |
+| `npm run host`               | Dev exposto na rede local (testes mobile)                                    |
+| `npm run build`              | Build de produção para web/PWA                                               |
+| `npm run typecheck`          | TypeScript (`vue-tsc --noEmit`)                                              |
+| `npm run validate:manifests` | Valida os `manifest.ts` dos módulos                                          |
+| `npm run lint`               | ESLint em todo o projeto                                                     |
+| `npm test`                   | Vitest (testes unitários)                                                    |
+| `npm run files`              | Servidor de arquivos local em 7070 ou em uma porta de fallback (dev offline) |
+| `npm run electron:dev`       | Roda versão desktop do app (Electron)                                        |
+| `npm run electron:build`     | Gera instaláveis (NSIS/DMG/AppImage/DEB/RPM, conforme a plataforma)          |
 
 > A porta 5002 é deliberada — o Electron usa `DEV_URL=http://localhost:5002`.
 > Não a altere sem atualizar `vite.config.js` e `electron/main.cjs` em conjunto.
 
----
+> `npm run prebuild` roda `validate:manifests` + `typecheck` antes do build.
 
 ---
 
-## Arquitetura Modular
+## Arquitetura
 
-O projeto usa **modulos independentes** em `src/modules/`. Cada modulo tem:
+O projeto é uma SPA **Vue 3 + TypeScript** com módulos independentes em
+`src/modules/`. Estado global via **Pinia** (migrado de Vuex). Desktop via
+**Electron** (`electron/main.cjs`).
 
-```
-module/
- ├── index.js          # Ponto de entrada
- ├── manifest.json     # Metadados (nome, versao, dependencias)
- ├── interface/        # API publica do modulo
- ├── components/       # Componentes Vue internos
- └── lang/             # Traducoes (pt-BR, es)
-```
+Camadas principais:
 
+- `src/modules/` — módulos do sistema (descobertos via `import.meta.glob`)
+- `src/helpers/` — helpers (puros e acoplados a Pinia)
+- `src/composables/` — composables Vue reativos
+- `src/constants/UserDataKeys.ts` — chaves de `user_data` (`KEYS.*`)
+- `src/config/Icons.ts` — ícones (`ICONS.*`)
+- `src/lang/` — traduções globais pt/es
+- `electron/` — main process do Electron
+
+---
 
 ## Adicionando um módulo novo
 
 Cada módulo fica em `src/modules/<id>/` e segue a estrutura abaixo. Use o
 módulo `clock` como referência: `src/modules/clock/`.
 
-### 1. Criar os arquivos
-
 ```
 src/modules/meu_modulo/
-├── manifest.json        ← metadados obrigatórios
-├── index.js             ← registra mensagens e customizações
+├── manifest.ts       ← metadados + ribbon contextual
+├── index.ts          ← registra o módulo (importa `./manifest`)
 ├── components/
-│   └── Index.vue        ← componente principal
+│   └── Index.vue     ← componente principal
 └── lang/
-    ├── pt.json          ← traduções em português
-    └── es.json          ← traduções em espanhol
+    ├── pt.json       ← traduções em português
+    └── es.json       ← traduções em espanhol
 ```
 
-### 2. `manifest.json`
+### 1. `src/enums/ModuleEnum.ts`
 
-```json
-{
-  "id": "meu_modulo",
-  "name": "Meu Módulo",
-  "description": "Descrição curta do que o módulo faz.",
-  "category": "utilities",
-  "icon": "mdi-star-outline",
-  "dependencies": []
+Adicione o id do módulo (em `snake_case`):
+
+```ts
+export enum ModuleEnum {
+  // ...
+  MEU_MODULO = "meu_modulo",
 }
 ```
 
-Valores válidos para `category`: `musics`, `bible`, `utilities`.
+### 2. `manifest.ts`
 
-### 3. `index.js`
+```ts
+import type { Module } from "@/types/Module";
+import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum";
+import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum";
+import { ICONS } from "@/config/Icons";
+import { ModuleEnum } from "@/enums/ModuleEnum";
+import $modules from "@/helpers/Modules";
 
-```js
+const moduleId = ModuleEnum.MEU_MODULO;
+const modulePath = $modules.getPath(moduleId);
+
+export const module: Module = {
+  id: moduleId,
+  name: "Meu Módulo",
+  title: `${modulePath}.title`,
+  description: `${modulePath}.description`,
+  icon: ICONS.MODULES.MEU_MODULO,
+  color: "#27ae60",
+  showInMainMenu: true,
+  category: ModuleCategoryEnum.UTILITIES,
+  group: ModuleGroupEnum.USER,
+  order: 10,
+  // customization: { /* campos de personalização (font, color, select, ...) */ },
+};
+```
+
+Valores válidos para `category` (`ModuleCategoryEnum`): `collections`, `worship`, `bible`, `utilities`, `favorites`.
+Grupos (`ModuleGroupEnum`): `albums`, `bible_general`, `categories`, `church`, `draws`, `favorites_list`, `hymnal`, `media`, `online_videos`, `remote`, `search`, `texts`, `theme`, `time`, `user`.
+
+> **Ícones**: sempre use `ICONS.*` de `src/config/Icons.ts` — nunca `"mdi-*"` hardcoded. Se precisar de um novo ícone, adicione a constante no `ICONS` primeiro.
+
+### 3. `index.ts`
+
+```ts
 import BaseModule from "@modules/BaseModule";
+import type { Module } from "@/types/Module";
 import es from "./lang/es.json";
 import pt from "./lang/pt.json";
-import manifest from "./manifest.json";
+import { module as manifest } from "./manifest";
 
 export default class extends BaseModule {
   constructor() {
-    manifest.translations = { pt, es };
-    super(manifest);
+    const config: Module & { translations?: Record<string, unknown> } = {
+      ...manifest,
+      translations: { pt, es },
+    };
+    super(config);
   }
 }
 ```
@@ -131,9 +172,7 @@ As chaves ficam em `modules.<id>.<chave>` no i18n global.
 ```json
 {
   "title": "Meu Módulo",
-  "actions": {
-    "abrir": "Abrir"
-  }
+  "description": "Descrição curta do que o módulo faz."
 }
 ```
 
@@ -147,22 +186,35 @@ As chaves ficam em `modules.<id>.<chave>` no i18n global.
 </template>
 
 <script setup>
+import ModuleContainer from "@/components/ModuleContainer.vue";
 import { useModule } from "@/composables/useModule";
+import { module as manifest } from "../manifest";
 
-const { manifest, close, t } = useModule("meu_modulo");
+const { moduleId, module, userdata, appdata, t } = useModule(manifest);
+
+function close() {
+  // cleanup ao fechar o módulo (timers, listeners, etc.)
+}
 </script>
 ```
 
-### 6. Registrar o módulo em `src/helpers/ModuleManager.js`
+O `useModule` recebe o objeto `module` do `manifest.ts` e expõe `moduleId`,
+`module` (estado no store), `userdata`/`appdata` (proxies dot-notation) e `t`
+(i18n). Veja os módulos existentes (ex.: `clock`) para exemplos com ribbon
+contextual, projeção e formatação.
 
-Importe e adicione sua classe ao array de módulos registrados, seguindo
-o padrão dos módulos existentes.
+### 6. Registro automático
+
+O módulo é **descoberto automaticamente** via `import.meta.glob` em
+`src/helpers/ModuleManager.js` — **não** precisa registrar manualmente.
+O `ModuleManager` valida que o id do `manifest.ts` corresponde ao nome da pasta.
 
 ### 7. Validação rápida
 
 ```bash
-npm run build   # zero erros de build
-npm run lint    # zero warnings novos
+npm run validate:manifests   # valida os manifest.ts
+npm run typecheck            # zero erros de TypeScript
+npm run lint                 # zero warnings novos
 ```
 
 Abra a aplicação (`npm run dev`) e confirme que o módulo aparece no menu
@@ -170,33 +222,37 @@ e pode ser aberto/fechado sem erros no console.
 
 ---
 
+## Convenções de código
+
+- **`ICONS.*`** — ícones sempre por constante de `src/config/Icons.ts`, nunca `"mdi-*"` hardcoded.
+- **`KEYS.*`** — toda leitura/escrita em `$userdata.get/set` usa `src/constants/UserDataKeys.ts`, nunca strings literais.
+- **Helpers vs composables** — helper puro (sem Vue) pode rodar no main process do Electron; helper que acessa Pinia deve virar composable. Ver `CLAUDE.md`.
+- **i18n** — toda string user-facing tem tradução em `pt.json` e `es.json`.
+
+---
+
 ## Checklist de PR
 
-### Codigo
+### Código
 
 - [ ] Lint passa (`npm run lint`)
+- [ ] Typecheck passa (`npm run typecheck`)
 - [ ] Build production OK (`npm run build`)
-- [ ] Testes passam (`npm run test` -- se existir)
-- [ ] Sem `console.log` / `debugger` no codigo final
+- [ ] Testes passam (`npm run test` — se existir)
+- [ ] Sem `console.log` / `debugger` no código final
 - [ ] UserData usa `KEYS.*` de `src/constants/UserDataKeys.ts` (nunca strings hardcoded)
 - [ ] Ícones usam `ICONS.*` de `src/config/Icons.ts` (nunca `"mdi-*"` inline)
 
 ### Commits
 
 - [ ] Mensagens claras (`feat: adiciona modulo X`, `fix: corrige bug Y`)
-- [ ] Um commit por mudanca logica (rebase se necessario)
+- [ ] Um commit por mudança lógica (rebase se necessário)
 
-### Documentacao
+### Documentação
 
-- [ ] `README.md` atualizado se mudar instalacao/uso
-- [ ] Comentarios JSDoc em funcoes publicas novas
-- [ ] Traducoes pt-BR + es para strings user-facing
-
-### Arquitetura
-
-- [ ] Modulo segue estrutura padrao (`index.js`, `manifest.json`, `interface/`, `lang/`)
-- [ ] Nao quebra modulos existentes
-- [ ] Estado Vuex imutavel (sem mutacao direta em getters)
+- [ ] `README.md` atualizado se mudar instalação/uso
+- [ ] Comentários JSDoc em funções públicas novas
+- [ ] Traduções pt + es para strings user-facing
 
 ---
 

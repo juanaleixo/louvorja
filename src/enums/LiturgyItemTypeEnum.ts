@@ -1,7 +1,7 @@
 export enum LiturgyItemTypeEnum {
   ANOTACAO = "anotacao",
   ARQUIVO = "arquivo",
-  CATEGORIA = "categoria",
+  BLOCO = "bloco",
   ITENS_AGENDADOS = "itens-agendados",
   MUSICA = "musica",
   SITE = "site",

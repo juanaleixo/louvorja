@@ -8,8 +8,10 @@
       :title="label"
       @click="setActiveDay(i)"
     >
-      <v-icon :icon="i === todayIndex ? 'mdi-calendar-star' : 'mdi-calendar-blank'" size="16" />
-      <span>{{ label }}</span>
+      <span>
+        <v-icon :icon="i === todayIndex ? 'mdi-calendar-star' : 'mdi-calendar-blank'" size="16" />
+        {{ label }}
+      </span>
     </button>
   </nav>
 </template>
@@ -45,12 +47,13 @@ void props;
 
 .lit-daytab {
   flex: 1;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
+  gap: 2px;
+  min-height: 30px;
+  padding: 4px 10px;
   background: transparent;
   border: 1px solid rgba(var(--v-border-color), 0.3);
   border-radius: 3px;
@@ -60,7 +63,6 @@ void props;
   transition:
     background 0.12s,
     border 0.12s;
-  white-space: nowrap;
 }
 .lit-daytab:hover {
   background: rgba(var(--lj-on-surface-ch), 0.06);

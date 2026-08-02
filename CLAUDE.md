@@ -93,8 +93,7 @@ src/
 │   ├── stopwatch/       # Cronômetro (alarme sonoro via Web Audio API)
 │   ├── timer/   # Temporizador (alarme sonoro via Web Audio API)
 │   ├── theme/
-│   ├── transmission/    # Links para todas as views de projeção/OBS
-│   └── update/          # Verificação de versão do banco
+│   └── transmission/    # Links para todas as views de projeção/OBS
 ├── plugins/             # Plugins Vue (Vuetify, etc.)
 ├── router/              # Rotas
 ├── store/               # Vuex store
@@ -162,7 +161,14 @@ $userdata.set("theme", "dark");
   language: "pt" | "es",
   layout: "apps" | "ribbon",
   remote: { is_connected, url, token },
-  modules: { [moduleId]: { search, filter, ...customization } }
+  modules: { [moduleId]: { search, filter, ...customization } },
+  options: {
+    // Auto-update — chaves em KEYS.OPTIONS.*:
+    use_beta_updates: boolean,          // considera pre-releases (default true em preview)
+    check_updates_on_start: boolean,    // verifica ao iniciar
+    auto_download_updates: boolean,     // baixa automaticamente
+    last_app_check: string | null,      // última verificação de versão (ISO)
+  }
 }
 ```
 
@@ -199,6 +205,7 @@ $userdata.set("theme", "dark");
 | `helpers/Liturgy.js` | deve-virar-composable | |
 | `helpers/Dev.js` | deve-virar-composable | |
 | `helpers/Alert.js` | deve-virar-composable | Já usa `watch()` Vue internamente |
+| `helpers/Snackbar.ts` | deve-virar-composable | Snackbar global; aceita `action?: () => void` opcional |
 | `helpers/Popup.js` | deve-virar-composable | |
 | `helpers/ModuleManager.js` | deve-virar-composable | Boot-time; chamado 1× em `main.js` |
 | `helpers/CommandRegistry.js` | deve-virar-composable | Usa `Modules` + `useMedia` composable |
@@ -517,7 +524,7 @@ Vue Renderer (BrowserWindow)
 | **D5** | Servidor HTTP embarcado — Express porta 7070, replica 7 endpoints do `fmTransmitir.pas` | 2 dias | — |
 | **D6** | Atalhos globais OS-level — `globalShortcut` + roteamento contextual (substitui `FormKeyUp`) | 1 dia | — |
 | **D7** | Player polish — `requestAnimationFrame` para sincronia ±50ms, conversor `.slja` legado | 2-3 dias | — |
-| **D8** | Auto-update + distribuição — `electron-updater`, NSIS Win, GitHub releases | 1-2 dias | — |
+| **D8** | Auto-update + distribuição — `electron-updater` (win/mac/AppImage) + GitHub API p/ deb/rpm, opções de beta/check-on-start/auto-download | 1-2 dias | ✅ implementado |
 | **D9** | Polir layout Ribbon — AppMenu hambúrguer, ContextToolbar | 2-3 dias | — |
 | **D10** | Funcionalidades restantes (paralelizável) — painel D, texto interativo, vídeos online, editor `.slja` completo | — | — |
 
@@ -539,7 +546,7 @@ electron/
     ├── windowFactory.js  # openProjection(monitorId, ...), openOperator (D4)
     ├── identifyMonitors.js # Overlay 5s "Monitor N" (D4)
     ├── shortcuts.js      # globalShortcut (D6)
-    ├── updater.js        # electron-updater (D8)
+    ├── updater.js        # Auto-update: electron-updater + GitHub API (deb/rpm) (D8)
     ├── download/
     │   ├── api.js        # api.louvorja.com.br/params (D3)
     │   ├── handshake.js  # conn_ftp → credenciais voláteis (D3)

@@ -180,7 +180,7 @@ export const ICONS = {
   TIMER: {
     ALARM: "mdi-alarm",
     CALL_MERGE: "mdi-call-merge",
-    CLOCK_OUTLINE: "mdi-clock-outline",
+    CLOCK: "mdi-clock-outline",
     COUNTER: "mdi-counter",
     HOURS_24: "mdi-hours-24",
     STOPWATCH: "mdi-timer-outline",
@@ -214,6 +214,7 @@ export const ICONS = {
     MENU: "mdi-menu",
     MESSAGE_BULLETED: "mdi-message-bulleted",
     MONITORS: "mdi-monitor-multiple",
+    NEWS: "mdi-newspaper-variant-outline",
     NOTE_EDIT: "mdi-note-edit-outline",
     NOTE_TEXT: "mdi-note-text",
     NOTE_TEXT_OUTLINE: "mdi-note-text-outline",
@@ -256,6 +257,12 @@ export const ICONS = {
     INTRO: "mdi-play-circle-outline",
     CLOSING: "mdi-stop-circle-outline",
     JA: "ja",
+  },
+  PROJETOS: {
+    WEB: "mdi-web",
+    ELECTRON: "mdi-electron-framework",
+    DELPHI: "mdi-desktop-classic",
+    API: "mdi-api",
   },
   /**
    * Ícones SVG  da pasta /assets/icons usados no componente Icon

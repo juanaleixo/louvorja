@@ -8,7 +8,19 @@
     "checkJs": false,
     "jsx": "preserve",
     "lib": ["ESNext", "DOM"],
-    "paths": { "@/*": ["./src/*"], "@modules/*": ["./src/modules/*"] },
+    "paths": {
+      "@/*": ["./src/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@components/*": ["./src/components/*"],
+      "@constants/*": ["./src/constants/*"],
+      "@helpers/*": ["./src/helpers/*"],
+      "@lang/*": ["./src/lang/*"],
+      "@layout/*": ["./src/layout/*"],
+      "@root/*": ["./*"],
+      "@store/*": ["./src/store/*"],
+      "@views/*": ["./src/views/*"]
+    },
+    "resolveJsonModule": true,
     "types": ["node"],
     "skipLibCheck": true
   },

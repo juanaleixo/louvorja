@@ -176,7 +176,7 @@ const props = withDefaults(
     saveCategoryName: (id: string | number, name: string) => void;
     removeCategory: (id: string | number) => void;
     addScheduledItem: () => void;
-    updateScheduled: (...args: unknown[]) => void;
+    updateScheduled: (it: ScheduledItem) => void;
     removeScheduled: (id: string | number) => void;
   }>(),
   {

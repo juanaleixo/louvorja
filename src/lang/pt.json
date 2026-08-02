@@ -279,6 +279,16 @@
       "app_downloading": "Baixando atualização…",
       "app_downloaded": "Atualização baixada — pronta para instalar.",
       "app_error": "Erro ao verificar atualização.",
+      "app_update_button": "Baixar nova versão (v{version})",
+      "app_install_title": "Instalar atualização",
+      "app_restart_prompt": "A versão {version} foi baixada. Reiniciar o programa para instalar?",
+      "app_downloaded_to": "Arquivo baixado em {path}. Instalar agora?",
+      "app_asset_missing": "Não foi possível baixar o instalador automaticamente. Abrir a página de downloads?",
+      "app_available_snackbar": "Nova versão v{version} disponível. Clique para atualizar.",
+      "use_beta_updates": "Usar versões beta (pré-release)",
+      "check_updates_on_start": "Verificar novas versões ao iniciar",
+      "auto_download_updates": "Baixar atualizações automaticamente",
+      "open_package": "Abrir pacote",
       "db_idle": "Pronto para verificar.",
       "db_checking": "Verificando…",
       "db_available": "Nova versão {version} do banco disponível.",
@@ -556,6 +566,7 @@
       "hymnal_adventist": "Hinário Adventista",
       "info": "Informações",
       "items": "Itens",
+      "library": "Biblioteca",
       "manage": "Gerenciar",
       "main_text": "Texto Principal",
       "media": "Mídia",
@@ -928,5 +939,13 @@
     "select_files": "Selecionar Arquivos",
     "download_all": "Baixar Tudo",
     "sync_hint": "Você pode baixar álbuns ou versões bíblicas específicas depois no menu Opções > Sincronizar."
+  },
+  "release_notes": {
+    "title": "Novidades da versão",
+    "loading": "Carregando novidades...",
+    "error_offline": "Não foi possível obter as novidades da versão. Verifique sua conexão com a internet.",
+    "dont_show_again": "Não mostrar novamente para esta versão",
+    "view_on_github": "Ver no GitHub",
+    "no_notes": "Nenhuma nota de versão para exibir."
   }
 }

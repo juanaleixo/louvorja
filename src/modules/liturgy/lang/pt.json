@@ -14,7 +14,12 @@
     "delete_selected": "Apagar Selecionados",
     "mark_on_access": "Marcar como \"Concluído\" após acessar item",
     "show_notes": "Exibir Painel de Anotações",
-    "lock_items": "Bloquear Itens"
+    "lock_items": "Bloquear Itens",
+    "save_liturgy": "Salvar",
+    "load_liturgy": "Carregar",
+    "export_liturgy": "Exportar",
+    "import_liturgy": "Importar",
+    "manage_liturgy": "Gerenciar"
   },
   "actions": {
     "add": "Adicionar item",
@@ -48,7 +53,7 @@
   "types": {
     "anotacao": "Anotação",
     "arquivo": "Arquivo",
-    "categoria": "Categoria",
+    "bloco": "Bloco",
     "itens-agendados": "Itens Agendados",
     "musica": "Música",
     "site": "Site",
@@ -72,12 +77,21 @@
     "scheduled_category": "Categoria do item agendado",
     "scheduled_pick": "-- selecione uma categoria --",
     "scheduled_empty": "Nenhuma categoria criada. Use o botão de configuração para criar.",
-    "category_hint": "Categorias servem como separadores visuais entre seções da liturgia.",
+    "bloco_hint": "Blocos agrupam itens da liturgia. Defina o horário de início do bloco.",
     "duration_min": "Duração (min)",
     "time": "Horário",
+    "time_managed_by_bloco": "Horário gerenciado automaticamente pelo bloco",
+    "bloco_select": "Bloco",
+    "bloco_pick": "-- sem bloco --",
     "video_select": "Vídeo",
     "video_pick": "-- selecione um vídeo --",
-    "video_url_or_select": "URL do vídeo ou selecione um salvo"
+    "video_url_or_select": "URL do vídeo ou selecione um salvo",
+    "music_version_label": "Versão",
+    "music_version_sung": "Cantada",
+    "music_version_pb": "Playback",
+    "music_version_lyric": "Somente letra",
+    "music_version_audio-only": "Somente áudio",
+    "music_version_playback-only": "Somente áudio playback"
   },
   "data": {
     "empty": "Liturgia vazia",
@@ -114,7 +128,7 @@
   },
   "placeholders": {
     "untitled": "(Sem título)",
-    "category": "Nova Categoria",
+    "bloco": "Novo Bloco",
     "music_choose": "Clique para escolher a música"
   },
   "music": {
@@ -177,5 +191,35 @@
   "clear": {
     "confirm_title": "Limpar Liturgia",
     "confirm_text": "Deseja limpar TODOS os itens da liturgia de <b>{day}</b>?<br><b>Esta ação não pode ser desfeita!</b>"
+  },
+  "library": {
+    "save_title": "Salvar Liturgia",
+    "save_name_label": "Nome da liturgia",
+    "save_name_placeholder": "Ex.: Culto de sábado",
+    "save_overwrite_confirm": "Já existe uma liturgia com este nome. Deseja sobrescrevê-la?",
+    "load_title": "Carregar Liturgia",
+    "load_search": "Pesquisar por nome...",
+    "load_empty": "Nenhuma liturgia salva.",
+    "load_confirm": "Carregar esta liturgia? Os itens atuais serão substituídos.",
+    "manage_title": "Gerenciar Liturgia",
+    "manage_name": "Nome",
+    "manage_color": "Cor",
+    "manage_binding": "Vínculo",
+    "manage_binding_none": "Nenhum",
+    "manage_binding_day": "Dia da semana",
+    "manage_binding_date": "Data específica",
+    "manage_binding_13th": "13º Sábado",
+    "manage_binding_day_placeholder": "Selecione o dia",
+    "name_exists": "Já existe uma liturgia com este nome.",
+    "save_success": "Liturgia salva com sucesso!",
+    "save_error": "Erro ao salvar a liturgia.",
+    "no_liturgy_selected": "Nenhuma liturgia selecionada para gerenciar.",
+    "import_title": "Importar Liturgia",
+    "import_success": "Liturgia importada com sucesso!",
+    "export_title": "Exportar Liturgia",
+    "duplicate_prefix": "Cópia de",
+    "duplicate_prefix_n": "Cópia ({n}) de",
+    "duplicate_success": "Liturgia duplicada como \"{name}\".",
+    "delete_confirm": "Excluir a liturgia \"<b>{name}</b>\"?"
   }
 }

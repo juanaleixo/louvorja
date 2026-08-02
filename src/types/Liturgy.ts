@@ -17,6 +17,7 @@ export interface LiturgyItem {
   escolha: boolean
   has_instrumental_music: boolean
   checked?: string
+  blocoId?: string
 }
 
 export interface LiturgyMusicItem {

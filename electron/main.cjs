@@ -99,7 +99,24 @@ function createWindow() {
   // D8 — Registrar janela principal no updater e inicializar (apenas em produção)
   updater.setMainWindow(mainWindow);
   if (app.isPackaged) {
-    updater.init({ channel: "latest", autoCheck: true, autoDownload: true });
+    // Lê as opções da tela Atualizações (persistidas em user_data).
+    // O check ao iniciar NÃO roda aqui — o renderer (Shell.vue) dispara o
+    // check no boot para poder mostrar a snackbar clicável quando encontrar
+    // versão nova. Aqui apenas configuramos useBeta/autoDownload.
+    let ud = {};
+    try {
+      ud = userStore.read("user_data") || {};
+    } catch (_) { /* userStore indisponível no boot */ }
+    const opts = (ud && ud.options) || {};
+    // TODO: remover o default true abaixo quando a versão estável for publicada.
+    // "Usar versões beta" fica ativo por padrão durante o ciclo de preview.
+    const useBeta = opts.use_beta_updates == null ? true : opts.use_beta_updates;
+    updater.init({
+      channel: "latest",
+      autoCheck: false,
+      autoDownload: opts.auto_download_updates === true,
+      useBeta,
+    });
   }
 
   // Sinalizar mudanças de estado de maximização para o renderer (SystemBar)
@@ -207,6 +224,19 @@ app.whenReady().then(async () => {
     const externalEnabled = cfg.httpServer?.externalRoutesEnabled !== false;
     httpServer.setExternalRoutesEnabled(externalEnabled);
   } catch (e) {
+    // Falha fatal: nenhuma porta disponível no range → avisa e fecha o app.
+    if (e && e.portExhausted) {
+      await dialog.showMessageBox({
+        type: "error",
+        title: "LouvorJA",
+        message: "Não foi possível iniciar o aplicativo.",
+        detail: "Não foi possível reservar uma porta no computador. Feche o aplicativo e tente novamente.",
+        buttons: ["OK"],
+      });
+      app.exit(1);
+      return; // encerra o boot — nada mais roda
+    }
+    // Outros erros: mantém o fallback atual (louvorja://)
     console.warn("[main] HTTP server não disponível, usando louvorja://:", e.message);
     HTTP_BASE_URL = "";
   }
@@ -517,9 +547,10 @@ ipcMain.handle("windows:open", (_event, options) => {
   const prodHtmlPath = path.join(paths.webBuild(), "index.html");
   // Todas as janelas Electron compartilham a mesma origem:
   //   - dev: http://localhost:5002 (Vite dev server)
-  //   - prod: http://localhost:PORT (Express server)
+  //   - prod: http://127.0.0.1:PORT (Express server)
   // Isso garante que BroadcastChannel funcione entre todas as janelas
   // e que o YouTube IFrame Player API aceite a origem (HTTP real).
+  // 127.0.0.1 (IPv4) evita cair no servidor da versão Delphi (IPv6).
   const devUrl = isDev ? DEV_URL : (HTTP_BASE_URL ? `${HTTP_BASE_URL}/#` : "");
   const win = windowFactory.openOnMonitor({
     ...options,
@@ -727,13 +758,37 @@ ipcMain.handle("window:isMaximized", (event) => {
 ipcMain.handle("updater:check", () => updater.checkForUpdates());
 
 /** Inicia o download da atualização disponível (quando autoDownload=false). */
-ipcMain.handle("updater:download", () => updater.downloadUpdate());
+ipcMain.handle("updater:download", (event) => updater.downloadUpdate(event.sender));
 
 /** Fecha o app e instala a atualização baixada. */
 ipcMain.handle("updater:install", () => updater.quitAndInstall());
 
 /** Retorna o estado atual do updater (snapshot). */
 ipcMain.handle("updater:status", () => updater.status());
+
+/** Aplica as opções da tela Atualizações (useBeta/autoCheck/autoDownload). */
+ipcMain.handle("updater:setOptions", (_e, opts) => {
+  updater.setOptions(opts || {});
+  return { ok: true };
+});
+
+/**
+ * Linux deb/rpm: baixa o asset .deb/.rpm com progresso
+ * (eventos "updater:package-progress"). Retorna { ok, path }.
+ */
+ipcMain.handle("updater:downloadPackage", (event) => updater.downloadPackage(event.sender));
+
+/** Abre o .deb/.rpm baixado no gerenciador de pacotes. */
+ipcMain.handle("updater:openPackage", () => updater.openPackage());
+
+/** Abre a página da release no browser (fallback). */
+ipcMain.handle("updater:openReleasePage", () => updater.openReleasePage());
+
+/** Retorna os release notes da versão instalada (tag v<appVersion>). */
+ipcMain.handle("updater:getReleaseNotes", () => updater.getCurrentReleaseNotes());
+
+/** Retorna o tipo de instalação atual: "appimage" | "deb" | "rpm" (linux). */
+ipcMain.handle("updater:getInstallType", () => updater.getInstallType());
 
 // ---------------------------------------------------------------------------
 // IPC: Login item (F5.1) — iniciar com Windows/macOS

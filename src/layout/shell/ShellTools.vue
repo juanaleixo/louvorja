@@ -1,47 +1,76 @@
 <template>
   <div class="shell-tools">
-    <button
-      type="button"
-      class="shell-tool"
-      :title="$t('shell.quick_search')"
-      @click="openCommandPalette"
-    >
-      <v-icon icon="mdi-magnify" size="14" />
-    </button>
-    <button
-      type="button"
-      class="shell-tool"
-      :title="$t('shell.bible_quick_search')"
-      @click="openBibleSearch"
-    >
-      <v-icon icon="mdi-book-open-variant" size="14" />
-    </button>
-    <button
-      type="button"
-      class="shell-tool"
-      :title="$t('ribbon.btn.favorites')"
-      @click="openFavorites"
-    >
-      <v-icon icon="mdi-star" size="14" />
-    </button>
-    <button type="button" class="shell-tool" :title="$t('shell.toggle_theme')" @click="toggleTheme">
-      <v-icon :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'" size="14" />
-    </button>
-    <button
-      type="button"
-      class="shell-tool"
-      :title="$t('shell.appmenu_items.about')"
-      @click="openAbout"
-    >
-      <v-icon icon="mdi-information-outline" size="14" />
-    </button>
-    <button type="button" class="shell-tool" :title="$t('hotkeys.title')" @click="openHotkeys">
-      <v-icon icon="mdi-help-circle-outline" size="14" />
-    </button>
+    <v-tooltip v-if="hasUpdate" location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button
+          v-bind="props"
+          type="button"
+          class="shell-tool shell-tool--update"
+          @click="openUpdates"
+        >
+          <v-icon icon="mdi-download-circle" size="15" class="shell-tool--update-icon" />
+        </button>
+      </template>
+      {{ $t("shell.appmenu_items.check_update") }}
+    </v-tooltip>
+
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="openCommandPalette">
+          <v-icon icon="mdi-magnify" size="14" />
+        </button>
+      </template>
+      {{ $t("shell.quick_search") }}
+    </v-tooltip>
+
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="openBibleSearch">
+          <v-icon icon="mdi-book-open-variant" size="14" />
+        </button>
+      </template>
+      {{ $t("shell.bible_quick_search") }}
+    </v-tooltip>
+
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="openFavorites">
+          <v-icon icon="mdi-star" size="14" />
+        </button>
+      </template>
+      {{ $t("ribbon.btn.favorites") }}
+    </v-tooltip>
+
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="toggleTheme">
+          <v-icon :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'" size="14" />
+        </button>
+      </template>
+      {{ $t("shell.toggle_theme") }}
+    </v-tooltip>
+
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="openAbout">
+          <v-icon icon="mdi-information-outline" size="14" />
+        </button>
+      </template>
+      {{ $t("shell.appmenu_items.about") }}
+    </v-tooltip>
+
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="openHotkeys">
+          <v-icon icon="mdi-help-circle-outline" size="14" />
+        </button>
+      </template>
+      {{ $t("hotkeys.title") }}
+    </v-tooltip>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTheme } from "vuetify";
@@ -49,11 +78,18 @@ import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $modules from "@/helpers/Modules";
 import $alert from "@/helpers/Alert";
+import { KEYS } from "@/constants/UserDataKeys";
 
 const { t } = useI18n();
 const vuetifyTheme = useTheme();
 
-const isDark = computed(() => $appdata.get("is_dark", false));
+const isDark = computed(() => $appdata.get(KEYS.SHELL.IS_DARK, false));
+
+const hasUpdate = computed(() => $appdata.get(KEYS.SHELL.APP_UPDATE_AVAILABLE, false));
+
+function openUpdates() {
+  window.dispatchEvent(new CustomEvent("louvorja:open-updates"));
+}
 
 function openCommandPalette() {
   window.dispatchEvent(new CustomEvent("louvorja:open-command-palette"));
@@ -122,5 +158,15 @@ function openHotkeys() {
 }
 .shell-tool:hover {
   opacity: 1;
+}
+
+.shell-tool--update {
+  opacity: 1;
+  position: relative;
+}
+
+.shell-tool--update-icon {
+  color: #ffb300;
+  filter: drop-shadow(0 0 4px rgba(255, 179, 0, 0.6));
 }
 </style>

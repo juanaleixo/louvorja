@@ -369,6 +369,11 @@ const LITURGY_ACTIONS: LiturgyActionMap = {
   lit_mark_done: "toggle_mark_on_access",
   lit_show_notes: "toggle_show_notes",
   lit_lock: "toggle_lock",
+  lit_save: "save",
+  lit_load: "load",
+  lit_export: "export",
+  lit_import: "import",
+  lit_manage: "manage",
 };
 
 const BIBLE_ACTIONS: LiturgyActionMap = {

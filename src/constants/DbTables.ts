@@ -1,5 +1,7 @@
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
+export const DB_NAME = "louvorja";
+export const DB_VERSION = 2;
 /**
  * Nomes de todas as tabelas do banco IndexedDB unificado `louvorja`.
  * Cada módulo usa o prefixo do módulo seguido do nome da entidade.
@@ -22,9 +24,10 @@ export const DB_TABLE = {
   CUSTOM_SONGS: ModuleEnum.CUSTOM_COLLECTIONS + ".songs",
   CUSTOM_COLLECTIONS: ModuleEnum.CUSTOM_COLLECTIONS + ".collections",
   MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY + ".library",
-  AUDIO_LIBRARY: "audio_library",
-  IMAGE_LIBRARY: "image_library",
-} as const;
+   AUDIO_LIBRARY: "audio_library",
+   IMAGE_LIBRARY: "image_library",
+   LITURGY_LIBRARY: ModuleEnum.LITURGY + ".library",
+ } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
 

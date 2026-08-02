@@ -29,6 +29,7 @@
         :icon-for-item="iconForItem"
         :subtitle-for="subtitleFor"
         :on-reorder="onReorder"
+        :on-bloco-assign="adjustBlocoAssignment"
         :open-item-dialog="openItemDialog"
         :clone-item="cloneItem"
         :confirm-remove="confirmRemove"
@@ -55,6 +56,7 @@
       :colors="colors"
       :musics-list="musicsList"
       :scheduled-categories="scheduledCategories"
+      :bloco-items="blocoItems"
       :set-form-field="setFormField"
       :on-type-change="onTypeChange"
       :on-music-change="onMusicChange"
@@ -111,17 +113,21 @@
       </v-card>
     </v-dialog>
 
+    <LiturgySaveDialog v-model="saveDialog" :items="safeItems" @saved="onLiturgySaved" />
+    <LiturgyLoadDialog v-model="loadDialog" :items="safeItems" @loaded="onLiturgyLoaded" />
+    <LiturgyManageDialog v-model="manageDialog" @managed="onLiturgyManaged" />
+
     <MusicSpotlight
       v-model="chooseMusicSearchOpen"
       mode="pick"
-      :musics-list="musicsList"
+      :musics-list="musicsForSpotlight"
       @pick="onChooseLaterMusicPicked"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
@@ -136,12 +142,18 @@ import LiturgyNotesPanel from "./LiturgyNotesPanel.vue";
 import LiturgyItemForm from "./LiturgyItemForm.vue";
 import LiturgySchedules from "./LiturgySchedules.vue";
 import $alert from "@/helpers/Alert";
+import $snackbar from "@/helpers/Snackbar";
 import $liturgy from "@/helpers/Liturgy";
 import $appdata from "@/helpers/AppData";
 import type { LiturgyItem } from "@/types/Liturgy";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 import MusicSpotlight from "@/components/MusicSpotlight.vue";
 import { SearchMusicItem } from "@/types/Music";
+import LiturgySaveDialog from "./LiturgySaveDialog.vue";
+import LiturgyLoadDialog from "./LiturgyLoadDialog.vue";
+import LiturgyManageDialog from "./LiturgyManageDialog.vue";
+import { useLiturgyLibrary } from "../composables/useLiturgyLibrary";
+import { useLiturgyAutoLoad } from "../composables/useLiturgyAutoLoad";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
@@ -206,6 +218,7 @@ const {
   isChecked,
   toggleChecked,
   onReorder,
+  adjustBlocoAssignment,
   iconForItem,
   subtitleFor,
   changeColor,
@@ -232,6 +245,12 @@ const {
   videosCache,
   loadVideosList,
 } = litItems;
+
+const musicsForSpotlight = computed<SearchMusicItem[]>(
+  () => musicsList.value as unknown as SearchMusicItem[]
+);
+
+const blocoItems = computed(() => items.value.filter((i) => i.tipo === LiturgyItemTypeEnum.BLOCO));
 
 const openItemDialogRoot = () => openItemDialog();
 const isChooseLaterMusic = (item: LiturgyItem) =>
@@ -277,7 +296,7 @@ const executeItemMaybeMark = (item: LiturgyItem) => {
   }
 
   executeItem(item);
-  if (markOnAccess.value && item.tipo !== "categoria" && !isChecked(item)) {
+  if (markOnAccess.value && item.tipo !== LiturgyItemTypeEnum.BLOCO && !isChecked(item)) {
     toggleChecked(item);
   }
 };
@@ -319,6 +338,104 @@ const copyDayOptions = computed(() => dayLabels.value.map((label, i) => ({ label
 
 const todayIndex = computed(() => new Date().getDay());
 
+const saveDialog = ref(false);
+const loadDialog = ref(false);
+const manageDialog = ref(false);
+const liturgyLibrary = useLiturgyLibrary();
+const liturgyAutoLoad = useLiturgyAutoLoad();
+
+watch(
+  [items, () => $liturgy.getCurrentLiturgyId()],
+  ([_items, id]) => {
+    updateAppDataLiturgyInfo(_items, id);
+  },
+  { immediate: true }
+);
+
+watch(activeDay, () => {
+  syncLiturgyForDay(activeDay.value);
+});
+
+function syncLiturgyForDay(day: number) {
+  const liturgyId = $liturgy.getDayLiturgyId(day);
+  if (liturgyId) {
+    $liturgy.setCurrentLiturgyId(liturgyId);
+  } else {
+    $liturgy.setCurrentLiturgyId(null);
+  }
+}
+
+async function updateAppDataLiturgyInfo(_items: LiturgyItem[], liturgyId: string | null) {
+  let name = "";
+  let color = "#00004F";
+
+  if (liturgyId) {
+    const libItem = await liturgyLibrary.get(liturgyId);
+    if (libItem) {
+      name = libItem.name;
+      color = libItem.color || "#00004F";
+    }
+  }
+
+  const times = _items.map((i) => i.time).filter(Boolean) as string[];
+  const startTime = times[0] || "";
+  const endTime = times.length > 0 ? times[times.length - 1] : "";
+  const duration = _items.reduce((sum, i) => sum + (Number(i.duration) || 0), 0);
+
+  $appdata.set("liturgy_info", { name, color, startTime, endTime, duration });
+}
+
+async function onLiturgySaved() {
+  const id = $liturgy.getCurrentLiturgyId();
+  if (id) $liturgy.setDayLiturgyId(activeDay.value, id);
+  await updateAppDataLiturgyInfo(safeItems.value, $liturgy.getCurrentLiturgyId());
+  $snackbar.success(t("library.save_success"));
+}
+
+/**
+ * Salva a liturgia atual diretamente (sem modal de nome), usando os dados do
+ * registro já salvo na biblioteca. Se ainda não há liturgia salva para o dia
+ * (sem currentLiturgyId), abre o modal de nome para a primeira criação.
+ */
+async function saveLiturgyDirect() {
+  const id = $liturgy.getCurrentLiturgyId();
+  if (!id) {
+    saveDialog.value = true;
+    return;
+  }
+  const items = safeItems.value;
+  try {
+    const existing = await liturgyLibrary.get(id);
+    if (!existing) throw new Error("Liturgia não encontrada na biblioteca");
+    await liturgyLibrary.save({
+      id,
+      name: existing.name,
+      color: existing.color,
+      items,
+    });
+    $liturgy.setDayLiturgyId(activeDay.value, id);
+    await updateAppDataLiturgyInfo(items, id);
+    $snackbar.success(t("library.save_success"));
+  } catch (e) {
+    console.error("[Liturgia] saveLiturgyDirect falhou:", e);
+    $snackbar.error(t("library.save_error"));
+  }
+}
+
+async function onLiturgyLoaded() {
+  items.value = [...$liturgy.list(activeDay.value)];
+  const id = $liturgy.getCurrentLiturgyId();
+  if (id) $liturgy.setDayLiturgyId(activeDay.value, id);
+  await updateAppDataLiturgyInfo(safeItems.value, $liturgy.getCurrentLiturgyId());
+}
+
+async function onLiturgyManaged() {
+  const id = $liturgy.getCurrentLiturgyId();
+  if (id) $liturgy.setDayLiturgyId(activeDay.value, id);
+  await updateAppDataLiturgyInfo(safeItems.value, $liturgy.getCurrentLiturgyId());
+  $snackbar.success("Liturgia atualizada!");
+}
+
 let _broadcastUnlisten: (() => void) | null = null;
 
 function handleRibbonAction(action: string) {
@@ -354,6 +471,21 @@ function handleRibbonAction(action: string) {
     case "toggle_lock":
       toggleLock();
       break;
+    case "save":
+      saveLiturgyDirect();
+      break;
+    case "load":
+      loadDialog.value = true;
+      break;
+    case "export":
+      doExport();
+      break;
+    case "import":
+      doImport();
+      break;
+    case "manage":
+      manageDialog.value = true;
+      break;
   }
 }
 
@@ -361,7 +493,7 @@ function doCopyLiturgy() {
   const source = copySourceDay.value;
   const target = activeDay.value;
   if (source === target) {
-    $alert.info(t("copy.same_day"));
+    $snackbar.warning(t("copy.same_day"));
     return;
   }
   const sourceLabel = dayLabels.value[source];
@@ -383,12 +515,59 @@ function clearDayDialog() {
   $alert.yesno({ title: t("clear.confirm_title"), text: confirmText }, (btn?: string) => {
     if (btn !== "yes") return;
     $liturgy.clear(activeDay.value);
+    $liturgy.setDayLiturgyId(activeDay.value, null);
+    $liturgy.setCurrentLiturgyId(null);
   });
+}
+
+function doExport() {
+  const id = $liturgy.getCurrentLiturgyId();
+  if (!id) {
+    $snackbar.warning("Nenhuma liturgia selecionada.");
+    return;
+  }
+  liturgyLibrary.get(id).then((item) => {
+    if (!item) return;
+    liturgyLibrary.exportToJson(item.items, item.name);
+  });
+}
+
+function doImport() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = async (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const parsed = liturgyLibrary.parseImport(text);
+    if (!parsed) {
+      $snackbar.error("Arquivo inválido.");
+      return;
+    }
+    const existing = await liturgyLibrary.getByName(parsed.name);
+    if (existing) {
+      $alert.yesno(
+        { title: t("library.import_title"), text: t("library.save_overwrite_confirm") },
+        async (btn?: string) => {
+          if (btn !== "yes") return;
+          await liturgyLibrary.save({ id: existing.id, name: parsed.name, items: parsed.items });
+          $snackbar.success(t("library.import_success"));
+        }
+      );
+    } else {
+      await liturgyLibrary.save({ name: parsed.name, items: parsed.items });
+      $snackbar.success(t("library.import_success"));
+    }
+  };
+  input.click();
 }
 
 onMounted(async () => {
   await loadMusicsList();
   await loadVideosList();
+  await syncLiturgyForDay(activeDay.value);
+  liturgyAutoLoad.checkAutoLoad();
   _broadcastUnlisten = Broadcast.listen((data) => {
     if (data?.type === BROADCAST_TYPE.LITURGY_NEW_ANNOTATION) {
       Modules.open("liturgy");

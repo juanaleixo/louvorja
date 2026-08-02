@@ -35,6 +35,8 @@ jobs:
             artifact: installer-linux
             artifact_glob: |
               dist_electron/*.AppImage
+              dist_electron/*.deb
+              dist_electron/*.rpm
               dist_electron/latest-linux.yml
     runs-on: ${{ matrix.os }}
     steps:
@@ -54,6 +56,15 @@ jobs:
       - name: Habilitar long paths (Windows)
         if: matrix.platform == 'win'
         run: git config --global core.longpaths true
+
+      # O electron-builder baixa o fpm bundled, mas para gerar .rpm ele delega
+      # ao rpmbuild do sistema (e exige xz). O runner ubuntu-latest não traz
+      # essas ferramentas por padrão — sem elas o job Linux falha.
+      - name: Instalar ferramentas RPM
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm xz-utils
 
       - name: Build Electron
         run: npm run electron:build:${{ matrix.platform }} -- --publish never
@@ -120,5 +131,7 @@ jobs:
             artifacts/**/*.dmg
             artifacts/**/*.zip
             artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.rpm
             artifacts/**/*.blockmap
             artifacts/**/latest*.yml

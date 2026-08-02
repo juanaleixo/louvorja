@@ -103,8 +103,8 @@ function getLiturgyIcon(item: LiturgyItem): string {
       return "mdi-music";
     case LiturgyItemTypeEnum.ANOTACAO:
       return "mdi-text-box-outline";
-    case LiturgyItemTypeEnum.CATEGORIA:
-      return "mdi-tag-outline";
+    case LiturgyItemTypeEnum.BLOCO:
+      return "mdi-view-dashboard";
     case LiturgyItemTypeEnum.ARQUIVO:
       return "mdi-file-outline";
     case LiturgyItemTypeEnum.SITE:
