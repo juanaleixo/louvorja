@@ -81,14 +81,19 @@ function _setState(patch) {
 }
 
 /** Fetch HTTP(S) simples, retorna Buffer ou texto. */
-function _request(url, { headers = {}, parseJson = false } = {}) {
+function _request(url, { headers = {}, parseJson = false } = {}, redirects = 0) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith("https:") ? https : http;
     const req = lib.get(url, { headers: { "User-Agent": "LouvorJA", Accept: "application/vnd.github+json", ...headers } }, (res) => {
       const status = res.statusCode || 0;
       if (status >= 300 && status < 400 && res.headers.location) {
         res.resume();
-        return _request(res.headers.location, { headers, parseJson }).then(resolve, reject);
+        if (redirects >= 10) {
+          return reject(new Error(`Muitos redirecionamentos ao acessar ${url}`));
+        }
+        // Resolve Location relativo contra a URL atual e preserva headers/parseJson.
+        const next = new URL(res.headers.location, url).toString();
+        return _request(next, { headers, parseJson }, redirects + 1).then(resolve, reject);
       }
       const chunks = [];
       res.on("data", (c) => chunks.push(c));
@@ -97,12 +102,53 @@ function _request(url, { headers = {}, parseJson = false } = {}) {
         if (status >= 400) {
           return reject(new Error(`HTTP ${status} ao acessar ${url}`));
         }
-        resolve(parseJson ? JSON.parse(buf.toString("utf8")) : buf);
+        if (!parseJson) return resolve(buf);
+        try {
+          resolve(JSON.parse(buf.toString("utf8")));
+        } catch (e) {
+          reject(new Error(`Resposta inválida (não-JSON) de ${url}: ${e.message}`));
+        }
       });
     });
     req.on("error", reject);
     req.setTimeout(30000, () => req.destroy(new Error("Request timeout")));
   });
+}
+
+/**
+ * Compara dois identificadores de pré-release semver por partes separadas
+ * por ponto (ex: "preview.10" vs "preview.2"). Retorna >0 se a>b.
+ *
+ * Regras semver:
+ *  - identificadores numéricos são comparados numericamente (10 > 2);
+ *  - numérico tem precedência MENOR que alfanumérico;
+ *  - alfanuméricos são comparados lexicograficamente (ASCII);
+ *  - mais identificadores = maior precedência (preview.3.1 > preview.3).
+ */
+function _comparePrerelease(a, b) {
+  const aParts = a.split(".");
+  const bParts = b.split(".");
+  const len = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < len; i++) {
+    const x = aParts[i];
+    const y = bParts[i];
+    if (x === undefined) return -1;
+    if (y === undefined) return 1;
+    const xNum = /^\d+$/.test(x);
+    const yNum = /^\d+$/.test(y);
+    if (xNum && yNum) {
+      const d = parseInt(x, 10) - parseInt(y, 10);
+      if (d !== 0) return d;
+    } else if (xNum) {
+      return -1;
+    } else if (yNum) {
+      return 1;
+    } else {
+      const d = x < y ? -1 : x > y ? 1 : 0;
+      if (d !== 0) return d;
+    }
+  }
+  return 0;
 }
 
 /**
@@ -120,7 +166,7 @@ function _compareVersions(a, b) {
   const bp = pb.prerelease;
   if (ap && !bp) return -1;
   if (!ap && bp) return 1;
-  if (ap && bp) return ap.localeCompare(bp);
+  if (ap && bp) return _comparePrerelease(ap, bp);
   return 0;
 }
 

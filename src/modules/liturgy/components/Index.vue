@@ -389,7 +389,37 @@ async function onLiturgySaved() {
   const id = $liturgy.getCurrentLiturgyId();
   if (id) $liturgy.setDayLiturgyId(activeDay.value, id);
   await updateAppDataLiturgyInfo(safeItems.value, $liturgy.getCurrentLiturgyId());
-  $snackbar.success("Liturgia salva com sucesso!");
+  $snackbar.success(t("library.save_success"));
+}
+
+/**
+ * Salva a liturgia atual diretamente (sem modal de nome), usando os dados do
+ * registro já salvo na biblioteca. Se ainda não há liturgia salva para o dia
+ * (sem currentLiturgyId), abre o modal de nome para a primeira criação.
+ */
+async function saveLiturgyDirect() {
+  const id = $liturgy.getCurrentLiturgyId();
+  if (!id) {
+    saveDialog.value = true;
+    return;
+  }
+  const items = safeItems.value;
+  try {
+    const existing = await liturgyLibrary.get(id);
+    if (!existing) throw new Error("Liturgia não encontrada na biblioteca");
+    await liturgyLibrary.save({
+      id,
+      name: existing.name,
+      color: existing.color,
+      items,
+    });
+    $liturgy.setDayLiturgyId(activeDay.value, id);
+    await updateAppDataLiturgyInfo(items, id);
+    $snackbar.success(t("library.save_success"));
+  } catch (e) {
+    console.error("[Liturgia] saveLiturgyDirect falhou:", e);
+    $snackbar.error(t("library.save_error"));
+  }
 }
 
 async function onLiturgyLoaded() {
@@ -442,7 +472,7 @@ function handleRibbonAction(action: string) {
       toggleLock();
       break;
     case "save":
-      saveDialog.value = true;
+      saveLiturgyDirect();
       break;
     case "load":
       loadDialog.value = true;

@@ -407,7 +407,7 @@ export function useLiturgyItems(
         } else {
           const m = musicsList.value.find((x) => x.id_music === Number(f.musica));
           built.escolha = false;
-          built.subtipo = f.subtipo || (built.has_instrumental_music ? "ja" : "div");
+          built.subtipo = f.subtipo || MusicActionEnum.SUNG;
           built.subitem = t("data.music_prefix") + " " + (m?.name || `#${f.musica}`);
           built.id_music = Number(f.musica);
         }

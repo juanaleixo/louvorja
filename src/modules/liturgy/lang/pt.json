@@ -211,6 +211,8 @@
     "manage_binding_13th": "13º Sábado",
     "manage_binding_day_placeholder": "Selecione o dia",
     "name_exists": "Já existe uma liturgia com este nome.",
+    "save_success": "Liturgia salva com sucesso!",
+    "save_error": "Erro ao salvar a liturgia.",
     "no_liturgy_selected": "Nenhuma liturgia selecionada para gerenciar.",
     "import_title": "Importar Liturgia",
     "import_success": "Liturgia importada com sucesso!",
