@@ -56,6 +56,7 @@ import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
 import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
 import ReleaseNotesDialog from "@/components/ReleaseNotesDialog.vue";
 import packageJson from "@root/package.json";
+import { ICONS } from "@/config/Icons";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $snackbar from "@/helpers/Snackbar";
@@ -137,7 +138,7 @@ function _handleUpdaterState(state) {
       $snackbar.show({
         text: t("options.updates.app_available_snackbar", { version: state.newVersion || "" }),
         color: "warning",
-        icon: "mdi-download",
+        icon: ICONS.ACTIONS.DOWNLOAD,
         timeout: 8000,
         action: _openUpdatesScreen,
       });

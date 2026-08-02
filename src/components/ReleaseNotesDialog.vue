@@ -8,12 +8,12 @@
   >
     <v-card>
       <v-toolbar color="primary" density="compact">
-        <v-icon icon="mdi-newspaper-variant-outline" class="mx-2" />
+        <v-icon :icon="ICONS.UI.NEWS" class="mx-2" />
         <v-toolbar-title class="font-weight-bold">
           {{ t("release_notes.title") }}
         </v-toolbar-title>
         <v-btn icon variant="text" density="compact" @click="onClose">
-          <v-icon icon="mdi-close" />
+          <v-icon :icon="ICONS.ACTIONS.CLOSE" />
         </v-btn>
       </v-toolbar>
 
@@ -49,7 +49,7 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            <v-icon icon="mdi-open-in-new" size="16" class="mr-1" />
+            <v-icon :icon="ICONS.UI.OPEN_IN_NEW" size="16" class="mr-1" />
             {{ t("release_notes.view_on_github") }}
           </v-btn>
         </v-card-actions>
@@ -81,6 +81,7 @@
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
+import { ICONS } from "@/config/Icons";
 
 const props = defineProps<{
   modelValue: boolean;

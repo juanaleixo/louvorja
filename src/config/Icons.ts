@@ -214,6 +214,7 @@ export const ICONS = {
     MENU: "mdi-menu",
     MESSAGE_BULLETED: "mdi-message-bulleted",
     MONITORS: "mdi-monitor-multiple",
+    NEWS: "mdi-newspaper-variant-outline",
     NOTE_EDIT: "mdi-note-edit-outline",
     NOTE_TEXT: "mdi-note-text",
     NOTE_TEXT_OUTLINE: "mdi-note-text-outline",
