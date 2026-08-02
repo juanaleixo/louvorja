@@ -18,15 +18,14 @@
       <div v-if="open" class="app-menu-overlay" @click.self="close">
         <div class="app-menu-panel" role="menu" :aria-label="$t('shell.appmenu')">
           <header class="app-menu-header" :class="{ 'app-menu-header--mac': isMac }">
-            <button
-              type="button"
+            <v-btn
               class="app-menu-back"
               :title="$t('alert.close')"
               :aria-label="$t('alert.close')"
               @click="close"
             >
               <v-icon :icon="ICONS.ACTIONS.CLOSE" size="20" />
-            </button>
+            </v-btn>
             <span class="app-menu-header-title">
               {{ activeItem?.label ? $t(activeItem.label) : $t("shell.appmenu") }}
             </span>
@@ -270,11 +269,13 @@ function onOpenUpdates() {
 }
 
 .app-menu-back {
-  border-radius: 50%;
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10%;
   border: none;
-  background: var(--lj-white-alpha-10);
+  background: var(--lj-navy-active);
   color: var(--lj-white);
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -282,15 +283,8 @@ function onOpenUpdates() {
   font-family: inherit;
 }
 
-/* macOS: usa retângulo arredondado (HIG style) em vez de círculo. */
-.app-menu-header--mac .app-menu-back {
-  width: 36px;
-  height: 28px;
-  border-radius: 6px;
-}
-
 .app-menu-back:hover {
-  background: var(--lj-white-alpha-20);
+  background: var(--lj-white-alpha-25);
 }
 
 .app-menu-header-title {

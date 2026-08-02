@@ -144,7 +144,7 @@ import { CONTRIBUTORS } from "@/config/contributors";
 
 const dbVersion = ref(0);
 
-const versionLabel = computed(() => `${packageJson.version}.${dbVersion.value}`);
+const versionLabel = computed(() => `${packageJson.version}-${dbVersion.value}`);
 
 const buildInfo = computed(() => {
   const parts = [];
