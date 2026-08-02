@@ -2,9 +2,52 @@ import { ref } from "vue";
 import $idb from "@/helpers/IndexedDB";
 import $liturgy from "@/helpers/Liturgy";
 import { DB_TABLE } from "@/constants/DbTables";
+import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
+import type { LiturgyItem } from "@/types/Liturgy";
 import type { LiturgyLibraryItem } from "@/types/LiturgyLibrary";
 
 const TABLE = DB_TABLE.LITURGY_LIBRARY;
+const DEFAULT_COLOR = "#00004F";
+
+/**
+ * Normaliza um item de liturgia importado (JSON externo) para um `LiturgyItem`
+ * válido. Itens não-objeto são rejeitados (retorna null); itens com campos
+ * faltando são preenchidos com valores padrão seguros. O `tipo` inválido cai
+ * para ANOTACAO.
+ */
+function _normalizeLiturgyItem(raw: unknown): LiturgyItem | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+
+  const tipoRaw = typeof r.tipo === "string" ? r.tipo : "";
+  const tipo = LiturgyItemTypeEnum.fromString(tipoRaw) ?? LiturgyItemTypeEnum.ANOTACAO;
+
+  const id =
+    typeof r.id === "string" && r.id !== ""
+      ? r.id
+      : crypto.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+  return {
+    id,
+    tipo,
+    subtipo: typeof r.subtipo === "string" ? r.subtipo : "",
+    item: typeof r.item === "string" ? r.item : "",
+    subitem: typeof r.subitem === "string" ? r.subitem : "",
+    cor: typeof r.cor === "string" && r.cor !== "" ? r.cor : DEFAULT_COLOR,
+    duration: Number(r.duration) || 0,
+    musica: Number(r.musica) || -1,
+    dir: typeof r.dir === "string" ? r.dir : "",
+    dir_info: typeof r.dir_info === "string" ? r.dir_info : "E",
+    url: typeof r.url === "string" ? r.url : "",
+    escolha: r.escolha === true,
+    has_instrumental_music: r.has_instrumental_music === true,
+    // Campos opcionais — preservados se presentes
+    ...(typeof r.id_music === "number" ? { id_music: r.id_music } : {}),
+    ...(typeof r.time === "string" ? { time: r.time } : {}),
+    ...(typeof r.checked === "string" ? { checked: r.checked } : {}),
+    ...(typeof r.blocoId === "string" ? { blocoId: r.blocoId } : {}),
+  };
+}
 
 export function useLiturgyLibrary() {
   const loading = ref(false);
@@ -85,11 +128,17 @@ export function useLiturgyLibrary() {
     URL.revokeObjectURL(url);
   }
 
-  function parseImport(json: string): { name: string; items: LiturgyLibraryItem["items"] } | null {
+  function parseImport(json: string): { name: string; items: LiturgyItem[] } | null {
     try {
       const data = JSON.parse(json);
       if (data && typeof data.name === "string" && Array.isArray(data.items)) {
-        return { name: data.name, items: data.items };
+        const rawItems = data.items as unknown[];
+        const items = rawItems
+          .map(_normalizeLiturgyItem)
+          .filter((i): i is LiturgyItem => i !== null);
+        // Se o arquivo tinha itens mas nenhum foi válido, rejeita o import inteiro.
+        if (rawItems.length > 0 && items.length === 0) return null;
+        return { name: data.name, items };
       }
       return null;
     } catch {

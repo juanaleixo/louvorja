@@ -337,7 +337,7 @@ A porta base é **7070** (ou a salva no `userStore`). Se estiver em uso:
    antes de escolher. Detecta qualquer listener na porta, incluindo o
    servidor da versão Delphi do LouvorJA (que pode escutar em IPv6 e não
    geraria `EADDRINUSE` no bind IPv4 do Express).
-2. Se ocupada, sorteia uma **porta aleatória no range 7000–8000**
+2. Se ocupada, sorteia uma **porta aleatória no range 7000–9000**
    (até 100 tentativas), com `EADDRINUSE` como rede de segurança.
 3. A porta efetiva é persistida e propagada ao renderer (`httpServer.status()`),
    `HTTP_BASE_URL` do main e tela Transmitir.

@@ -47,18 +47,18 @@ git checkout -b fix/nome-do-bug
 
 ## Comandos de desenvolvimento
 
-| Comando                | Descrição                                              |
-|------------------------|--------------------------------------------------------|
-| `npm run dev`          | Servidor web/PWA em `http://localhost:5002`            |
-| `npm run host`         | Dev exposto na rede local (testes mobile)              |
-| `npm run build`        | Build de produção para web/PWA                         |
-| `npm run typecheck`    | TypeScript (`vue-tsc --noEmit`)                        |
-| `npm run validate:manifests` | Valida os `manifest.ts` dos módulos               |
-| `npm run lint`         | ESLint em todo o projeto                               |
-| `npm test`             | Vitest (testes unitários)                              |
-| `npm run files`        | Servidor de arquivos local na porta 7070 (dev offline) |
-| `npm run electron:dev` | Roda versão desktop do app (Electron)                  |
-| `npm run electron:build` | Gera instaláveis (NSIS/DMG/AppImage)                 |
+| Comando                      | Descrição                                                                    |
+|------------------------------|------------------------------------------------------------------------------|
+| `npm run dev`                | Servidor web/PWA em `http://localhost:5002`                                  |
+| `npm run host`               | Dev exposto na rede local (testes mobile)                                    |
+| `npm run build`              | Build de produção para web/PWA                                               |
+| `npm run typecheck`          | TypeScript (`vue-tsc --noEmit`)                                              |
+| `npm run validate:manifests` | Valida os `manifest.ts` dos módulos                                          |
+| `npm run lint`               | ESLint em todo o projeto                                                     |
+| `npm test`                   | Vitest (testes unitários)                                                    |
+| `npm run files`              | Servidor de arquivos local em 7070 ou em uma porta de fallback (dev offline) |
+| `npm run electron:dev`       | Roda versão desktop do app (Electron)                                        |
+| `npm run electron:build`     | Gera instaláveis (NSIS/DMG/AppImage/DEB/RPM, conforme a plataforma)          |
 
 > A porta 5002 é deliberada — o Electron usa `DEV_URL=http://localhost:5002`.
 > Não a altere sem atualizar `vite.config.js` e `electron/main.cjs` em conjunto.

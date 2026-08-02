@@ -1,18 +1,20 @@
-import { ref, computed } from "vue";
+import { ref, computed, type Ref, type ComputedRef } from "vue";
 import { useI18n } from "vue-i18n";
 import $liturgy from "@/helpers/Liturgy";
 import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+import type { ScheduledCategory, ScheduledItem } from "@/types/Liturgy";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 
-const TRANSLATIONS = { pt, es };
+const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
 
-function _t(key, locale) {
+function _t(key: string, locale: string): string {
   const dict = TRANSLATIONS[locale] || TRANSLATIONS.pt;
   const path = key.split(".");
-  let cur = dict;
+  let cur: unknown = dict;
   for (const k of path) {
-    if (cur && typeof cur === "object" && k in cur) cur = cur[k];
+    if (cur && typeof cur === "object" && k in cur) cur = (cur as Record<string, unknown>)[k];
     else return key;
   }
   return typeof cur === "string" ? cur : key;
@@ -20,84 +22,90 @@ function _t(key, locale) {
 
 export function useLiturgyPersistence() {
   const i18n = useI18n();
-  const getLocale = () => (typeof i18n.locale.value === "string" ? i18n.locale.value : "pt");
-  const t = (key) => _t(key, getLocale());
+  const getLocale = (): string => (typeof i18n.locale.value === "string" ? i18n.locale.value : "pt");
+  const t = (key: string): string => _t(key, getLocale());
 
   // Sempre inicia no dia de hoje (não restaura último selecionado).
-  const activeDay = ref(new Date().getDay());
+  const activeDay: Ref<number> = ref(new Date().getDay());
   $liturgy.setActiveDay(activeDay.value);
 
-  const locked = ref($userdata.get("modules.liturgy.locked", false));
-  const showNotes = ref($userdata.get("modules.liturgy.show_notes", true));
-  const markOnAccess = ref($userdata.get("modules.liturgy.mark_on_access", true));
-  const schedulesDialog = ref(false);
-  const activeCatId = ref(null);
-  const editingCatId = ref(null);
-  const editingCatName = ref("");
+  const locked: Ref<boolean> = ref($userdata.get(KEYS.MODULES.LITURGY.LOCKED, false) as boolean);
+  const showNotes: Ref<boolean> = ref($userdata.get(KEYS.MODULES.LITURGY.SHOW_NOTES, true) as boolean);
+  const markOnAccess: Ref<boolean> = ref(
+    $userdata.get(KEYS.MODULES.LITURGY.MARK_ON_ACCESS, true) as boolean
+  );
+  const schedulesDialog: Ref<boolean> = ref(false);
+  const activeCatId: Ref<string | number | null> = ref(null);
+  const editingCatId: Ref<string | number | null> = ref(null);
+  const editingCatName: Ref<string> = ref("");
 
   // Caches reativos de scheduled (evita $forceUpdate)
-  const _scheduledCategoriesCache = ref([]);
-  const _scheduledItemsCache = ref([]);
+  const _scheduledCategoriesCache: Ref<ScheduledCategory[]> = ref([]);
+  const _scheduledItemsCache: Ref<ScheduledItem[]> = ref([]);
 
-  function _refreshScheduled() {
+  function _refreshScheduled(): void {
     _scheduledCategoriesCache.value = $liturgy.scheduledCategories();
     _scheduledItemsCache.value = $liturgy.scheduledItems();
   }
   _refreshScheduled();
 
-  const scheduledCategories = computed(() => _scheduledCategoriesCache.value);
+  const scheduledCategories: ComputedRef<ScheduledCategory[]> = computed(
+    () => _scheduledCategoriesCache.value
+  );
 
-  const activeCategory = computed(
+  const activeCategory: ComputedRef<ScheduledCategory | null> = computed(
     () => _scheduledCategoriesCache.value.find((c) => c.id === activeCatId.value) || null
   );
 
-  const categoryItems = computed(() => {
+  const categoryItems: ComputedRef<ScheduledItem[]> = computed(() => {
     if (!activeCatId.value) return [];
     return _scheduledItemsCache.value
       .filter((i) => i.categoria === activeCatId.value)
-      .sort((a, b) => (a.data || "").localeCompare(b.data || ""));
+      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
   });
 
-  const noteDays = computed(() => {
+  const noteDays: ComputedRef<string[]> = computed(() => {
     const dict = TRANSLATIONS[getLocale()] || TRANSLATIONS.pt;
-    return dict.notes?.days || ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+    return (dict as Record<string, Record<string, unknown>>).notes?.days as string[] || [
+      "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab",
+    ];
   });
 
-  const currentNote = computed(() => $liturgy.getDayNote(activeDay.value) ?? "");
+  const currentNote: ComputedRef<string> = computed(() => $liturgy.getDayNote(activeDay.value) ?? "");
 
   /* ============== Dia ativo ============== */
-  function setActiveDay(i) {
+  function setActiveDay(i: number | string): void {
     const idx = Math.max(0, Math.min(6, Number(i)));
     activeDay.value = idx;
     $liturgy.setActiveDay(idx);
   }
 
   /* ============== Bloqueio ============== */
-  function toggleLock() {
+  function toggleLock(): void {
     locked.value = !locked.value;
-    $userdata.set("modules.liturgy.locked", locked.value);
+    $userdata.set(KEYS.MODULES.LITURGY.LOCKED, locked.value);
   }
 
   /* ============== Anotações ============== */
-  function setNote(html) {
+  function setNote(html: string): void {
     $liturgy.setDayNote(activeDay.value, html ?? "");
   }
 
-  function onNoteInput(e) {
-    const target = e?.target;
-    const html = target?.innerHTML ?? target?.value ?? "";
+  function onNoteInput(e: Event): void {
+    const target = e?.target as HTMLElement | null;
+    const html = target?.innerHTML ?? (target as HTMLInputElement | null)?.value ?? "";
     setNote(html);
   }
 
   /* ============== Itens Agendados ============== */
-  function openSchedulesDialog() {
+  function openSchedulesDialog(): void {
     schedulesDialog.value = true;
     if (!activeCatId.value && _scheduledCategoriesCache.value.length) {
       activeCatId.value = _scheduledCategoriesCache.value[0].id;
     }
   }
 
-  function addCategory() {
+  function addCategory(): void {
     const nome = prompt(t("schedules.new_category"));
     if (!nome || !nome.trim()) return;
     const id = $liturgy.addScheduledCategory(nome.trim());
@@ -105,26 +113,26 @@ export function useLiturgyPersistence() {
     activeCatId.value = id;
   }
 
-  function startEditingCategory(c) {
+  function startEditingCategory(c: ScheduledCategory): void {
     editingCatId.value = c.id;
     editingCatName.value = c.nome;
   }
 
-  function setActiveCatId(id) {
+  function setActiveCatId(id: string | number | null): void {
     activeCatId.value = id;
   }
 
-  function toggleNotes() {
+  function toggleNotes(): void {
     showNotes.value = !showNotes.value;
-    $userdata.set("modules.liturgy.show_notes", showNotes.value);
+    $userdata.set(KEYS.MODULES.LITURGY.SHOW_NOTES, showNotes.value);
   }
 
-  function toggleMarkOnAccess() {
+  function toggleMarkOnAccess(): void {
     markOnAccess.value = !markOnAccess.value;
-    $userdata.set("modules.liturgy.mark_on_access", markOnAccess.value);
+    $userdata.set(KEYS.MODULES.LITURGY.MARK_ON_ACCESS, markOnAccess.value);
   }
 
-  function saveCategoryName(id, name) {
+  function saveCategoryName(id: string | number, name?: string): void {
     const trimmed = (name ?? editingCatName.value).trim();
     if (trimmed) {
       $liturgy.updateScheduledCategory(id, { nome: trimmed });
@@ -133,21 +141,21 @@ export function useLiturgyPersistence() {
     editingCatId.value = null;
   }
 
-  function removeCategory(id) {
+  function removeCategory(id: string | number): void {
     if (!confirm(t("schedules.remove_category_confirm"))) return;
     $liturgy.removeScheduledCategory(id);
     _refreshScheduled();
     if (activeCatId.value === id) activeCatId.value = null;
   }
 
-  function addScheduledItem() {
+  function addScheduledItem(): void {
     if (!activeCatId.value) return;
     const today = new Date().toISOString().slice(0, 10);
-    $liturgy.addScheduledItemEntry(activeCatId.value, today, "", "");
+    $liturgy.addScheduledItemEntry(String(activeCatId.value), today, "", "");
     _refreshScheduled();
   }
 
-  function updateScheduled(it) {
+  function updateScheduled(it: ScheduledItem): void {
     $liturgy.updateScheduledItemEntry(it.id, {
       data: it.data,
       nome: it.nome,
@@ -157,7 +165,7 @@ export function useLiturgyPersistence() {
     _refreshScheduled();
   }
 
-  function removeScheduled(id) {
+  function removeScheduled(id: string | number): void {
     if (!confirm(t("dialog.remove_confirm"))) return;
     $liturgy.removeScheduledItemEntry(id);
     _refreshScheduled();

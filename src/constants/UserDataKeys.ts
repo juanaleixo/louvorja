@@ -48,6 +48,9 @@ export const KEYS = {
       LEGACY_WEEKDAY_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.weekday_notes`,
       CURRENT_LITURGY_ID: `${MODULES}.${ModuleEnum.LITURGY}.current_liturgy_id`,
       DAY_LITURGIES: `${MODULES}.${ModuleEnum.LITURGY}.day_liturgies`,
+      LOCKED: `${MODULES}.${ModuleEnum.LITURGY}.locked`,
+      SHOW_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.show_notes`,
+      MARK_ON_ACCESS: `${MODULES}.${ModuleEnum.LITURGY}.mark_on_access`,
     },
     MEDIA: {
       FADE_AUDIO: `${MODULES}.${ModuleEnum.MEDIA}.fade_audio`,

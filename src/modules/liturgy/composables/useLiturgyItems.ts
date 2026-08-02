@@ -525,8 +525,8 @@ export function useLiturgyItems(
     const map: Record<string, { id_music: number; mode: MusicActionEnum }> = {
       sung: { id_music: item.id_music, mode: MusicActionEnum.AUDIO },
       pb: { id_music: item.id_music, mode: MusicActionEnum.INSTRUMENTAL },
-      lyric: { id_music: item.id_music, mode: "no_audio" as MusicActionEnum },
-      no_audio: { id_music: item.id_music, mode: "no_audio" as MusicActionEnum },
+      lyric: { id_music: item.id_music, mode: MusicActionEnum.NO_AUDIO },
+      no_audio: { id_music: item.id_music, mode: MusicActionEnum.NO_AUDIO },
     };
     $media.open(map[mode] || map.sung);
   }
