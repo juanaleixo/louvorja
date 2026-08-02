@@ -17,7 +17,7 @@ Copie `.env.example` para `.env` e preencha os valores reais.
 | Tipo        | URL (string)                             |
 | Exemplo     | `https://api.louvorja.com.br/json_db`    |
 | Offline     | `http://localhost:7070/database`         |
-| Usado em    | `helpers/Path.ts`, `helpers/Database.ts`, `main.js`, `modules/update` |
+| Usado em    | `helpers/Path.ts`, `helpers/Database.ts`, `main.js`, `layout/shell/AppMenuAtualizacoes.vue` |
 
 URL base do banco de dados JSON. Todas as chamadas de `$database.get(key)` resolvem para
 `{VITE_URL_DATABASE}/{key}`. Se ausente, nenhum dado de música/bíblia/coletânea carrega.
@@ -44,7 +44,7 @@ Se ausente, a reprodução de áudio e carregamento de imagens de fundo falham s
 |-------------|------------------------------------------|
 | Tipo        | string (token opaco)                     |
 | Exemplo     | *(obtido com o administrador)*           |
-| Usado em    | `helpers/Database.ts`, `main.js`, `modules/update` |
+| Usado em    | `helpers/Database.ts`, `main.js`, `layout/shell/AppMenuAtualizacoes.vue` |
 
 Token enviado como header `Api-Token` em todas as requisições ao servidor louvorja.
 Se ausente, as requisições ao `api.louvorja.com.br` retornam 401 e o app não carrega dados.
@@ -75,15 +75,14 @@ independente do `mode` do Vite.
 | Tipo        | string semver                                  |
 | Exemplo     | `1.27.0`                                       |
 | Padrão      | `"—"` (fallback no display)                   |
-| Usado em    | `modules/update/components/Index.vue`          |
+| Usado em    | legado — substituído por `app.getVersion()`    |
 
-Versão exibida no módulo **Atualização**. Normalmente injetada pelo CI:
+> **Legado.** No desktop (Electron) a versão exibida na tela **Atualizações**
+> (`layout/shell/AppMenuAtualizacoes.vue`) vem de `app.getVersion()`
+> (package.json via `electron/main/updater.js`), não desta variável.
+> Mantida para compatibilidade com o build web/PWA.
 
-```bash
-VITE_APP_VERSION=$npm_package_version npm run build
-```
-
-Se não definida, o módulo exibe `"—"` no lugar da versão atual.
+Se não definida, o display usa `"—"` como fallback.
 
 ---
 

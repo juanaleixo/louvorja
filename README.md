@@ -22,6 +22,22 @@ Para desktop (Electron): `npm run electron:dev`.
 
 ---
 
+## Atualizações (desktop)
+
+O app verifica versões novas no [GitHub Releases](https://github.com/juanaleixo/louvorja/releases).
+Em **Windows/macOS/AppImage** usa `electron-updater`; em **Linux deb/rpm** faz o check
+via GitHub API e baixa o `.deb`/`.rpm` para instalação manual.
+
+Na tela **Procurar Atualizações** (AppMenu → Atualizações) há opções configuráveis:
+
+- **Usar versões beta** — considera releases pré-release (default ativo durante preview)
+- **Verificar novas versões ao iniciar** — check no boot com snackbar clicável
+- **Baixar atualizações automaticamente** — baixa em background e acende o badge na ShellTools
+
+Detalhes em [docs/architecture.md](docs/architecture.md#-auto-update-do-app-d8).
+
+---
+
 ## Stack
 
 | Tecnologia | Versão | Nota |
