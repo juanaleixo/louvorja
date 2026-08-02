@@ -323,6 +323,31 @@ evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
 
 ---
 
+## 🌐 Servidor HTTP embarcado (D5)
+
+Express servindo a SPA Vue + API `/api/*` + SSE `/events` (OBS/celular),
+com aliases Delphi (`/musica`, `/biblia`). Roda sempre — janelas auxiliares
+do Electron dependem da origem HTTP para YouTube IFrame API e BroadcastChannel.
+
+### Fallback de porta
+
+A porta base é **7070** (ou a salva no `userStore`). Se estiver em uso:
+
+1. **Probe de porta** (`_probePort`) — testa TCP em `127.0.0.1` e `[::1]`
+   antes de escolher. Detecta qualquer listener na porta, incluindo o
+   servidor da versão Delphi do LouvorJA (que pode escutar em IPv6 e não
+   geraria `EADDRINUSE` no bind IPv4 do Express).
+2. Se ocupada, sorteia uma **porta aleatória no range 7000–8000**
+   (até 100 tentativas), com `EADDRINUSE` como rede de segurança.
+3. A porta efetiva é persistida e propagada ao renderer (`httpServer.status()`),
+   `HTTP_BASE_URL` do main e tela Transmitir.
+4. Se **todas** as tentativas falharem: o app exibe um dialog de erro
+   ("Não foi possível iniciar o aplicativo — não foi possível reservar uma
+   porta") e fecha ao clicar OK.
+
+
+---
+
 ## 🗂 Estrutura de Diretórios
 
 ```

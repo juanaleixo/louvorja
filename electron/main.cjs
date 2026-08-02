@@ -224,6 +224,19 @@ app.whenReady().then(async () => {
     const externalEnabled = cfg.httpServer?.externalRoutesEnabled !== false;
     httpServer.setExternalRoutesEnabled(externalEnabled);
   } catch (e) {
+    // Falha fatal: nenhuma porta disponível no range → avisa e fecha o app.
+    if (e && e.portExhausted) {
+      await dialog.showMessageBox({
+        type: "error",
+        title: "LouvorJA",
+        message: "Não foi possível iniciar o aplicativo.",
+        detail: "Não foi possível reservar uma porta no computador. Feche o aplicativo e tente novamente.",
+        buttons: ["OK"],
+      });
+      app.exit(1);
+      return; // encerra o boot — nada mais roda
+    }
+    // Outros erros: mantém o fallback atual (louvorja://)
     console.warn("[main] HTTP server não disponível, usando louvorja://:", e.message);
     HTTP_BASE_URL = "";
   }
@@ -534,9 +547,10 @@ ipcMain.handle("windows:open", (_event, options) => {
   const prodHtmlPath = path.join(paths.webBuild(), "index.html");
   // Todas as janelas Electron compartilham a mesma origem:
   //   - dev: http://localhost:5002 (Vite dev server)
-  //   - prod: http://localhost:PORT (Express server)
+  //   - prod: http://127.0.0.1:PORT (Express server)
   // Isso garante que BroadcastChannel funcione entre todas as janelas
   // e que o YouTube IFrame Player API aceite a origem (HTTP real).
+  // 127.0.0.1 (IPv4) evita cair no servidor da versão Delphi (IPv6).
   const devUrl = isDev ? DEV_URL : (HTTP_BASE_URL ? `${HTTP_BASE_URL}/#` : "");
   const win = windowFactory.openOnMonitor({
     ...options,

@@ -22,6 +22,7 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs-extra");
+const net = require("net");
 const { app: electronApp } = require("electron");
 
 const paths = require("../paths.js");
@@ -49,6 +50,59 @@ function generateToken() {
     out += TOKEN_CHARS[Math.floor(Math.random() * TOKEN_CHARS.length)];
   }
   return out;
+}
+
+/**
+ * Range de portas para o fallback quando a porta base está em uso.
+ * Se a porta base (7070 ou salva) estiver ocupada, o servidor sorteia uma
+ * porta aleatória neste range até achar uma livre (MAX_PORT_ATTEMPTS).
+ */
+const PORT_RANGE = { min: 7000, max: 9000 };
+const MAX_PORT_ATTEMPTS = 100;
+
+/**
+ * Sorteia uma porta aleatória no range, ignorando as já tentadas.
+ * @param {Set<number>} excluded Portas já tentadas
+ * @returns {number}
+ */
+function _randomPort(excluded) {
+  const { min, max } = PORT_RANGE;
+  let port;
+  do {
+    port = min + Math.floor(Math.random() * (max - min + 1));
+  } while (excluded.has(port));
+  return port;
+}
+
+/**
+ * Verifica se ALGUÉM já escuta na porta (IPv4 e/ou IPv6 loopback).
+ *
+ * Necessário porque `app.listen(port, "0.0.0.0")` só lança EADDRINUSE para
+ * conflitos IPv4. Se outro processo (ex.: versão Delphi do LouvorJA) escuta
+ * em IPv6 (`::1`/`[::]`), o bind IPv4 do Express "passa" sem erro e a janela
+ * acaba carregando o servidor errado. Este probe de TCP detecta qualquer
+ * listener na porta, independente da família de endereço.
+ *
+ * @param {number} port
+ * @param {number} [timeoutMs]
+ * @returns {Promise<{ inUse: boolean }>}
+ */
+function _probePort(port, timeoutMs = 500) {
+  return new Promise((resolve) => {
+    const hosts = ["127.0.0.1", "::1"];
+    let remaining = hosts.length;
+    let inUse = false;
+    const done = (v) => {
+      if (v) inUse = true;
+      if (--remaining === 0) resolve({ inUse });
+    };
+    for (const host of hosts) {
+      const sock = net.connect({ host, port, timeout: timeoutMs });
+      sock.once("connect", () => { sock.destroy(); done(true); });
+      sock.once("error", () => { sock.destroy(); done(false); });
+      sock.once("timeout", () => { sock.destroy(); done(false); });
+    }
+  });
 }
 
 /**
@@ -98,7 +152,7 @@ function _isDev() {
  * @param {{ port?: number, mainWindow?: Electron.BrowserWindow }} opts
  * @returns {Promise<{ port: number, token: string }>}
  */
-function start({ port, mainWindow } = {}) {
+async function start({ port, mainWindow } = {}) {
   if (_server) return Promise.resolve({ port: _port, token: _token });
 
   // Resolve a porta: param > userStore > 7070.
@@ -185,8 +239,8 @@ function start({ port, mainWindow } = {}) {
   // SSE — clients remotos (OBS/celular) recebem slide_change, bible_verse,
   // module_projection_value etc. Auth já passou (token query ou localhost).
   app.get("/events", events.handler);
-  
-  setupRoutes(app, { 
+
+  setupRoutes(app, {
     getMainWindow: () => _mainWindow,
     getUserData: () => getUserData(),
     jsonCache,
@@ -208,23 +262,51 @@ function start({ port, mainWindow } = {}) {
   });
 
   return new Promise((resolve, reject) => {
-    _server = app.listen(_port, "0.0.0.0", () => {
-      _persistPort(_port);
-      console.log(`[httpServer] Rodando em http://0.0.0.0:${_port} (token: ${_token})`);
-      // Pede à janela principal que reemita o estado atual (slide, versículo,
-      // valores de módulos). Sem isso, ligar o servidor com música já tocando
-      // deixaria o cliente SSE conectado mas sem nada para renderizar — os
-      // emissores só publicam ao MUDAR de slide/versículo.
-      try {
-        if (_mainWindow && !_mainWindow.isDestroyed()) {
-          _mainWindow.webContents.send("transmission:request-state");
+    const tried = new Set();
+    const tryPort = (port) => {
+      if (tried.size >= MAX_PORT_ATTEMPTS) {
+        const err = new Error("Nenhuma porta disponível no range configurado");
+        err.portExhausted = true;
+        return reject(err);
+      }
+      tried.add(port);
+      const server = app.listen(port, "0.0.0.0", () => {
+        _server = server;
+        _port = port;
+        _persistPort(port);
+        console.log(`[httpServer] Rodando em http://0.0.0.0:${_port} (token: ${_token})`);
+        // Pede à janela principal que reemita o estado atual (slide, versículo,
+        // valores de módulos). Sem isso, ligar o servidor com música já tocando
+        // deixaria o cliente SSE conectado mas sem nada para renderizar — os
+        // emissores só publicam ao MUDAR de slide/versículo.
+        try {
+          if (_mainWindow && !_mainWindow.isDestroyed()) {
+            _mainWindow.webContents.send("transmission:request-state");
+          }
+        } catch (_) { /* noop */ }
+        resolve({ port, token: _token });
+      });
+      server.on("error", (err) => {
+        if (err.code === "EADDRINUSE") {
+          try { server.close(); } catch (_) { /* noop */ }
+          console.warn(`[httpServer] Porta ${port} em uso, tentando porta aleatória...`);
+          tryPort(_randomPort(tried));
+        } else {
+          _server = null;
+          reject(err);
         }
-      } catch (_) { /* noop */ }
-      resolve({ port: _port, token: _token });
-    });
-    _server.on("error", (err) => {
-      _server = null;
-      reject(err);
+      });
+    };
+    // Probe antes de escolher: detecta qualquer listener na porta (IPv4/IPv6),
+    // incluindo o servidor da versão Delphi que o EADDRINUSE IPv4 não pega.
+    _probePort(_port).then((probe) => {
+      if (probe.inUse) {
+        console.warn(`[httpServer] Porta base ${_port} ocupada (probe) — sorteando outra...`);
+        tryPort(_randomPort(tried));
+      } else {
+        // Tenta primeiro a porta base (7070 ou salva); se ocupada, sorteia no range.
+        tryPort(_port);
+      }
     });
   });
 }

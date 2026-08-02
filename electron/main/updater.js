@@ -481,8 +481,12 @@ async function checkForUpdates() {
     await autoUpdater.checkForUpdates();
     return { ok: true, state: { ..._state } };
   } catch (e) {
-    _setState({ status: "error", error: e.message });
-    return { ok: false, error: e.message };
+    // electron-updater falhou (ex.: sem release estável no GitHub → HTTP 406
+    // quando "usar versões beta" está desligado e só existem pré-releases).
+    // Fallback para GitHub API, que filtra corretamente e reporta
+    // "not-available" em vez de estourar erro cru no botão.
+    console.warn("[updater] electron-updater check falhou, usando GitHub API:", e.message);
+    return checkGithubAndSetState();
   }
 }
 
