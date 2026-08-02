@@ -30,6 +30,7 @@
     <MusicSpotlight v-model="musicSearchOpen" />
     <BibleSpotlight v-model="bibleSearchOpen" @select="onBibleSelect" />
     <HotkeysCheatsheet v-model="hotkeysOpen" />
+    <ReleaseNotesDialog v-model="releaseNotesOpen" @close="onReleaseNotesClose" />
     <StartupCheckDialog v-model="startupCheckOpen" />
   </v-app>
 </template>
@@ -53,6 +54,8 @@ import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";
 import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";
 import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
 import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
+import ReleaseNotesDialog from "@/components/ReleaseNotesDialog.vue";
+import packageJson from "@root/package.json";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $snackbar from "@/helpers/Snackbar";
@@ -73,6 +76,7 @@ const musicSearchOpen = ref(false);
 const bibleSearchOpen = ref(false);
 const hotkeysOpen = ref(false);
 const startupCheckOpen = ref(false);
+const releaseNotesOpen = ref(false);
 const ready = ref(false);
 
 const liturgyModuleOpen = computed(() => {
@@ -180,6 +184,18 @@ function openBibleSearch() {
 
 defineExpose({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch, openBibleSearch });
 
+// Ao fechar o modal de novidades: persiste a dispensa (se marcado) e segue
+// para o startup check de arquivos.
+function onReleaseNotesClose(dontShowAgain = false) {
+  if (dontShowAgain) {
+    $userdata.set(KEYS.OPTIONS.SKIP_RELEASE_NOTES_VERSION, packageJson.version);
+  }
+  const skip = $userdata.get(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
+  if (!skip) {
+    startupCheckOpen.value = true;
+  }
+}
+
 // Registra ações do shell no composable (substitui `$appdata.set("shell._ref")`)
 registerShell({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch, openBibleSearch });
 
@@ -252,10 +268,15 @@ onMounted(() => {
     $appdata.set("is_online", true);
   }
 
-  // Startup check — só no desktop e se não tiver skip ativo
+  // Startup check — só no desktop e se não tiver skip ativo.
+  // Antes dele, exibimos o modal de novidades da versão (release notes) caso o
+  // usuário ainda não o tenha dispensado para a versão atual.
   if (display.platform.value.electron) {
     const skip = $userdata.get(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
-    if (!skip) {
+    const skippedNotesVersion = $userdata.get(KEYS.OPTIONS.SKIP_RELEASE_NOTES_VERSION, null);
+    if (skippedNotesVersion !== packageJson.version) {
+      releaseNotesOpen.value = true; // abre novidades primeiro
+    } else if (!skip) {
       startupCheckOpen.value = true;
     }
   }

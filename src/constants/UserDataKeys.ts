@@ -119,6 +119,7 @@ export const KEYS = {
     FULLSCREEN: `${OPTIONS}.fullscreen`,
     LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
     LAST_APP_CHECK: `${OPTIONS}.last_app_check`,
+    SKIP_RELEASE_NOTES_VERSION: `${OPTIONS}.skip_release_notes_version`,
     SKIP_STARTUP_CHECK: `${OPTIONS}.skip_startup_check`,
     USE_BETA_UPDATES: `${OPTIONS}.use_beta_updates`,
     CHECK_UPDATES_ON_START: `${OPTIONS}.check_updates_on_start`,

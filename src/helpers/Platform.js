@@ -153,8 +153,8 @@ export default {
    * null quando rodando no browser/PWA.
    *
    * @returns {{ check, download, install, status, setOptions,
-   *             downloadPackage, openPackage, openReleasePage, getInstallType,
-   *             onPackageProgress, onStateChange } | null}
+   *             downloadPackage, openPackage, openReleasePage, getReleaseNotes,
+   *             getInstallType, onPackageProgress, onStateChange } | null}
    */
   get updater() {
     return api?.updater ?? null;

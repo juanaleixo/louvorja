@@ -385,6 +385,7 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     downloadPackage: () => ipcRenderer.invoke("updater:downloadPackage"),
     openPackage: () => ipcRenderer.invoke("updater:openPackage"),
     openReleasePage: () => ipcRenderer.invoke("updater:openReleasePage"),
+    getReleaseNotes: () => ipcRenderer.invoke("updater:getReleaseNotes"),
     getInstallType: () => ipcRenderer.invoke("updater:getInstallType"),
     onPackageProgress: (cb) => {
       const handler = (_e, data) => cb(data);

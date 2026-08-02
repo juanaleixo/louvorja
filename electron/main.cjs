@@ -784,6 +784,9 @@ ipcMain.handle("updater:openPackage", () => updater.openPackage());
 /** Abre a página da release no browser (fallback). */
 ipcMain.handle("updater:openReleasePage", () => updater.openReleasePage());
 
+/** Retorna os release notes da versão instalada (tag v<appVersion>). */
+ipcMain.handle("updater:getReleaseNotes", () => updater.getCurrentReleaseNotes());
+
 /** Retorna o tipo de instalação atual: "appimage" | "deb" | "rpm" (linux). */
 ipcMain.handle("updater:getInstallType", () => updater.getInstallType());
 

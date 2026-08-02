@@ -379,6 +379,33 @@ function openReleasePage() {
   require("electron").shell.openExternal(url);
 }
 
+/**
+ * Busca os release notes da versão INSTALADA (tag v<appVersion>) no GitHub.
+ *
+ * Usa a versão atual (e não a latest) para que o modal de novidades mostre o
+ * changelog da versão que o usuário está rodando — ao atualizar, a versão muda
+ * e o modal reaparece (combinado com "não mostrar novamente para esta versão").
+ *
+ * Retorna { version, name, body, url } ou null se a release não existir.
+ */
+async function getCurrentReleaseNotes() {
+  const version = app.getVersion();
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tags/v${version}`;
+  try {
+    const release = await _request(url, { parseJson: true });
+    if (!release || !release.tag_name) return null;
+    return {
+      version: String(release.tag_name).replace(/^v/, ""),
+      name: release.name || release.tag_name,
+      body: release.body || "",
+      url: release.html_url || `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tag/${release.tag_name}`,
+    };
+  } catch (e) {
+    console.warn("[updater] getCurrentReleaseNotes falhou:", e.message);
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -600,6 +627,7 @@ module.exports = {
   downloadPackage,
   openPackage,
   openReleasePage,
+  getCurrentReleaseNotes,
   getInstallType,
   isDebRpm,
 };

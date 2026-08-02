@@ -939,5 +939,13 @@
     "select_files": "Seleccionar Archivos",
     "download_all": "Descargar Todo",
     "sync_hint": "Puede descargar álbumes o versiones bíblicas específicas después en el menú Opciones > Sincronizar."
+  },
+  "release_notes": {
+    "title": "Novedades de la versión",
+    "loading": "Cargando novedades...",
+    "error_offline": "No se pudieron obtener las novedades de la versión. Verifique su conexión a internet.",
+    "dont_show_again": "No mostrar de nuevo para esta versión",
+    "view_on_github": "Ver en GitHub",
+    "no_notes": "No hay notas de versión para mostrar."
   }
 }

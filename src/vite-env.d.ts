@@ -71,6 +71,12 @@ declare global {
       downloadPackage: () => Promise<{ ok: boolean; path?: string; error?: string }>;
       openPackage: () => Promise<{ ok: boolean; error?: string }>;
       openReleasePage: () => Promise<unknown>;
+      getReleaseNotes: () => Promise<{
+        version: string;
+        name: string;
+        body: string;
+        url: string;
+      } | null>;
       getInstallType: () => Promise<"appimage" | "deb" | "rpm">;
       onPackageProgress: (cb: (d: { percent: number; received: number; total: number }) => void) => () => void;
       onStateChange: (cb: (state: {
