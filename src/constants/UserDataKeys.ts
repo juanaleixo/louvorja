@@ -51,10 +51,12 @@ export const KEYS = {
       LOCKED: `${MODULES}.${ModuleEnum.LITURGY}.locked`,
       SHOW_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.show_notes`,
       MARK_ON_ACCESS: `${MODULES}.${ModuleEnum.LITURGY}.mark_on_access`,
+      SHOW: `${MODULES}.${ModuleEnum.LITURGY}.show`,
     },
     MEDIA: {
       FADE_AUDIO: `${MODULES}.${ModuleEnum.MEDIA}.fade_audio`,
       LAZY_LOAD: `${MODULES}.${ModuleEnum.MEDIA}.lazy_load`,
+      MINIMIZED: `${MODULES}.${ModuleEnum.MEDIA}.minimized`,
     },
     MEDIA_LIBRARY: {
       IS_PLAYING: `${MODULES}.${ModuleEnum.MEDIA_LIBRARY}.is_playing`,
@@ -151,6 +153,11 @@ export const KEYS = {
   },
   SHELL: {
     IS_DARK: "is_dark",
+    IS_DEV: "is_dev",
+    IS_MOBILE: "is_mobile",
+    IS_DESKTOP: "is_desktop",
+    IS_ONLINE: "is_online",
+    POPUP: "popup",
     APP_UPDATE_AVAILABLE: "app_update_available",
     APP_UPDATE_VERSION: "app_update_version",
   },

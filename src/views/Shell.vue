@@ -35,7 +35,7 @@
   </v-app>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTheme, useDisplay } from "vuetify";
@@ -65,6 +65,7 @@ import { KEYS } from "@/constants/UserDataKeys";
 import $popup from "@/helpers/Popup";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import type { BibleSearchResult } from "@/types/Bible";
 
 import { registerShell } from "@/composables/useShell";
 
@@ -81,12 +82,12 @@ const releaseNotesOpen = ref(false);
 const ready = ref(false);
 
 const liturgyModuleOpen = computed(() => {
-  return $appdata.get("modules.liturgy.show", false) === true;
+  return $appdata.get<boolean>(KEYS.MODULES.LITURGY.SHOW, false) === true;
 });
 
 const playerActive = computed(() => {
   try {
-    return $appdata.get("modules.media.minimized", false) === true;
+    return $appdata.get<boolean>(KEYS.MODULES.MEDIA.MINIMIZED, false) === true;
   } catch (_) {
     return false;
   }
@@ -106,8 +107,8 @@ const onOpenBibleSearch = () => {
   bibleSearchOpen.value = true;
 };
 
-let beforeUnloadHandler = null;
-let messageHandler = null;
+let beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
+let messageHandler: ((event: MessageEvent) => void) | null = null;
 
 // ---------------------------------------------------------------------------
 // Auto-update (D8): verificação ao iniciar + badge na ShellTools
@@ -117,19 +118,24 @@ let messageHandler = null;
 // na ShellTools). Se "baixar automaticamente" estiver ativo, o main baixa em
 // background e o estado "downloaded" também acende o ícone.
 // ---------------------------------------------------------------------------
-let _updaterUnsub = null;
+let _updaterUnsub: (() => void) | null = null;
 let _startupCheckPending = false;
 
 function _openUpdatesScreen() {
   window.dispatchEvent(new CustomEvent("louvorja:open-updates"));
 }
 
-function _handleUpdaterState(state) {
+function _handleUpdaterState(
+  state: {
+    status: string;
+    newVersion?: string | null;
+  } | null
+) {
   if (!state) return;
   if (state.status === "available") {
-    const autoDownload = $userdata.get(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
-    $appdata.set("app_update_available", true);
-    $appdata.set("app_update_version", state.newVersion || "");
+    const autoDownload = $userdata.get<boolean>(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
+    $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, true);
+    $appdata.set(KEYS.SHELL.APP_UPDATE_VERSION, state.newVersion || "");
     // Snackbar apenas no check de INÍCIO (não em check manual na tela) e
     // quando NÃO há auto-download (senão o main baixa sozinho e o "available"
     // é só um estado transitório até "downloading").
@@ -144,17 +150,17 @@ function _handleUpdaterState(state) {
       });
     }
   } else if (state.status === "downloaded") {
-    $appdata.set("app_update_available", true);
-    $appdata.set("app_update_version", state.newVersion || "");
+    $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, true);
+    $appdata.set(KEYS.SHELL.APP_UPDATE_VERSION, state.newVersion || "");
   } else if (state.status === "not-available" || state.status === "error") {
-    $appdata.set("app_update_available", false);
+    $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, false);
     _startupCheckPending = false;
   }
 }
 
 async function _runStartupUpdateCheck() {
   if (!Platform.isDesktop || !Platform.updater) return;
-  const checkOnStart = $userdata.get(KEYS.OPTIONS.CHECK_UPDATES_ON_START, true) === true;
+  const checkOnStart = $userdata.get<boolean>(KEYS.OPTIONS.CHECK_UPDATES_ON_START, true) === true;
   if (!checkOnStart) return;
   _startupCheckPending = true;
   try {
@@ -200,7 +206,7 @@ function onReleaseNotesClose(dontShowAgain = false) {
 // Registra ações do shell no composable (substitui `$appdata.set("shell._ref")`)
 registerShell({ openCommandPalette, openHotkeysCheatsheet, openMusicSearch, openBibleSearch });
 
-function onBibleSelect(res) {
+function onBibleSelect(res: BibleSearchResult) {
   Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
     text: res.text,
     reference: res.reference,
@@ -220,7 +226,7 @@ onMounted(() => {
   $userdata.load();
 
   // Tema
-  const savedTheme = $userdata.get("theme") || "darkblue";
+  const savedTheme = $userdata.get<string>(KEYS.OPTIONS.THEME) || "darkblue";
   try {
     vuetifyTheme.change(savedTheme);
   } catch {
@@ -231,22 +237,22 @@ onMounted(() => {
   // para todo o documento.
   document.documentElement.dataset.theme = savedTheme;
   try {
-    $appdata.set("is_dark", !!vuetifyTheme.global.current.value?.dark);
+    $appdata.set(KEYS.SHELL.IS_DARK, !!vuetifyTheme.global.current.value?.dark);
   } catch {
-    $appdata.set("is_dark", false);
+    $appdata.set(KEYS.SHELL.IS_DARK, false);
   }
 
   // Idioma
-  const lang = $userdata.get("language");
+  const lang = $userdata.get<string>(KEYS.OPTIONS.LANGUAGE);
   if (lang && lang !== "") {
     locale.value = lang;
   } else {
-    $userdata.set("language", locale.value);
+    $userdata.set(KEYS.OPTIONS.LANGUAGE, locale.value);
   }
 
   // Plataforma
   const isDev = import.meta.env.VITE_APP_MODE === "development";
-  $appdata.set("is_dev", isDev);
+  $appdata.set(KEYS.SHELL.IS_DEV, isDev);
 
   // No web/PWA, beforeunload com preventDefault mostra prompt "Tem certeza
   // que quer sair?". No Electron, esse mesmo preventDefault CANCELA o close
@@ -261,12 +267,12 @@ onMounted(() => {
     window.addEventListener("beforeunload", beforeUnloadHandler);
   }
 
-  $appdata.set("is_mobile", display.platform.value.android || display.platform.value.ios);
+  $appdata.set(KEYS.SHELL.IS_MOBILE, display.platform.value.android || display.platform.value.ios);
   if (display.platform.value.electron) {
-    $appdata.set("is_desktop", true);
+    $appdata.set(KEYS.SHELL.IS_DESKTOP, true);
   } else {
-    $appdata.set("is_desktop", false);
-    $appdata.set("is_online", true);
+    $appdata.set(KEYS.SHELL.IS_DESKTOP, false);
+    $appdata.set(KEYS.SHELL.IS_ONLINE, true);
   }
 
   // Startup check — só no desktop e se não tiver skip ativo.
@@ -294,7 +300,7 @@ onMounted(() => {
     // Reaplica o estado atual caso o update já tenha sido encontrado antes do mount
     Platform.updater
       .status()
-      .then((s) => _handleUpdaterState(s))
+      .then((s: { status: string; newVersion?: string | null } | null) => _handleUpdaterState(s))
       .catch(() => {});
     _runStartupUpdateCheck();
   }
@@ -303,7 +309,7 @@ onMounted(() => {
   messageHandler = (event) => {
     if (event.origin !== window.location.origin) return;
     if (event.data === "mounted") {
-      const popup = $appdata.get("popup");
+      const popup = $appdata.get<Window | null>(KEYS.SHELL.POPUP, null);
       if (popup) {
         const data = $appdata.getFlatten();
         Object.keys(data).forEach((key) => {
