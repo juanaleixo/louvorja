@@ -1,4 +1,5 @@
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import { ICONS } from "@/config/Icons";
 
 export interface MusicAction {
   action: MusicActionEnum;
@@ -9,37 +10,37 @@ export interface MusicAction {
 export const MUSIC_ACTION: Record<string, MusicAction> = {
   [MusicActionEnum.AUDIO]: {
     action: MusicActionEnum.AUDIO,
-    icon: "mdi-music-box",
+    icon: ICONS.MUSIC.AUDIO,
     color: "#0034d9",
   },
   [MusicActionEnum.INSTRUMENTAL]: {
     action: MusicActionEnum.INSTRUMENTAL,
-    icon: "mdi-music-box",
+    icon: ICONS.MUSIC.PLAYBACK,
     color: "#00560b",
   },
   [MusicActionEnum.LYRIC]: {
     action: MusicActionEnum.LYRIC,
-    icon: "mdi-text-box-outline",
+    icon: ICONS.MUSIC.LYRIC,
     color: "#7f8c8d",
   },
   [MusicActionEnum.SUNG]: {
     action: MusicActionEnum.SUNG,
-    icon: "mdi-music-box",
-    color: "#c0392b"
+    icon: ICONS.MUSIC.SING,
+    color: "#c0392b",
   },
   [MusicActionEnum.PLAYBACK]: {
     action: MusicActionEnum.PLAYBACK,
-    icon: "mdi-music-box-outline",
+    icon: ICONS.MUSIC.PLAYBACK,
     color: "#1b4f8a",
   },
   [MusicActionEnum.AUDIO_ONLY]: {
     action: MusicActionEnum.AUDIO_ONLY,
-    icon: "mdi-file-music-outline",
+    icon: ICONS.MUSIC.AUDIO,
     color: "#27ae60",
   },
   [MusicActionEnum.PLAYBACK_ONLY]: {
     action: MusicActionEnum.PLAYBACK_ONLY,
-    icon: "mdi-music-note-off",
+    icon: ICONS.MUSIC.AUDIO_PLAYBACK,
     color: "#8e44ad",
   },
 };
