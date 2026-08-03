@@ -109,7 +109,6 @@ jobs:
       - name: Detectar pre-release
         id: meta
         run: |
-          # Tags com hífen (`v1.28.0-preview.1`) são pre-release.
           if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
             echo "title=LouvorJA ${GITHUB_REF_NAME#v} (pré-visualização)" >> "$GITHUB_OUTPUT"
@@ -118,13 +117,89 @@ jobs:
             echo "title=LouvorJA ${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Obter PR associado ao commit
+        id: pr
+        uses: actions-ecosystem/action-get-merged-pull-request@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gerar changelog
+        id: changelog
+        run: |
+          REPO="${GITHUB_REPOSITORY}"
+
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="$PREV_TAG..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          echo "" > changelog.md
+
+          gerar_grupo() {
+            PREFIX=$1
+            HEADER=$2
+            EMOJI=$3
+
+            COMMITS=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^$PREFIX:")
+            if [ -n "$COMMITS" ]; then
+              echo "## $EMOJI $HEADER" >> changelog.md
+              while IFS="|" read -r MSG HASH; do
+                echo "- $EMOJI ${MSG#"$PREFIX:"} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              done <<< "$COMMITS"
+              echo "" >> changelog.md
+            fi
+          }
+
+          gerar_grupo "feat" "Novidades" "✨"
+          gerar_grupo "fix" "Correções" "🐛"
+          gerar_grupo "refactor" "Aprimoramentos" "🔧"
+          gerar_grupo "perf" "Melhorias de performance" "⚡"
+          gerar_grupo "docs" "Documentação" "📝"
+          gerar_grupo "test" "Testes" "🧪"
+          gerar_grupo "chore" "Tarefas internas" "📦"
+
+          OTHER=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep -vE "^(feat|fix|refactor|perf|docs|test|chore):")
+          if [ -n "$OTHER" ]; then
+            echo "## 🔹 Outras mudanças" >> changelog.md
+            while IFS="|" read -r MSG HASH; do
+              echo "- 🔹 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done <<< "$OTHER"
+            echo "" >> changelog.md
+          fi
+
+          CHANGELOG=$(cat changelog.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Montar texto final da release
+        id: notes
+        run: |
+          if [ -n "${{ steps.pr.outputs.body }}" ]; then
+            MAIN_TEXT="${{ steps.pr.outputs.body }}"
+          else
+            MAIN_TEXT=$(git log -1 --pretty=format:"%s%n%n%b")
+          fi
+
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$MAIN_TEXT" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "---" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "# 🔥 Changelog automático" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "${{ steps.changelog.outputs.changelog }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Criar/atualizar release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ steps.meta.outputs.title }}
           prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
-          generate_release_notes: true
+          body: ${{ steps.notes.outputs.body }}
           fail_on_unmatched_files: true
           files: |
             artifacts/**/*.exe
