@@ -240,7 +240,7 @@ jobs:
           {
             printf 'body<<EOF\n'
             printf '%s\n' "$MAIN_TEXT"
-            printf '\n---\n\n# 🔥 Changelog automático\n\n'
+            printf '\n---\n\n# 🔥 Changelog \n\n'
             printf '%s\n' "$CHANGELOG_TEXT"
             printf 'EOF\n'
           } >> "$GITHUB_OUTPUT"
