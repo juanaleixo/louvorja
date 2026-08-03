@@ -126,6 +126,8 @@ jobs:
       - name: Gerar changelog
         id: changelog
         run: |
+          # tornar o script tolerante a greps vazios
+          set +e
           REPO="${GITHUB_REPOSITORY}"
 
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
@@ -135,93 +137,88 @@ jobs:
             RANGE="HEAD"
           fi
 
+          # arquivo temporário
           echo "" > changelog.md
 
-          # FEAT
-          FEAT=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^feat:")
-          if [ -n "$FEAT" ]; then
-            echo "## ✨ Novidades" >> changelog.md
-            echo "$FEAT" | while IFS="|" read -r MSG HASH; do
-              echo "- ✨ ${MSG#feat:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
+          # helper: escapar caracteres Markdown simples
+          escape_md() {
+            # escapa ] ( ) ` e |
+            printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/\]/\\]/g' -e 's/(/\\(/g' -e 's/)/\\)/g' -e 's/`/\\`/g'
+          }
+
+          # usa separador NUL para evitar problemas com pipes ou barras verticais nas mensagens
+          # formata: <subject>\0<hash>\0 por commit
+          git log $RANGE --pretty=format:"%s%x00%H%x00" --no-merges > /tmp/commits_nul || true
+
+          # função inline simulada: processa commits que começam com prefixo:
+          process_prefix() {
+            PREFIX="$1"
+            HEADER="$2"
+            EMOJI="$3"
+            found=false
+            # ler por NUL
+            while IFS= read -r -d $'\x00' SUBJECT; do
+              IFS= read -r -d $'\x00' HASH || break
+              case "$SUBJECT" in
+                "$PREFIX:"* )
+                  # remove prefix e possível espaço
+                  MSG="${SUBJECT#"$PREFIX:"}"
+                  MSG="${MSG# }"
+                  MSG_ESCAPED=$(escape_md "$MSG")
+                  if [ "$found" = false ]; then
+                    echo "## $EMOJI $HEADER" >> changelog.md
+                    found=true
+                  fi
+                  echo "- $EMOJI $MSG_ESCAPED ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+                  ;;
+              esac
+            done < /tmp/commits_nul
+            if [ "$found" = true ]; then
+              echo "" >> changelog.md
+            fi
+          }
+
+          process_prefix "feat" "Novidades" "✨"
+          process_prefix "fix" "Correções" "🐛"
+          process_prefix "refactor" "Aprimoramentos" "🔧"
+          process_prefix "perf" "Melhorias de performance" "⚡"
+          process_prefix "docs" "Documentação" "📝"
+          process_prefix "test" "Testes" "🧪"
+          process_prefix "chore" "Tarefas internas" "📦"
+
+          # OUTRAS MUDANÇAS: tudo que não começa com os prefixes listados
+          # Re-ler commits e incluir os que não casam com prefixos
+          found_other=false
+          while IFS= read -r -d $'\x00' SUBJECT; do
+            IFS= read -r -d $'\x00' HASH || break
+            case "$SUBJECT" in
+              feat:*|fix:*|refactor:*|perf:*|docs:*|test:*|chore:* )
+                ;;
+              * )
+                MSG="${SUBJECT}"
+                MSG="${MSG# }"
+                MSG_ESCAPED=$(escape_md "$MSG")
+                if [ "$found_other" = false ]; then
+                  echo "## 🔹 Outras mudanças" >> changelog.md
+                  found_other=true
+                fi
+                echo "- 🔹 $MSG_ESCAPED ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+                ;;
+            esac
+          done < /tmp/commits_nul
+          if [ "$found_other" = true ]; then
             echo "" >> changelog.md
           fi
 
-          # FIX
-          FIX=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^fix:")
-          if [ -n "$FIX" ]; then
-            echo "## 🐛 Correções" >> changelog.md
-            echo "$FIX" | while IFS="|" read -r MSG HASH; do
-              echo "- 🐛 ${MSG#fix:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
-          fi
-
-          # REFACTOR
-          REFACTOR=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^refactor:")
-          if [ -n "$REFACTOR" ]; then
-            echo "## 🔧 Aprimoramentos" >> changelog.md
-            echo "$REFACTOR" | while IFS="|" read -r MSG HASH; do
-              echo "- 🔧 ${MSG#refactor:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
-          fi
-
-          # PERF
-          PERF=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^perf:")
-          if [ -n "$PERF" ]; then
-            echo "## ⚡ Melhorias de performance" >> changelog.md
-            echo "$PERF" | while IFS="|" read -r MSG HASH; do
-              echo "- ⚡ ${MSG#perf:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
-          fi
-
-          # DOCS
-          DOCS=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^docs:")
-          if [ -n "$DOCS" ]; then
-            echo "## 📝 Documentação" >> changelog.md
-            echo "$DOCS" | while IFS="|" read -r MSG HASH; do
-              echo "- 📝 ${MSG#docs:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
-          fi
-
-          # TEST
-          TEST=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^test:")
-          if [ -n "$TEST" ]; then
-            echo "## 🧪 Testes" >> changelog.md
-            echo "$TEST" | while IFS="|" read -r MSG HASH; do
-              echo "- 🧪 ${MSG#test:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
-          fi
-
-          # CHORE
-          CHORE=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^chore:")
-          if [ -n "$CHORE" ]; then
-            echo "## 📦 Tarefas internas" >> changelog.md
-            echo "$CHORE" | while IFS="|" read -r MSG HASH; do
-              echo "- 📦 ${MSG#chore:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
-          fi
-
-          # OUTRAS MUDANÇAS
-          OTHER=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep -vE "^(feat|fix|refactor|perf|docs|test|chore):")
-          if [ -n "$OTHER" ]; then
-            echo "## 🔹 Outras mudanças" >> changelog.md
-            echo "$OTHER" | while IFS="|" read -r MSG HASH; do
-              echo "- 🔹 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done
-            echo "" >> changelog.md
+          # fallback se vazio
+          if [ ! -s changelog.md ]; then
+            echo "Nenhuma mudança encontrada." > changelog.md
           fi
 
           CHANGELOG=$(cat changelog.md)
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-      
       
 
       - name: Montar texto final da release
