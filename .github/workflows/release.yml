@@ -137,35 +137,83 @@ jobs:
 
           echo "" > changelog.md
 
-          gerar_grupo() {
-            PREFIX=$1
-            HEADER=$2
-            EMOJI=$3
+          # FEAT
+          FEAT=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^feat:")
+          if [ -n "$FEAT" ]; then
+            echo "## ✨ Novidades" >> changelog.md
+            echo "$FEAT" | while IFS="|" read -r MSG HASH; do
+              echo "- ✨ ${MSG#feat:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
 
-            COMMITS=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^$PREFIX:")
-            if [ -n "$COMMITS" ]; then
-              echo "## $EMOJI $HEADER" >> changelog.md
-              while IFS="|" read -r MSG HASH; do
-                echo "- $EMOJI ${MSG#"$PREFIX:"} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-              done <<< "$COMMITS"
-              echo "" >> changelog.md
-            fi
-          }
+          # FIX
+          FIX=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^fix:")
+          if [ -n "$FIX" ]; then
+            echo "## 🐛 Correções" >> changelog.md
+            echo "$FIX" | while IFS="|" read -r MSG HASH; do
+              echo "- 🐛 ${MSG#fix:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
 
-          gerar_grupo "feat" "Novidades" "✨"
-          gerar_grupo "fix" "Correções" "🐛"
-          gerar_grupo "refactor" "Aprimoramentos" "🔧"
-          gerar_grupo "perf" "Melhorias de performance" "⚡"
-          gerar_grupo "docs" "Documentação" "📝"
-          gerar_grupo "test" "Testes" "🧪"
-          gerar_grupo "chore" "Tarefas internas" "📦"
+          # REFACTOR
+          REFACTOR=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^refactor:")
+          if [ -n "$REFACTOR" ]; then
+            echo "## 🔧 Aprimoramentos" >> changelog.md
+            echo "$REFACTOR" | while IFS="|" read -r MSG HASH; do
+              echo "- 🔧 ${MSG#refactor:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
 
+          # PERF
+          PERF=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^perf:")
+          if [ -n "$PERF" ]; then
+            echo "## ⚡ Melhorias de performance" >> changelog.md
+            echo "$PERF" | while IFS="|" read -r MSG HASH; do
+              echo "- ⚡ ${MSG#perf:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
+
+          # DOCS
+          DOCS=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^docs:")
+          if [ -n "$DOCS" ]; then
+            echo "## 📝 Documentação" >> changelog.md
+            echo "$DOCS" | while IFS="|" read -r MSG HASH; do
+              echo "- 📝 ${MSG#docs:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
+
+          # TEST
+          TEST=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^test:")
+          if [ -n "$TEST" ]; then
+            echo "## 🧪 Testes" >> changelog.md
+            echo "$TEST" | while IFS="|" read -r MSG HASH; do
+              echo "- 🧪 ${MSG#test:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
+
+          # CHORE
+          CHORE=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep "^chore:")
+          if [ -n "$CHORE" ]; then
+            echo "## 📦 Tarefas internas" >> changelog.md
+            echo "$CHORE" | while IFS="|" read -r MSG HASH; do
+              echo "- 📦 ${MSG#chore:} ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+            done
+            echo "" >> changelog.md
+          fi
+
+          # OUTRAS MUDANÇAS
           OTHER=$(git log $RANGE --pretty=format:"%s|%H" --no-merges | grep -vE "^(feat|fix|refactor|perf|docs|test|chore):")
           if [ -n "$OTHER" ]; then
             echo "## 🔹 Outras mudanças" >> changelog.md
-            while IFS="|" read -r MSG HASH; do
+            echo "$OTHER" | while IFS="|" read -r MSG HASH; do
               echo "- 🔹 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
-            done <<< "$OTHER"
+            done
             echo "" >> changelog.md
           fi
 
@@ -173,6 +221,7 @@ jobs:
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+      
 
       - name: Montar texto final da release
         id: notes
