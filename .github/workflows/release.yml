@@ -223,22 +223,28 @@ jobs:
 
       - name: Montar texto final da release
         id: notes
+        env:
+          PR_BODY: ${{ steps.pr.outputs.body }}
+          CHANGELOG_TEXT: ${{ steps.changelog.outputs.changelog }}
         run: |
-          if [ -n "${{ steps.pr.outputs.body }}" ]; then
-            MAIN_TEXT="${{ steps.pr.outputs.body }}"
-          else
-            MAIN_TEXT=$(git log -1 --pretty=format:"%s%n%n%b")
+          # tornar tolerante a comandos que retornam !=0
+          set +e
+
+          # ler variáveis de ambiente (já definidas pelo runner de forma segura)
+          MAIN_TEXT="$PR_BODY"
+          if [ -z "$MAIN_TEXT" ]; then
+            MAIN_TEXT="$(git log -1 --pretty=format:%B)"
           fi
 
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$MAIN_TEXT" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "---" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "# 🔥 Changelog automático" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "${{ steps.changelog.outputs.changelog }}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # montar body final e enviar para GITHUB_OUTPUT preservando quebras de linha
+          {
+            printf 'body<<EOF\n'
+            printf '%s\n' "$MAIN_TEXT"
+            printf '\n---\n\n# 🔥 Changelog automático\n\n'
+            printf '%s\n' "$CHANGELOG_TEXT"
+            printf 'EOF\n'
+          } >> "$GITHUB_OUTPUT"
+      
 
       - name: Criar/atualizar release
         uses: softprops/action-gh-release@v2
