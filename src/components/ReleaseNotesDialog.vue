@@ -37,7 +37,8 @@
         <v-divider class="mx-4" />
 
         <v-card-text class="release-notes-body">
-          <pre>{{ release.body || t("release_notes.no_notes") }}</pre>
+          <div v-if="release.bodyHtml" class="release-notes-md" v-html="release.bodyHtml"></div>
+          <pre v-else>{{ release.body || t("release_notes.no_notes") }}</pre>
         </v-card-text>
 
         <v-card-actions>
@@ -104,7 +105,13 @@ watch(
 
 const loading = ref(false);
 const error = ref(false);
-const release = ref<{ version: string; name: string; body: string; url: string } | null>(null);
+const release = ref<{
+  version: string;
+  name: string;
+  body: string;
+  bodyHtml: string | null;
+  url: string;
+} | null>(null);
 const dontShowAgain = ref(false);
 
 async function load() {
@@ -157,6 +164,95 @@ function onClose() {
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
+}
+
+.release-notes-md {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(var(--v-theme-on-surface), 0.87);
+}
+
+.release-notes-md :deep(h1),
+.release-notes-md :deep(h2),
+.release-notes-md :deep(h3),
+.release-notes-md :deep(h4) {
+  font-weight: 600;
+  margin: 16px 0 8px;
+}
+
+.release-notes-md :deep(h1) {
+  font-size: 18px;
+}
+
+.release-notes-md :deep(h2) {
+  font-size: 16px;
+}
+
+.release-notes-md :deep(h3) {
+  font-size: 15px;
+}
+
+.release-notes-md :deep(p) {
+  margin: 8px 0;
+}
+
+.release-notes-md :deep(ul),
+.release-notes-md :deep(ol) {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.release-notes-md :deep(li) {
+  margin: 2px 0;
+}
+
+.release-notes-md :deep(code) {
+  font-family: monospace;
+  font-size: 0.9em;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.release-notes-md :deep(pre) {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-radius: 6px;
+  padding: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.release-notes-md :deep(a) {
+  color: inherit;
+}
+
+.release-notes-md :deep(blockquote) {
+  margin: 8px 0;
+  padding-left: 12px;
+  border-left: 3px solid rgba(var(--v-theme-on-surface), 0.2);
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.release-notes-md :deep(img) {
+  max-width: 100%;
+}
+
+.release-notes-md :deep(table) {
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.release-notes-md :deep(th),
+.release-notes-md :deep(td) {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  padding: 4px 8px;
+}
+
+.release-notes-md :deep(hr) {
+  border: none;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  margin: 12px 0;
 }
 
 .release-notes-checkbox {
