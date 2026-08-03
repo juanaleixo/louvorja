@@ -222,6 +222,7 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       
+      
 
       - name: Montar texto final da release
         id: notes
