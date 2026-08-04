@@ -266,7 +266,18 @@ function handle() {
       // ------------------------------------------------------------------
       if (host === "files") {
         const filesDir = paths.filesDir();
-        const rawRelative = pathname.replace(/^\/+/, "");
+        // Decodifica o pathname para resolver corretamente no filesystem.
+        // Sem isso, caracteres especiais (%20, %C3%A1, etc.) ficam literais
+        // no caminho e criam pastas duplicadas (ex: "Adoradores%205" ao lado
+        // de "Adoradores 5"). O host "local" já faz decode — aqui aplicamos
+        // o mesmo padrão.  decodeURIComponent pode falhar em URIs malformadas;
+        // nesse caso usamos o pathname cru como fallback.
+        let rawRelative;
+        try {
+          rawRelative = decodeURIComponent(pathname).replace(/^\/+/, "");
+        } catch {
+          rawRelative = pathname.replace(/^\/+/, "");
+        }
         const localPath = path.resolve(filesDir, rawRelative);
 
         // Proteção path traversal: o caminho resolvido deve iniciar com filesDir

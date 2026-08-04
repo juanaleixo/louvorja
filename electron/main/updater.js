@@ -380,6 +380,43 @@ function openReleasePage() {
 }
 
 /**
+ * Renderiza markdown (GFM) em HTML usando a API pública do GitHub
+ * (`POST /markdown`). Retorna null em caso de falha para que a UI
+ * tenha fallback para o texto cru.
+ */
+function renderMarkdown(text) {
+  return new Promise((resolve) => {
+    const url = "https://api.github.com/markdown";
+    const body = JSON.stringify({ text: String(text || ""), mode: "gfm" });
+    const req = https.request(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "User-Agent": "LouvorJA",
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const buf = Buffer.concat(chunks);
+          const status = res.statusCode || 0;
+          if (status < 200 || status >= 300) return resolve(null);
+          resolve(buf.toString("utf8"));
+        });
+      }
+    );
+    req.on("error", () => resolve(null));
+    req.setTimeout(30000, () => req.destroy(new Error("Request timeout")));
+    req.end(body);
+  });
+}
+
+/**
  * Busca os release notes da versão INSTALADA (tag v<appVersion>) no GitHub.
  *
  * Usa a versão atual (e não a latest) para que o modal de novidades mostre o
@@ -394,10 +431,13 @@ async function getCurrentReleaseNotes() {
   try {
     const release = await _request(url, { parseJson: true });
     if (!release || !release.tag_name) return null;
+    const body = release.body || "";
+    const bodyHtml = body ? await renderMarkdown(body) : null;
     return {
       version: String(release.tag_name).replace(/^v/, ""),
       name: release.name || release.tag_name,
-      body: release.body || "",
+      body,
+      bodyHtml,
       url: release.html_url || `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tag/${release.tag_name}`,
     };
   } catch (e) {
