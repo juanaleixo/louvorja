@@ -139,14 +139,14 @@ jobs:
 
           echo "" > changelog.md
 
-          COMMITS=$(git log $RANGE --pretty=format:"%s|%H" --no-merges || true)
+          COMMITS=$(git log $RANGE --pretty=format:"%s%x09%H" --no-merges || true)
 
           # FEAT
-          FEAT=$(printf '%s\n' "$COMMITS" | grep "^feat:" || true)
+          FEAT=$(printf '%s\n' "$COMMITS" | grep -E "^feat(\([^)]*\))?(!)?:" || true)
           if [ -n "$FEAT" ]; then
             echo "## ✨ Novidades" >> changelog.md
-            printf '%s\n' "$FEAT" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#feat:}"
+            printf '%s\n' "$FEAT" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#feat*:}"
               MSG="${MSG# }"
               echo "- ✨ $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -154,11 +154,11 @@ jobs:
           fi
 
           # FIX
-          FIX=$(printf '%s\n' "$COMMITS" | grep "^fix:" || true)
+          FIX=$(printf '%s\n' "$COMMITS" | grep -E "^fix(\([^)]*\))?(!)?:" || true)
           if [ -n "$FIX" ]; then
             echo "## 🐛 Correções" >> changelog.md
-            printf '%s\n' "$FIX" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#fix:}"
+            printf '%s\n' "$FIX" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#fix*:}"
               MSG="${MSG# }"
               echo "- 🐛 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -166,11 +166,11 @@ jobs:
           fi
 
           # REFACTOR
-          REFACTOR=$(printf '%s\n' "$COMMITS" | grep "^refactor:" || true)
+          REFACTOR=$(printf '%s\n' "$COMMITS" | grep -E "^refactor(\([^)]*\))?(!)?:" || true)
           if [ -n "$REFACTOR" ]; then
             echo "## 🔧 Aprimoramentos" >> changelog.md
-            printf '%s\n' "$REFACTOR" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#refactor:}"
+            printf '%s\n' "$REFACTOR" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#refactor*:}"
               MSG="${MSG# }"
               echo "- 🔧 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -178,11 +178,11 @@ jobs:
           fi
 
           # PERF
-          PERF=$(printf '%s\n' "$COMMITS" | grep "^perf:" || true)
+          PERF=$(printf '%s\n' "$COMMITS" | grep -E "^perf(\([^)]*\))?(!)?:" || true)
           if [ -n "$PERF" ]; then
             echo "## ⚡ Melhorias de performance" >> changelog.md
-            printf '%s\n' "$PERF" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#perf:}"
+            printf '%s\n' "$PERF" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#perf*:}"
               MSG="${MSG# }"
               echo "- ⚡ $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -190,11 +190,11 @@ jobs:
           fi
 
           # DOCS
-          DOCS=$(printf '%s\n' "$COMMITS" | grep "^docs:" || true)
+          DOCS=$(printf '%s\n' "$COMMITS" | grep -E "^docs(\([^)]*\))?(!)?:" || true)
           if [ -n "$DOCS" ]; then
             echo "## 📝 Documentação" >> changelog.md
-            printf '%s\n' "$DOCS" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#docs:}"
+            printf '%s\n' "$DOCS" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#docs*:}"
               MSG="${MSG# }"
               echo "- 📝 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -202,11 +202,11 @@ jobs:
           fi
 
           # TEST
-          TEST=$(printf '%s\n' "$COMMITS" | grep "^test:" || true)
+          TEST=$(printf '%s\n' "$COMMITS" | grep -E "^test(\([^)]*\))?(!)?:" || true)
           if [ -n "$TEST" ]; then
             echo "## 🧪 Testes" >> changelog.md
-            printf '%s\n' "$TEST" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#test:}"
+            printf '%s\n' "$TEST" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#test*:}"
               MSG="${MSG# }"
               echo "- 🧪 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -214,11 +214,11 @@ jobs:
           fi
 
           # CHORE
-          CHORE=$(printf '%s\n' "$COMMITS" | grep "^chore:" || true)
+          CHORE=$(printf '%s\n' "$COMMITS" | grep -E "^chore(\([^)]*\))?(!)?:" || true)
           if [ -n "$CHORE" ]; then
             echo "## 📦 Tarefas internas" >> changelog.md
-            printf '%s\n' "$CHORE" | while IFS="|" read -r MSG HASH; do
-              MSG="${MSG#chore:}"
+            printf '%s\n' "$CHORE" | while IFS=$'	' read -r MSG HASH; do
+              MSG="${MSG#chore*:}"
               MSG="${MSG# }"
               echo "- 📦 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -226,10 +226,10 @@ jobs:
           fi
 
           # OUTRAS MUDANÇAS
-          OTHER=$(printf '%s\n' "$COMMITS" | grep -vE "^(feat|fix|refactor|perf|docs|test|chore):" || true)
+          OTHER=$(printf '%s\n' "$COMMITS" | grep -vE "^(feat|fix|refactor|perf|docs|test|chore)(\([^)]*\))?(!)?:" || true)
           if [ -n "$OTHER" ]; then
             echo "## 🔹 Outras mudanças" >> changelog.md
-            printf '%s\n' "$OTHER" | while IFS="|" read -r MSG HASH; do
+            printf '%s\n' "$OTHER" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG# }"
               echo "- 🔹 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
@@ -237,9 +237,13 @@ jobs:
           fi
 
           CHANGELOG=$(cat changelog.md)
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          if [ -z "$(echo "$CHANGELOG" | tr -d '[:space:]')" ]; then
+            CHANGELOG="Nenhuma mudança encontrada."
+          fi
+          DELIM=$(head -c 32 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 32)
+          echo "changelog<<$DELIM" >> $GITHUB_OUTPUT
           printf '%s\n' "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "$DELIM" >> $GITHUB_OUTPUT
       
       
 
@@ -259,12 +263,13 @@ jobs:
           fi
 
           # montar body final e enviar para GITHUB_OUTPUT preservando quebras de linha
+          DELIM_BODY=$(head -c 32 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 32)
           {
-            printf 'body<<EOF\n'
+            printf 'body<<%s\n' "$DELIM_BODY"
             printf '%s\n' "$MAIN_TEXT"
             printf '\n---\n\n# 🔥 Changelog \n\n'
             printf '%s\n' "$CHANGELOG_TEXT"
-            printf 'EOF\n'
+            printf '%s\n' "$DELIM_BODY"
           } >> "$GITHUB_OUTPUT"
       
 
