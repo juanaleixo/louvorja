@@ -1,9 +1,13 @@
 import "@mdi/font/css/materialdesignicons.css";
+import { VProgress } from "vuetify/labs/VProgress";
 import "vuetify/styles";
 
 import { createVuetify } from "vuetify";
 
 export default createVuetify({
+  components: {
+    VProgress,
+  },
   /**
    * Ao criar ou alterar um tema, alterar também o arquivo CSS TOKENS
    * [data-theme=*] no arquivo
