@@ -404,12 +404,14 @@ function renderMarkdown(text) {
         res.on("data", (c) => chunks.push(c));
         res.on("end", () => {
           const buf = Buffer.concat(chunks);
-          if (res.statusCode >= 400) return resolve(null);
+          const status = res.statusCode || 0;
+          if (status < 200 || status >= 300) return resolve(null);
           resolve(buf.toString("utf8"));
         });
       }
     );
     req.on("error", () => resolve(null));
+    req.setTimeout(30000, () => req.destroy(new Error("Request timeout")));
     req.end(body);
   });
 }
