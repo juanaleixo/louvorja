@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
@@ -226,8 +226,7 @@ async function load() {
 
   // Estado atual do updater
   if (Platform.updater) {
-    const status = (await Platform.updater.status()) as AppUpdateState;
-    appUpdate.value = status;
+    appUpdate.value = (await Platform.updater.status()) as AppUpdateState;
   }
 
   // Release notes da versão NOVA (a oferecida no dialog)

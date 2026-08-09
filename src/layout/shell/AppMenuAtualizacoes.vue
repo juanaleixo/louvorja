@@ -135,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import $alert from "@/helpers/Alert";
@@ -398,8 +398,7 @@ async function clearDbCache(): Promise<void> {
 
 async function loadCurrentDbVersion(): Promise<void> {
   try {
-    const config = await $database.get<DbConfig>("config", { silent: true });
-    dbCurrentConfig.value = config;
+    dbCurrentConfig.value = await $database.get<DbConfig>("config", { silent: true });
   } catch {
     dbCurrentConfig.value = null;
   }
@@ -412,7 +411,7 @@ onMounted(async () => {
   // Opções persistidas.
   // TODO: remover o default true do useBeta quando a versão estável for publicada.
   const savedBeta = $userdata.get<boolean | null>(KEYS.OPTIONS.USE_BETA_UPDATES, null);
-  useBeta.value = savedBeta == null ? true : savedBeta === true;
+  useBeta.value = savedBeta == null ? true : savedBeta;
   checkOnStart.value = $userdata.get<boolean>(KEYS.OPTIONS.CHECK_UPDATES_ON_START, true) === true;
   autoDownload.value = $userdata.get<boolean>(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
 
