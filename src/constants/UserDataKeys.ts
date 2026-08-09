@@ -78,6 +78,7 @@ export const KEYS = {
       END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_music`,
       END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`,
       END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`,
+      LAST_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.last_target_time`,
     },
     OVERLAY: {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
