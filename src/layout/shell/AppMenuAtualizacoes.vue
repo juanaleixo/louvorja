@@ -10,9 +10,12 @@
           <label class="opt-label">{{ $t("options.updates.last_check") }}</label>
           <span>{{ formatLastCheck(lastAppCheck) }}</span>
         </div>
-        <div v-if="appUpdate.status === 'downloading'" class="opt-progress">
-          <div class="opt-progress-bar" :style="{ width: appUpdate.progress + '%' }" />
-          <span class="opt-progress-label">{{ appUpdate.progress }}%</span>
+        <div v-if="appUpdate.status === 'downloading'" class="w-100">
+          <v-progress
+            color="primary"
+            :label="$t('options.updates.app_downloading')"
+            :model-value="appUpdate.progress"
+          ></v-progress>
         </div>
         <div class="opt-folder-actions">
           <button
@@ -294,7 +297,6 @@ async function startDownload(): Promise<void> {
           }
         );
       } else if (res && !res.ok && res.error) {
-        // Asset não encontrado — abre a página da release
         $alert.yesno(
           {
             title: t("options.updates.app_install_title"),
@@ -309,7 +311,6 @@ async function startDownload(): Promise<void> {
     } catch (e) {
       console.error("[Atualizações] downloadPackage:", e);
       const msg = String(e && (e as Error).message ? (e as Error).message : e);
-      // Falha ao baixar asset (ex: não encontrado) → oferece abrir a release
       $alert.yesno(
         {
           title: t("options.updates.app_install_title"),
@@ -324,7 +325,7 @@ async function startDownload(): Promise<void> {
     return;
   }
 
-  // Win/mac/AppImage — electron-updater baixa em background
+  // Win/mac/AppImage/deb — electron-updater baixa em background
   try {
     await Platform.updater.download();
   } catch (e) {

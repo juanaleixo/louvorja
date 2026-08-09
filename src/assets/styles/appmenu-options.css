@@ -160,28 +160,6 @@
   color: var(--lj-text-muted);
 }
 
-/* Progress bar (atualizações + downloads) */
-.opt-progress {
-  position: relative;
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(var(--lj-on-surface-ch), 0.1);
-  overflow: hidden;
-}
-.opt-progress-bar {
-  height: 100%;
-  background: var(--lj-navy);
-  transition: width 0.2s ease;
-}
-.opt-progress-label {
-  display: block;
-  margin-top: 4px;
-  font-size: var(--lj-text-sm);
-  color: var(--lj-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Download de coletâneas */
 .opt-download-list {
   display: flex;

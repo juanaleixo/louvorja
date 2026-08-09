@@ -96,13 +96,16 @@ function createWindow() {
   // D6 — Registrar janela principal no módulo de atalhos globais
   shortcuts.setMainWindow(mainWindow);
 
-  // D8 — Registrar janela principal no updater e inicializar (apenas em produção)
+  // D8 — Registrar janela principal no updater e inicializar (dev e prod)
+  // As opções (useBeta/autoDownload) são sempre lidas das preferências
+  // persistidas e aplicadas ao updater no boot. Assim o check ao iniciar
+  // (disparado pelo renderer) usa o mesmo estado que o botão "Verificar"
+  // do menu Atualizações — sem duplicar o fluxo.
   updater.setMainWindow(mainWindow);
-  if (app.isPackaged) {
+  {
     // Lê as opções da tela Atualizações (persistidas em user_data).
     // O check ao iniciar NÃO roda aqui — o renderer (Shell.vue) dispara o
-    // check no boot para poder mostrar a snackbar clicável quando encontrar
-    // versão nova. Aqui apenas configuramos useBeta/autoDownload.
+    // check no boot para poder mostrar o dialog quando encontrar versão nova.
     let ud = {};
     try {
       ud = userStore.read("user_data") || {};
@@ -111,6 +114,7 @@ function createWindow() {
     // TODO: remover o default true abaixo quando a versão estável for publicada.
     // "Usar versões beta" fica ativo por padrão durante o ciclo de preview.
     const useBeta = opts.use_beta_updates == null ? true : opts.use_beta_updates;
+    console.info("[main] updater.init → isPackaged:", app.isPackaged, "| options:", JSON.stringify(opts));
     updater.init({
       channel: "latest",
       autoCheck: false,
@@ -785,7 +789,7 @@ ipcMain.handle("updater:openPackage", () => updater.openPackage());
 ipcMain.handle("updater:openReleasePage", () => updater.openReleasePage());
 
 /** Retorna os release notes da versão instalada (tag v<appVersion>). */
-ipcMain.handle("updater:getReleaseNotes", () => updater.getCurrentReleaseNotes());
+ipcMain.handle("updater:getReleaseNotes", (_e, version) => updater.getCurrentReleaseNotes(version));
 
 /** Retorna o tipo de instalação atual: "appimage" | "deb" | "rpm" (linux). */
 ipcMain.handle("updater:getInstallType", () => updater.getInstallType());

@@ -211,7 +211,6 @@ import Alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import CategoryManagerDialog, { CategoryFileData } from "@/components/CategoryManagerDialog.vue";
-import { V_COLOR_PRIMARY } from "@/constants/Colors";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
 import { getSetting, saveSetting } from "@/helpers/SettingsStorage";

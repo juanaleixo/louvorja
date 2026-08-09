@@ -66,7 +66,7 @@
           class="release-notes-checkbox"
         >
           <template #label>
-            <span class="text-body-2">{{ t("release_notes.dont_show_again") }}</span>
+            <span class="text-label-small">{{ t("release_notes.dont_show_again") }}</span>
           </template>
         </v-checkbox>
         <v-spacer />

@@ -5,9 +5,9 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
-import { V_COLOR_PRIMARY } from "@/constants/Colors";
 import { KEYS } from "@/constants/UserDataKeys";
 import RibbonWallpaperSettings from "@/modules/background_projection/components/RibbonWallpaperSettings.vue";
+import { COLORS } from "@constants/Colors";
 
 const moduleId = ModuleEnum.BACKGROUND_PROJECTION;
 const modulePath = $modules.getPath(moduleId);
@@ -63,8 +63,8 @@ export const contextualPages: RibbonPage[] = [
         id: `${moduleCtxId}_files`,
         title: "ribbon.groups.files",
         buttons: [
-          { id: `${moduleId}_add_file`, icon: ICONS.ACTIONS.ADD, label: `${modulePath}.add_file`, action: `${moduleId}_add_file`, color: V_COLOR_PRIMARY },
-          { id: `${moduleId}_manage_categories`, icon: ICONS.CATEGORY.MUSIC, label: `${modulePath}.manage_categories`, action: `${moduleId}_manage_categories`, color: V_COLOR_PRIMARY },
+          { id: `${moduleId}_add_file`, icon: ICONS.ACTIONS.ADD, label: `${modulePath}.add_file`, action: `${moduleId}_add_file`, color: COLORS.PRIMARY },
+          { id: `${moduleId}_manage_categories`, icon: ICONS.CATEGORY.MUSIC, label: `${modulePath}.manage_categories`, action: `${moduleId}_manage_categories`, color: COLORS.PRIMARY },
         ],
       },
       {

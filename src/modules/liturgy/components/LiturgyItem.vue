@@ -291,7 +291,7 @@ const t = (key: string) => _t(key, locale.value);
   align-items: center;
   flex: 1;
   background: var(--lj-surface-bg);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: var(--lj-shadow-2);
   min-height: 50px;
   transition:

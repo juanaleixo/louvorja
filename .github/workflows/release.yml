@@ -148,7 +148,7 @@ jobs:
             printf '%s\n' "$FEAT" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#feat*:}"
               MSG="${MSG# }"
-              echo "- ✨ $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -156,11 +156,11 @@ jobs:
           # FIX
           FIX=$(printf '%s\n' "$COMMITS" | grep -E "^fix(\([^)]*\))?(!)?:" || true)
           if [ -n "$FIX" ]; then
-            echo "## 🐛 Correções" >> changelog.md
+            echo "## 🐞 Correções" >> changelog.md
             printf '%s\n' "$FIX" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#fix*:}"
               MSG="${MSG# }"
-              echo "- 🐛 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -172,7 +172,7 @@ jobs:
             printf '%s\n' "$REFACTOR" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#refactor*:}"
               MSG="${MSG# }"
-              echo "- 🔧 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -184,7 +184,7 @@ jobs:
             printf '%s\n' "$PERF" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#perf*:}"
               MSG="${MSG# }"
-              echo "- ⚡ $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -196,7 +196,7 @@ jobs:
             printf '%s\n' "$DOCS" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#docs*:}"
               MSG="${MSG# }"
-              echo "- 📝 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -208,7 +208,7 @@ jobs:
             printf '%s\n' "$TEST" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#test*:}"
               MSG="${MSG# }"
-              echo "- 🧪 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -220,7 +220,7 @@ jobs:
             printf '%s\n' "$CHORE" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG#chore*:}"
               MSG="${MSG# }"
-              echo "- 📦 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
@@ -231,7 +231,7 @@ jobs:
             echo "## 🔹 Outras mudanças" >> changelog.md
             printf '%s\n' "$OTHER" | while IFS=$'	' read -r MSG HASH; do
               MSG="${MSG# }"
-              echo "- 🔹 $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
+              echo "- $MSG ([ver commit](https://github.com/$REPO/commit/$HASH))" >> changelog.md
             done
             echo "" >> changelog.md
           fi
