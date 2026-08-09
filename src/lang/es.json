@@ -682,6 +682,8 @@
       "kids": "Músicas Infantiles",
       "liturgy": "Liturgia",
       "lock_items": "Bloquear Ítems",
+      "lock_liturgy": "Bloquear liturgia",
+      "unlock_liturgy": "Desbloquear liturgia",
       "lyric": "Letra",
       "mark_done": "Marcar como Completado",
       "message_board": "Panel Dinámico",

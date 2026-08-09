@@ -70,7 +70,7 @@ export interface Module {
   /** Material Design Icon name (ex: mdi-music) */
   icon: string;
   /** Cor do módulo na Ribbon (hex: #c0392b) */
-  color: string;
+  color?: string;
   /** Categoria do módulo para agrupamento na Ribbon */
   category: ModuleCategoryEnum;
   /** Grupo dentro da categoria para ordenação na Ribbon */

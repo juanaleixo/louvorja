@@ -41,12 +41,14 @@ export default {
     $appdata.set(`modules.${id}.show`, true);
     $appdata.set("active_module", id);
 
-    // Track tab opening order (first opened = leftmost)
+    // Track tab opening order (first opened = leftmost).
+    // Ordem ESTÁVEL: focar/reabrir um módulo não o move para o fim;
+    // só é adicionado quando aberto pela primeira vez.
     const order = $userdata.get(KEYS.MODULES.OPEN_ORDER, []);
-    const idx = order.indexOf(id);
-    if (idx !== -1) order.splice(idx, 1);
-    order.push(id);
-    $userdata.set(KEYS.MODULES.OPEN_ORDER, order);
+    if (!order.includes(id)) {
+      order.push(id);
+      $userdata.set(KEYS.MODULES.OPEN_ORDER, order);
+    }
   },
 
   /**

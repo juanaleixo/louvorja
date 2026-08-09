@@ -21,6 +21,7 @@ export const ICONS = {
     FORMAT: "mdi-format-color-highlight",
     IMPORT: "mdi-import",
     LOCK: "mdi-lock",
+    LOCK_OPEN: "mdi-lock-open-variant",
     MINUS: "mdi-minus",
     MINUS_BOX: "mdi-minus-box",
     NEXT: "mdi-chevron-right",
