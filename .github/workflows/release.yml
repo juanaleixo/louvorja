@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Instalar dependências
@@ -66,6 +66,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rpm xz-utils
 
+      # Assinatura + notarização macOS — importa o Developer ID no keychain
+      # do runner para o electron-builder (osx-sign) assinar sem prompt.
+      - name: Importar certificado Apple (macOS)
+        if: matrix.platform == 'mac'
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: run0$j4ng$h4cker
+        run: |
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          echo "$APPLE_CERTIFICATE_P12" | base64 --decode > cert.p12
+          security import cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_P12_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/productsign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm -f cert.p12
+
       - name: Build Electron
         run: npm run electron:build:${{ matrix.platform }} -- --publish never
         env:
@@ -76,8 +95,14 @@ jobs:
           VITE_URL_FILES: ${{ vars.VITE_URL_FILES }}
           VITE_API_TOKEN: ${{ secrets.VITE_API_TOKEN }}
           VITE_APP_VERSION: ${{ github.ref_name }}
-          # Sem code signing automático no macOS — requer certificado pago
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Assinatura/notarização macOS: usa o keychain importado acima.
+          # Nos runners win/linux o certificado não existe → build sem assinatura.
+          CSC_IDENTITY_AUTO_DISCOVERY: true
+          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_P12_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload instalador
         uses: actions/upload-artifact@v4
