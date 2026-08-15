@@ -13,7 +13,7 @@ const allModules: Module[] = []
 const contextualPages: RibbonPage[] = []
 
 for (const mod of Object.values(modules)) {
-  if (mod.module?.id && mod.module.showInMainMenu !== false) {
+  if (mod.module?.id && mod.module.showInMainMenu) {
     allModules.push(mod.module)
   }
   if (mod.contextualPages?.length) {

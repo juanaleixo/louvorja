@@ -130,5 +130,5 @@ export interface ModuleState {
   id: string;
   show?: boolean;
   minimized?: boolean;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }

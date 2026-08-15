@@ -1,4 +1,4 @@
-import { ref, onBeforeUnmount, type Ref } from "vue";
+import { ref, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import Database from "@/helpers/Database";

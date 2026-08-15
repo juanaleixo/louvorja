@@ -985,12 +985,12 @@ async function changeFolder(): Promise<void> {
 }
 
 async function toggleAutoCache(enabled: boolean): Promise<void> {
-  $userdata.set(KEYS.OPTIONS.AUTO_CACHE_MEDIA, !!enabled);
+  $userdata.set(KEYS.OPTIONS.AUTO_CACHE_MEDIA, enabled);
   if (Platform?.storage?.setAutoCache) {
-    await Platform.storage.setAutoCache(!!enabled);
+    await Platform.storage.setAutoCache(enabled);
   }
   const cur = (await Platform.userStore?.read("storage")) || {};
-  await Platform.userStore?.write("storage", { ...cur, autoCache: !!enabled });
+  await Platform.userStore?.write("storage", { ...cur, autoCache: enabled });
 }
 
 async function setQuotaGb(gb: number): Promise<void> {
