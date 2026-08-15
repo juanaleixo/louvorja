@@ -40,6 +40,7 @@ export const KEYS = {
     BIBLE: {
       SHOW_RETURN: `${MODULES}.${ModuleEnum.BIBLE}.show_return`,
       IS_PLAYING: `${MODULES}.${ModuleEnum.BIBLE}.is_playing`,
+      ESC_CLOSES_PROJECTION: `${MODULES}.${ModuleEnum.BIBLE}.esc_closes_projection`,
     },
     BACKGROUND_SOUND: {
       IS_PLAYING: `${MODULES}.${ModuleEnum.BACKGROUND_SOUND}.is_playing`,
@@ -153,6 +154,11 @@ export const KEYS = {
     },
     START_WITH_OS: `${OPTIONS}.start_with_os`,
     YOUTUBE_ACTION: `${OPTIONS}.youtube_action`,
+    DEV: {
+      DEVTOOLS_MAIN_WINDOW: `${OPTIONS}.dev.devtools_main_window`,
+      DEVTOOLS_PROJECTIONS: `${OPTIONS}.dev.devtools_projections`,
+      LOGS_TERMINAL: `${OPTIONS}.dev.logs_terminal`,
+    },
     ONLINE_VIDEO_PROJECTION: {
       ALWAYS_ON_TOP: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.always_on_top`,
       SHOW_RETURN: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.show_return`,

@@ -59,6 +59,7 @@
               <AppMenuAtualizacoes v-else-if="activeItem?.id === 'updates'" />
               <AppMenuImportExport v-else-if="activeItem?.id === 'import_export'" />
               <AppMenuAlbums v-else-if="activeItem?.id === 'albums'" />
+              <AppMenuDev v-else-if="activeItem?.id === 'dev'" />
 
               <p v-else class="app-menu-content-placeholder">
                 {{ $t("shell.appmenu_content_placeholder") }}
@@ -80,9 +81,14 @@ import AppMenuSincronizar from "./AppMenuSincronizar.vue";
 import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
 import AppMenuAlbums from "./AppMenuAlbums.vue";
+import AppMenuDev from "./AppMenuDev.vue";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
+
+// Detecta modo desenvolvimento — controla a visibilidade do item
+// "Desenvolvedor" no menu (recursos de dev são ocultados em produção).
+const isDev = Platform.isDev;
 
 // Detecta macOS via Platform (Electron) ou navigator (web fallback) —
 // usado para ajustar o header da AppMenu (não sobrepor traffic lights)
@@ -121,6 +127,7 @@ const items = computed(() => [
     label: "shell.appmenu_items.albums",
     inline: true,
   },
+  ...(isDev ? [{ id: "dev", label: "shell.appmenu_items.dev", inline: true }] : []),
   { id: "donate", label: "shell.appmenu_items.donate", action: openDonation },
   { id: "exit", label: "shell.appmenu_items.exit", action: exitApp },
 ]);

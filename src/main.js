@@ -34,6 +34,7 @@ import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
 import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
 import { ModuleEnum } from "@/enums/ModuleEnum";
+import { KEYS } from "@/constants/UserDataKeys";
 
 loadFonts();
 
@@ -520,8 +521,16 @@ $storage.hydrate().then(async () => {
       () => {
         // Função para encerrar tudo exceto música (que pode ter confirmação)
         const closeEverythingElse = () => {
-          // Bíblia
-          Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+          // Bíblia: se "Tecla ESC encerra a projeção" estiver ativada, ou se
+          // nenhum versículo está sendo projetado, encerra a projeção (fecha
+          // as janelas). Caso contrário apenas limpa o versículo, mantendo a
+          // projeção ativa.
+          const escClosesProjection = UserData.get(KEYS.MODULES.BIBLE.ESC_CLOSES_PROJECTION, false);
+          const lastVerse = Broadcast.getLastPayload(BROADCAST_TYPE.BIBLE_VERSE);
+          const hasVerse = !!(lastVerse && lastVerse.text);
+          Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, {
+            action: escClosesProjection || !hasVerse ? "stop" : "clear",
+          });
 
           // Módulos genéricos (counter, timer, etc.)
           const moduleIds = [

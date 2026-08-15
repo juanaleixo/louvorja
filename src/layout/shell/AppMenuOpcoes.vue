@@ -208,6 +208,17 @@
             <span>{{ $t("options.bible.show_return") }}</span>
           </label>
         </div>
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="getUserData(KEYS.MODULES.BIBLE.ESC_CLOSES_PROJECTION, false)"
+              @change="saveUserData(KEYS.MODULES.BIBLE.ESC_CLOSES_PROJECTION, $c($event))"
+            />
+            <span>{{ $t("options.bible.esc_closes_projection") }}</span>
+          </label>
+        </div>
         <div v-if="bibleReturnEnabled" class="opt-row">
           <label class="opt-label" for="opt-bible-return-monitor">
             {{ $t("options.bible.open_return_at") }}

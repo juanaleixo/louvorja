@@ -958,6 +958,9 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
     case "project":
       toggleProjection();
       break;
+    case "stop":
+      stopProjection();
+      break;
   }
 });
 

@@ -148,7 +148,8 @@
       "open_at": "Abrir en el monitor:",
       "version": "Versión",
       "show_return": "Mostrar en la pantalla de retorno",
-      "open_return_at": "Pantalla de retorno en:"
+      "open_return_at": "Pantalla de retorno en:",
+      "esc_closes_projection": "La tecla ESC cierra la proyección"
     },
     "monitors": {
       "title": "Monitores",
@@ -417,6 +418,21 @@
       "fade": "Usar fundido al abrir/cerrar proyección",
       "fade_duration": "Duración del fundido",
       "custom_background": "Personalizar fondo de proyección"
+    },
+    "dev": {
+      "title": "Desarrollador",
+      "section_devtools": "Herramientas de Desarrollador",
+      "devtools_main_window": "Abrir DevTools en la ventana principal al iniciar",
+      "devtools_projections": "Abrir DevTools en nuevas ventanas de proyección",
+      "logs_terminal": "Enviar logs del renderer (warn/error) a la terminal",
+      "section_actions": "Acciones",
+      "reload_all": "Recargar todas las ventanas",
+      "clear_db_cache": "Limpiar caché de la base de datos",
+      "section_environment": "Entorno",
+      "env_mode": "Modo",
+      "env_packaged": "Empaquetado",
+      "env_userdata": "Carpeta de datos",
+      "env_unavailable": "Información no disponible (modo web)."
     }
   },
   "about": {
@@ -819,6 +835,7 @@
       "feedback": "Enviar Comentarios",
       "check_update": "Buscar Actualizaciones",
       "albums": "Activar/Desactivar Álbumes",
+      "dev": "Desarrollador",
       "donate": "Haga su Donación",
       "exit": "Salir"
     },

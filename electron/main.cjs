@@ -84,8 +84,14 @@ function createWindow() {
 
   mainWindow = createMainWindow(DEV_URL, prodHtmlPath, preloadPath, HTTP_BASE_URL);
 
-  // DevTools só em dev OU quando LJ_DEVTOOLS=1 no env (debug pontual).
-  if (isDev || process.env.LJ_DEVTOOLS === "1") {
+  // DevTools automático na janela principal.
+  // Em dev abre por padrão; pode ser desligado na tela "Opções do Desenvolvedor"
+  // (options.dev.devtools_main_window). Em prod só abre com LJ_DEVTOOLS=1 no env.
+  if (isDev) {
+    const devOpt = _userDataMain?.options?.dev?.devtools_main_window;
+    const openDevTools = devOpt == null ? true : !!devOpt;
+    if (openDevTools) mainWindow.webContents.openDevTools({ mode: "detach" });
+  } else if (process.env.LJ_DEVTOOLS === "1") {
     mainWindow.webContents.openDevTools({ mode: "detach" });
   }
 
@@ -95,6 +101,10 @@ function createWindow() {
 
   // D6 — Registrar janela principal no módulo de atalhos globais
   shortcuts.setMainWindow(mainWindow);
+
+  // D4 — Registrar janela principal no windowFactory: janelas auxiliares
+  // (projeção/operador/retorno) devolvem o foco à main após abrir.
+  windowFactory.setMainWindow(mainWindow);
 
   // D8 — Registrar janela principal no updater e inicializar (dev e prod)
   // As opções (useBeta/autoDownload) são sempre lidas das preferências
@@ -131,17 +141,14 @@ function createWindow() {
     try { mainWindow.webContents.send("window:maximizeChange", false); } catch (_) { /* ignore */ }
   });
 
-  // Em DEV, redireciona apenas erros/warnings do renderer para o terminal.
-  // Logs comuns vão direto pro DevTools — evita poluir o terminal.
-  if (isDev) {
-    mainWindow.webContents.on("console-message", (_e, level, message, line, source) => {
-      if (level < 2) return; // ignora log/info, só warn (2) e error (3)
-      const tag = level === 2 ? "warn" : "error";
-      const src = source ? source.split("/").pop() : "";
-      const prefix = `[renderer:${tag}]${src ? " " + src + ":" + line : ""}`;
-      console.log(prefix, message);
-    });
-  }
+  // Em DEV, redireciona erros/warnings do renderer para o terminal (opcional —
+  // controlado pela tela "Opções do Desenvolvedor").
+  const logsEnabled = isDev
+    ? (_userDataMain?.options?.dev?.logs_terminal == null
+        ? true
+        : !!_userDataMain.options.dev.logs_terminal)
+    : false;
+  configureLogForwarding(mainWindow, logsEnabled);
 
   console.log("[LouvorJA] Janela principal criada.");
 }
@@ -376,10 +383,69 @@ ipcMain.handle("app:ping", () => {
 ipcMain.handle("app:info", () => {
   return {
     isPackaged: app.isPackaged,
+    isDev,
     version: app.getVersion(),
+    electron: process.versions.electron,
+    chromium: process.versions.chrome,
+    node: process.versions.node,
     userData: paths.userData(),
     appPath: paths.appRoot(),
   };
+});
+
+// ---------------------------------------------------------------------------
+// Ferramentas de desenvolvimento (tela "Opções do Desenvolvedor")
+// ---------------------------------------------------------------------------
+
+// Estado do forward de console-message da janela principal para o terminal.
+let _logForwarding = { win: null, handler: null, enabled: false };
+
+/**
+ * Liga/desliga o redirecionamento de warn/error do renderer para o terminal.
+ * Apenas a janela principal é observada — as projeções usam o DevTools.
+ * @param {Electron.BrowserWindow|null} win
+ * @param {boolean} enabled
+ */
+function configureLogForwarding(win, enabled) {
+  if (!win || win.isDestroyed()) return;
+  // Remove listener anterior se existir.
+  if (_logForwarding.win && _logForwarding.handler) {
+    try {
+      _logForwarding.win.webContents.removeListener("console-message", _logForwarding.handler);
+    } catch (_) { /* ignore */ }
+  }
+  _logForwarding.win = win;
+  _logForwarding.enabled = !!enabled;
+  _logForwarding.handler = null;
+  if (!enabled) return;
+
+  const handler = (_e, level, message, line, source) => {
+    if (level < 2) return; // ignora log/info, só warn (2) e error (3)
+    const tag = level === 2 ? "warn" : "error";
+    const src = source ? source.split("/").pop() : "";
+    const prefix = `[renderer:${tag}]${src ? " " + src + ":" + line : ""}`;
+    console.log(prefix, message);
+  };
+  win.webContents.on("console-message", handler);
+  _logForwarding.handler = handler;
+}
+
+// Aplica o toggle de logs do terminal em runtime (sem reiniciar o app).
+ipcMain.handle("dev:setLogForwarding", (_event, enabled) => {
+  const on = !!enabled;
+  if (mainWindow) configureLogForwarding(mainWindow, on);
+  else _logForwarding.enabled = on;
+  return { ok: true, enabled: on };
+});
+
+// Recarrega todas as janelas abertas (janela principal + projeções/operador).
+ipcMain.handle("dev:reloadAll", () => {
+  let count = 0;
+  for (const w of BrowserWindow.getAllWindows()) {
+    if (!w || w.isDestroyed()) continue;
+    try { w.webContents.reload(); count++; } catch (_) { /* ignore */ }
+  }
+  return { ok: true, count };
 });
 
 // ---------------------------------------------------------------------------
@@ -556,11 +622,16 @@ ipcMain.handle("windows:open", (_event, options) => {
   // e que o YouTube IFrame Player API aceite a origem (HTTP real).
   // 127.0.0.1 (IPv4) evita cair no servidor da versão Delphi (IPv6).
   const devUrl = isDev ? DEV_URL : (HTTP_BASE_URL ? `${HTTP_BASE_URL}/#` : "");
+  // DevTools automático em janelas de projeção — controlado pela tela
+  // "Opções do Desenvolvedor" (options.dev.devtools_projections).
+  // null → deixa o windowFactory decidir (_isDevMode). true/false → override.
+  const devToolsOpt = _userDataMain?.options?.dev?.devtools_projections;
   const win = windowFactory.openOnMonitor({
     ...options,
     preloadPath,
     devUrl,
     prodHtmlPath,
+    devTools: devToolsOpt == null ? null : !!devToolsOpt,
   });
   return { id: win.id };
 });

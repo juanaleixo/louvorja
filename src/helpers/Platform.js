@@ -60,6 +60,21 @@ export default {
   },
 
   /**
+   * true quando a app roda em modo desenvolvimento.
+   *
+   * No Electron, usa o valor real do main process (`ELECTRON_DEV=1` ou
+   * executável não empacotado — exposto no preload). No browser/PWA usa o
+   * VITE_APP_MODE. Controla recursos exclusivos de dev (ex: tela de
+   * "Opções do Desenvolvedor").
+   *
+   * @returns {boolean}
+   */
+  get isDev() {
+    if (this.isDesktop) return !!(api && api.isDev);
+    return typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_MODE === "development";
+  },
+
+  /**
    * API de storage persistente em arquivos JSON (userData/storage/).
    * Disponível apenas no Electron (D1).
    * null quando rodando no browser/PWA — Storage.js usa localStorage como fallback.
