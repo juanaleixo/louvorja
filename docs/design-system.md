@@ -568,6 +568,43 @@ src/modules/     ❌ não usar (CSS scoped próprio de cada módulo)
 
 ---
 
+## Personalização de componentes Vuetify
+
+Para ajustar globalmente o CSS de um componente Vuetify (ex: barra do
+`v-expansion-panel`, tabelas, botões), use o arquivo dedicado:
+
+**`src/assets/styles/vuetify-overrides.css`**
+
+Esse arquivo é importado **por último** no `src/main.js`, depois do CSS global e
+do `vuetify/styles`, garantindo prioridade na cascata. É o lugar padrão para
+customizações de componentes Vuetify.
+
+### Exemplo — barra do collapse panel
+
+```css
+.v-expansion-panel-title {
+  padding: 8px 16px !important;
+  min-height: 40px;
+}
+
+.v-expansion-panel-text__wrapper {
+  padding-top: 4px !important;
+  padding-bottom: 8px !important;
+}
+```
+
+### Regras
+
+- Classes Vuetify seguem o padrão `.v-<componente>` (ex: `.v-expansion-panel-title`,
+  `.v-table`, `.v-btn`). Inspecione o DOM com DevTools para achar a classe exata.
+- Use `!important` quando o seletor Vuetify tiver alta especificidade — é comum
+  e aceito **somente** neste arquivo de overrides.
+- Prefira os tokens `var(--lj-*)` para cores/medidas quando possível, mantendo o
+  dark theme funcionando.
+- Não espalhe overrides de Vuetify em componentes: concentre aqui.
+
+---
+
 ## Arquivos de Referência
 
 | Arquivo | Conteúdo |
@@ -576,4 +613,5 @@ src/modules/     ❌ não usar (CSS scoped próprio de cada módulo)
 | `src/assets/styles/utilities.css` | Classes `.lj-u-*` (61 linhas) |
 | `src/assets/styles/main.css` | Reset global, scrollbar, `.no-select` legado |
 | `src/assets/styles/fonts.css` | `@font-face DINCondensedBold` |
+| `src/assets/styles/vuetify-overrides.css` | Overrides globais de componentes Vuetify |
 | `src/assets/styles/main.scss` | Entry point que importa todos os arquivos acima |

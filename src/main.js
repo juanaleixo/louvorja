@@ -11,6 +11,7 @@ import "./assets/styles/utilities.css";
 import "./assets/styles/main.css";
 import "./assets/styles/fonts.css";
 import "./assets/styles/appmenu-options.css";
+import "./assets/styles/vuetify-overrides.css";
 //Modules
 import ModuleManager from "@/helpers/ModuleManager";
 import $storage from "@/helpers/Storage";
