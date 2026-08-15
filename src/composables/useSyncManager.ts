@@ -3,7 +3,7 @@ import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import Database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
-import { KEYS } from "@/constants/UserDataKeys";
+import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { BOOKS } from "@/constants/Bible";
 import type { BibleVersion } from "@/types/Bible";
 
@@ -106,13 +106,16 @@ export function useSyncManager() {
 
   // ─── Catalog / Scan ─────────────────────────────────────────────
 
-  async function loadCatalog(lang: string, { fresh = false } = {}): Promise<{ categories: any[]; hymnalIds: number[] }> {
-    const [catsRes, hymRes] = await Promise.allSettled([
+  async function loadCatalog(lang: string, { fresh = false } = {}): Promise<{ categories: any[]; hymnalIds: number[]; hymnal1996Ids: number[] }> {
+    const hymnal1996Enabled = $userdata.get<boolean>(moduleShowInMainMenu("hymnal_1996"), false) === true;
+    const [catsRes, hymRes, hym1996Res] = await Promise.allSettled([
       Database.get(`${lang}_categories`, { fresh }),
       Database.get(`${lang}_hymnal`, { fresh }),
+      hymnal1996Enabled ? Database.get(`${lang}_hymnal_1996`, { fresh }) : Promise.resolve(null),
     ]);
     const categories: any[] = [];
     let hymnalIds: number[] = [];
+    let hymnal1996Ids: number[] = [];
 
     if (catsRes.status === "fulfilled" && Array.isArray(catsRes.value)) {
       categories.push(...(catsRes.value as any[]).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
@@ -122,17 +125,23 @@ export function useSyncManager() {
         .map((m) => Number(m.id_music))
         .filter((n) => Number.isFinite(n));
     }
+    if (hym1996Res.status === "fulfilled" && Array.isArray(hym1996Res.value)) {
+      hymnal1996Ids = (hym1996Res.value as Array<{ id_music: number | string }>)
+        .map((m) => Number(m.id_music))
+        .filter((n) => Number.isFinite(n));
+    }
 
-    return { categories, hymnalIds };
+    return { categories, hymnalIds, hymnal1996Ids };
   }
 
   async function scanCache(
     lang: string,
     categories: any[],
-    hymnalIds: number[]
-  ): Promise<{ cachedAlbums: Set<number>; hymnalCached: boolean }> {
+    hymnalIds: number[],
+    hymnal1996Ids: number[] = []
+  ): Promise<{ cachedAlbums: Set<number>; hymnalCached: boolean; hymnal1996Cached: boolean }> {
     if (!Platform.storage?.checkLocal) {
-      return { cachedAlbums: new Set(), hymnalCached: false };
+      return { cachedAlbums: new Set(), hymnalCached: false, hymnal1996Cached: false };
     }
 
     const albumIds: number[] = [];
@@ -140,8 +149,8 @@ export function useSyncManager() {
       cat.albums?.forEach((a: any) => albumIds.push(a.id_album));
     });
 
-    const totalSteps = albumIds.length + (hymnalIds.length ? 1 : 0);
-    if (totalSteps === 0) return { cachedAlbums: new Set(), hymnalCached: false };
+    const totalSteps = albumIds.length + (hymnalIds.length ? 1 : 0) + (hymnal1996Ids.length ? 1 : 0);
+    if (totalSteps === 0) return { cachedAlbums: new Set(), hymnalCached: false, hymnal1996Cached: false };
 
     scanning.value = true;
     scanProgress.value = { done: 0, total: totalSteps };
@@ -178,22 +187,40 @@ export function useSyncManager() {
       scanProgress.value = { ...scanProgress.value, done: scanProgress.value.done + 1 };
     }
 
+    let hymnal1996Cached = false;
+    if (hymnal1996Ids.length) {
+      try {
+        const hymFiles = await collectHymnalFileList(hymnal1996Ids);
+        hymnal1996Cached = hymFiles.length > 0 && (await isFileListComplete(hymFiles));
+      } catch (e) {
+        console.warn("[useSyncManager] scan hymnal 1996:", e);
+      }
+      scanProgress.value = { ...scanProgress.value, done: scanProgress.value.done + 1 };
+    }
+
     scanning.value = false;
-    return { cachedAlbums, hymnalCached };
+    return { cachedAlbums, hymnalCached, hymnal1996Cached };
   }
 
   async function runScan(lang: string): Promise<{
     categories: any[];
     hymnalIds: number[];
+    hymnal1996Ids: number[];
     cachedAlbums: Set<number>;
     hymnalCached: boolean;
+    hymnal1996Cached: boolean;
     bibleVersions: BibleVersion[];
     downloadedBibles: number[];
     connectionOk: boolean;
   }> {
-    const { categories, hymnalIds } = await loadCatalog(lang);
+    const { categories, hymnalIds, hymnal1996Ids } = await loadCatalog(lang);
     const { versions: bibleVersions } = await loadBibleVersions(lang);
-    const { cachedAlbums, hymnalCached } = await scanCache(lang, categories, hymnalIds);
+    const { cachedAlbums, hymnalCached, hymnal1996Cached } = await scanCache(
+      lang,
+      categories,
+      hymnalIds,
+      hymnal1996Ids
+    );
 
     if (bibleVersions.length > 0) {
       scanProgress.value = { ...scanProgress.value, total: scanProgress.value.total + bibleVersions.length };
@@ -203,7 +230,7 @@ export function useSyncManager() {
 
     scanning.value = false;
     const connectionOk = await checkFtp();
-    return { categories, hymnalIds, cachedAlbums, hymnalCached, bibleVersions, downloadedBibles, connectionOk };
+    return { categories, hymnalIds, hymnal1996Ids, cachedAlbums, hymnalCached, hymnal1996Cached, bibleVersions, downloadedBibles, connectionOk };
   }
 
   // ─── Bible Versions ─────────────────────────────────────────────
@@ -344,24 +371,35 @@ export function useSyncManager() {
   async function collectFiles(
     selectedAlbums: Set<number>,
     selectedHymnal: boolean,
-    hymnalIds: number[]
+    hymnalIds: number[],
+    selectedHymnal1996 = false,
+    hymnal1996Ids: number[] = []
   ): Promise<FileEntry[]> {
     const files = new Map<string, FileEntry>();
     const albumIds = [...selectedAlbums];
     const allMusicIds = new Set<number>();
 
+    // Álbuns desativados pelo usuário não devem ser baixados.
+    const disabled = $userdata.get<number[]>(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+
     await Promise.all(
-      albumIds.map(async (id) => {
-        const album = await fetchJson<MusicData>(`album_${id}`);
-        if (!album) return;
-        const f = toFile(album.url_image);
-        if (f) files.set(f.remote, f);
-        album.musics?.forEach((m) => allMusicIds.add(Number(m.id_music)));
-      })
+      albumIds
+        .filter((id) => !disabled.includes(Number(id)))
+        .map(async (id) => {
+          const album = await fetchJson<MusicData>(`album_${id}`);
+          if (!album) return;
+          const f = toFile(album.url_image);
+          if (f) files.set(f.remote, f);
+          album.musics?.forEach((m) => allMusicIds.add(Number(m.id_music)));
+        })
     );
 
     if (selectedHymnal) {
       hymnalIds.forEach((id) => allMusicIds.add(id));
+    }
+
+    if (selectedHymnal1996) {
+      hymnal1996Ids.forEach((id) => allMusicIds.add(id));
     }
 
     const musicIds = [...allMusicIds];
@@ -546,14 +584,16 @@ export function useSyncManager() {
 
   async function refreshDiskUsage(
     cachedAlbums: Set<number>,
-    hymnalCached: boolean
+    hymnalCached: boolean,
+    hymnal1996Cached = false,
+    hymnal1996Ids: number[] = []
   ): Promise<DiskUsage> {
     if (!Platform.storage?.sizeOfPaths) {
       return { bytes: 0, fileCount: 0, albumCount: 0, hymnalCached: false };
     }
 
     const albumCount = cachedAlbums.size;
-    if (albumCount === 0 && !hymnalCached) {
+    if (albumCount === 0 && !hymnalCached && !hymnal1996Cached) {
       return { bytes: 0, fileCount: 0, albumCount: 0, hymnalCached: false };
     }
 
@@ -573,6 +613,11 @@ export function useSyncManager() {
 
     if (hymnalCached) {
       const hymFiles = await collectHymnalFileList(albumIds);
+      hymFiles.forEach((f) => remotes.add(f.remote));
+    }
+
+    if (hymnal1996Cached && hymnal1996Ids.length) {
+      const hymFiles = await collectHymnalFileList(hymnal1996Ids);
       hymFiles.forEach((f) => remotes.add(f.remote));
     }
 

@@ -2,6 +2,8 @@ import type { RibbonPage, RibbonGroup } from "@/types/Ribbon"
 import { Module, ModuleRibbon } from "@/types/Module";
 import { groups } from "@/config/modules/ribbon/groups";
 import { categories } from "@/config/modules/ribbon/categories";
+import $userdata from "@/helpers/UserData";
+import { moduleShowInMainMenu } from "@/constants/UserDataKeys";
 
 const modules = import.meta.glob<ModuleRibbon>("@/modules/*/manifest.ts", {
   eager: true,
@@ -118,6 +120,19 @@ export function getModuleTitle(id: string): string {
 export const getModules: Record<string, Module> = {}
 for (const m of allModules) {
   getModules[m.id] = m
+}
+
+/**
+ * Indica se um módulo deve aparecer no menu principal (Ribbon).
+ * Lê a preferência persistida `modules.<id>.show_in_main_menu` (reativa via
+ * UserData/Pinia); fallback para o manifest (`defaultShowInMainMenu` ou
+ * `showInMainMenu`). Permite ocultar/mostrar qualquer módulo em runtime.
+ */
+export function isModuleVisible(id: string): boolean {
+  const mod = getModules[id]
+  if (!mod) return false
+  const fallback = mod.defaultShowInMainMenu ?? mod.showInMainMenu !== false
+  return $userdata.get(moduleShowInMainMenu(id), fallback) === true
 }
 
 export const getRibbonModules: RibbonPage[] = buildRibbonPages()

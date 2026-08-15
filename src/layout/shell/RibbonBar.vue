@@ -189,7 +189,7 @@ import $alert from "@/helpers/Alert";
 import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { getRibbonModules } from "@/config/modules";
+import { getRibbonModules, isModuleVisible } from "@/config/modules";
 import type { RibbonButton, RibbonGroup, RibbonPage } from "@/types/Ribbon";
 import RibbonButtonComponent from "@/layout/shell/RibbonButtonComponent.vue";
 import RibbonGroupComponent from "@/layout/shell/RibbonGroupComponent.vue";
@@ -312,7 +312,15 @@ const openModuleIds: ComputedRef<string[]> = computed(() => {
 const activePageObj: ComputedRef<RibbonPage | undefined> = computed(() =>
   modules.find((p: RibbonPage) => p.id === ribbonStore.activePage)
 );
-const activeGroups: ComputedRef<RibbonGroup[]> = computed(() => activePageObj.value?.groups || []);
+const activeGroups: ComputedRef<RibbonGroup[]> = computed(() => {
+  const groups = activePageObj.value?.groups || [];
+  // Remove botões de módulos ocultos via modules.<id>.show_in_main_menu
+  // (ex: Hinário 1996 desativado na página de opções).
+  return groups.map((g) => ({
+    ...g,
+    buttons: (g.buttons || []).filter((b) => !b.module || isModuleVisible(b.module)),
+  }));
+});
 const isContextualActive: ComputedRef<boolean> = computed(() => !!activePageObj.value?.contextual);
 const visiblePages: ComputedRef<RibbonPage[]> = computed(() => ribbonStore.visiblePages);
 
@@ -490,6 +498,7 @@ function executeButton(btn: RibbonButton): void {
       "online_videos",
       "custom_online_videos",
       "hymnal",
+      "hymnal_1996",
       "bible_search",
       "music_search",
       "media_library",

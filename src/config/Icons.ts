@@ -132,6 +132,7 @@ export const ICONS = {
     FAVORITES: "mdi-star",
     HISTORY: "mdi-history",
     HYMNAL: "hasd",
+    HYMNAL_1996: "hasd",
     INTERACTIVE_TEXT: "mdi-format-quote-close",
     KIDS: "kids",
     LITURGY: "liturgy",

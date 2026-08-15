@@ -1,0 +1,28 @@
+{
+  "title": "Himnario 1996",
+  "description": "Lista las canciones del Himnario 1996",
+  "inputs": {
+    "search": "Escriba el número o nombre del himno..."
+  },
+  "table": {
+    "track": "Pista",
+    "music_name": "Nombre",
+    "album_name": "Álbum",
+    "duration": "Duración"
+  },
+  "data": {
+    "records": "Registros totales",
+    "not_found": "No se encontraron registros con los filtros seleccionados. Intente cambiar los filtros de búsqueda."
+  },
+  "select_music_first": "Seleccione un himno primero.",
+  "export_title": "Exportar Música",
+  "export_choose_version": "¿Qué versión desea exportar?",
+  "sing": "Cantada",
+  "playback": "Playback",
+  "export_error": "Error al exportar el archivo de audio.",
+  "export_not_found": "Datos de la música no encontrados.",
+  "export_no_file": "Archivo de audio no disponible para esta versión.",
+  "ribbon": {
+    "title_ctx": "Configurar Himnos"
+  }
+}

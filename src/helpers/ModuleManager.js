@@ -3,6 +3,7 @@ import $appdata from "./AppData";
 import $userdata from "./UserData";
 import $dev from "./Dev";
 import $alert from "./Alert";
+import { moduleShowInMainMenu } from "@/constants/UserDataKeys";
 
 /**
  * ModuleManager — lifecycle de módulos (boot-time).
@@ -83,6 +84,12 @@ export default {
           $userdata.setIfNull(`modules.${manifest.id}.${key}`, customization.default ?? null);
         });
       }
+
+      // Visibilidade no menu (modules.<id>.show_in_main_menu) — default do manifest.
+      $userdata.setIfNull(
+        moduleShowInMainMenu(manifest.id),
+        manifest.defaultShowInMainMenu ?? manifest.showInMainMenu
+      );
 
       $dev.write("module_install", manifest.id, manifest.development ? "[dev]" : "");
       return true;

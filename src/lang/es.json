@@ -301,6 +301,16 @@
       "db_error": "No se pudo verificar.",
       "cache_cleared": "Caché limpiado."
     },
+    "albums": {
+      "title": "Álbumes",
+      "hint": "Desactive álbumes para ocultarlos de las listas de canciones e impedir la descarga en la sincronización.",
+      "enable_hymnal_1996": "Himnario 1996",
+      "hymnal_panel_title": "Himnario",
+      "search": "Buscar álbumes…",
+      "select_all": "Seleccionar todos",
+      "no_results": "Ningún álbum encontrado para la búsqueda.",
+      "loading": "Cargando álbumes…"
+    },
     "collections_download": {
       "title": "Descarga de Colectáneas",
       "desktop_only": "Disponible solo en la versión desktop.",
@@ -333,6 +343,7 @@
       "failed": "{n} fallo(s) durante la descarga.",
       "no_connection_hint": "Sin conexión FTP en este momento — la app intentará reconectar al iniciar la descarga.",
       "hymnal": "Himnario Adventista",
+      "hymnal_1996": "Himnario 1996",
       "songs": "himnos",
       "refresh_catalog": "Actualizar colectáneas",
       "last_update": "Actualizado a las {time}",

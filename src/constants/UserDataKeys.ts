@@ -22,6 +22,14 @@ const OPTIONS_ONLINE_VIDEO_PROJECTION = `${OPTIONS}.online_video_projection`
 export const KEY_LITURGY_DAYS = `${MODULES}.${ModuleEnum.LITURGY}.days`;
 export const KEY_LITURGY_ACTIVE_DAY = `${MODULES}.${ModuleEnum.LITURGY}.active_day`;
 
+/**
+ * Chave dinâmica de visibilidade de um módulo no menu principal.
+ * `modules.<id>.show_in_main_menu` — distinta de `manifest.active` (instalação no boot).
+ */
+export function moduleShowInMainMenu(id: string): string {
+  return `${MODULES}.${id}.show_in_main_menu`;
+}
+
 
 export const KEYS = {
   MODULES: {
@@ -125,6 +133,7 @@ export const KEYS = {
     FULLSCREEN: `${OPTIONS}.fullscreen`,
     LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
     LAST_APP_CHECK: `${OPTIONS}.last_app_check`,
+    DISABLED_ALBUMS: `${OPTIONS}.disabled_albums`,
     SKIP_RELEASE_NOTES_VERSION: `${OPTIONS}.skip_release_notes_version`,
     SKIP_UPDATE_NOTIFICATION_VERSION: `${OPTIONS}.skip_update_notification_version`,
     SKIP_STARTUP_CHECK: `${OPTIONS}.skip_startup_check`,

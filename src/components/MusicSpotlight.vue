@@ -143,6 +143,8 @@ import LMusicMenuTable from "@/components/MusicMenuTable.vue";
 import Database from "@/helpers/Database";
 import Strings from "@/helpers/Strings";
 import Platform from "@/helpers/Platform";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import type { SearchMusicItem } from "@/types/Music";
 import type { AlbumItem } from "@/types/Album";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
@@ -222,7 +224,13 @@ async function loadMusics(): Promise<void> {
   try {
     const data = await Database.get<SearchMusicItem[]>(`${locale.value}_musics`);
     if (Array.isArray(data)) {
-      musics.value = data.slice().sort((a, b) => Strings.sort(a.name, b.name));
+      const disabled = $userdata.get<number[]>(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+      const active = data.filter((music: SearchMusicItem) => {
+        if (!disabled.length) return true;
+        if (!Array.isArray(music.albums) || music.albums.length === 0) return true;
+        return music.albums.some((a) => !disabled.includes(Number(a.id_album)));
+      });
+      musics.value = active.slice().sort((a, b) => Strings.sort(a.name, b.name));
       loadedLocale.value = locale.value;
     } else {
       musics.value = [];

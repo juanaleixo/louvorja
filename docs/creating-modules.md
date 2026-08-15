@@ -52,6 +52,40 @@ export const module: Module = {
 }
 ```
 
+### `showInMainMenu` e visibilidade dinâmica
+
+- `showInMainMenu: boolean` obrigatório (`false` para módulos internos).
+- `defaultShowInMainMenu?: boolean` (opcional) — visibilidade **inicial** no menu.
+  Default = `showInMainMenu`. Permite que um módulo esteja instalado mas comece
+  **oculto** (ex: `hymnal_1996` usa `defaultShowInMainMenu: false`).
+
+A visibilidade em runtime é lida da chave persistida `modules.<id>.show_in_main_menu`
+(helper `moduleShowInMainMenu(id)`), então o usuário pode mostrar/ocultar módulos
+sem reinstalar. Ver `docs/architecture.md` → "Visibilidade de módulos e álbuns".
+
+### Factory de manifest (módulos com mesma estrutura)
+
+Para módulos muito parecidos (ex: `hymnal` e `hymnal_1996`), extraia a criação do
+manifest para uma função factory e reutilize nos dois. Exemplo em
+`src/modules/hymnal/hymnalManifest.ts`:
+
+```ts
+// hymnalManifest.ts
+export function createHymnalManifest({ id, name, color, icon, defaultShowInMainMenu = true }) {
+  return { module: { /* ... */ }, contextualPages: [ /* ... */ ] };
+}
+
+// hymnal/manifest.ts
+const { module, contextualPages } = createHymnalManifest({
+  id: ModuleEnum.HYMNAL, name: "Hinário Adventista", color: "#c0392b",
+  icon: ICONS.MODULES.HYMNAL,
+});
+```
+
+E o componente compartilhado fica em `components/` (ex: `HymnalBrowser.vue`),
+parametrizado por props — cada módulo só tem um `Index.vue` fino:
+`<HymnalBrowser module-id="hymnal_1996" data-file="hymnal_1996" />`.
+
 ## 📄 index.ts
 
 ```ts
@@ -149,13 +183,17 @@ O prefixo i18n é `modules.<id>.` — resolvido automaticamente pelo `$t()` do m
 
 O comando `npm run validate:manifests` valida todos os manifest.ts:
 
-- `moduleId` declarado com `ModuleEnum.<KEY>`
+- `moduleId` declarado com `ModuleEnum.<KEY>` (ou uso de factory `create*Manifest`)
 - `title` via i18n (`${modulePath}.title`)
 - `description` via i18n
 - `icon` usando `ICONS.*` (não hardcoded)
 - `showInMainMenu` obrigatório
 - `color`, `category`, `group`, `order` obrigatórios
 - `lang/pt.json` e `lang/es.json` existem
+
+> Manifestos gerados por factory (`createHymnalManifest`, etc.) têm os checks
+> estruturais do objeto `module` pulados — a factory é tipada (`Module`) e
+> garante os campos. Mantenha `lang/` e `showInMainMenu`/`defaultShowInMainMenu`.
 
 ---
 
@@ -164,8 +202,11 @@ O comando `npm run validate:manifests` valida todos os manifest.ts:
 - `id` vem de `ModuleEnum.<KEY>` (enum em `src/enums/ModuleEnum.ts`)
 - `title`/`description` sempre via i18n (`${modulePath}.title`)
 - `showInMainMenu: boolean` obrigatório (`false` para módulos internos)
+- `defaultShowInMainMenu` para começar oculto no menu (ex: `hymnal_1996`)
 - `icon` **sempre** via `ICONS.*` de `src/config/Icons.ts` — nunca use strings `"mdi-*"` hardcoded
 - Botões de formatação: `ICONS.ACTIONS.FORMAT` e `ICONS.ACTIONS.RESTORE`
 - Ribbon buttons (`action`, `checkbox`, `switch`, `select`, `slider`): `icon` de `ICONS.*`
 - `$userdata.get/set` **sempre** via `KEYS.*` de `src/constants/UserDataKeys.ts` — nunca strings hardcoded
 - Novas chaves de UserData: adicionar em `KEYS.*` em `src/constants/UserDataKeys.ts` antes de usar
+- Módulos similares: extrair factory de manifest + componente compartilhado
+  (ver `src/modules/hymnal/hymnalManifest.ts` e `HymnalBrowser.vue`)

@@ -46,6 +46,7 @@ const props = defineProps({
   filter: Object,
   letter: String,
   sort_by: String,
+  disabled_albums: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -131,6 +132,8 @@ async function loadData() {
 
   if (all_data.value == null) {
     error.value = t("components.datatable.alerts.not_found");
+    loading.value = false;
+    return;
   }
 
   if (props.sort_by) {
@@ -181,7 +184,14 @@ function filterData() {
           ? /^[^a-zA-Z]/.test(item.name.normalize("NFD").replace(/[̀-ͯ]/g, ""))
           : item.name.normalize("NFD").replace(/[̀-ͯ]/g, "").startsWith(props.letter));
 
-      return searchableCondition && filterCondition && initialLetter;
+      // Álbuns desativados: oculta a música se NÃO pertencer a nenhum álbum ativo.
+      const disabled = props.disabled_albums || [];
+      const albumActive =
+        !Array.isArray(item.albums) ||
+        item.albums.length === 0 ||
+        item.albums.some((a) => !disabled.includes(a.id_album));
+
+      return searchableCondition && filterCondition && initialLetter && albumActive;
     })
     .slice();
 

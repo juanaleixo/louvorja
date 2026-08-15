@@ -58,6 +58,7 @@
               <AppMenuSincronizar v-else-if="activeItem?.id === 'sync'" />
               <AppMenuAtualizacoes v-else-if="activeItem?.id === 'updates'" />
               <AppMenuImportExport v-else-if="activeItem?.id === 'import_export'" />
+              <AppMenuAlbums v-else-if="activeItem?.id === 'albums'" />
 
               <p v-else class="app-menu-content-placeholder">
                 {{ $t("shell.appmenu_content_placeholder") }}
@@ -78,7 +79,7 @@ import AppMenuTransmitir from "./AppMenuTransmitir.vue";
 import AppMenuSincronizar from "./AppMenuSincronizar.vue";
 import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
-import $modules from "@/helpers/Modules";
+import AppMenuAlbums from "./AppMenuAlbums.vue";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
@@ -118,7 +119,7 @@ const items = computed(() => [
   {
     id: "albums",
     label: "shell.appmenu_items.albums",
-    action: () => $modules.open("collections"),
+    inline: true,
   },
   { id: "donate", label: "shell.appmenu_items.donate", action: openDonation },
   { id: "exit", label: "shell.appmenu_items.exit", action: exitApp },

@@ -49,6 +49,7 @@
         track: search_track,
       }"
       :filter="{ has_instrumental_music: filter_instrumental_music }"
+      :disabled_albums="disabledAlbums"
       :scroll="scroll"
       :has_scroll="has_scroll"
       sort_by="name"
@@ -141,6 +142,8 @@ import { useDisplay } from "vuetify";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
 import DateTime from "@/helpers/DateTime";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 const moduleContainer = ref(null);
@@ -206,6 +209,11 @@ const classform = computed(() => ({
 const compact = computed(() => displayWidth.value <= 800);
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 const shortTime = (t) => DateTime.shortTime(t);
+
+const disabledAlbums = computed(() => {
+  const saved = $userdata.get(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+  return saved;
+});
 
 /* -------------------------------------------------- */
 /* METHODS                                            */
