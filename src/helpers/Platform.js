@@ -148,7 +148,7 @@ export default {
   },
 
   /**
-   * Auto-update do app via electron-updater (D8).
+   * Auto-update do app via GitHub Releases.
    * Permite verificar, baixar e instalar atualizações do app desktop.
    * null quando rodando no browser/PWA.
    *

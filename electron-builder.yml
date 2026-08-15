@@ -101,6 +101,13 @@ mac:
     - zip
   icon: build/icon-512.png
   category: public.app-category.music
+  # Assinatura + notarização (certificado Developer ID + credenciais Apple
+  # fornecidas via env no CI: CSC_LINK/CSC_KEY_PASSWORD + APPLE_ID/
+  # APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID).
+  notarize: true
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
 
 # ---------------------------------------------------------------------------
 # Linux — AppImage

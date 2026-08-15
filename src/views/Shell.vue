@@ -32,6 +32,13 @@
     <HotkeysCheatsheet v-model="hotkeysOpen" />
     <ReleaseNotesDialog v-model="releaseNotesOpen" @close="onReleaseNotesClose" />
     <StartupCheckDialog v-model="startupCheckOpen" />
+    <UpdateAvailableDialog
+      v-model="updateDialogOpen"
+      :version="updateDialogVersion"
+      @start-download="onUpdateDialogDownload"
+      @dont-show-again="onUpdateDialogDontShowAgain"
+      @close="onUpdateDialogClose"
+    />
   </v-app>
 </template>
 
@@ -55,11 +62,10 @@ import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";
 import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
 import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
 import ReleaseNotesDialog from "@/components/ReleaseNotesDialog.vue";
+import UpdateAvailableDialog from "@/components/UpdateAvailableDialog.vue";
 import packageJson from "@root/package.json";
-import { ICONS } from "@/config/Icons";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
-import $snackbar from "@/helpers/Snackbar";
 import Platform from "@/helpers/Platform";
 import { KEYS } from "@/constants/UserDataKeys";
 import $popup from "@/helpers/Popup";
@@ -79,6 +85,8 @@ const bibleSearchOpen = ref(false);
 const hotkeysOpen = ref(false);
 const startupCheckOpen = ref(false);
 const releaseNotesOpen = ref(false);
+const updateDialogOpen = ref(false);
+const updateDialogVersion = ref("");
 const ready = ref(false);
 
 const liturgyModuleOpen = computed(() => {
@@ -120,9 +128,36 @@ let messageHandler: ((event: MessageEvent) => void) | null = null;
 // ---------------------------------------------------------------------------
 let _updaterUnsub: (() => void) | null = null;
 let _startupCheckPending = false;
+let _pendingReleaseNotes = false;
+let _startupCheckTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function _openUpdatesScreen() {
   window.dispatchEvent(new CustomEvent("louvorja:open-updates"));
+}
+
+// Mostra release notes se pendente, senão segue para startup check.
+function _showPendingReleaseNotes() {
+  if (!_pendingReleaseNotes) {
+    _showPendingStartupCheck();
+    return;
+  }
+  _pendingReleaseNotes = false;
+  const skippedNotesVersion = $userdata.get<string | null>(
+    KEYS.OPTIONS.SKIP_RELEASE_NOTES_VERSION,
+    null
+  );
+  if (skippedNotesVersion !== packageJson.version) {
+    releaseNotesOpen.value = true;
+  } else {
+    _showPendingStartupCheck();
+  }
+}
+
+function _showPendingStartupCheck() {
+  const skip = $userdata.get<boolean>(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
+  if (!skip) {
+    startupCheckOpen.value = true;
+  }
 }
 
 function _handleUpdaterState(
@@ -132,46 +167,109 @@ function _handleUpdaterState(
   } | null
 ) {
   if (!state) return;
+  console.info(
+    "[Shell] updater state →",
+    state.status,
+    "| newVersion:",
+    state.newVersion,
+    "| startupCheckPending:",
+    _startupCheckPending
+  );
   if (state.status === "available") {
     const autoDownload = $userdata.get<boolean>(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
     $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, true);
     $appdata.set(KEYS.SHELL.APP_UPDATE_VERSION, state.newVersion || "");
-    // Snackbar apenas no check de INÍCIO (não em check manual na tela) e
-    // quando NÃO há auto-download (senão o main baixa sozinho e o "available"
-    // é só um estado transitório até "downloading").
     if (_startupCheckPending && !autoDownload) {
       _startupCheckPending = false;
-      $snackbar.show({
-        text: t("options.updates.app_available_snackbar", { version: state.newVersion || "" }),
-        color: "warning",
-        icon: ICONS.ACTIONS.DOWNLOAD,
-        timeout: 8000,
-        action: _openUpdatesScreen,
-      });
+      // Verificar se o usuário dispensou esta versão
+      const skippedVersion = $userdata.get<string>(
+        KEYS.OPTIONS.SKIP_UPDATE_NOTIFICATION_VERSION,
+        ""
+      );
+      if (skippedVersion !== state.newVersion) {
+        updateDialogVersion.value = state.newVersion || "";
+        updateDialogOpen.value = true;
+      } else {
+        // Versão dispensada → seguir para release notes
+        _showPendingReleaseNotes();
+      }
+    } else if (_startupCheckPending && autoDownload) {
+      // Auto-download ativo: download já começou, não mostrar dialog
+      // mas chain para release notes quando o download concluir
+      _startupCheckPending = false;
     }
   } else if (state.status === "downloaded") {
     $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, true);
     $appdata.set(KEYS.SHELL.APP_UPDATE_VERSION, state.newVersion || "");
+    // Download manual via dialog → o dialog já mostra o estado "instalar";
+    // não reabrir as notas por cima. Só encadeia para release notes quando
+    // o download foi automático (dialog não aberto).
+    if (!updateDialogOpen.value) {
+      _showPendingReleaseNotes();
+    }
   } else if (state.status === "not-available" || state.status === "error") {
     $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, false);
     _startupCheckPending = false;
+    // Sem update → seguir para release notes
+    _showPendingReleaseNotes();
   }
 }
 
 async function _runStartupUpdateCheck() {
-  if (!Platform.isDesktop || !Platform.updater) return;
+  if (!Platform.isDesktop || !Platform.updater) {
+    _showPendingReleaseNotes();
+    return;
+  }
   const checkOnStart = $userdata.get<boolean>(KEYS.OPTIONS.CHECK_UPDATES_ON_START, true) === true;
-  if (!checkOnStart) return;
+  const autoDownload = $userdata.get<boolean>(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
+  console.info(
+    "[Shell] startup update check → checkOnStart:",
+    checkOnStart,
+    "| autoDownload:",
+    autoDownload
+  );
+  if (!checkOnStart) {
+    // Preferência desligada: não checa, mas segue o fluxo normal de boot
+    _showPendingReleaseNotes();
+    return;
+  }
   _startupCheckPending = true;
+
+  // Fallback por timeout: se o check não concluir (rede lenta / IPC travado),
+  // libera o fluxo de boot para não ficar preso esperando.
+  _startupCheckTimeout = setTimeout(() => {
+    if (_startupCheckPending) {
+      console.warn("[Shell] startup update check demorou demais — seguindo para release notes");
+      _startupCheckPending = false;
+      _showPendingReleaseNotes();
+    }
+  }, 15000);
+
   try {
     const res = await Platform.updater.check();
-    // Só registra a última verificação quando o check concluiu com sucesso.
+    console.info("[Shell] startup update check → resultado:", res);
     if (res && res.ok) {
       $userdata.set(KEYS.OPTIONS.LAST_APP_CHECK, new Date().toISOString());
+    } else if (res && !res.ok) {
+      // Check falhou sem emitir estado (ex: erro no main). Segue o fluxo
+      // de boot para release notes/startup check não dependerem do updater.
+      console.warn("[Shell] startup update check retornou erro:", res?.error);
+      if (_startupCheckPending) {
+        _startupCheckPending = false;
+        _showPendingReleaseNotes();
+      }
     }
   } catch (e) {
-    _startupCheckPending = false;
     console.warn("[Shell] startup update check falhou:", e);
+    if (_startupCheckPending) {
+      _startupCheckPending = false;
+      _showPendingReleaseNotes();
+    }
+  } finally {
+    if (_startupCheckTimeout) {
+      clearTimeout(_startupCheckTimeout);
+      _startupCheckTimeout = null;
+    }
   }
 }
 
@@ -197,10 +295,24 @@ function onReleaseNotesClose(dontShowAgain = false) {
   if (dontShowAgain) {
     $userdata.set(KEYS.OPTIONS.SKIP_RELEASE_NOTES_VERSION, packageJson.version);
   }
-  const skip = $userdata.get(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
-  if (!skip) {
-    startupCheckOpen.value = true;
+  _showPendingStartupCheck();
+}
+
+// Handler: iniciar download da atualização a partir do dialog
+function onUpdateDialogDownload() {
+  if (Platform.updater) {
+    Platform.updater.download();
   }
+}
+
+// Handler: dispensar notificação desta versão
+function onUpdateDialogDontShowAgain() {
+  $userdata.set(KEYS.OPTIONS.SKIP_UPDATE_NOTIFICATION_VERSION, updateDialogVersion.value);
+}
+
+// Handler: dialog de update fechado (sem download) → seguir para release notes
+function onUpdateDialogClose() {
+  _showPendingReleaseNotes();
 }
 
 // Registra ações do shell no composable (substitui `$appdata.set("shell._ref")`)
@@ -275,22 +387,28 @@ onMounted(() => {
     $appdata.set(KEYS.SHELL.IS_ONLINE, true);
   }
 
-  // Startup check — só no desktop e se não tiver skip ativo.
-  // Antes dele, exibimos o modal de novidades da versão (release notes) caso o
-  // usuário ainda não o tenha dispensado para a versão atual.
+  // Startup check — só no desktop.
+  // O fluxo é: update check → release notes → startup check.
+  // Marca como pendente; será exibido após o update check.
   if (display.platform.value.electron) {
-    const skip = $userdata.get(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
-    const skippedNotesVersion = $userdata.get(KEYS.OPTIONS.SKIP_RELEASE_NOTES_VERSION, null);
-    if (skippedNotesVersion !== packageJson.version) {
-      releaseNotesOpen.value = true; // abre novidades primeiro
-    } else if (!skip) {
-      startupCheckOpen.value = true;
-    }
+    const skippedNotesVersion = $userdata.get<string | null>(
+      KEYS.OPTIONS.SKIP_RELEASE_NOTES_VERSION,
+      null
+    );
+    _pendingReleaseNotes = skippedNotesVersion !== packageJson.version;
   }
 
   // Auto-update: assina mudanças de estado do updater para acender o badge
-  // da ShellTools e mostrar a snackbar quando o check ao iniciar encontra
+  // da ShellTools e mostrar o dialog quando o check ao iniciar encontra
   // versão nova.
+  console.info(
+    "[Shell] boot updater → isDesktop:",
+    Platform.isDesktop,
+    "| updater:",
+    !!Platform.updater,
+    "| api:",
+    !!Platform.api
+  );
   if (Platform.isDesktop && Platform.updater) {
     try {
       _updaterUnsub = Platform.updater.onStateChange(_handleUpdaterState);
@@ -300,9 +418,15 @@ onMounted(() => {
     // Reaplica o estado atual caso o update já tenha sido encontrado antes do mount
     Platform.updater
       .status()
-      .then((s: { status: string; newVersion?: string | null } | null) => _handleUpdaterState(s))
-      .catch(() => {});
+      .then((s: { status: string; newVersion?: string | null } | null) => {
+        console.info("[Shell] status replay:", s);
+        _handleUpdaterState(s);
+      })
+      .catch((e: unknown) => console.warn("[Shell] status replay falhou:", e));
     _runStartupUpdateCheck();
+  } else {
+    // Sem updater (web/PWA): release notes e startup check direto
+    _showPendingReleaseNotes();
   }
 
   // Bridge popup → main (replica popup ↔ shell)

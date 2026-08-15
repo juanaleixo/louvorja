@@ -16,6 +16,7 @@
 <script setup>
 import { computed } from "vue";
 import Icon from "@/components/Icon.vue";
+import { COLORS } from "@constants/Colors";
 
 const props = defineProps({
   icon: { type: String, required: true },
@@ -23,7 +24,7 @@ const props = defineProps({
   size: { type: String, default: "large" },
   active: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
-  iconColor: { type: String, default: null },
+  iconColor: { type: String, default: COLORS.PRIMARY },
   testid: { type: String, default: null },
 });
 
@@ -93,7 +94,7 @@ const iconSize = computed(() => {
   font-size: var(--lj-text-sm);
   text-align: center;
   line-height: 1.15;
-  //word-break: keep-all;
+  word-break: keep-all;
   hyphens: auto;
   max-width: 100px;
   color: inherit;

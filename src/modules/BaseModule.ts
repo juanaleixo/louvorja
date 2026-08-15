@@ -13,7 +13,7 @@ export interface NormalizedModule {
   author?: string;
   category?: string;
   icon: string;
-  color: string;
+  color?: string;
   showInMainMenu: boolean;
   development: boolean;
   language: string | null;

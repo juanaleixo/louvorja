@@ -366,7 +366,7 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
   },
 
   // -------------------------------------------------------------------------
-  // D8 — Auto-update do app via electron-updater
+  // D8 — Auto-update do app via GitHub Releases
   // -------------------------------------------------------------------------
 
   updater: {
@@ -385,7 +385,7 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     downloadPackage: () => ipcRenderer.invoke("updater:downloadPackage"),
     openPackage: () => ipcRenderer.invoke("updater:openPackage"),
     openReleasePage: () => ipcRenderer.invoke("updater:openReleasePage"),
-    getReleaseNotes: () => ipcRenderer.invoke("updater:getReleaseNotes"),
+    getReleaseNotes: (version) => ipcRenderer.invoke("updater:getReleaseNotes", version),
     getInstallType: () => ipcRenderer.invoke("updater:getInstallType"),
     onPackageProgress: (cb) => {
       const handler = (_e, data) => cb(data);

@@ -78,6 +78,7 @@ export const KEYS = {
       END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_music`,
       END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`,
       END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`,
+      LAST_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.last_target_time`,
     },
     OVERLAY: {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
@@ -125,6 +126,7 @@ export const KEYS = {
     LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
     LAST_APP_CHECK: `${OPTIONS}.last_app_check`,
     SKIP_RELEASE_NOTES_VERSION: `${OPTIONS}.skip_release_notes_version`,
+    SKIP_UPDATE_NOTIFICATION_VERSION: `${OPTIONS}.skip_update_notification_version`,
     SKIP_STARTUP_CHECK: `${OPTIONS}.skip_startup_check`,
     USE_BETA_UPDATES: `${OPTIONS}.use_beta_updates`,
     CHECK_UPDATES_ON_START: `${OPTIONS}.check_updates_on_start`,

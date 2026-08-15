@@ -288,7 +288,6 @@ function onDragMove(evt: Record<string, unknown>): boolean | void {
   margin-left: 24px;
   padding: 4px 0 4px 12px;
   background: color-mix(in srgb, var(--bloco-color, var(--lj-surface-border)) 6%, transparent);
-  border-radius: 6px;
 }
 .tl-item--bloco-collapsed {
   padding: 0 !important;

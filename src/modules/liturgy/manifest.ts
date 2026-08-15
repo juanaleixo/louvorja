@@ -6,6 +6,8 @@ import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import LiturgyRibbonInfo from "./components/LiturgyRibbonInfo.vue"
+import { KEYS } from "@/constants/UserDataKeys"
+import { COLORS } from "@constants/Colors";
 
 const moduleId = ModuleEnum.LITURGY;
 const modulePath = $modules.getPath(moduleId);
@@ -36,7 +38,7 @@ export const contextualPages: RibbonPage[] = [
         id: `${moduleCtxId}_add`,
         title: "ribbon.groups.add",
         buttons: [
-          { id: "add_item", icon: ICONS.ACTIONS.ADD, label: "ribbon.btn.add_item", action: "lit_add_item", color: "#1b4f8a" },
+          { id: "add_item", icon: ICONS.ACTIONS.ADD, label: "ribbon.btn.add_item", action: "lit_add_item"},
         ],
       },
       {
@@ -61,7 +63,14 @@ export const contextualPages: RibbonPage[] = [
         buttons: [
           { id: "mark_done", icon: "mdi-check-circle", label: "ribbon.btn.mark_done", action: "lit_mark_done", size: "small" },
           { id: "show_notes", icon: "mdi-note-text", label: "ribbon.btn.show_notes", action: "lit_show_notes", size: "small" },
-          { id: "lock_items", icon: ICONS.ACTIONS.LOCK, label: "ribbon.btn.lock_items", action: "lit_lock", size: "small" },
+          { id: "lock_items", label: "ribbon.btn.lock_liturgy", action: "lit_lock", size: "small", stateBinding: {
+            watchPath: KEYS.MODULES.LITURGY.LOCKED,
+            iconOn: ICONS.ACTIONS.LOCK,
+            iconOff: ICONS.ACTIONS.LOCK_OPEN,
+            colorOn: COLORS.DANGER,
+            labelOn: "ribbon.btn.unlock_liturgy",
+            labelOff: "ribbon.btn.lock_liturgy",
+          } },
         ],
       },
       {

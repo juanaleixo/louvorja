@@ -1,7 +1,7 @@
 /** @category deve-virar-composable — Usa AppData (Pinia); requer renderer. */
 import $appdata from "@/helpers/AppData";
 
-const DEFAULT_TIMEOUT = 4000;
+const DEFAULT_TIMEOUT = 3000;
 
 export interface SnackbarAction {
   text: string;

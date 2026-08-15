@@ -174,7 +174,12 @@ const t = (key: string): string => moduleContainer.value?.t(key) || key;
 const mode = ref<TimerMode>("down");
 const running = ref<boolean>(false);
 const seconds = ref<number>(0);
-const targetTime = ref<string>(getCurrentTimeValue());
+const savedTargetTime = $userdata.get<string>(KEYS.MODULES.TIMER_WORSHIP.LAST_TARGET_TIME, "");
+const targetTime = ref<string>(
+  typeof savedTargetTime === "string" && /^\d{2}:\d{2}$/.test(savedTargetTime)
+    ? savedTargetTime
+    : getCurrentTimeValue()
+);
 const durationSeconds = ref<number>(0);
 const startedAt = ref<number | null>(null);
 const alarmed = ref<boolean>(false);
@@ -604,6 +609,13 @@ function playSoundOneMin(): void {
 }
 
 watch(mode, () => reset());
+
+// Persiste o último horário definido para restaurar ao reabrir o módulo.
+watch(targetTime, (v) => {
+  if (/^\d{2}:\d{2}$/.test(v)) {
+    $userdata.set(KEYS.MODULES.TIMER_WORSHIP.LAST_TARGET_TIME, v);
+  }
+});
 
 watch(
   projecao,
