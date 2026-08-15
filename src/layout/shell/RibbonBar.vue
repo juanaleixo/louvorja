@@ -190,6 +190,8 @@ import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { getRibbonModules, isModuleVisible } from "@/config/modules";
+import { KEYS } from "@/constants/UserDataKeys";
+import { COLORS } from "@constants/Colors";
 import type { RibbonButton, RibbonGroup, RibbonPage } from "@/types/Ribbon";
 import RibbonButtonComponent from "@/layout/shell/RibbonButtonComponent.vue";
 import RibbonGroupComponent from "@/layout/shell/RibbonGroupComponent.vue";
@@ -432,6 +434,12 @@ function resolveBtnIcon(btn: RibbonButton): string {
 }
 
 function resolveBtnColor(btn: RibbonButton): string | undefined {
+  // Estilo de interface "Electron": botões de módulos (sem stateBinding)
+  // usam a cor primária do tema em vez da cor declarada no manifesto.
+  const uiStyle = $userdata.get<string>(KEYS.OPTIONS.UI_STYLE, "delphi");
+  if (uiStyle === "electron" && btn.module && !btn.stateBinding) {
+    return COLORS.PRIMARY;
+  }
   if (btn.stateBinding) {
     const val = $userdata.get(btn.stateBinding.watchPath);
     return val ? btn.stateBinding.colorOn || btn.color : btn.stateBinding.colorOff || btn.color;

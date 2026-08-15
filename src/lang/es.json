@@ -129,6 +129,9 @@
       "title": "General",
       "theme": "Apariencia del programa:",
       "language": "Idioma:",
+      "ui_style": "Estilo de la interfaz:",
+      "ui_style_delphi": "Delphi",
+      "ui_style_electron": "Electron",
       "start_with_os": "Iniciar con el sistema operativo",
       "themes": {
         "light": "Claro",

@@ -97,6 +97,7 @@ export const KEYS = {
   OPTIONS: {
     LANGUAGE: `${OPTIONS}.language`,
     THEME: `${OPTIONS}.theme`,
+    UI_STYLE: `${OPTIONS}.ui_style`,
     MINIMIZE_ON_START: `${OPTIONS}.minimize_on_start`,
     SLIDE: {
       CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,

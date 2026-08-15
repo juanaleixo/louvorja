@@ -49,6 +49,7 @@
 
         <div class="opt-row">
           <label class="opt-label" for="opt-language">{{ $t("options.general.language") }}</label>
+
           <select
             id="opt-language"
             class="opt-select"
@@ -57,6 +58,19 @@
           >
             <option value="pt">Português</option>
             <option value="es">Español</option>
+          </select>
+        </div>
+
+        <div class="opt-row">
+          <label class="opt-label" for="opt-ui-style">{{ $t("options.general.ui_style") }}</label>
+          <select
+            id="opt-ui-style"
+            class="opt-select"
+            :value="getUserData(KEYS.OPTIONS.UI_STYLE, 'delphi')"
+            @change="saveUserData(KEYS.OPTIONS.UI_STYLE, $v($event))"
+          >
+            <option value="delphi">{{ $t("options.general.ui_style_delphi") }}</option>
+            <option value="electron">{{ $t("options.general.ui_style_electron") }}</option>
           </select>
         </div>
 
