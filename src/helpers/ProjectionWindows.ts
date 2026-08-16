@@ -134,9 +134,9 @@ function _resolveMonitorId(
   secondaryId: number | null
 ): number | null {
   if (raw == null) return null;
-  if (typeof raw === "number") return raw;
-  if (raw === "primary") return primaryId;
-  if (raw === "secondary") return secondaryId;
+  if (typeof raw === "number") return raw > 0 ? raw : null;
+  if (raw === "primary") return primaryId && primaryId > 0 ? primaryId : null;
+  if (raw === "secondary") return secondaryId && secondaryId > 0 ? secondaryId : null;
   return null;
 }
 
@@ -298,14 +298,14 @@ export async function openBibleWindow(): Promise<void> {
  */
 export async function openBackgroundProjectionWindows(): Promise<void> {
   const primaryMonitorId = $userdata.get(KEYS.OPTIONS.DISPLAYS.PRIMARY, null) as number | null;
-  if (primaryMonitorId != null) {
+  if (primaryMonitorId != null && primaryMonitorId > 0) {
     await _open(PROJECTION_URL.BACKGROUND, PROJECTION_TYPE.BACKGROUND, primaryMonitorId, true, false, true);
   }
 
   const showReturn = $userdata.get(KEYS.MODULES.BACKGROUND_PROJECTION.SHOW_RETURN, false) as boolean;
   if (showReturn) {
     const secondaryMonitorId = $userdata.get(KEYS.OPTIONS.DISPLAYS.SECONDARY, null) as number | null;
-    if (secondaryMonitorId != null) {
+    if (secondaryMonitorId != null && secondaryMonitorId > 0) {
       await _open(
         PROJECTION_URL.BACKGROUND_RETURN,
         PROJECTION_TYPE.BACKGROUND_RETURN,
