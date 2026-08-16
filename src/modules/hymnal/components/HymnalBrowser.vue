@@ -352,11 +352,13 @@ const HYMN_ACTIONS = {
   sequence: () => playAll(),
   report_error: () =>
     window.open("https://louvorja.com.br/telegram", "_blank", "noopener,noreferrer"),
+  settings: () =>
+    window.dispatchEvent(new CustomEvent("louvorja:open-options", { detail: { tab: "slides" } })),
 };
 
 useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
   if (payload?.module !== props.moduleId) return;
-  const exempt = ["export", "sequence", "report_error"];
+  const exempt = ["export", "sequence", "report_error", "settings"];
   if (selectedId.value == null && !exempt.includes(payload.action)) return;
   const fn = HYMN_ACTIONS[payload.action];
   if (fn) fn();

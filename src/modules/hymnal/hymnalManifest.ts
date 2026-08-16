@@ -79,6 +79,13 @@ export function createHymnalManifest({
           ],
         },
         {
+          id: `${moduleCtxId}_options`,
+          title: "ribbon.groups.options",
+          buttons: [
+            { id: "settings", icon: "mdi-cog", label: "ribbon.btn.settings", action: `${id}_settings`},
+          ],
+        },
+        {
           id: `${moduleCtxId}_error`,
           title: "ribbon.groups.error",
           buttons: [

@@ -52,27 +52,69 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_bible_general",
         title: "ribbon.groups.general",
         buttons: [
-          { id: `${moduleId}_clear`, icon: ICONS.ACTIONS.CLEAN, label: "ribbon.btn.bible_clear", action: `${moduleId}_clear`, color: "#7f8c8d" },
+          {
+            id: `${moduleId}_clear`,
+            icon: ICONS.ACTIONS.CLEAN,
+            label: "ribbon.btn.bible_clear",
+            action: `${moduleId}_clear`,
+            color: "#7f8c8d",
+          },
         ],
       },
       {
         id: "ctx_bible_controls",
         title: "ribbon.groups.controls",
         buttons: [
-          { id: `${moduleId}_prev_verse`, icon: ICONS.ACTIONS.PREVIOUS, label: "ribbon.btn.bible_prev_verse", action: `${moduleId}_prev_verse`, color: "#16a085" },
-          { id: `${moduleId}_next_verse`, icon: ICONS.ACTIONS.NEXT, label: "ribbon.btn.bible_next_verse", action: `${moduleId}_next_verse`, color: "#16a085" },
+          {
+            id: `${moduleId}_prev_verse`,
+            icon: ICONS.ACTIONS.PREVIOUS,
+            label: "ribbon.btn.bible_prev_verse",
+            action: `${moduleId}_prev_verse`,
+            color: "#16a085",
+          },
+          {
+            id: `${moduleId}_next_verse`,
+            icon: ICONS.ACTIONS.NEXT,
+            label: "ribbon.btn.bible_next_verse",
+            action: `${moduleId}_next_verse`,
+            color: "#16a085",
+          },
         ],
       },
       {
         id: "ctx_bible_format",
         title: "ribbon.groups.format",
         buttons: [
-          { id: `${moduleId}_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.bible_format", action: `${moduleId}_format`, color: "#1b4f8a" },
-          { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.bible_restore", action: `${moduleId}_restore`, color: "#9b59b6" },
+          {
+            id: `${moduleId}_format`,
+            icon: ICONS.ACTIONS.FORMAT,
+            label: "ribbon.btn.bible_format",
+            action: `${moduleId}_format`,
+            color: "#1b4f8a",
+          },
+          {
+            id: `${moduleId}_restore`,
+            icon: ICONS.ACTIONS.RESTORE,
+            label: "ribbon.btn.bible_restore",
+            action: `${moduleId}_restore`,
+            color: "#9b59b6",
+          },
         ],
       },
       {
-        id: "ctx_bible_screen",
+        id: `${moduleCtxId}_settings`,
+        title: "ribbon.groups.settings",
+        buttons: [
+          {
+            id: `${moduleId}_settings`,
+            icon: ICONS.UI.OPTIONS,
+            label: "ribbon.btn.settings",
+            action: `${moduleId}_settings`,
+          },
+        ],
+      },
+      {
+        id: `${moduleCtxId}_screen`,
         title: "ribbon.groups.expanded_area",
         buttons: [
           {
@@ -95,4 +137,4 @@ export const contextualPages: RibbonPage[] = [
       },
     ],
   },
-]
+];

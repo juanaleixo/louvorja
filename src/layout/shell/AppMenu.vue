@@ -52,7 +52,7 @@
               </h2>
 
               <!-- Painéis específicos por item -->
-              <AppMenuOpcoes v-if="activeItem?.id === 'settings'" />
+              <AppMenuOpcoes v-if="activeItem?.id === 'settings'" :initial-tab="optionsTab" />
               <AppMenuSobre v-else-if="activeItem?.id === 'about'" />
               <AppMenuTransmitir v-else-if="activeItem?.id === 'transmission'" />
               <AppMenuSincronizar v-else-if="activeItem?.id === 'sync'" />
@@ -106,6 +106,10 @@ const open = ref(false);
 const trigger = ref(null);
 const activeItem = ref(null);
 
+// Aba inicial da tela de Opções quando aberta programaticamente
+// (ex: botão "Configurações" da ribbon da Liturgia → aba Slides).
+const optionsTab = ref("general");
+
 /**
  * Itens com `inline: true` são renderizados DENTRO do AppMenu
  * (em vez de fechar o menu e disparar uma ação).
@@ -139,6 +143,7 @@ function toggle() {
 
 function openMenu() {
   open.value = true;
+  optionsTab.value = "general";
   activeItem.value = items.value.find((i) => i.id === "settings") || items.value[0];
   document.addEventListener("keydown", onKeydown);
 }
@@ -195,15 +200,26 @@ function exitApp() {
 
 onMounted(() => {
   window.addEventListener("louvorja:open-updates", onOpenUpdates);
+  window.addEventListener("louvorja:open-options", onOpenOptions);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("louvorja:open-updates", onOpenUpdates);
+  window.removeEventListener("louvorja:open-options", onOpenOptions);
   document.removeEventListener("keydown", onKeydown);
 });
 
 function onOpenUpdates() {
   openAt("updates");
+}
+
+/**
+ * Abre o AppMenu na tela de Opções já na aba indicada (ex: "slides").
+ * Disparado pela ribbon da Liturgia (e possivelmente outros módulos).
+ */
+function onOpenOptions(e) {
+  optionsTab.value = e?.detail?.tab || "general";
+  openAt("settings");
 }
 </script>
 

@@ -393,6 +393,7 @@ const BIBLE_ACTIONS: LiturgyActionMap = {
   bible_format: "toggle_format",
   bible_restore: "restore",
   bible_project: "project",
+  bible_settings: "settings",
 };
 
 const EDITOR_ACTIONS = new Set<string>([
@@ -464,6 +465,9 @@ function executeButton(btn: RibbonButton): void {
     }
     $modules.open(btn.module);
     $appdata.set(`modules.${btn.module}.last_btn`, btn.id);
+    // Navega para a página contextual mesmo quando o módulo já está ativo
+    // (o watch de active_module não dispara se o valor não muda).
+    selectContextualPageForModule(btn.module);
     return;
   }
   if (btn.action === "search_music") {
@@ -505,8 +509,8 @@ function executeButton(btn: RibbonButton): void {
       "message_board",
       "online_videos",
       "custom_online_videos",
-      "hymnal",
       "hymnal_1996",
+      "hymnal",
       "bible_search",
       "music_search",
       "media_library",

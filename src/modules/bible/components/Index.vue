@@ -961,6 +961,9 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
     case "stop":
       stopProjection();
       break;
+    case "settings":
+      window.dispatchEvent(new CustomEvent("louvorja:open-options", { detail: { tab: "bible" } }));
+      break;
   }
 });
 

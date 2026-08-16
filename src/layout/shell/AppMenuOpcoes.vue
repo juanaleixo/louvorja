@@ -844,7 +844,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { pickImageData } from "@/helpers/FilePicker";
 import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
 import Broadcast from "@/helpers/Broadcast";
@@ -867,7 +867,18 @@ interface ThemeOption {
 }
 
 const isDesktop: ComputedRef<boolean> = computed(() => Platform.isDesktop as boolean);
-const tab = ref("general");
+
+// Aba inicial — permite abrir as Opções já numa aba específica
+// (ex: botão "Configurações" da ribbon da Liturgia → "slides").
+const props = defineProps<{ initialTab?: string }>();
+const tab = ref(props.initialTab || "general");
+
+watch(
+  () => props.initialTab,
+  (v: string | undefined) => {
+    if (v) tab.value = v;
+  }
+);
 
 const { t, locale } = useI18n();
 const theme = useTheme();
