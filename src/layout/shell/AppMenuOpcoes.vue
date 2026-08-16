@@ -35,7 +35,7 @@
       <v-tabs-window-item value="general">
         <!-- Geral -->
 
-        <div class="opt-row">
+        <div class="opt-row opt-row--field">
           <label class="opt-label" for="opt-theme">{{ $t("options.general.theme") }}</label>
           <select
             id="opt-theme"
@@ -47,9 +47,8 @@
           </select>
         </div>
 
-        <div class="opt-row">
+        <div class="opt-row opt-row--field">
           <label class="opt-label" for="opt-language">{{ $t("options.general.language") }}</label>
-
           <select
             id="opt-language"
             class="opt-select"
@@ -61,7 +60,7 @@
           </select>
         </div>
 
-        <div class="opt-row">
+        <div class="opt-row opt-row--field">
           <label class="opt-label" for="opt-ui-style">{{ $t("options.general.ui_style") }}</label>
           <select
             id="opt-ui-style"
@@ -85,14 +84,13 @@
           </label>
         </div>
         <!-- Imagem de Fundo -->
-        <div class="opt-row">
-          <label class="opt-format-field">
-            <span class="opt-format-label">{{ $t("options.background.color") }}</span>
-            <input type="color" class="opt-color" :value="bgColor" @input="onBgColorChange" />
-          </label>
-        </div>
         <div class="opt-row opt-row--inline">
           <div class="opt-format-field opt-field-bgimage">
+            <label class="opt-format-field">
+              <span class="opt-format-label">{{ $t("options.background.color") }}</span>
+            </label>
+            <input type="color" class="opt-color" :value="bgColor" @input="onBgColorChange" />
+
             <span class="opt-format-label">{{ $t("options.background.title") }}</span>
             <div class="opt-bg-pick">
               <v-btn variant="outlined" size="small" @click="pickBgImage">
@@ -103,29 +101,36 @@
                 {{ $t("options.background.no_image") }}
               </span>
             </div>
-          </div>
-          <div v-if="currentBgImage" class="opt-bg-preview-wrap">
-            <div class="opt-bg-preview-thumb">
-              <img :src="currentBgImage" class="opt-bg-preview-img" />
-              <button
-                class="opt-bg-preview-remove"
-                :title="$t('actions.delete')"
-                @click="removeBgImage"
-              >
-                <v-icon icon="mdi-close" size="12" />
-              </button>
+
+            <div class="opt-format-field">
+              <span class="opt-format-label">{{ $t("options.background.position") }}</span>
+              <select class="opt-select" :value="bgPosition" @change="onBgPositionChange">
+                <option value="cover">Cobrir (cover)</option>
+                <option value="contain">Ajustar (contain)</option>
+                <option value="center">Centro</option>
+                <option value="stretch">Esticar</option>
+                <option value="tile">Lado a lado</option>
+              </select>
             </div>
           </div>
-        </div>
-        <div class="opt-format-field opt-field-bgposition">
-          <span class="opt-format-label">{{ $t("options.background.position") }}</span>
-          <select class="opt-select" :value="bgPosition" @change="onBgPositionChange">
-            <option value="cover">Cobrir (cover)</option>
-            <option value="contain">Ajustar (contain)</option>
-            <option value="center">Centro</option>
-            <option value="stretch">Esticar</option>
-            <option value="tile">Lado a lado</option>
-          </select>
+          <div class="opt-bg-preview-wrap">
+            <MonitorShape
+              :width="previewMonitorW"
+              :height="previewMonitorH"
+              remove
+              remove-label="x"
+              @remove="removeBgImage"
+            >
+              <div class="opt-bg-preview-screen" :style="{ backgroundColor: bgColor }">
+                <img
+                  v-if="currentBgImage"
+                  :src="currentBgImage"
+                  class="opt-bg-preview-img"
+                  alt="img background"
+                />
+              </div>
+            </MonitorShape>
+          </div>
         </div>
       </v-tabs-window-item>
 
@@ -138,17 +143,22 @@
 
         <div v-else>
           <div class="opt-monitors">
-            <div
+            <MonitorShape
               v-for="d in displays"
               :key="d.id"
-              class="opt-monitor"
-              :class="{ 'opt-monitor--primary': d.primary }"
+              :width="d.bounds?.width"
+              :height="d.bounds?.height"
+              :primary="d.primary"
+              :height-base="150"
+              :max-width="260"
             >
-              <div class="opt-monitor-num">{{ d.label || `#${d.id}` }}</div>
-              <div class="opt-monitor-size">
-                {{ d.bounds?.width || "?" }} x {{ d.bounds?.height || "?" }}
+              <div class="opt-monitor-info">
+                <div class="opt-monitor-num">{{ d.label || `#${d.id}` }}</div>
+                <div class="opt-monitor-size">
+                  {{ d.bounds?.width || "?" }} x {{ d.bounds?.height || "?" }}
+                </div>
               </div>
-            </div>
+            </MonitorShape>
           </div>
 
           <button type="button" class="opt-btn" @click="identify(5000)">
@@ -843,6 +853,7 @@ import { useI18n } from "vue-i18n";
 import { useTheme } from "vuetify";
 import { useDisplays } from "@/composables/useDisplays";
 import MonitorSelect from "@/components/inputs/MonitorSelect.vue";
+import MonitorShape from "@/components/MonitorShape.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
@@ -887,6 +898,22 @@ const monitorPrimary: ComputedRef<number | null> = computed(() =>
 const monitorSecondary: ComputedRef<number | null> = computed(() =>
   $userdata.get(KEYS.OPTIONS.DISPLAYS.SECONDARY, null)
 );
+
+// Proporção do monitor usado no preview de fundo: prioriza o monitor
+// "principal" selecionado (KEYS.OPTIONS.DISPLAYS.PRIMARY); se não houver
+// seleção, usa o display físico primário; senão cai para 16:9.
+const previewMonitor = computed(() => {
+  const selected = displays.value.find((d) => d.id === monitorPrimary.value);
+  const primary = displays.value.find((d) => d.primary);
+  const target = selected || primary;
+  if (target?.bounds?.width && target?.bounds?.height) {
+    return target.bounds;
+  }
+  return { width: 16, height: 9 };
+});
+
+const previewMonitorW: ComputedRef<number> = computed(() => previewMonitor.value.width);
+const previewMonitorH: ComputedRef<number> = computed(() => previewMonitor.value.height);
 
 function saveUserData(key: string, value: unknown): void {
   $userdata.set(key, value);
