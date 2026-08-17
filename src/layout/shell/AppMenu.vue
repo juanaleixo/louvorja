@@ -261,7 +261,7 @@ function onOpenOptions(e) {
 .app-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1500;
   background: var(--lj-black-alpha-40);
   font-family: var(--lj-font-shell);
 }
