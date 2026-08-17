@@ -29,6 +29,7 @@ import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
 import $idb from "@/helpers/IndexedDB";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
+import Projection from "@/helpers/Projection";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
@@ -544,6 +545,12 @@ $storage.hydrate().then(async () => {
           ];
           for (const id of moduleIds) {
             Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, { module: id, active: false });
+            // Fecha a janela de projeção do módulo (counter, timer, clock, etc.).
+            //  - Desktop: Projection.close → IPC windows:close → windowFactory.
+            //  - Web/PWA: broadcast que a própria janela escuta e se fecha
+            //    (window.open com noopener não devolve referência para fechar).
+            Projection.close(id);
+            Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_CLOSE, { module: id });
           }
         };
 
