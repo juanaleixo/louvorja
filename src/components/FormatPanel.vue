@@ -68,14 +68,43 @@ function fieldComponent(field) {
   return TYPE_TO_COMPONENT[field.type] || FieldText;
 }
 
+// Labels padronizados dos campos de customização — resolvidos no componente,
+// sem depender do `label` declarado em cada manifest (evita duplicação).
+const FIELD_LABEL_KEYS = {
+  font: "components.customization.font",
+  font_color: "components.customization.color",
+  font_size: "components.customization.size",
+  alert_color: "components.customization.alert_color",
+  background_color: "components.customization.color",
+  border_spacing: "components.customization.border",
+  vertical_align: "components.customization.vertical",
+  horizontal_align: "components.customization.horizontal",
+  image: "components.customization.image",
+  image_opacity: "components.customization.transparency",
+  image_fit: "components.customization.adjust",
+  reference_font: "components.customization.font",
+  reference_font_color: "components.customization.color",
+  reference_font_size: "components.customization.size",
+  hour_cycle: "components.customization.hour_cycle",
+  time_format: "components.customization.time_format",
+  show_date: "components.customization.show_date",
+  date_format: "components.customization.date_format",
+};
+
 function fieldLabel(field) {
+  const key = FIELD_LABEL_KEYS[field.key];
+  if (key) {
+    const translated = i18nT(key);
+    return translated && translated !== key ? translated : field.key;
+  }
+  // Fallback: campos específicos não mapeados usam o label declarado no manifest.
   if (!field.label) return field.key;
-  const key =
+  const legacyKey =
     field.label.startsWith("modules.") || field.label.startsWith("customization.")
       ? `modules.${props.moduleId}.${field.label}`
       : field.label;
-  const translated = i18nT(key);
-  return translated && translated !== key ? translated : field.label;
+  const translated = i18nT(legacyKey);
+  return translated && translated !== legacyKey ? translated : field.label;
 }
 
 // Agrupa campos por prefixo (text / reference / background / layout / other).

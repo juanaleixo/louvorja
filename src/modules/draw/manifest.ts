@@ -22,16 +22,16 @@ export const module: Module = {
   group: ModuleGroupEnum.DRAWS,
   order: 0,
   customization: {
-    font: { type: "font", label: "customization.font", default: "Arial, sans-serif" },
-    font_color: { type: "color", label: "customization.color", default: "#FFFFFF" },
-    font_size: { type: "font-size", label: "customization.size", default: 50 },
-    background_color: { type: "color", label: "customization.color", default: "#000000" },
-    border_spacing: { type: "border-spacing", label: "customization.border", default: 10 },
-    vertical_align: { type: "v-align", label: "customization.vertical", default: "center" },
-    horizontal_align: { type: "h-align", label: "customization.horizontal", default: "center" },
-    image: { type: "image", label: "customization.image", default: "" },
-    image_opacity: { type: "opacity", label: "customization.transparency", default: 100 },
-    image_fit: { type: "object-fit", label: "customization.adjust", default: "cover" },
+    font: { type: "font", default: "Arial, sans-serif" },
+    font_color: { type: "color", default: "#FFFFFF" },
+    font_size: { type: "font-size", default: 50 },
+    background_color: { type: "color", default: "#000000" },
+    border_spacing: { type: "border-spacing", default: 10 },
+    vertical_align: { type: "v-align", default: "center" },
+    horizontal_align: { type: "h-align", default: "center" },
+    image: { type: "image", default: "" },
+    image_opacity: { type: "opacity", default: 100 },
+    image_fit: { type: "object-fit", default: "cover" },
   },
 }
 
@@ -49,6 +49,22 @@ export const contextualPages: RibbonPage[] = [
         buttons: [
           { id: `${moduleId}_draw`, icon: "mdi-dice-5", label: "ribbon.btn.draw_action", action: `${moduleId}_draw`, color: "#3498db" },
           { id: `${moduleId}_reset`, icon: "mdi-restart", label: "ribbon.btn.draw_reset", action: `${moduleId}_reset`, color: "#7f8c8d" },
+        ],
+      },
+      {
+        id: "ctx_draw_range",
+        title: `${modulePath}.ribbon.range`,
+        buttons: [
+          { id: `${moduleId}_range_min`, type: "number", optionKey: `modules.${moduleId}.range_min`, label: `${modulePath}.ribbon.range_min`, defaultValue: 1 },
+          { id: `${moduleId}_range_max`, type: "number", optionKey: `modules.${moduleId}.range_max`, label: `${modulePath}.ribbon.range_max`, defaultValue: 100 },
+        ],
+      },
+      {
+        id: "ctx_draw_effects",
+        title: `${modulePath}.ribbon.effects`,
+        buttons: [
+          { id: `${moduleId}_effect_duration`, type: "slider", optionKey: `modules.${moduleId}.effect_duration`, label: `${modulePath}.ribbon.effect_duration`, defaultValue: 2000, min: 500, max: 5000, step: 100 },
+          { id: `${moduleId}_show_drawn_history`, type: "switch", optionKey: `modules.${moduleId}.show_drawn_history`, label: `${modulePath}.ribbon.show_drawn_history`, defaultValue: false },
         ],
       },
       {

@@ -26,7 +26,7 @@ export interface RibbonButton {
   disabled?: boolean;
   color?: string;
   size?: "small";
-  type?: "screen" | "checkbox" | "switch" | "action_input" | "select" | "slider";
+  type?: "screen" | "checkbox" | "switch" | "action_input" | "select" | "slider" | "number";
   feature?: string;
   route?: string;
   optionKey?: string;

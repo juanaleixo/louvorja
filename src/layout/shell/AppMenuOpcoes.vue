@@ -822,7 +822,7 @@
           </div>
           <div v-if="fileProjBgImageUrl" class="opt-row">
             <div class="opt-bg-preview">
-              <img :src="fileProjBgImageUrl" class="opt-bg-preview-img" />
+              <img :src="fileProjBgImageUrl" class="opt-bg-preview-img" alt="image-preview" />
               <button class="opt-bg-preview-remove" @click="removeFileProjBgImage">
                 <v-icon icon="mdi-close" size="15" />
               </button>

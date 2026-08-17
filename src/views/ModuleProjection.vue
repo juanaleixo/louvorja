@@ -1,7 +1,6 @@
 <template>
   <OverlayRenderer />
   <div
-    ref="root"
     class="module-projection"
     :class="[`align-${vertical_align}`, `justify-${horizontal_align}`]"
     :style="{
@@ -31,7 +30,7 @@
           class="module-projection__text"
           :style="{
             color: font_color || '#FFFFFF',
-            fontSize: font_size_px + 'px',
+            fontSize: font_size_px + 'rem',
             fontFamily: font || 'Arial, sans-serif',
             textAlign: textAlign,
           }"
@@ -62,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
@@ -78,12 +77,9 @@ const route = useRoute();
 const moduleId = computed(() => String(route.query.module || ""));
 const MID = computed(() => `modules.${moduleId.value}`);
 
-const root = ref(null);
 const text = ref("");
 const extra = ref(""); // referência, "Sorteado:", etc.
 const active = ref(false);
-const sw = ref(0);
-const sh = ref(0);
 
 // Tick force re-read do UserData quando broadcast chega.
 const _tick = ref(0);
@@ -115,23 +111,19 @@ const textAlign = computed(() => {
 });
 const extraAlign = computed(() => (horizontal_align.value === "start" ? "left" : "right"));
 
-function pcToPx(pc) {
-  const min = Math.min(sw.value, sh.value);
-  return ((pc || 0) * min) / 100 / 2;
-}
+const font_size_px = computed(() => Number(font_size.value) || 50);
+const ref_font_size_px = computed(() => Number(reference_font_size.value) || 10);
+const border_spacing_px = computed(() => Number(border_spacing.value) || 10);
 
-const font_size_px = computed(() => pcToPx(font_size.value));
-const ref_font_size_px = computed(() => pcToPx(reference_font_size.value));
-const border_spacing_px = computed(() => pcToPx(border_spacing.value));
-
-// Módulos com valor que muda continuamente (clock, stopwatch) — desabilita
-// a transição fade pra não "piscar" a cada segundo. A `key` fica estável
-// (apenas troca quando active passa para true/false).
+// Módulos com valor que muda continuamente (clock, stopwatch, draw-roleta)
+// — desabilita a transição fade pra não "piscar" a cada troca. A `key` fica
+// estável (apenas troca quando active passa para true/false).
 const LIVE_MODULES = new Set([
   ModuleEnum.CLOCK,
   ModuleEnum.STOPWATCH,
   ModuleEnum.TIMER,
   ModuleEnum.TIMER_WORSHIP,
+  ModuleEnum.DRAW,
 ]);
 const isLive = computed(() => LIVE_MODULES.has(moduleId.value));
 const transitionKey = computed(() =>
@@ -163,17 +155,18 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_FORMAT_CHANGED, (payload) => {
   _tick.value += 1;
 });
 
+// Fecha a própria janela quando a main ordena (ESC). Necessário no web/PWA,
+// onde window.open com noopener não devolve referência para fechar por fora.
+useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_CLOSE, (payload) => {
+  if (!payload || payload.module !== moduleId.value) return;
+  window.close();
+});
+
 useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
   if (!payload || typeof payload.path !== "string") return;
   if (!payload.path.startsWith(`modules.${moduleId.value}.`)) return;
   _tick.value += 1;
 });
-
-function onResize() {
-  if (!root.value) return;
-  sw.value = root.value.offsetWidth;
-  sh.value = root.value.offsetHeight;
-}
 
 function onKey(e) {
   if (e.key === "Escape") {
@@ -189,8 +182,6 @@ onMounted(() => {
   document.body.style.overflow = "hidden";
   document.body.style.background = "#000";
   document.body.style.height = "100vh";
-  onResize();
-  window.addEventListener("resize", onResize);
   window.addEventListener("keydown", onKey);
 
   // Pede o estado atual à janela principal (request-state pattern).
@@ -200,11 +191,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", onResize);
   window.removeEventListener("keydown", onKey);
 });
-
-watch([font, font_color, font_size, background_color, image], onResize);
 </script>
 
 <style scoped>

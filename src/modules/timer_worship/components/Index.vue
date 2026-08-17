@@ -6,10 +6,9 @@
     @close="close()"
   >
     <div class="d-flex h-100">
-      <aside v-if="show_format" class="format-col">
-        <FormatPanel :module-id="'timer_worship'" :manifest="manifest" />
-      </aside>
-      <div class="tw-root">
+      <ModuleFormatDrawer v-model="show_format" :module-id="'timer_worship'" :manifest="manifest" />
+      <div class="tw-root" :style="rootStyle">
+        <img v-if="bgImage" :src="bgImage" class="tw-bg-img" :style="imageStyle" alt="" />
         <!-- Configuração de final -->
         <div v-if="timerEndInfo" class="tw-end-config">
           <span class="tw-end-config-label">{{ t("ribbon.timer_end") }}</span>
@@ -57,6 +56,10 @@
             'tw-critical': mode === 'down' && seconds <= 10 && seconds > 0,
             'tw-done': mode === 'down' && seconds <= 0 && alarmed,
           }"
+          :style="[
+            textStyle,
+            mode === 'down' && seconds <= 60 && (seconds > 0 || alarmed) ? alertStyle : null,
+          ]"
         >
           {{ display }}
         </div>
@@ -139,7 +142,7 @@
 import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import AppData from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
@@ -150,6 +153,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import Media from "@/composables/useMedia";
 import Database from "@/helpers/Database";
 import $path from "@/helpers/Path";
@@ -167,6 +171,9 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 type TimerMode = "up" | "down";
 
 const { restoreFormat, show_format } = useModuleFormat(ModuleEnum.TIMER_WORSHIP, manifest);
+const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle(
+  ModuleEnum.TIMER_WORSHIP
+);
 
 const moduleContainer = ref<{ t(key: string): string } | null>(null);
 const t = (key: string): string => moduleContainer.value?.t(key) || key;
@@ -753,6 +760,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .tw-root {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -761,12 +769,22 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 .tw-display {
+  position: relative;
+  z-index: 1;
   font-size: 3.5rem;
   font-weight: 300;
   letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
   transition: color 0.3s;
   white-space: pre-line;
+}
+.tw-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 .tw-warning {
   color: #f59e0b;
@@ -777,13 +795,6 @@ onBeforeUnmount(() => {
 .tw-done {
   color: #ef4444;
   animation: tw-pulse 0.8s ease-in-out infinite alternate;
-}
-.format-col {
-  flex: 0 0 200px;
-  width: 200px;
-  border-right: 1px solid var(--lj-surface-border);
-  background: var(--lj-surface-bg);
-  height: 100%;
 }
 .tw-end-config {
   //width: 100%;

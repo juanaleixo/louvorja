@@ -95,7 +95,11 @@
       "border": "Borde",
       "vertical": "Alineación vertical",
       "horizontal": "Alineación horizontal",
-      "alert_color": "Color de alerta"
+      "alert_color": "Color de alerta",
+      "hour_cycle": "Formato del reloj",
+      "time_format": "Formato de la hora",
+      "show_date": "Mostrar fecha",
+      "date_format": "Formato de la fecha"
     }
   },
   "alert": {
@@ -642,8 +646,6 @@
       "check_all": "Marcar Todos",
       "clear_liturgy": "Limpiar Liturgia",
       "clock": "Reloj",
-      "clock_24h": "12h / 24h",
-      "clock_seconds": "Segundos",
       "collections": "Colecciones",
       "copy_liturgy": "Copiar Liturgia",
       "counter": "Contador",

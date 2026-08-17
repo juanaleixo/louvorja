@@ -6,10 +6,13 @@
     @close="close()"
   >
     <div class="d-flex h-100">
-      <aside v-if="show_format" class="format-col">
-        <FormatPanel :module-id="'timer'" :manifest="manifest" />
-      </aside>
-      <div class="d-flex flex-column align-center pa-4 flex-grow-1" style="gap: 16px">
+      <ModuleFormatDrawer v-model="show_format" :module-id="'timer'" :manifest="manifest" />
+      <div
+        class="d-flex flex-column align-center pa-4 flex-grow-1"
+        style="gap: 16px"
+        :style="rootStyle"
+      >
+        <img v-if="bgImage" :src="bgImage" class="sw-bg-img" :style="imageStyle" alt="" />
         <!-- Seletor de modo -->
         <v-btn-toggle v-model="mode" color="primary" mandatory density="compact" divided>
           <v-btn value="down" size="small">
@@ -42,10 +45,14 @@
             'sw-warning': mode === 'down' && seconds <= 60 && seconds > 0,
             'sw-done': mode === 'down' && seconds <= 0 && alarmed,
           }"
+          :style="[
+            textStyle,
+            mode === 'down' && seconds <= 60 && (seconds > 0 || alarmed) ? alertStyle : null,
+          ]"
         >
           {{ display }}
         </div>
-        <div class="sw-display">
+        <div class="sw-display" :style="textStyle">
           {{ targetTime }}
         </div>
 
@@ -68,16 +75,18 @@
 import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import { playBeep } from "@/helpers/AudioBeep";
 import AppData from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import Icon from "@/components/Icon.vue";
 import { KEYS } from "@/constants/UserDataKeys";
 
 const { restoreFormat, show_format } = useModuleFormat("timer", manifest);
+const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle("timer");
 
 const projection = useModuleProjection("timer", {
   onAction(action: string) {
@@ -244,6 +253,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .sw-display {
+  position: relative;
+  z-index: 1;
   font-size: 3.5rem;
   font-weight: 300;
   letter-spacing: 0.05em;
@@ -258,12 +269,13 @@ onBeforeUnmount(() => {
   color: #ef4444;
   animation: sw-pulse 0.8s ease-in-out infinite alternate;
 }
-.format-col {
-  flex: 0 0 200px;
-  width: 200px;
-  border-right: 1px solid var(--lj-surface-border);
-  background: var(--lj-surface-bg);
+.sw-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 @keyframes sw-pulse {
   from {

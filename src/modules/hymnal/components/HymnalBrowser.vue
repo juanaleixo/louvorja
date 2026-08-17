@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { getModules } from "@/config/modules";
 import ModuleContainer from "@/components/ModuleContainer.vue";
@@ -131,8 +131,7 @@ const classform = computed(() => ({
 const t = (text) => i18nT(`modules.${props.moduleId}.${text}`);
 
 const disabledAlbums = computed(() => {
-  const saved = $userdata.get(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
-  return saved;
+  return $userdata.get(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
 });
 
 function shortTime(d) {

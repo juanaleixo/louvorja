@@ -31,3 +31,8 @@
   padding-top: 2px;
   padding-bottom: 2px;
 }
+
+/* ---- Drawer de formatação de módulos (velocidade entrada/saída) ------- */
+.module-format-drawer {
+  transition-duration: 0.35s !important;
+}

@@ -5,6 +5,12 @@
   "actions": { "draw": "Sortear", "reset": "Reiniciar", "fullscreen": "Tela cheia" },
   "data": { "drawn": "Números sorteados", "remaining": "Restantes" },
   "ribbon": {
-    "title_ctx": "Configurar Sorteio"
+    "title_ctx": "Configurar Sorteio",
+    "range": "Intervalo",
+    "range_min": "Número inicial",
+    "range_max": "Número final",
+    "effects": "Efeito",
+    "effect_duration": "Duração do efeito",
+    "show_drawn_history": "Exibir sorteados na projeção"
   }
 }

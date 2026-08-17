@@ -181,7 +181,7 @@ defineExpose({ userdata, t, moduleId, module: module_ });
   flex-direction: column;
   background: var(--lj-surface-bg);
   color: var(--lj-text);
-  overflow: hidden;
+  overflow: clip;
   font-family: var(--lj-font-shell);
 }
 

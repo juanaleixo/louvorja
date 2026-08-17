@@ -54,7 +54,7 @@
               v-else-if="btn.type === 'screen'"
               :feature="btn.feature"
               :route="btn.route"
-              :icon-color="btn.color"
+              :icon-color="resolveBtnColor(btn)"
               :label="$t(btn.label)"
               :size="btn.size || 'large'"
               :testid="`ribbon-btn-${btn.id}`"
@@ -70,7 +70,7 @@
               />
               <RibbonButtonComponent
                 :icon="btn.icon || ''"
-                :icon-color="btn.color"
+                :icon-color="resolveBtnColor(btn)"
                 :label="$t(btn.label)"
                 size="medium"
                 :testid="`ribbon-btn-${btn.id}`"
@@ -81,6 +81,7 @@
               v-else-if="btn.type === 'select'"
               v-show="isDependencyMet(btn)"
               class="ribbon-field-wrap"
+              :data-testid="`ribbon-btn-${btn.id}`"
             >
               <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
               <select
@@ -109,6 +110,7 @@
               v-else-if="btn.type === 'slider'"
               v-show="isDependencyMet(btn)"
               class="ribbon-field-wrap"
+              :data-testid="`ribbon-btn-${btn.id}`"
             >
               <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
               <div class="ribbon-slider-row">
@@ -126,6 +128,23 @@
                 <span class="ribbon-slider-value">{{ getSelectValue(btn) }}ms</span>
               </div>
             </div>
+            <div
+              v-else-if="btn.type === 'number'"
+              v-show="isDependencyMet(btn)"
+              class="ribbon-field-wrap"
+              :data-testid="`ribbon-btn-${btn.id}`"
+            >
+              <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
+              <input
+                class="ribbon-field-number"
+                type="number"
+                :min="btn.min"
+                :max="btn.max"
+                :step="btn.step ?? 1"
+                :value="getSelectValue(btn)"
+                @change="setSelectValue(btn, ($event.target as HTMLSelectElement)?.value)"
+              />
+            </div>
             <label v-else-if="btn.type === 'checkbox'" class="ribbon-field-checkbox">
               <input
                 type="checkbox"
@@ -134,7 +153,11 @@
               />
               <span>{{ $t(btn.label) }}</span>
             </label>
-            <div v-else-if="btn.type === 'switch'" class="ribbon-switch">
+            <div
+              v-else-if="btn.type === 'switch'"
+              class="ribbon-switch"
+              :data-testid="`ribbon-btn-${btn.id}`"
+            >
               <v-switch
                 :model-value="getCheckValue(btn)"
                 density="compact"
@@ -271,7 +294,10 @@ function setSelectValue(btn: RibbonButton, val: string | number): void {
 
 function getCheckValue(btn: RibbonButton): boolean {
   if (!btn.optionKey) return false;
-  return $userdata.get<boolean>(btn.optionKey, false) === true;
+  // Fallback para o defaultValue declarado (ex: clock show_date default true)
+  const v = $userdata.get<boolean | null>(btn.optionKey, null);
+  if (v === null) return btn.defaultValue === true;
+  return v;
 }
 
 function setCheckValue(btn: RibbonButton, checked: boolean | null): void {
@@ -435,11 +461,13 @@ function resolveBtnIcon(btn: RibbonButton): string {
 }
 
 function resolveBtnColor(btn: RibbonButton): string | undefined {
-  // Estilo de interface "Electron": botões de módulos (sem stateBinding)
-  // usam a cor primária do tema em vez da cor declarada no manifesto.
+  // Estilo de interface "Electron": todos os botões da ribbon usam a cor
+  // primária do tema ativo (stateBinding também — estado indicado por ícone).
+  // Em tema escuro os ícones ficam brancos para contraste na ribbon escura.
   const uiStyle = $userdata.get<string>(KEYS.OPTIONS.UI_STYLE, "delphi");
-  if (uiStyle === "electron" && btn.module && !btn.stateBinding) {
-    return COLORS.PRIMARY;
+  if (uiStyle === "electron") {
+    const isDark = $appdata.get<boolean>(KEYS.SHELL.IS_DARK, false);
+    return isDark ? "#FFFFFF" : COLORS.PRIMARY;
   }
   if (btn.stateBinding) {
     const val = $userdata.get(btn.stateBinding.watchPath);
@@ -675,6 +703,24 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
   box-shadow: var(--lj-shadow-focus-navy-sm);
 }
 
+.ribbon-field-number {
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid rgba(var(--v-border-color), 0.4);
+  border-radius: 3px;
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  width: 90px;
+}
+
+.ribbon-field-number:focus {
+  border-color: var(--lj-navy);
+  box-shadow: var(--lj-shadow-focus-navy-sm);
+}
+
 .ribbon-slider-row {
   display: flex;
   align-items: center;
@@ -710,6 +756,7 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
 
 .ribbon-switch {
   padding: 1px;
+  font-size: 1px;
 }
 .ribbon-field-switch {
   padding: 0;

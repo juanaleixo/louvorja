@@ -6,14 +6,14 @@
     @close="close()"
   >
     <div class="d-flex h-100">
-      <div v-if="show_format" class="counter-format-col">
-        <FormatPanel :module-id="'counter'" :manifest="manifest" />
-      </div>
+      <ModuleFormatDrawer v-model="show_format" :module-id="'counter'" :manifest="manifest" />
       <div
         class="d-flex flex-column align-center justify-center pa-6 flex-grow-1"
-        style="gap: 16px"
+        style="gap: 16px; position: relative"
+        :style="rootStyle"
       >
-        <div class="counter-display">{{ count }}</div>
+        <img v-if="bgImage" :src="bgImage" class="counter-bg-img" :style="imageStyle" alt="" />
+        <div class="counter-display" :style="textStyle">{{ count }}</div>
         <div class="d-flex" style="gap: 8px">
           <v-btn icon="mdi-minus" size="large" variant="tonal" @click="decrement" />
           <v-btn icon="mdi-plus" size="large" :color="primaryColor" @click="increment" />
@@ -28,11 +28,12 @@
 import { ref, computed, watch } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import AppData from "@/helpers/AppData";
 import UserData from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
 const moduleContainer = ref(null);
 const count = ref(0);
@@ -47,6 +48,7 @@ const show_format = computed({
 });
 
 const { restoreFormat } = useModuleFormat("counter", manifest);
+const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("counter");
 
 const projection = useModuleProjection("counter", {
   onAction(action) {
@@ -82,18 +84,20 @@ function close() {
 
 <style scoped>
 .counter-display {
+  position: relative;
+  z-index: 1;
   font-size: 5rem;
   font-weight: 200;
   font-variant-numeric: tabular-nums;
   min-width: 3ch;
   text-align: center;
 }
-
-.counter-format-col {
-  flex: 0 0 200px;
-  width: 200px;
-  border-right: 1px solid var(--lj-surface-border);
-  background: var(--lj-surface-bg);
+.counter-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 </style>

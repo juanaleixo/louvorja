@@ -26,8 +26,9 @@ export type CustomizationType =
 export interface CustomizationField {
   /** Tipo do controle de customização renderizado em CustomizationTools.vue */
   type: CustomizationType;
-  /** Chave i18n do label (ex: customization.font) */
-  label: string;
+  /** Chave i18n do label (ex: customization.font). Opcional — quando ausente,
+   *  o FormatPanel resolve o label pelos campos padrão (components.customization.*). */
+  label?: string;
   /** Valor padrão do campo */
   default?: string | number | boolean;
   /** Opções para campos do tipo "select" */

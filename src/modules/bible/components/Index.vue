@@ -58,10 +58,7 @@
     <BibleSpotlight v-model="bibleSpotlightOpen" :initial-buffer="spotlightInitialBuffer" />
 
     <div v-if="!compact" class="bible-layout">
-      <!-- Coluna Formatar -->
-      <div v-if="show_format" class="bible-col bible-col--format">
-        <FormatPanel :module-id="moduleId" :manifest="manifest" />
-      </div>
+      <ModuleFormatDrawer v-model="show_format" :module-id="moduleId" :manifest="manifest" />
 
       <!-- Coluna Livros -->
       <div class="bible-col bible-col--books">
@@ -286,7 +283,7 @@ import { useDisplay } from "vuetify";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import Screen from "../components/Screen.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import LSelect from "@/components/inputs/LjSelect.vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
@@ -1035,6 +1032,7 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
 
 <style scoped>
 .bible-layout {
+  position: relative;
   display: flex;
   flex-direction: row;
   height: 100%;
@@ -1055,13 +1053,6 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   min-height: 0;
   background: var(--lj-surface-bg);
   overflow: hidden;
-}
-
-.bible-col--format {
-  flex: 0 0 200px;
-  width: 200px;
-  padding: 8px 10px;
-  overflow-y: auto;
 }
 
 .bible-col--books {

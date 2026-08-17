@@ -22,10 +22,13 @@
     </template>
 
     <div class="d-flex h-100">
-      <aside v-if="show_format" class="format-col">
-        <FormatPanel :module-id="'name_draw'" :manifest="manifest" />
-      </aside>
-      <div class="d-flex flex-column flex-grow-1" style="min-width: 0">
+      <ModuleFormatDrawer v-model="show_format" :module-id="'name_draw'" :manifest="manifest" />
+      <div
+        class="d-flex flex-column flex-grow-1"
+        style="min-width: 0; position: relative"
+        :style="rootStyle"
+      >
+        <img v-if="bgImage" :src="bgImage" class="ndraw-bg-img" :style="imageStyle" alt="" />
         <!-- Modo lista para editar nomes -->
         <div v-if="showList" class="pa-3">
           <v-textarea
@@ -44,7 +47,7 @@
 
         <!-- Modo sorteio -->
         <div v-else class="d-flex flex-column align-center py-4" style="gap: 8px">
-          <div class="name-display" :class="{ 'name-animating': animating }">
+          <div class="name-display" :class="{ 'name-animating': animating }" :style="textStyle">
             {{ current || "—" }}
           </div>
           <div class="text-caption text-medium-emphasis">
@@ -120,12 +123,14 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import AppData from "@/helpers/AppData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
 const { restoreFormat, show_format } = useModuleFormat("name_draw", manifest);
+const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("name_draw");
 
 const projection = useModuleProjection("name_draw", {
   onAction(action) {
@@ -196,6 +201,8 @@ function close() {
 
 <style scoped>
 .name-display {
+  position: relative;
+  z-index: 1;
   font-size: 2.5rem;
   font-weight: 300;
   text-align: center;
@@ -208,6 +215,14 @@ function close() {
 .name-animating {
   transform: scale(1.08);
   opacity: 0.7;
+}
+.ndraw-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* Fullscreen */
@@ -250,12 +265,5 @@ function close() {
   justify-content: center;
   max-width: 80vw;
   padding: 0 24px;
-}
-.format-col {
-  flex: 0 0 200px;
-  width: 200px;
-  border-right: 1px solid var(--lj-surface-border);
-  background: var(--lj-surface-bg);
-  height: 100%;
 }
 </style>
