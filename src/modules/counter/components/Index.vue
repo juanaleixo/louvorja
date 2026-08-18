@@ -32,7 +32,6 @@ import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import AppData from "@/helpers/AppData";
 import UserData from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
-import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
 const moduleContainer = ref(null);
@@ -47,7 +46,6 @@ const show_format = computed({
   set: (v) => UserData.set("modules.counter.show_format", v),
 });
 
-const { restoreFormat } = useModuleFormat("counter", manifest);
 const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("counter");
 
 const projection = useModuleProjection("counter", {
@@ -56,7 +54,6 @@ const projection = useModuleProjection("counter", {
     else if (action === "decrement") decrement();
     else if (action === "reset") reset();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

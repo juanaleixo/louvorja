@@ -170,7 +170,7 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 
 type TimerMode = "up" | "down";
 
-const { restoreFormat, show_format } = useModuleFormat(ModuleEnum.TIMER_WORSHIP, manifest);
+const { show_format } = useModuleFormat(ModuleEnum.TIMER_WORSHIP, manifest);
 const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle(
   ModuleEnum.TIMER_WORSHIP
 );
@@ -334,9 +334,6 @@ const projection = useModuleProjection(ModuleEnum.TIMER_WORSHIP, {
         break;
       case "format":
         show_format.value = !show_format.value;
-        break;
-      case "restore":
-        restoreFormat();
         break;
       case "play_sound":
         {

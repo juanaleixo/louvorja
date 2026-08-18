@@ -72,14 +72,6 @@ export const contextualPages: RibbonPage[] = [
         modules: ["bible_search"],
         buttons: [],
       },
-      {
-        id: "ctx_bs_format",
-        title: "ribbon.groups.format",
-        buttons: [
-          { id: "toggle_format", icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: `${moduleId}_toggle_format`, color: "#1b4f8a" },
-          { id: "restore", icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.restore", action: `${moduleId}_restore`, color: "#9b59b6" },
-        ],
-      },
     ],
   },
 ]

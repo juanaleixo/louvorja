@@ -127,7 +127,6 @@ const noResults = ref<boolean>(false);
 const books: Ref<BibleBook[]> = ref([]);
 const versions: Ref<BibleVersion[]> = ref([]);
 const selectedVersionId = ref<number | null>(null);
-const showFormat = ref<boolean>(false);
 const isProjecting = computed(() => $userdata.get(KEYS.MODULES.BIBLE.IS_PLAYING, false));
 
 const versionItems = computed(() =>
@@ -448,8 +447,7 @@ function close(): void {
 useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => {
   const p = payload as { module?: string; action?: string } | null;
   if (p?.module !== "bible_search") return;
-  const exempt = ["toggle_format", "restore"];
-  if (!results.value.length && !exempt.includes(p.action!)) return;
+  if (!results.value.length) return;
   switch (p.action) {
     case "prev":
       prevResult();
@@ -463,23 +461,6 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => 
     case "project":
       projectCurrent();
       break;
-    case "toggle_format":
-      showFormat.value = !showFormat.value;
-      break;
-    case "restore":
-      break;
-  }
-});
-
-useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: unknown) => {
-  const p = payload as { action?: string } | null;
-  if (p?.action === "toggle_format") showFormat.value = !showFormat.value;
-  if (p?.action === "restore") {
-    const customization = (manifest as any).customization || {};
-    for (const [key, def] of Object.entries(customization)) {
-      $userdata.set(`modules.bible.${key}`, (def as any)?.default ?? null);
-    }
-    $broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, { key: "*", value: null });
   }
 });
 

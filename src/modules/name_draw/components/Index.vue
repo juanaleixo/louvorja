@@ -129,7 +129,7 @@ import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
-const { restoreFormat, show_format } = useModuleFormat("name_draw", manifest);
+const { show_format } = useModuleFormat("name_draw", manifest);
 const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("name_draw");
 
 const projection = useModuleProjection("name_draw", {
@@ -137,7 +137,6 @@ const projection = useModuleProjection("name_draw", {
     if (action === "draw") drawName();
     else if (action === "reset") reset();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

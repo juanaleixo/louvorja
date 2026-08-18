@@ -926,14 +926,6 @@ async function stopProjection(): Promise<void> {
   await ProjectionWindows.closeBibleWindows();
 }
 
-function restoreFormat(): void {
-  const customization = (manifest as any).customization || {};
-  for (const [key, def] of Object.entries(customization)) {
-    UserData.set(`modules.${moduleId}.${key}`, (def as any)?.default ?? null);
-  }
-  Broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, { key: "*", value: null });
-}
-
 // Ações da ribbon contextual "Configurar Bíblia" → executa localmente.
 useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
   switch (payload?.action) {
@@ -948,9 +940,6 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
       break;
     case "toggle_format":
       show_format.value = !show_format.value;
-      break;
-    case "restore":
-      restoreFormat();
       break;
     case "project":
       toggleProjection();

@@ -132,14 +132,13 @@ import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
-const { restoreFormat, show_format } = useModuleFormat("message_board", manifest);
+const { show_format } = useModuleFormat("message_board", manifest);
 const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("message_board");
 
 const projection = useModuleProjection("message_board", {
   onAction(action) {
     if (action === "clear") clearPresentation();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

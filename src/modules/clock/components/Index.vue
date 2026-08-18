@@ -42,7 +42,7 @@ import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
-const { fmt, restoreFormat, show_format } = useModuleFormat("clock", manifest);
+const { fmt, show_format } = useModuleFormat("clock", manifest);
 const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("clock");
 
 const projection = useModuleProjection("clock", {
@@ -50,7 +50,6 @@ const projection = useModuleProjection("clock", {
     if (action === "toggle_24h") toggle24h();
     else if (action === "toggle_seconds") toggleSeconds();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

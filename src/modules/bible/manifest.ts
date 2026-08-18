@@ -92,13 +92,6 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_format`,
             color: "#1b4f8a",
           },
-          {
-            id: `${moduleId}_restore`,
-            icon: ICONS.ACTIONS.RESTORE,
-            label: "ribbon.btn.bible_restore",
-            action: `${moduleId}_restore`,
-            color: "#9b59b6",
-          },
         ],
       },
       {

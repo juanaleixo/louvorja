@@ -76,7 +76,7 @@ import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 
-const { restoreFormat, show_format } = useModuleFormat("stopwatch", manifest);
+const { show_format } = useModuleFormat("stopwatch", manifest);
 const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle("stopwatch");
 
 const projection = useModuleProjection("stopwatch", {
@@ -84,7 +84,6 @@ const projection = useModuleProjection("stopwatch", {
     if (action === "toggle") toggle();
     else if (action === "reset") reset();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

@@ -77,6 +77,7 @@
       "file_playback": "Arquivo Playback"
     },
     "customization": {
+      "title": "Formatação",
       "restore": "Restaurar",
       "restore_configs": "Restaurar Configurações",
       "restore_dialog": "Deseja restaurar as configurações?",

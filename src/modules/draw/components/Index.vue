@@ -112,14 +112,13 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { COLORS } from "@constants/Colors";
 import DrawProjection from "./DrawProjection.vue";
 
-const { restoreFormat, show_format } = useModuleFormat("draw", manifest);
+const { show_format } = useModuleFormat("draw", manifest);
 
 const projection = useModuleProjection("draw", {
   onAction(action) {
     if (action === "draw") drawNumber();
     else if (action === "reset") reset();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

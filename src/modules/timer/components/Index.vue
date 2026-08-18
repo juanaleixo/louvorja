@@ -85,7 +85,7 @@ import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import Icon from "@/components/Icon.vue";
 import { KEYS } from "@/constants/UserDataKeys";
 
-const { restoreFormat, show_format } = useModuleFormat("timer", manifest);
+const { show_format } = useModuleFormat("timer", manifest);
 const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle("timer");
 
 const projection = useModuleProjection("timer", {
@@ -93,7 +93,6 @@ const projection = useModuleProjection("timer", {
     if (action === "toggle") toggle();
     else if (action === "reset") reset();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 

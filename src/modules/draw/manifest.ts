@@ -72,7 +72,6 @@ export const contextualPages: RibbonPage[] = [
         buttons: [
           { id: `${moduleId}_show_drawn_history`, type: "switch", optionKey: `modules.${moduleId}.show_drawn_history`, label: `${modulePath}.ribbon.show_drawn_history`, defaultValue: false },
           { id: `${moduleId}_toggle_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: `${moduleId}_toggle_format`, color: "#1b4f8a" },
-          { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.restore", action: `${moduleId}_restore`, color: "#9b59b6" },
         ],
       },
       {
