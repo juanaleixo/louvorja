@@ -1,6 +1,8 @@
 <template>
   <OverlayRenderer />
+  <DrawProjection v-if="isDraw" :text="text" :reference="reference" :active="active" />
   <div
+    v-else
     class="module-projection"
     :class="[`align-${vertical_align}`, `justify-${horizontal_align}`]"
     :style="{
@@ -69,6 +71,7 @@ import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
+import DrawProjection from "@/modules/draw/components/DrawProjection.vue";
 
 const route = useRoute();
 
@@ -79,7 +82,11 @@ const MID = computed(() => `modules.${moduleId.value}`);
 
 const text = ref("");
 const extra = ref(""); // referência, "Sorteado:", etc.
+const reference = ref([]); // draw envia string[] de sorteados (chips)
 const active = ref(false);
+
+// Módulo draw tem layout dedicado (DrawProjection) que monta chips.
+const isDraw = computed(() => moduleId.value === ModuleEnum.DRAW);
 
 // Tick force re-read do UserData quando broadcast chega.
 const _tick = ref(0);
@@ -146,7 +153,12 @@ const emptyHint = computed(() => "Aguardando…");
 useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload) => {
   if (!payload || payload.module !== moduleId.value) return;
   text.value = payload.text || "";
-  extra.value = payload.reference || payload.extra || "";
+  if (isDraw.value) {
+    reference.value = Array.isArray(payload.reference) ? payload.reference : [];
+    extra.value = "";
+  } else {
+    extra.value = payload.reference || payload.extra || "";
+  }
   active.value = payload.active ?? true;
 });
 
@@ -185,9 +197,19 @@ onMounted(() => {
   window.addEventListener("keydown", onKey);
 
   // Pede o estado atual à janela principal (request-state pattern).
-  setTimeout(() => {
+  // Broadcast REQUEST_MODULE_STATE é fire-and-forget: se a projeção abre
+  // depois do módulo já ter emitido, não recebe nada e fica vazia. Pequeno
+  // delay para garantir que o listener da janela principal já está ativo
+  // após o roteamento. Tenta várias vezes se ainda estiver vazio — resolve
+  // latências de abertura de janela no Electron (mesmo padrão da Bíblia).
+  const requestState = () => {
+    if (active.value) return; // Já recebeu estado
     Broadcast.send(BROADCAST_TYPE.REQUEST_MODULE_STATE, { module: moduleId.value });
-  }, 100);
+  };
+  requestState();
+  setTimeout(requestState, 100);
+  setTimeout(requestState, 500);
+  setTimeout(requestState, 1000);
 });
 
 onBeforeUnmount(() => {

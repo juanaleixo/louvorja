@@ -72,7 +72,7 @@ export function useModuleBodyStyle(moduleId: string) {
   const textStyle = computed<CSSProperties>(() => ({
     fontFamily: font.value,
     color: font_color.value,
-    fontSize: `${font_size.value}rem`,
+    fontSize: `${font_size.value}px`,
   }));
 
   /** Cor do alerta (estado de alarme). */

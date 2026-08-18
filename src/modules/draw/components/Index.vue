@@ -17,43 +17,40 @@
 
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'draw'" :manifest="manifest" />
-      <div
-        class="d-flex flex-column flex-grow-1"
-        style="min-width: 0; position: relative"
-        :style="rootStyle"
-      >
-        <img v-if="bgImage" :src="bgImage" class="draw-bg-img" :style="imageStyle" alt="" />
-
-        <!-- Display do número sorteado -->
-        <div class="d-flex flex-column align-center py-4" style="gap: 8px">
-          <div class="draw-number" :class="{ 'draw-animating': animating }" :style="textStyle">
-            {{ current ?? "—" }}
-          </div>
-          <div class="text-caption text-medium-emphasis">
-            {{ t("data.remaining") }}: {{ remaining }} / {{ total }}
-          </div>
-        </div>
-
-        <!-- Histórico no body — apenas quando "Exibir sorteados na projeção" está ativo -->
-        <v-divider v-if="showHistory && drawn.length" />
-        <div v-if="showHistory && drawn.length" class="pa-3">
-          <div class="text-caption text-medium-emphasis mb-2">{{ t("data.drawn") }}:</div>
-          <div class="d-flex flex-wrap" style="gap: 6px">
-            <v-chip v-for="n in drawn" :key="n" size="small" variant="tonal" :color="chipColor">
-              {{ n }}
-            </v-chip>
-          </div>
+      <div class="flex-grow-1" style="min-width: 0; position: relative">
+        <!-- Preview WYSIWYG: mesmo componente da projeção /projection/module?module=draw.
+             O que aparece aqui é exatamente o que será projetado. -->
+        <div style="position: absolute; inset: 0">
+          <DrawProjection
+            :text="current != null ? String(current) : ''"
+            :reference="drawnHistory()"
+            :active="current != null"
+          />
         </div>
       </div>
     </div>
 
     <!-- Rodapé — números sorteados sempre visíveis -->
     <template #footer>
-      <div v-if="drawn.length" class="d-flex align-center flex-wrap" style="gap: 6px">
+      <div v-if="drawn.length" class="draw-fs-footer" style="gap: 6px">
         <span class="text-caption text-medium-emphasis">{{ t("data.drawn") }}:</span>
-        <v-chip v-for="n in drawn" :key="n" size="large" variant="tonal" :color="COLORS.PRIMARY">
-          {{ n }}
-        </v-chip>
+        <v-chip-group>
+          <v-chip v-for="n in drawn" :key="n" size="large" variant="tonal" :color="COLORS.PRIMARY">
+            {{ n }}
+          </v-chip>
+        </v-chip-group>
+        <div class="text-caption text-medium-emphasis">
+          <v-progress-linear
+            color="primary"
+            class="draw-fs-footer-progress"
+            :model-value="((total - remaining) / total) * 100"
+            :height="17"
+            rounded
+          >
+            <span style="color: #fff"></span>
+          </v-progress-linear>
+          {{ t("data.remaining") }}: {{ remaining }} / {{ total }}
+        </div>
       </div>
     </template>
   </ModuleContainer>
@@ -110,13 +107,12 @@ import AppData from "@/helpers/AppData";
 import UserData from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
-import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { COLORS } from "@constants/Colors";
+import DrawProjection from "./DrawProjection.vue";
 
 const { restoreFormat, show_format } = useModuleFormat("draw", manifest);
-const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("draw");
 
 const projection = useModuleProjection("draw", {
   onAction(action) {
@@ -162,10 +158,6 @@ applyRange();
 
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 
-// Cor dos chips do histórico — usa a mesma cor do texto configurada em
-// "Personalizar" (font_color).
-const chipColor = computed(() => textStyle.value.color || undefined);
-
 // Lê o range direto do UserData (fonte da verdade) — não depende do timing
 // do listener, garantindo sorteio dentro do intervalo mesmo em race.
 function currentRange() {
@@ -203,7 +195,7 @@ useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
     if (current.value != null) {
       projection.emit({
         text: String(current.value),
-        reference: drawnReference(),
+        reference: drawnHistory(),
         active: true,
       });
     }
@@ -224,17 +216,11 @@ function showDrawnHistory() {
   return UserData.get(SHOW_DRAWN_HISTORY_KEY, false) === true;
 }
 
-// Histórico no body da tela principal — segue a mesma opção. Reativo ao
-// toggle do switch via rangeTick (incrementado no listener USERDATA_PATCH).
-const showHistory = computed(() => {
-  void rangeTick.value;
-  return showDrawnHistory();
-});
-
-// Histórico formatado para o campo `reference` da projeção.
-function drawnReference() {
-  if (!showDrawnHistory()) return "";
-  return drawn.value.join(", ");
+// Histórico formatado para o campo `reference` da projeção — enviado como
+// array de strings para a projeção montar chips.
+function drawnHistory() {
+  if (!showDrawnHistory()) return [];
+  return drawn.value.map(String);
 }
 
 let spinTimer = null;
@@ -267,13 +253,13 @@ function drawNumber() {
       drawn.value.push(n);
       current.value = n;
       animating.value = false;
-      projection.emit({ text: String(n), reference: drawnReference(), active: true });
+      projection.emit({ text: String(n), reference: drawnHistory(), active: true });
       return;
     }
     // Mostra um número aleatório qualquer (sem remover do pool) — efeito roleta.
     const spin = randomBetween(mn, mx);
     current.value = spin;
-    projection.emit({ text: String(spin), reference: drawnReference(), active: true });
+    projection.emit({ text: String(spin), reference: drawnHistory(), active: true });
   }, spinStep);
 }
 
@@ -283,7 +269,7 @@ function reset() {
   animating.value = false;
   drawn.value = [];
   current.value = null;
-  projection.emit({ text: "", reference: "", active: false });
+  projection.emit({ text: "", reference: [], active: false });
 }
 
 function close() {
@@ -374,5 +360,13 @@ onBeforeUnmount(() => {
   justify-content: center;
   max-width: 80vw;
   padding: 0 24px;
+}
+
+.draw-fs-footer {
+  display: flex;
+  flex-direction: column;
+}
+.draw-fs-footer-progress {
+  width: 400px;
 }
 </style>

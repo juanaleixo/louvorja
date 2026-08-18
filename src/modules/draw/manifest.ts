@@ -44,7 +44,7 @@ export const contextualPages: RibbonPage[] = [
     defaultModule: null,
     groups: [
       {
-        id: "ctx_draw_actions",
+        id: moduleCtxId+"_actions",
         title: "ribbon.groups.actions",
         buttons: [
           { id: `${moduleId}_draw`, icon: "mdi-dice-5", label: "ribbon.btn.draw_action", action: `${moduleId}_draw`, color: "#3498db" },
@@ -52,7 +52,7 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_draw_range",
+        id: moduleCtxId+"_range",
         title: `${modulePath}.ribbon.range`,
         buttons: [
           { id: `${moduleId}_range_min`, type: "number", optionKey: `modules.${moduleId}.range_min`, label: `${modulePath}.ribbon.range_min`, defaultValue: 1 },
@@ -60,23 +60,23 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_draw_effects",
+        id: moduleCtxId+"_effects",
         title: `${modulePath}.ribbon.effects`,
         buttons: [
           { id: `${moduleId}_effect_duration`, type: "slider", optionKey: `modules.${moduleId}.effect_duration`, label: `${modulePath}.ribbon.effect_duration`, defaultValue: 2000, min: 500, max: 5000, step: 100 },
-          { id: `${moduleId}_show_drawn_history`, type: "switch", optionKey: `modules.${moduleId}.show_drawn_history`, label: `${modulePath}.ribbon.show_drawn_history`, defaultValue: false },
         ],
       },
       {
-        id: "ctx_draw_format",
+        id: moduleCtxId+"_format",
         title: "ribbon.groups.format",
         buttons: [
+          { id: `${moduleId}_show_drawn_history`, type: "switch", optionKey: `modules.${moduleId}.show_drawn_history`, label: `${modulePath}.ribbon.show_drawn_history`, defaultValue: false },
           { id: `${moduleId}_toggle_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: `${moduleId}_toggle_format`, color: "#1b4f8a" },
           { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.restore", action: `${moduleId}_restore`, color: "#9b59b6" },
         ],
       },
       {
-        id: "ctx_draw_screen",
+        id: moduleCtxId+"_screen",
         title: "ribbon.groups.expanded_area",
         buttons: [
           { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: `/projection/module?module=${moduleId}`, icon: "mdi-projector-screen-outline", label: "ribbon.btn.project", color: "#1b4f8a" },

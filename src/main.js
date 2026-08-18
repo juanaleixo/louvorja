@@ -353,6 +353,21 @@ $storage.hydrate().then(async () => {
           Broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, last);
         }
       }
+
+      // Módulos genéricos (/projection/module) — responde pelo cache do
+      // Broadcast.ts. Mesmo padrão do REQUEST_BIBLE_STATE acima: o cache é
+      // preenchido por qualquer emissão de MODULE_PROJECTION_VALUE (em
+      // qualquer janela), então a projeção recém-aberta recebe o estado
+      // atual mesmo se o módulo que emitiu não estiver montado aqui.
+      if (msg.type === BROADCAST_TYPE.REQUEST_MODULE_STATE) {
+        const moduleId = msg.payload?.module;
+        if (moduleId) {
+          const last = Broadcast.getLastPayload(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, moduleId);
+          if (last) {
+            Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, last);
+          }
+        }
+      }
     });
 
     // Quando o servidor HTTP sobe (auto-start ou clique manual), pede ao

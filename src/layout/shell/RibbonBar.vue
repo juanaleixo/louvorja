@@ -161,7 +161,7 @@
               <v-switch
                 :model-value="getCheckValue(btn)"
                 density="compact"
-                size="x-small"
+                size="small"
                 hide-details
                 :label="$t(btn.label)"
                 color="primary"
@@ -169,7 +169,13 @@
                 true-icon="mdi-check"
                 false-icon="mdi-close"
                 @update:model-value="setCheckValue(btn, $event)"
-              />
+              >
+                <template #label>
+                  <span class="ribbon-field-switch">
+                    {{ $t(btn.label) }}
+                  </span>
+                </template>
+              </v-switch>
             </div>
             <RibbonButtonComponent
               v-else
@@ -756,9 +762,9 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
 
 .ribbon-switch {
   padding: 1px;
-  font-size: 1px;
 }
 .ribbon-field-switch {
   padding: 0;
+  font-size: 14px;
 }
 </style>
