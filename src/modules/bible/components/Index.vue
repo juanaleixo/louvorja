@@ -532,6 +532,7 @@ watch(
 
 function onKeydown(e: KeyboardEvent): void {
   if (!show.value) return;
+  if (AppData.get("active_module") !== moduleId) return;
   if (bibleSpotlightOpen.value) return;
   const tag = (e.target as HTMLElement)?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
