@@ -138,7 +138,7 @@ export const contextualPages: RibbonPage[] = [
       },
       {
         id: moduleCtxId + "_screen",
-        title: "ribbon.groups.expanded_area",
+        title: "ribbon.groups.projection",
         buttons: [
           {
             id: `${moduleId}_project`,

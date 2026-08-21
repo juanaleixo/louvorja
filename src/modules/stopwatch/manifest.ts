@@ -89,7 +89,7 @@ export const contextualPages: RibbonPage[] = [
       },
       {
         id: "ctx_stopwatch_screen",
-        title: "ribbon.groups.expanded_area",
+        title: "ribbon.groups.projection",
         buttons: [
           {
             id: `${moduleId}_project`,

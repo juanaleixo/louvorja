@@ -60,7 +60,7 @@ export const contextualPages: RibbonPage[] = [
       },
       {
         id: "ctx_name_draw_screen",
-        title: "ribbon.groups.expanded_area",
+        title: "ribbon.groups.projection",
         buttons: [
           { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: `/projection/module?module=${moduleId}`, icon: "mdi-projector-screen-outline", label: "ribbon.btn.project", color: "#1b4f8a" },
         ],
