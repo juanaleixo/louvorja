@@ -7,6 +7,12 @@
   "ribbon": {
     "title_ctx": "Configurar Temporizador",
     "toggle": "Iniciar/Pausar",
-    "reset": "Reiniciar"
+    "reset": "Reiniciar",
+    "mode": "Modo",
+    "set_time": "Definir hora",
+    "set_time_placeholder": "HH:MM",
+    "show_target_time": "Exibir hora na projeção",
+    "show_alert": "Destacar ao final",
+    "alert_seconds": "Segundos restantes para destacar"
   }
 }

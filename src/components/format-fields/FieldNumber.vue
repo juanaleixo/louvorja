@@ -22,7 +22,7 @@ const min = computed(() => (props.field.type === "opacity" ? 0 : 1));
 const max = computed(() => {
   if (props.field.type === "opacity") return 100;
   if (props.field.type === "border-spacing") return 50;
-  return 200;
+  return 300;
 });
 </script>
 

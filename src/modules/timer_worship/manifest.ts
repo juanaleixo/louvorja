@@ -8,6 +8,7 @@ import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { KEYS } from "@/constants/UserDataKeys";
+import TimerWorshipRibbonEndInfo from "@/modules/timer_worship/components/TimerWorshipRibbonEndInfo.vue";
 
 const moduleId = ModuleEnum.TIMER_WORSHIP;
 const modulePath = $modules.getPath(moduleId);
@@ -48,7 +49,7 @@ export const contextualPages: RibbonPage[] = [
     defaultModule: null,
     groups: [
       {
-        id: "ctx_tw_actions",
+        id: moduleCtxId + "_actions",
         title: "ribbon.groups.actions",
         buttons: [
           {
@@ -77,7 +78,71 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_tw_format",
+        id: moduleCtxId + "_screen",
+        title: "ribbon.groups.projection",
+        buttons: [
+          {
+            id: `${moduleId}_project`,
+            type: "screen",
+            feature: moduleId,
+            route: `/projection/module?module=${moduleId}`,
+            icon: ICONS.PROJECTION.START,
+            label: "ribbon.btn.project",
+            color: "#1b4f8a",
+          },
+        ],
+      },
+      {
+        id: moduleCtxId + "_time",
+        title: "ribbon.groups.time",
+        buttons: [
+          {
+            id: `${moduleId}_mode`,
+            type: "select",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.MODE,
+            label: `${modulePath}.ribbon.mode`,
+            defaultValue: "down",
+            options: [
+              { value: "up", label: `${modulePath}.mode.up` },
+              { value: "down", label: `${modulePath}.mode.down` },
+            ],
+          },
+          {
+            id: `${moduleId}_set_time`,
+            type: "action_input",
+            inputType: "time",
+            action: `${moduleId}_set_time`,
+            label: `${modulePath}.ribbon.set_time`,
+            placeholder: `${modulePath}.ribbon.set_time_placeholder`,
+          },
+          {
+            id: `${moduleId}_show_target_time`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.SHOW_TARGET_TIME,
+            label: `${modulePath}.ribbon.show_target_time`,
+            defaultValue: true,
+          },
+          {
+            id: `${moduleId}_show_alert`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.SHOW_ALERT,
+            label: `${modulePath}.ribbon.show_alert`,
+            defaultValue: true,
+          },
+          {
+            id: `${moduleId}_alert_seconds`,
+            type: "number",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.ALERT_SECONDS,
+            label: `${modulePath}.ribbon.alert_seconds`,
+            defaultValue: 60,
+            min: 5,
+            max: 600,
+            step: 5,
+          },
+        ],
+      },
+      {
+        id: moduleCtxId + "_format",
         title: "ribbon.groups.format",
         buttons: [
           {
@@ -90,7 +155,7 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_tw_sound",
+        id: moduleCtxId + "_sound",
         title: "ribbon.groups.sound",
         buttons: [
           {
@@ -141,7 +206,7 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_tw_end",
+        id: moduleCtxId + "_end",
         title: `${modulePath}.ribbon.timer_end`,
         buttons: [
           {
@@ -195,19 +260,10 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_tw_screen",
-        title: "ribbon.groups.expanded_area",
-        buttons: [
-          {
-            id: `${moduleId}_project`,
-            type: "screen",
-            feature: moduleId,
-            route: `/projection/module?module=${moduleId}`,
-            icon: ICONS.PROJECTION.START,
-            label: "ribbon.btn.project",
-            color: "#1b4f8a",
-          },
-        ],
+        id: moduleCtxId + "_end_info",
+        title: "ribbon.groups.info",
+        customCategory: TimerWorshipRibbonEndInfo,
+        modules: [moduleId],
       },
     ],
   },

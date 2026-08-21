@@ -1,71 +1,28 @@
 <template>
-  <ModuleContainer
-    ref="moduleContainer"
-    :manifest="manifest"
-    :style="{ minWidth: '300px' }"
-    @close="close()"
-  >
+  <ModuleContainer :manifest="manifest" :style="{ minWidth: '300px' }" @close="close()">
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'timer'" :manifest="manifest" />
       <div
+        ref="container"
         class="d-flex flex-column align-center pa-4 flex-grow-1"
         style="gap: 16px"
         :style="rootStyle"
       >
         <img v-if="bgImage" :src="bgImage" class="sw-bg-img" :style="imageStyle" alt="" />
-        <!-- Seletor de modo -->
-        <v-btn-toggle v-model="mode" color="primary" mandatory density="compact" divided>
-          <v-btn value="down" size="small">
-            <Icon icon="mdi-rotate-left" class="mr-2" />
-            {{ t("mode.down") }}
-          </v-btn>
-          <v-btn value="up" size="small">
-            {{ t("mode.up") }}
-            <Icon icon="mdi-rotate-right" class="ml-2" />
-          </v-btn>
-        </v-btn-toggle>
-
-        <!-- Horário base/alvo -->
-        <div v-if="!running" class="d-flex align-center" style="gap: 8px">
-          <v-text-field
-            v-model="targetTime"
-            type="time"
-            density="compact"
-            hide-details
-            style="width: 140px"
-            :label="t('actions.set')"
-            @change="updateFromTargetTime"
-          />
-        </div>
-
         <!-- Display -->
         <div
           class="sw-display"
           :class="{
-            'sw-warning': mode === 'down' && seconds <= 60 && seconds > 0,
+            'sw-warning': mode === 'down' && alertActive && seconds > 0,
             'sw-done': mode === 'down' && seconds <= 0 && alarmed,
           }"
-          :style="[
-            textStyle,
-            mode === 'down' && seconds <= 60 && (seconds > 0 || alarmed) ? alertStyle : null,
-          ]"
+          :style="[textStyle, alertActive ? alertStyle : null]"
         >
           {{ display }}
         </div>
-        <div class="sw-display" :style="textStyle">
+        <div v-if="showTargetTime" class="sw-display" :style="textStyle">
           {{ targetTime }}
         </div>
-
-        <!-- Controles -->
-        <div class="d-flex" style="gap: 8px">
-          <v-btn :icon="running ? 'mdi-pause' : 'mdi-play'" :color="primaryColor" @click="toggle" />
-          <v-btn icon="mdi-restart" variant="tonal" @click="reset" />
-        </div>
-
-        <!-- Mensagem de alarme -->
-        <v-chip v-if="alarmed" color="error" variant="tonal" prepend-icon="mdi-alarm">
-          {{ t("alarm.done") }}
-        </v-chip>
       </div>
     </div>
   </ModuleContainer>
@@ -77,21 +34,21 @@ import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import { playBeep } from "@/helpers/AudioBeep";
-import AppData from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
-import Icon from "@/components/Icon.vue";
 import { KEYS } from "@/constants/UserDataKeys";
 
 const { show_format } = useModuleFormat("timer", manifest);
-const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle("timer");
+const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } =
+  useModuleBodyStyle("timer");
 
 const projection = useModuleProjection("timer", {
-  onAction(action: string) {
+  onAction(action: string, payload?: unknown) {
     if (action === "toggle") toggle();
     else if (action === "reset") reset();
+    else if (action === "set_time") setTimeFromPayload(payload);
     else if (action === "toggle_format") show_format.value = !show_format.value;
   },
 });
@@ -108,18 +65,44 @@ function playAlarm(): void {
 
 type TimerMode = "up" | "down";
 
-const moduleContainer = ref<{ t(key: string): string } | null>(null);
-const mode = ref<TimerMode>("up");
 const running = ref<boolean>(false);
 const seconds = ref<number>(0);
-const targetTime = ref<string>(getCurrentTimeValue());
 const durationSeconds = ref<number>(0);
 const startedAt = ref<number | null>(null);
 const alarmed = ref<boolean>(false);
 let timer: ReturnType<typeof setInterval> | null = null;
 
-const primaryColor = computed<string | undefined>(() =>
-  AppData.get("is_dark") ? undefined : "primary"
+const mode = computed<TimerMode>({
+  get: () => $userdata.get<TimerMode>(KEYS.MODULES.TIMER.MODE, "up") ?? "up",
+  set: (v: TimerMode) => $userdata.set(KEYS.MODULES.TIMER.MODE, v),
+});
+
+const targetTime = computed<string>({
+  get: () => {
+    const v = $userdata.get<string>(KEYS.MODULES.TIMER.TARGET_TIME, "");
+    return v || getCurrentTimeValue();
+  },
+  set: (v: string) => $userdata.set(KEYS.MODULES.TIMER.TARGET_TIME, v),
+});
+
+const showTargetTime = computed<boolean>(
+  () => $userdata.get<boolean>(KEYS.MODULES.TIMER.SHOW_TARGET_TIME, true) ?? true
+);
+
+const showAlert = computed<boolean>(
+  () => $userdata.get<boolean>(KEYS.MODULES.TIMER.SHOW_ALERT, true) ?? true
+);
+
+const alertSeconds = computed<number>(() =>
+  Math.max(0, Number($userdata.get<number>(KEYS.MODULES.TIMER.ALERT_SECONDS, 60)) || 60)
+);
+
+const alertActive = computed<boolean>(
+  () =>
+    mode.value === "down" &&
+    showAlert.value &&
+    seconds.value <= alertSeconds.value &&
+    (seconds.value > 0 || alarmed.value)
 );
 
 const display = computed<string>(() => {
@@ -133,17 +116,19 @@ const display = computed<string>(() => {
 });
 
 const projecao = computed<string>(() => {
-  return `${display.value} \n ${targetTime.value}`;
+  return showTargetTime.value ? `${display.value} \n ${targetTime.value}` : display.value;
 });
-
-const t = (key: string): string => moduleContainer.value?.t(key) || key;
 
 watch(mode, () => reset());
 
 watch(
-  projecao,
-  (val: string) => {
-    projection.emit({ text: val, active: true });
+  [projecao, alertActive],
+  () => {
+    projection.emit({
+      text: projecao.value,
+      active: true,
+      color: alertActive.value ? alertStyle.value.color : undefined,
+    });
   },
   { immediate: true }
 );
@@ -178,6 +163,16 @@ function updateFromTargetTime(): void {
   alarmed.value = false;
   durationSeconds.value = getDurationUntilTarget();
   seconds.value = mode.value === "down" ? durationSeconds.value : 0;
+}
+
+function setTimeFromPayload(payload: unknown): void {
+  const value = (payload as { url?: string } | null)?.url;
+  if (!value) return;
+  if (!/^\d{1,2}:\d{2}$/.test(value)) return;
+  const [h, m] = value.split(":").map(Number);
+  if (h > 23 || m > 59) return;
+  targetTime.value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  reset();
 }
 
 function updateRunningTime(): void {

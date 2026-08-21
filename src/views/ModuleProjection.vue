@@ -3,6 +3,7 @@
   <DrawProjection v-if="isDraw" :text="text" :reference="reference" :active="active" />
   <div
     v-else
+    ref="container"
     class="module-projection"
     :class="[`align-${vertical_align}`, `justify-${horizontal_align}`]"
     :style="{
@@ -31,8 +32,8 @@
           v-if="text"
           class="module-projection__text"
           :style="{
-            color: font_color || '#FFFFFF',
-            fontSize: font_size_px + 'rem',
+            color: color || font_color || '#FFFFFF',
+            fontSize: font_size_px + 'px',
             fontFamily: font || 'Arial, sans-serif',
             textAlign: textAlign,
           }"
@@ -72,8 +73,11 @@ import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import DrawProjection from "@/modules/draw/components/DrawProjection.vue";
+import { useContainerSize } from "@/composables/useContainerSize";
 
 const route = useRoute();
+
+const { container, fontSizePc } = useContainerSize();
 
 // O moduleId vem da query string `?module=<id>`. Útil porque uma única view
 // genérica /projection/module serve para vários módulos.
@@ -84,6 +88,7 @@ const text = ref("");
 const extra = ref(""); // referência, "Sorteado:", etc.
 const reference = ref([]); // draw envia string[] de sorteados (chips)
 const active = ref(false);
+const color = ref("");
 
 // Módulo draw tem layout dedicado (DrawProjection) que monta chips.
 const isDraw = computed(() => moduleId.value === ModuleEnum.DRAW);
@@ -118,8 +123,8 @@ const textAlign = computed(() => {
 });
 const extraAlign = computed(() => (horizontal_align.value === "start" ? "left" : "right"));
 
-const font_size_px = computed(() => Number(font_size.value) || 50);
-const ref_font_size_px = computed(() => Number(reference_font_size.value) || 10);
+const font_size_px = computed(() => fontSizePc(font_size.value));
+const ref_font_size_px = computed(() => fontSizePc(reference_font_size.value));
 const border_spacing_px = computed(() => Number(border_spacing.value) || 10);
 
 // Módulos com valor que muda continuamente (clock, stopwatch, draw-roleta)
@@ -160,6 +165,7 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload) => {
     extra.value = payload.reference || payload.extra || "";
   }
   active.value = payload.active ?? true;
+  color.value = payload.color || "";
 });
 
 useBroadcastListener(BROADCAST_TYPE.MODULE_FORMAT_CHANGED, (payload) => {

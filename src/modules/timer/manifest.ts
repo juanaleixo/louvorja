@@ -46,7 +46,7 @@ export const contextualPages: RibbonPage[] = [
     defaultModule: null,
     groups: [
       {
-        id: "ctx_timer_actions",
+        id: moduleCtxId + "_actions",
         title: "ribbon.groups.actions",
         buttons: [
           {
@@ -65,23 +65,92 @@ export const contextualPages: RibbonPage[] = [
               labelOff: "actions.play",
             },
           },
-          { id: `${moduleId}_reset`, icon: "mdi-restart", label: "ribbon.btn.reset", action: `${moduleId}_reset`, color: "#7f8c8d" },
+          {
+            id: `${moduleId}_reset`,
+            icon: "mdi-restart",
+            label: "ribbon.btn.reset",
+            action: `${moduleId}_reset`,
+            color: "#7f8c8d",
+          },
         ],
       },
       {
-        id: "ctx_timer_format",
+        id: moduleCtxId + "_time",
+        title: "ribbon.groups.time",
+        buttons: [
+          {
+            id: `${moduleId}_mode`,
+            type: "select",
+            optionKey: KEYS.MODULES.TIMER.MODE,
+            label: `${modulePath}.ribbon.mode`,
+            defaultValue: "down",
+            options: [
+              { value: "up", label: `${modulePath}.mode.up` },
+              { value: "down", label: `${modulePath}.mode.down` },
+            ],
+          },
+          {
+            id: `${moduleId}_set_time`,
+            type: "action_input",
+            inputType: "time",
+            action: `${moduleId}_set_time`,
+            label: `${modulePath}.ribbon.set_time`,
+            placeholder: `${modulePath}.ribbon.set_time_placeholder`,
+          },
+          {
+            id: `${moduleId}_show_target_time`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.TIMER.SHOW_TARGET_TIME,
+            label: `${modulePath}.ribbon.show_target_time`,
+            defaultValue: true,
+          },
+          {
+            id: `${moduleId}_show_alert`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.TIMER.SHOW_ALERT,
+            label: `${modulePath}.ribbon.show_alert`,
+            defaultValue: true,
+          },
+          {
+            id: `${moduleId}_alert_seconds`,
+            type: "number",
+            optionKey: KEYS.MODULES.TIMER.ALERT_SECONDS,
+            label: `${modulePath}.ribbon.alert_seconds`,
+            defaultValue: 60,
+            min: 5,
+            max: 600,
+            step: 5,
+          },
+        ],
+      },
+      {
+        id: moduleCtxId + "_format",
         title: "ribbon.groups.format",
         buttons: [
-          { id: `${moduleId}_toggle_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.format", action: `${moduleId}_toggle_format`, color: "#1b4f8a" },
+          {
+            id: `${moduleId}_toggle_format`,
+            icon: ICONS.ACTIONS.FORMAT,
+            label: "ribbon.btn.format",
+            action: `${moduleId}_toggle_format`,
+            color: "#1b4f8a",
+          },
         ],
       },
       {
-        id: "ctx_timer_screen",
+        id: moduleCtxId + "_screen",
         title: "ribbon.groups.expanded_area",
         buttons: [
-          { id: `${moduleId}_project`, type: "screen", feature: moduleId, route: `/projection/module?module=${moduleId}`, icon: "mdi-projector-screen-outline", label: "ribbon.btn.project", color: "#1b4f8a" },
+          {
+            id: `${moduleId}_project`,
+            type: "screen",
+            feature: moduleId,
+            route: `/projection/module?module=${moduleId}`,
+            icon: "mdi-projector-screen-outline",
+            label: "ribbon.btn.project",
+            color: "#1b4f8a",
+          },
         ],
       },
     ],
   },
-]
+];

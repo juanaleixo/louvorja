@@ -8,6 +8,7 @@
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'counter'" :manifest="manifest" />
       <div
+        ref="container"
         class="d-flex flex-column align-center justify-center pa-6 flex-grow-1"
         style="gap: 16px; position: relative"
         :style="rootStyle"
@@ -46,7 +47,7 @@ const show_format = computed({
   set: (v) => UserData.set("modules.counter.show_format", v),
 });
 
-const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("counter");
+const { rootStyle, textStyle, bgImage, imageStyle, container } = useModuleBodyStyle("counter");
 
 const projection = useModuleProjection("counter", {
   onAction(action) {

@@ -31,6 +31,7 @@ export interface RibbonButton {
   route?: string;
   optionKey?: string;
   placeholder?: string;
+  inputType?: "text" | "time";
   options?: { value: string; label: string }[];
   defaultValue?: string | number | boolean;
   dynamicOptions?: string;

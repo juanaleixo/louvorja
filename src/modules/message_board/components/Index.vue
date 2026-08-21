@@ -27,6 +27,7 @@
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'message_board'" :manifest="manifest" />
       <div
+        ref="container"
         class="d-flex flex-column flex-grow-1"
         style="min-width: 0; position: relative"
         :style="rootStyle"
@@ -133,7 +134,8 @@ import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 const { show_format } = useModuleFormat("message_board", manifest);
-const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("message_board");
+const { rootStyle, textStyle, bgImage, imageStyle, container } =
+  useModuleBodyStyle("message_board");
 
 const projection = useModuleProjection("message_board", {
   onAction(action) {

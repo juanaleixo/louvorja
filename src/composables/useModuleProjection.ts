@@ -33,6 +33,8 @@ interface ProjectionPayload {
    */
   reference?: string | string[];
   active?: boolean;
+  /** Cor de destaque do texto (ex: alerta do timer/timer_worship). */
+  color?: string;
 }
 
 interface UseModuleProjectionOptions {

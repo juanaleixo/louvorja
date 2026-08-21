@@ -8,6 +8,7 @@
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'stopwatch'" :manifest="manifest" />
       <div
+        ref="container"
         class="d-flex flex-column align-center pa-4 flex-grow-1"
         style="gap: 16px"
         :style="rootStyle"
@@ -77,7 +78,8 @@ import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 
 const { show_format } = useModuleFormat("stopwatch", manifest);
-const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle("stopwatch");
+const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } =
+  useModuleBodyStyle("stopwatch");
 
 const projection = useModuleProjection("stopwatch", {
   onAction(action) {

@@ -10,17 +10,20 @@
  * Escuta MODULE_FORMAT_CHANGED e USERDATA_PATCH para refletir ao vivo.
  * Retorna estilos prontos para aplicar no template do módulo.
  *
- * Uso:
- *   const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle("timer");
+* Uso:
+ *   const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } = useModuleBodyStyle("timer");
  */
 import { ref, computed, type CSSProperties } from "vue";
 import UserData from "@/helpers/UserData";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { useContainerSize } from "@/composables/useContainerSize";
 
 export function useModuleBodyStyle(moduleId: string) {
   // Força re-leitura do UserData quando formatação muda.
   const tick = ref(0);
+
+  const { container, fontSizePc } = useContainerSize();
 
   useBroadcastListener(BROADCAST_TYPE.MODULE_FORMAT_CHANGED, (payload) => {
     const p = payload as { module?: string } | null;
@@ -68,11 +71,11 @@ export function useModuleBodyStyle(moduleId: string) {
     justifyContent: justifyContent.value,
   }));
 
-  /** Estilos do texto principal (fonte, cor, tamanho em px). */
+  /** Estilos do texto principal (fonte, cor, tamanho proporcional ao container). */
   const textStyle = computed<CSSProperties>(() => ({
     fontFamily: font.value,
     color: font_color.value,
-    fontSize: `${font_size.value}px`,
+    fontSize: `${fontSizePc(font_size.value)}px`,
   }));
 
   /** Cor do alerta (estado de alarme). */
@@ -87,5 +90,5 @@ export function useModuleBodyStyle(moduleId: string) {
     objectFit: image_fit.value as CSSProperties["objectFit"],
   }));
 
-  return { rootStyle, textStyle, alertStyle, bgImage, imageStyle };
+  return { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container };
 }

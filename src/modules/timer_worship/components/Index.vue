@@ -7,73 +7,24 @@
   >
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'timer_worship'" :manifest="manifest" />
-      <div class="tw-root" :style="rootStyle">
+      <div ref="container" class="tw-root" :style="rootStyle">
         <img v-if="bgImage" :src="bgImage" class="tw-bg-img" :style="imageStyle" alt="" />
-        <!-- Configuração de final -->
-        <div v-if="timerEndInfo" class="tw-end-config">
-          <span class="tw-end-config-label">{{ t("ribbon.timer_end") }}</span>
-          <v-chip
-            variant="outlined"
-            size="small"
-            color="primary"
-            :prepend-icon="timerEndIcon"
-            class="tw-end-info"
-          >
-            {{ timerEndInfo }}
-          </v-chip>
-        </div>
-
-        <!-- Seletor de modo -->
-        <v-btn-toggle v-model="mode" color="primary" mandatory density="compact" divided>
-          <v-btn value="down" size="small">
-            <Icon icon="mdi-rotate-left" class="mr-2" />
-            {{ t("mode.down") }}
-          </v-btn>
-          <v-btn value="up" size="small">
-            {{ t("mode.up") }}
-            <Icon icon="mdi-rotate-right" class="ml-2" />
-          </v-btn>
-        </v-btn-toggle>
-
-        <!-- Horário alvo -->
-        <div v-if="!running" class="d-flex align-center" style="gap: 8px">
-          <v-text-field
-            v-model="targetTime"
-            type="time"
-            density="compact"
-            hide-details
-            style="width: 140px"
-            :label="t('actions.set')"
-            @change="updateFromTargetTime"
-          />
-        </div>
 
         <!-- Display -->
         <div
           class="tw-display"
           :class="{
-            'tw-warning': mode === 'down' && seconds <= 60 && seconds > 0,
-            'tw-critical': mode === 'down' && seconds <= 10 && seconds > 0,
+            'tw-warning': mode === 'down' && alertActive && seconds > 0,
+            'tw-critical': mode === 'down' && alertActive && seconds <= 10 && seconds > 0,
             'tw-done': mode === 'down' && seconds <= 0 && alarmed,
           }"
-          :style="[
-            textStyle,
-            mode === 'down' && seconds <= 60 && (seconds > 0 || alarmed) ? alertStyle : null,
-          ]"
+          :style="[textStyle, alertActive ? alertStyle : null]"
         >
           {{ display }}
         </div>
-
-        <!-- Controles -->
-        <div class="d-flex" style="gap: 8px">
-          <v-btn :icon="running ? 'mdi-pause' : 'mdi-play'" :color="primaryColor" @click="toggle" />
-          <v-btn icon="mdi-restart" variant="tonal" @click="reset" />
+        <div v-if="showTargetTime" class="tw-display" :style="textStyle">
+          {{ targetTime }}
         </div>
-
-        <!-- Mensagem de alarme -->
-        <v-chip v-if="alarmed" color="error" variant="tonal" prepend-icon="mdi-alarm">
-          {{ t("alarm.done") }}
-        </v-chip>
       </div>
     </div>
 
@@ -143,7 +94,6 @@ import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
-import AppData from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 import Platform from "@/helpers/Platform";
@@ -160,8 +110,6 @@ import $path from "@/helpers/Path";
 import type { Music } from "@/types/Music";
 import MusicSpotlight from "@/components/MusicSpotlight.vue";
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool";
-import { ICONS } from "@/config/Icons";
-import Icon from "@/components/Icon.vue";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
 import { MediaEnum } from "@/enums/MediaEnum";
@@ -171,25 +119,50 @@ import { ModuleEnum } from "@/enums/ModuleEnum";
 type TimerMode = "up" | "down";
 
 const { show_format } = useModuleFormat(ModuleEnum.TIMER_WORSHIP, manifest);
-const { rootStyle, textStyle, alertStyle, bgImage, imageStyle } = useModuleBodyStyle(
+const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } = useModuleBodyStyle(
   ModuleEnum.TIMER_WORSHIP
 );
 
 const moduleContainer = ref<{ t(key: string): string } | null>(null);
 const t = (key: string): string => moduleContainer.value?.t(key) || key;
 
-const mode = ref<TimerMode>("down");
+const mode = computed<TimerMode>({
+  get: () => $userdata.get<TimerMode>(KEYS.MODULES.TIMER_WORSHIP.MODE, "down") ?? "down",
+  set: (v: TimerMode) => $userdata.set(KEYS.MODULES.TIMER_WORSHIP.MODE, v),
+});
+
 const running = ref<boolean>(false);
 const seconds = ref<number>(0);
-const savedTargetTime = $userdata.get<string>(KEYS.MODULES.TIMER_WORSHIP.LAST_TARGET_TIME, "");
-const targetTime = ref<string>(
-  typeof savedTargetTime === "string" && /^\d{2}:\d{2}$/.test(savedTargetTime)
-    ? savedTargetTime
-    : getCurrentTimeValue()
-);
+const targetTime = computed<string>({
+  get: () => {
+    const v = $userdata.get<string>(KEYS.MODULES.TIMER_WORSHIP.LAST_TARGET_TIME, "");
+    return typeof v === "string" && /^\d{2}:\d{2}$/.test(v) ? v : getCurrentTimeValue();
+  },
+  set: (v: string) => $userdata.set(KEYS.MODULES.TIMER_WORSHIP.LAST_TARGET_TIME, v),
+});
 const durationSeconds = ref<number>(0);
 const startedAt = ref<number | null>(null);
 const alarmed = ref<boolean>(false);
+
+const showTargetTime = computed<boolean>(
+  () => $userdata.get<boolean>(KEYS.MODULES.TIMER_WORSHIP.SHOW_TARGET_TIME, true) ?? true
+);
+
+const showAlert = computed<boolean>(
+  () => $userdata.get<boolean>(KEYS.MODULES.TIMER_WORSHIP.SHOW_ALERT, true) ?? true
+);
+
+const alertSeconds = computed<number>(() =>
+  Math.max(0, Number($userdata.get<number>(KEYS.MODULES.TIMER_WORSHIP.ALERT_SECONDS, 60)) || 60)
+);
+
+const alertActive = computed<boolean>(
+  () =>
+    mode.value === "down" &&
+    showAlert.value &&
+    seconds.value <= alertSeconds.value &&
+    (seconds.value > 0 || alarmed.value)
+);
 
 const showMusicDialog = ref(false);
 const showOnlineVideoDialog = ref(false);
@@ -227,10 +200,6 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let fiveMinFired = false;
 let oneMinFired = false;
 
-const primaryColor = computed<string | undefined>(() =>
-  AppData.get("is_dark") ? undefined : "primary"
-);
-
 const display = computed<string>(() => {
   const abs = Math.abs(seconds.value);
   const h = Math.floor(abs / 3600);
@@ -241,7 +210,7 @@ const display = computed<string>(() => {
 });
 
 const projecao = computed<string>(() => {
-  return `${display.value} \n ${targetTime.value}`;
+  return showTargetTime.value ? `${display.value} \n ${targetTime.value}` : display.value;
 });
 
 // Defaults sonoros — setIfNull garante que existam antes do primeiro uso
@@ -258,79 +227,17 @@ const timerEndAction = computed<string>(
   () => $userdata.get(KEYS.MODULES.TIMER_WORSHIP.END_ACTION) as MediaEnum
 );
 
-function extractName(pathOrUrl: string): string {
-  return pathOrUrl.split("/").pop()?.split("\\").pop()?.split(".")[0] || pathOrUrl;
-}
-
-const timerEndIcon = computed<string>(() => {
-  switch (timerEndAction.value) {
-    case MediaEnum.AUDIO:
-      return ICONS.UI.PLAYER;
-    case MediaEnum.VIDEO:
-      return ICONS.MEDIA.VIDEO;
-    case MediaEnum.ONLINE_VIDEO:
-      return ICONS.MEDIA.YOUTUBE;
-    case MediaEnum.MUSIC:
-      return ICONS.MUSIC.MUSIC;
-    default:
-      return "mdi-check-circle-outline";
-  }
-});
-
-const timerEndInfo = computed<string | null>(() => {
-  const action = timerEndAction.value;
-  const label = t(`ribbon.end_${action}`);
-  switch (action) {
-    case MediaEnum.AUDIO: {
-      const data = $userdata.get<{ url?: string; title?: string; mode?: string } | null>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_AUDIO,
-        null
-      );
-      if (!data?.url) return `${label} — ${t("ribbon.not_configured")}`;
-      const name = data.title || extractName(data.url);
-      const modeLabel = data.mode === "instrumental" ? t("music.audio_playback") : t("music.audio");
-      return `${label}: ${name} [${modeLabel}]`;
-    }
-    case MediaEnum.VIDEO: {
-      const data = $userdata.get<{ url: string; type: string } | null>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_VIDEO
-      );
-      return data?.url
-        ? `${label}: ${extractName(data.url)}`
-        : `${label} — ${t("ribbon.not_configured")}`;
-    }
-    case MediaEnum.ONLINE_VIDEO: {
-      const data = $userdata.get<{ url: string; title: string } | null>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_ONLINE_VIDEO
-      );
-      return data?.title ? `${label}: ${data.title}` : `${label} — ${t("ribbon.not_configured")}`;
-    }
-    case MediaEnum.MUSIC: {
-      const data = $userdata.get<{
-        id: string | number;
-        name?: string;
-        album?: string;
-        mode?: string;
-      } | null>(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_MUSIC, null);
-      if (!data?.id) return `${label} — ${t("ribbon.not_configured")}`;
-      const album = data.album ? ` (${data.album})` : "";
-      const modeLabel =
-        data.mode === MusicActionEnum.INSTRUMENTAL ? t("music.playback") : t("music.sing");
-      return `${label}: ${data.name}${album} [${modeLabel}]`;
-    }
-    default:
-      return null;
-  }
-});
-
 const projection = useModuleProjection(ModuleEnum.TIMER_WORSHIP, {
-  onAction(action: string) {
+  onAction(action: string, payload?: unknown) {
     switch (action) {
       case "toggle":
         toggle();
         break;
       case "reset":
         reset();
+        break;
+      case "set_time":
+        setTimeFromPayload(payload);
         break;
       case "format":
         show_format.value = !show_format.value;
@@ -614,17 +521,24 @@ function playSoundOneMin(): void {
 
 watch(mode, () => reset());
 
-// Persiste o último horário definido para restaurar ao reabrir o módulo.
-watch(targetTime, (v) => {
-  if (/^\d{2}:\d{2}$/.test(v)) {
-    $userdata.set(KEYS.MODULES.TIMER_WORSHIP.LAST_TARGET_TIME, v);
-  }
-});
+function setTimeFromPayload(payload: unknown): void {
+  const value = (payload as { url?: string } | null)?.url;
+  if (!value) return;
+  if (!/^\d{1,2}:\d{2}$/.test(value)) return;
+  const [h, m] = value.split(":").map(Number);
+  if (h > 23 || m > 59) return;
+  targetTime.value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  reset();
+}
 
 watch(
-  projecao,
-  (val: string) => {
-    projection.emit({ text: val, active: true });
+  [projecao, alertActive],
+  () => {
+    projection.emit({
+      text: projecao.value,
+      active: true,
+      color: alertActive.value ? alertStyle.value.color : undefined,
+    });
   },
   { immediate: true }
 );
@@ -792,24 +706,6 @@ onBeforeUnmount(() => {
 .tw-done {
   color: #ef4444;
   animation: tw-pulse 0.8s ease-in-out infinite alternate;
-}
-.tw-end-config {
-  //width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.tw-end-config-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.6;
-}
-.tw-end-info {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 @keyframes tw-pulse {
   from {

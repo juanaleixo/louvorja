@@ -75,9 +75,18 @@ export const KEYS = {
     },
     TIMER: {
       RUNNING: `${MODULES}.${ModuleEnum.TIMER}.running`,
+      MODE: `${MODULES}.${ModuleEnum.TIMER}.mode`,
+      TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.target_time`,
+      SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.show_target_time`,
+      SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER}.show_alert`,
+      ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER}.alert_seconds`,
     },
     TIMER_WORSHIP: {
       RUNNING: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`,
+      MODE: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.mode`,
+      SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.show_target_time`,
+      SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.show_alert`,
+      ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.alert_seconds`,
       SOUND_START: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_start`,
       SOUND_FIVE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_five_min`,
       SOUND_ONE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_one_min`,

@@ -60,15 +60,19 @@
               :testid="`ribbon-btn-${btn.id}`"
             />
             <div v-else-if="btn.type === 'action_input'" class="ribbon-action-input">
+              <label v-if="btn.inputType === 'time'" class="ribbon-field-label">
+                {{ $t(btn.label) }}
+              </label>
               <input
                 v-model="inputValues[btn.id]"
-                type="text"
+                :type="btn.inputType || 'text'"
                 class="ribbon-action-input__field"
-                style="width: 300px"
                 :placeholder="$t(btn.placeholder || '')"
                 @keydown.enter.prevent="executeInputAction(btn)"
+                @change="btn.inputType === 'time' && executeInputAction(btn)"
               />
               <RibbonButtonComponent
+                v-if="btn.inputType !== 'time'"
                 :icon="btn.icon || ''"
                 :icon-color="resolveBtnColor(btn)"
                 :label="$t(btn.label)"
@@ -327,7 +331,7 @@ function executeInputAction(btn: RibbonButton): void {
   const val = inputValues[btn.id]?.trim();
   if (!val) return;
   const m = btn.action?.match(
-    /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_online_videos|background_sound)_(.+)$/
+    /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_online_videos|background_sound)_(.+)$/
   );
   if (m) {
     Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {

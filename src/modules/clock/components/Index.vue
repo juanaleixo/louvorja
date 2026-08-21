@@ -18,6 +18,7 @@
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'clock'" :manifest="manifest" />
       <div
+        ref="container"
         class="d-flex flex-column align-center justify-center pa-6 flex-grow-1"
         style="gap: 4px"
         :style="rootStyle"
@@ -43,7 +44,7 @@ import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
 const { fmt, show_format } = useModuleFormat("clock", manifest);
-const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("clock");
+const { rootStyle, textStyle, bgImage, imageStyle, container } = useModuleBodyStyle("clock");
 
 const projection = useModuleProjection("clock", {
   onAction(action) {

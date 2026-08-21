@@ -24,6 +24,7 @@
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'name_draw'" :manifest="manifest" />
       <div
+        ref="container"
         class="d-flex flex-column flex-grow-1"
         style="min-width: 0; position: relative"
         :style="rootStyle"
@@ -130,7 +131,7 @@ import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
 const { show_format } = useModuleFormat("name_draw", manifest);
-const { rootStyle, textStyle, bgImage, imageStyle } = useModuleBodyStyle("name_draw");
+const { rootStyle, textStyle, bgImage, imageStyle, container } = useModuleBodyStyle("name_draw");
 
 const projection = useModuleProjection("name_draw", {
   onAction(action) {
