@@ -2,13 +2,12 @@ import type { Module } from "@/types/Module"
 import type { RibbonPage } from "@/types/Ribbon"
 import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
-import { MediaEnum } from "@/enums/MediaEnum"
 import { ICONS } from "@/config/Icons"
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { KEYS } from "@/constants/UserDataKeys";
-import TimerWorshipRibbonEndInfo from "@/modules/timer_worship/components/TimerWorshipRibbonEndInfo.vue";
+import { createTimerEndRibbonGroups } from "@/config/modules/ribbon/timerEndRibbon";
 
 const moduleId = ModuleEnum.TIMER_WORSHIP;
 const modulePath = $modules.getPath(moduleId);
@@ -205,66 +204,7 @@ export const contextualPages: RibbonPage[] = [
           },
         ],
       },
-      {
-        id: moduleCtxId + "_end",
-        title: `${modulePath}.ribbon.timer_end`,
-        buttons: [
-          {
-            id: "tw_end_action",
-            type: "select",
-            optionKey: `${modulePath}.timer_end_action`,
-            label: `${modulePath}.ribbon.timer_end_label`,
-            options: [
-              { value: MediaEnum.NONE, label: `${modulePath}.ribbon.end_nothing` },
-              { value: MediaEnum.AUDIO, label: `${modulePath}.ribbon.end_audio` },
-              { value: MediaEnum.VIDEO, label: `${modulePath}.ribbon.end_video` },
-              { value: MediaEnum.ONLINE_VIDEO, label: `${modulePath}.ribbon.end_online_video` },
-              { value: MediaEnum.MUSIC, label: `${modulePath}.ribbon.end_music` },
-            ],
-          },
-          {
-            id: `${moduleId}_file_audio`,
-            icon: ICONS.UI.PLAYER,
-            label: `${modulePath}.ribbon.file_audio`,
-            action: `${moduleId}_file_audio`,
-            color: "#27ae60",
-            dependsOnOption: { path: `${modulePath}.timer_end_action`, value: "audio" },
-          },
-          {
-            id: `${moduleId}_file_video`,
-            icon: ICONS.MEDIA.VIDEO,
-            label: `${modulePath}.ribbon.file_video`,
-            action: `${moduleId}_file_video`,
-            color: "#e67e22",
-            dependsOnOption: { path: `${modulePath}.timer_end_action`, value: "video" },
-          },
-          {
-            id: `${moduleId}_online_video`,
-            icon: ICONS.MEDIA.YOUTUBE,
-            label: `${modulePath}.ribbon.online_video`,
-            action: `${moduleId}_online_video`,
-            color: "#e74c3c",
-            dependsOnOption: {
-              path: `${modulePath}.timer_end_action`,
-              value: "online_video",
-            },
-          },
-          {
-            id: `${moduleId}_music`,
-            icon: ICONS.MUSIC.MUSIC,
-            label: `${modulePath}.ribbon.music`,
-            action: `${moduleId}_music`,
-            color: "#1b4f8a",
-            dependsOnOption: { path: `${modulePath}.timer_end_action`, value: "music" },
-          },
-        ],
-      },
-      {
-        id: moduleCtxId + "_end_info",
-        title: "ribbon.groups.info",
-        customCategory: TimerWorshipRibbonEndInfo,
-        modules: [moduleId],
-      },
+      ...createTimerEndRibbonGroups(moduleId),
     ],
   },
 ];

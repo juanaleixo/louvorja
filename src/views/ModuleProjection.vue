@@ -1,6 +1,7 @@
 <template>
   <OverlayRenderer />
   <DrawProjection v-if="isDraw" :text="text" :reference="reference" :active="active" />
+  <NameDrawProjection v-else-if="isNameDraw" :text="text" :reference="reference" :active="active" />
   <div
     v-else
     ref="container"
@@ -73,6 +74,7 @@ import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import DrawProjection from "@/modules/draw/components/DrawProjection.vue";
+import NameDrawProjection from "@/modules/name_draw/components/NameDrawProjection.vue";
 import { useContainerSize } from "@/composables/useContainerSize";
 
 const route = useRoute();
@@ -90,8 +92,9 @@ const reference = ref([]); // draw envia string[] de sorteados (chips)
 const active = ref(false);
 const color = ref("");
 
-// Módulo draw tem layout dedicado (DrawProjection) que monta chips.
+// Módulo draw/name_draw têm layout dedicado que monta chips.
 const isDraw = computed(() => moduleId.value === ModuleEnum.DRAW);
+const isNameDraw = computed(() => moduleId.value === ModuleEnum.NAME_DRAW);
 
 // Tick force re-read do UserData quando broadcast chega.
 const _tick = ref(0);
@@ -158,7 +161,7 @@ const emptyHint = computed(() => "Aguardando…");
 useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload) => {
   if (!payload || payload.module !== moduleId.value) return;
   text.value = payload.text || "";
-  if (isDraw.value) {
+  if (isDraw.value || isNameDraw.value) {
     reference.value = Array.isArray(payload.reference) ? payload.reference : [];
     extra.value = "";
   } else {

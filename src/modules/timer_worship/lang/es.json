@@ -22,7 +22,7 @@
     "audio": "Audio",
     "audio_playback": "Audio Playback"
   },
-  "end_Action": {
+  "end_action": {
     "audio_not_configured": "No hay audio configurado. Haz clic en configurar audio primero.",
     "music_not_configured": "No hay música configurada. Haz clic en configurar música primero.",
     "video_not_configured": "No hay vídeo configurado. Haz clic en configurar vídeo primero.",

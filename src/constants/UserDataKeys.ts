@@ -80,6 +80,11 @@ export const KEYS = {
       SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.show_target_time`,
       SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER}.show_alert`,
       ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER}.alert_seconds`,
+      END_ACTION: `${MODULES}.${ModuleEnum.TIMER}.timer_end_action`,
+      END_ACTION_AUDIO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_audio`,
+      END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_music`,
+      END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_video`,
+      END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_online_video`,
     },
     TIMER_WORSHIP: {
       RUNNING: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`,
@@ -97,6 +102,12 @@ export const KEYS = {
       END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`,
       END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`,
       LAST_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.last_target_time`,
+    },
+    NAME_DRAW: {
+      RUNNING: `${MODULES}.${ModuleEnum.NAME_DRAW}.running`,
+      SHOW_DRAWN: `${MODULES}.${ModuleEnum.NAME_DRAW}.show_drawn`,
+      EFFECT_DURATION: `${MODULES}.${ModuleEnum.NAME_DRAW}.effect_duration`,
+      NAMES: `${MODULES}.${ModuleEnum.NAME_DRAW}.names`,
     },
     OVERLAY: {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,

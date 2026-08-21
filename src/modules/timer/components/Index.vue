@@ -25,6 +25,8 @@
         </div>
       </div>
     </div>
+
+    <TimerEndActionDialogs :end-action="endAction" />
   </ModuleContainer>
 </template>
 
@@ -33,16 +35,22 @@ import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
+import TimerEndActionDialogs from "@/components/TimerEndActionDialogs.vue";
 import { playBeep } from "@/helpers/AudioBeep";
 import $userdata from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
+import { useTimerEndAction } from "@/composables/useTimerEndAction";
 import { KEYS } from "@/constants/UserDataKeys";
+import { MediaEnum } from "@/enums/MediaEnum";
+
+$userdata.setIfNull(KEYS.MODULES.TIMER.END_ACTION, MediaEnum.NONE);
 
 const { show_format } = useModuleFormat("timer", manifest);
 const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } =
   useModuleBodyStyle("timer");
+const endAction = useTimerEndAction("timer", KEYS.MODULES.TIMER);
 
 const projection = useModuleProjection("timer", {
   onAction(action: string, payload?: unknown) {
@@ -50,6 +58,10 @@ const projection = useModuleProjection("timer", {
     else if (action === "reset") reset();
     else if (action === "set_time") setTimeFromPayload(payload);
     else if (action === "toggle_format") show_format.value = !show_format.value;
+    else if (action === "file_audio") endAction.handleFileAudio();
+    else if (action === "file_video") endAction.handleFileVideo();
+    else if (action === "online_video") endAction.handleOnlineVideo();
+    else if (action === "music") endAction.handleMusic();
   },
 });
 
@@ -187,6 +199,7 @@ function updateRunningTime(): void {
       alarmed.value = true;
       pause();
       playAlarm();
+      endAction.triggerTimerEndAction();
     }
 
     return;
@@ -198,6 +211,7 @@ function updateRunningTime(): void {
     alarmed.value = true;
     pause();
     playAlarm();
+    endAction.triggerTimerEndAction();
   }
 }
 

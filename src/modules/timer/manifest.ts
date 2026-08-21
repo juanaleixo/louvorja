@@ -6,6 +6,7 @@ import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { KEYS } from "@/constants/UserDataKeys";
+import { createTimerEndRibbonGroups } from "@/config/modules/ribbon/timerEndRibbon";
 
 const moduleId = ModuleEnum.TIMER;
 const modulePath = $modules.getPath(moduleId);
@@ -75,6 +76,21 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
+        id: moduleCtxId + "_screen",
+        title: "ribbon.groups.projection",
+        buttons: [
+          {
+            id: `${moduleId}_project`,
+            type: "screen",
+            feature: moduleId,
+            route: `/projection/module?module=${moduleId}`,
+            icon: "mdi-projector-screen-outline",
+            label: "ribbon.btn.project",
+            color: "#1b4f8a",
+          },
+        ],
+      },
+      {
         id: moduleCtxId + "_time",
         title: "ribbon.groups.time",
         buttons: [
@@ -136,21 +152,7 @@ export const contextualPages: RibbonPage[] = [
           },
         ],
       },
-      {
-        id: moduleCtxId + "_screen",
-        title: "ribbon.groups.projection",
-        buttons: [
-          {
-            id: `${moduleId}_project`,
-            type: "screen",
-            feature: moduleId,
-            route: `/projection/module?module=${moduleId}`,
-            icon: "mdi-projector-screen-outline",
-            label: "ribbon.btn.project",
-            color: "#1b4f8a",
-          },
-        ],
-      },
+      ...createTimerEndRibbonGroups(moduleId),
     ],
   },
 ];

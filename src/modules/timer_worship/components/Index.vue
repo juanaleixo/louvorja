@@ -28,64 +28,7 @@
       </div>
     </div>
 
-    <!-- Online video dialog -->
-    <v-dialog v-model="showOnlineVideoDialog" max-width="560">
-      <v-card>
-        <v-card-title class="text-body-1 font-weight-bold">
-          {{ t("ribbon.online_video") }}
-        </v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="onlineVideoSearch"
-            :placeholder="t('ribbon.online_video_search')"
-            prepend-inner-icon="mdi-magnify"
-            density="compact"
-            hide-details
-            clearable
-          />
-          <div class="ov-grid mt-2">
-            <div
-              v-for="video in filteredVideos"
-              :key="video.url"
-              class="ov-card"
-              @click="pickOnlineVideo(video)"
-            >
-              <img
-                v-if="getVideoThumb(video.url)"
-                :src="getVideoThumb(video.url)"
-                alt=""
-                loading="lazy"
-                class="ov-thumb"
-              />
-              <div v-else class="ov-thumb-fallback">
-                <v-icon icon="mdi-youtube" size="28" color="#e74c3c" />
-              </div>
-              <div class="ov-card-title">{{ video.name }}</div>
-            </div>
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-text-field
-            v-model="onlineVideoUrl"
-            :placeholder="t('ribbon.online_video_url')"
-            density="compact"
-            hide-details
-            variant="outlined"
-            class="mr-2"
-            @keydown.enter="pickCustomUrl"
-          />
-          <v-btn icon="mdi-check" color="primary" variant="tonal" @click="pickCustomUrl" />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Music search dialog -->
-    <MusicSpotlight
-      v-model="showMusicDialog"
-      mode="pick"
-      :on-music-action="handleMusicAction"
-      @pick="onMusicPicked"
-    />
+    <TimerEndActionDialogs :end-action="endAction" />
   </ModuleContainer>
 </template>
 
@@ -94,26 +37,16 @@ import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
+import TimerEndActionDialogs from "@/components/TimerEndActionDialogs.vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-import Platform from "@/helpers/Platform";
-import Alert from "@/helpers/Alert";
-import Broadcast from "@/helpers/Broadcast";
-import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
 import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
+import { useTimerEndAction } from "@/composables/useTimerEndAction";
 import Media from "@/composables/useMedia";
-import Database from "@/helpers/Database";
-import $path from "@/helpers/Path";
-import type { Music } from "@/types/Music";
-import MusicSpotlight from "@/components/MusicSpotlight.vue";
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool";
-import $idb from "@/helpers/IndexedDB";
-import { DB_TABLE } from "@/constants/DbTables";
 import { MediaEnum } from "@/enums/MediaEnum";
-import { MusicActionEnum } from "@/enums/MusicActionEnum";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
 type TimerMode = "up" | "down";
@@ -122,6 +55,7 @@ const { show_format } = useModuleFormat(ModuleEnum.TIMER_WORSHIP, manifest);
 const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } = useModuleBodyStyle(
   ModuleEnum.TIMER_WORSHIP
 );
+const endAction = useTimerEndAction(ModuleEnum.TIMER_WORSHIP, KEYS.MODULES.TIMER_WORSHIP);
 
 const moduleContainer = ref<{ t(key: string): string } | null>(null);
 const t = (key: string): string => moduleContainer.value?.t(key) || key;
@@ -164,38 +98,6 @@ const alertActive = computed<boolean>(
     (seconds.value > 0 || alarmed.value)
 );
 
-const showMusicDialog = ref(false);
-const showOnlineVideoDialog = ref(false);
-const onlineVideoSearch = ref("");
-const onlineVideoUrl = ref("");
-const customVideos = ref<Array<{ name: string; url: string }>>([]);
-
-interface CustomVideoItem {
-  id: string;
-  name: string;
-  url: string;
-  createdAt: string;
-}
-
-async function loadCustomVideos(): Promise<void> {
-  try {
-    const all = await $idb.getAll(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
-    customVideos.value = (all as CustomVideoItem[]).map((v) => ({
-      name: v.name,
-      url: v.url,
-    }));
-  } catch {
-    customVideos.value = [];
-  }
-}
-
-const filteredVideos = computed(() => {
-  const q = onlineVideoSearch.value.toLowerCase().trim();
-  const list = customVideos.value;
-  if (!q) return list;
-  return list.filter((v) => v.name.toLowerCase().includes(q));
-});
-
 let timer: ReturnType<typeof setInterval> | null = null;
 let fiveMinFired = false;
 let oneMinFired = false;
@@ -221,10 +123,6 @@ $userdata.setIfNull(KEYS.MODULES.TIMER_WORSHIP.END_ACTION, MediaEnum.NONE);
 
 const selectedSound = computed<string>(
   () => $userdata.get(KEYS.MODULES.TIMER_WORSHIP.SELECTED_SOUND) as string
-);
-
-const timerEndAction = computed<string>(
-  () => $userdata.get(KEYS.MODULES.TIMER_WORSHIP.END_ACTION) as MediaEnum
 );
 
 const projection = useModuleProjection(ModuleEnum.TIMER_WORSHIP, {
@@ -254,16 +152,16 @@ const projection = useModuleProjection(ModuleEnum.TIMER_WORSHIP, {
         }
         break;
       case "file_audio":
-        handleFileAudio();
+        endAction.handleFileAudio();
         break;
       case "file_video":
-        handleFileVideo();
+        endAction.handleFileVideo();
         break;
       case "online_video":
-        handleOnlineVideo();
+        endAction.handleOnlineVideo();
         break;
       case "music":
-        handleMusic();
+        endAction.handleMusic();
         break;
     }
   },
@@ -279,231 +177,6 @@ async function playMp3(id: string): Promise<void> {
     });
   } catch {
     /* noop */
-  }
-}
-
-function resolveFilePath(path: string, file?: File): string {
-  if (Platform.isDesktop && path) {
-    if (path.startsWith("/")) return "louvorja://local" + path;
-    if (/^[A-Za-z]:\\/.test(path)) return "louvorja://local/" + path.replace(/\\/g, "/");
-    return path;
-  }
-  if (file) return URL.createObjectURL(file);
-  return path;
-}
-
-async function pickFile(accept: string): Promise<{ path?: string; file?: File } | null> {
-  const ljApi = (Platform as Record<string, any>).api as Record<string, any> | null;
-  const chooseFile = ljApi?.storage && (ljApi.storage as Record<string, any>).chooseFile;
-  if (Platform.isDesktop && typeof chooseFile === "function") {
-    const p = await (chooseFile as (accept?: string) => Promise<string | null>)();
-    if (!p) return null;
-    return { path: p };
-  }
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = accept;
-    input.onchange = () => {
-      const file = input.files?.[0];
-      input.remove();
-      resolve(file ? { file } : null);
-    };
-    input.click();
-  });
-}
-
-async function handleFileAudio(): Promise<void> {
-  const result = await pickFile("audio/*");
-  if (!result) return;
-  const url = resolveFilePath(result.path || "", result.file);
-  if (!url) return;
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_AUDIO, { url });
-}
-
-async function handleFileVideo(): Promise<void> {
-  const result = await pickFile("video/*,image/*");
-  if (!result) return;
-  const url = resolveFilePath(result.path || "", result.file);
-  if (!url) return;
-  const ext = (result.path || result.file?.name || "").split(".").pop()?.toLowerCase() || "";
-  const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_VIDEO, {
-    url,
-    type: isImage ? "image" : "video",
-  });
-}
-
-function handleOnlineVideo(): void {
-  showOnlineVideoDialog.value = true;
-  loadCustomVideos();
-}
-
-function handleMusic(): void {
-  showMusicDialog.value = true;
-}
-
-function getVideoThumb(videoUrl: string): string {
-  const m = videoUrl.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
-  );
-  return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : "";
-}
-
-function pickOnlineVideo(video: { name: string; url: string }): void {
-  showOnlineVideoDialog.value = false;
-  const id = video.url.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
-  )?.[1];
-  if (!id) {
-    Alert.error({ text: "Invalid YouTube URL" });
-    return;
-  }
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_ONLINE_VIDEO, {
-    url: video.url,
-    title: video.name,
-  });
-}
-
-function pickCustomUrl(): void {
-  const raw = onlineVideoUrl.value.trim();
-  if (!raw) return;
-  const id = raw.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
-  )?.[1];
-  if (!id) {
-    Alert.error({ text: "Invalid YouTube URL" });
-    return;
-  }
-  showOnlineVideoDialog.value = false;
-  onlineVideoUrl.value = "";
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_ONLINE_VIDEO, { url: raw, title: raw });
-}
-
-function onMusicPicked(music: {
-  id_music: string | number;
-  name?: string;
-  album?: string;
-  has_instrumental_music?: boolean;
-}): void {
-  showMusicDialog.value = false;
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION, MediaEnum.MUSIC);
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_MUSIC, {
-    id: music.id_music,
-    name: music.name || "",
-    album: music.album || "",
-    mode: "audio",
-  });
-}
-
-async function handleMusicAction(
-  music: { id_music: string | number; name?: string; has_instrumental_music?: boolean },
-  action: MusicActionEnum
-): Promise<void> {
-  showMusicDialog.value = false;
-
-  if (action === "audio" || action === "instrumental") {
-    $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION, MediaEnum.MUSIC);
-    $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_MUSIC, {
-      id: music.id_music,
-      name: music.name || "",
-      mode: action,
-    });
-    return;
-  }
-
-  const data = await Database.get<Music>(`music_${music.id_music}`);
-  if (!data) return;
-
-  const isPlayback = action === "playback-only";
-  const rawUrl = isPlayback ? data.url_instrumental_music : data.url_music;
-  if (!rawUrl) return;
-  const url = $path.file(rawUrl);
-
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION, MediaEnum.AUDIO);
-  $userdata.set(KEYS.MODULES.TIMER_WORSHIP.END_ACTION_AUDIO, {
-    url,
-    title: music.name || "",
-    mode: isPlayback ? "instrumental" : undefined,
-  });
-}
-
-function triggerTimerEndAction(): void {
-  const action = timerEndAction.value;
-  switch (action) {
-    case MediaEnum.AUDIO: {
-      const data = $userdata.get<{ url?: string; mode?: string; title?: string } | null>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_AUDIO,
-        null
-      );
-      if (!data?.url) {
-        Alert.show({ text: t("end_action.audio_not_configured") });
-        return;
-      }
-      const params: Record<string, string | undefined> = {
-        url: data.url,
-        title: data.title ?? "Timer",
-      };
-      if (data.mode === MusicActionEnum.INSTRUMENTAL) {
-        params.mode = MusicActionEnum.INSTRUMENTAL;
-      }
-      Media.openAudio(params as Parameters<typeof Media.openAudio>[0]);
-      return;
-    }
-    case MediaEnum.VIDEO: {
-      const data = $userdata.get<{ url: string; type: string }>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_VIDEO,
-        null
-      );
-      if (!data?.url) {
-        Alert.show({ text: t("end_action.video_not_configured") });
-        return;
-      }
-      const payload = { url: data.url, type: data.type, title: "Timer", fadeDuration: 500 };
-      try {
-        localStorage.setItem(KEYS.PROJECTION.LJ_FILE_PROJECTION, JSON.stringify(payload));
-      } catch {
-        /* noop */
-      }
-      openFileProjectionWindows().catch(() => {});
-      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
-      return;
-    }
-    case MediaEnum.ONLINE_VIDEO: {
-      const data = $userdata.get<{ url: string; title: string }>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_ONLINE_VIDEO,
-        null
-      );
-      if (!data?.url) {
-        Alert.show({
-          text: t("end_action.online_video_not_configured"),
-        });
-        return;
-      }
-      const id = data.url.match(
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
-      )?.[1];
-      if (id)
-        Media.openYouTube(
-          `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`,
-          data.title
-        );
-      return;
-    }
-    case MediaEnum.MUSIC: {
-      const data = $userdata.get<{ id: string | number; mode?: MusicActionEnum } | null>(
-        KEYS.MODULES.TIMER_WORSHIP.END_ACTION_MUSIC,
-        null
-      );
-      if (!data?.id) {
-        Alert.show({ text: t("end_action.music_not_configured") });
-        return;
-      }
-      Media.open({ id_music: data.id, mode: data.mode || MusicActionEnum.AUDIO });
-      return;
-    }
-    default:
-      return;
   }
 }
 
@@ -580,7 +253,7 @@ function updateRunningTime(): void {
     if (seconds.value >= durationSeconds.value && !alarmed.value) {
       alarmed.value = true;
       pause();
-      triggerTimerEndAction();
+      endAction.triggerTimerEndAction();
     }
     return;
   }
@@ -590,7 +263,7 @@ function updateRunningTime(): void {
   if (seconds.value <= 0 && !alarmed.value) {
     alarmed.value = true;
     pause();
-    triggerTimerEndAction();
+    endAction.triggerTimerEndAction();
     return;
   }
 
@@ -714,43 +387,5 @@ onBeforeUnmount(() => {
   to {
     opacity: 0.35;
   }
-}
-.ov-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-.ov-card {
-  border-radius: 6px;
-  overflow: hidden;
-  background: rgba(var(--lj-on-surface-ch), 0.04);
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-.ov-card:hover {
-  transform: translateY(-2px);
-}
-.ov-thumb {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  display: block;
-}
-.ov-thumb-fallback {
-  aspect-ratio: 16 / 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1a1a1a;
-}
-.ov-card-title {
-  font-size: 11px;
-  padding: 4px 6px;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 </style>

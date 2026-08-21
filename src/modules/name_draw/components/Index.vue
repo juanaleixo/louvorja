@@ -5,217 +5,232 @@
     :style="{ minWidth: '340px' }"
     @close="close()"
   >
-    <template #right>
-      <v-btn
-        :icon="showList ? 'mdi-dice-5' : 'mdi-format-list-bulleted'"
-        variant="text"
-        density="compact"
-        @click="showList = !showList"
-      />
-      <v-btn
-        icon="mdi-fullscreen"
-        variant="text"
-        density="compact"
-        :title="t('actions.fullscreen')"
-        @click="openFullscreen"
-      />
-    </template>
-
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'name_draw'" :manifest="manifest" />
-      <div
-        ref="container"
-        class="d-flex flex-column flex-grow-1"
-        style="min-width: 0; position: relative"
-        :style="rootStyle"
+
+      <!-- Drawer direito — edição da lista de nomes a sortear -->
+      <v-navigation-drawer
+        v-model="showList"
+        temporary
+        absolute
+        :scrim="false"
+        location="end"
+        width="280"
+        class="ndraw-list-drawer"
       >
-        <img v-if="bgImage" :src="bgImage" class="ndraw-bg-img" :style="imageStyle" alt="" />
-        <!-- Modo lista para editar nomes -->
-        <div v-if="showList" class="pa-3">
+        <div class="ndraw-list-drawer__header">
+          <span class="ndraw-list-drawer__title">{{ t("data.list") }}</span>
+        </div>
+        <div class="ndraw-list-drawer__body">
           <v-textarea
             v-model="namesText"
             :placeholder="t('inputs.names')"
-            rows="8"
+            rows="10"
             auto-grow
             density="compact"
             hide-details
             variant="outlined"
+            :disabled="running"
           />
-          <v-btn class="mt-2" size="small" :color="primaryColor" @click="applyList">
+          <v-btn
+            class="mt-2"
+            size="small"
+            color="primary"
+            :disabled="running"
+            :prepend-icon="ICONS.UI.CHECK"
+            @click="applyList"
+          >
             {{ t("actions.apply") }}
           </v-btn>
+          <div v-if="running" class="ndraw-list-drawer__lock text-caption text-medium-emphasis">
+            {{ t("data.locked") }}
+          </div>
         </div>
+      </v-navigation-drawer>
 
-        <!-- Modo sorteio -->
-        <div v-else class="d-flex flex-column align-center py-4" style="gap: 8px">
-          <div class="name-display" :class="{ 'name-animating': animating }" :style="textStyle">
-            {{ current || "—" }}
-          </div>
-          <div class="text-caption text-medium-emphasis">
-            {{ t("data.remaining") }}: {{ pool.length }} / {{ names.length }}
-          </div>
-          <div class="d-flex" style="gap: 8px">
-            <v-btn
-              :color="primaryColor"
-              :disabled="!pool.length"
-              prepend-icon="mdi-shuffle"
-              @click="drawName"
-            >
-              {{ t("actions.draw") }}
-            </v-btn>
-            <v-btn variant="tonal" prepend-icon="mdi-restart" @click="reset">
-              {{ t("actions.reset") }}
-            </v-btn>
-          </div>
-          <div v-if="drawn.length" class="w-100 px-3">
-            <v-divider class="mb-2" />
-            <div class="text-caption text-medium-emphasis mb-1">{{ t("data.drawn") }}:</div>
-            <div class="d-flex flex-wrap" style="gap: 4px">
-              <v-chip v-for="n in drawn" :key="n" size="x-small" variant="tonal">{{ n }}</v-chip>
-            </div>
-          </div>
+      <!-- Preview WYSIWYG: mesmo componente da projeção /projection/module?module=name_draw.
+           O que aparece aqui é exatamente o que será projetado. -->
+      <div class="flex-grow-1" style="min-width: 0; position: relative">
+        <div style="position: absolute; inset: 0">
+          <NameDrawProjection
+            :text="current || ''"
+            :reference="showDrawn ? drawn : []"
+            :active="current != null"
+          />
         </div>
       </div>
     </div>
+
+    <!-- Rodapé — nomes sorteados sempre visíveis -->
+    <template #footer>
+      <div v-if="drawn.length" class="ndraw-fs-footer" style="gap: 6px">
+        <span class="text-caption text-medium-emphasis">{{ t("data.drawn") }}:</span>
+        <v-chip-group>
+          <v-chip v-for="n in drawn" :key="n" size="large" variant="tonal" :color="COLORS.PRIMARY">
+            {{ n }}
+          </v-chip>
+        </v-chip-group>
+        <div class="text-caption text-medium-emphasis">
+          <v-progress-linear
+            color="primary"
+            class="ndraw-fs-footer-progress"
+            :model-value="progressPercent"
+            :height="17"
+            rounded
+          />
+          {{ t("data.remaining") }}: {{ pool.length }} / {{ names.length }}
+        </div>
+      </div>
+    </template>
   </ModuleContainer>
-
-  <!-- Fullscreen overlay -->
-  <v-dialog v-model="fullscreen" fullscreen transition="fade-transition">
-    <div
-      ref="fsRoot"
-      class="ndraw-fs-root"
-      tabindex="0"
-      @keydown.space.prevent="drawName"
-      @keydown.esc="fullscreen = false"
-    >
-      <div class="ndraw-fs-name" :class="{ 'name-animating': animating }">{{ current || "—" }}</div>
-      <div class="ndraw-fs-remaining">{{ pool.length }} / {{ names.length }}</div>
-      <div class="ndraw-fs-actions">
-        <v-btn
-          :color="primaryColor"
-          :disabled="!pool.length"
-          size="large"
-          prepend-icon="mdi-shuffle"
-          @click="drawName"
-        >
-          {{ t("actions.draw") }}
-        </v-btn>
-        <v-btn variant="tonal" size="large" prepend-icon="mdi-restart" @click="reset">
-          {{ t("actions.reset") }}
-        </v-btn>
-        <v-btn
-          icon="mdi-fullscreen-exit"
-          variant="text"
-          size="large"
-          color="white"
-          @click="fullscreen = false"
-        />
-      </div>
-      <div v-if="drawn.length" class="ndraw-fs-history">
-        <v-chip v-for="n in drawn" :key="n" size="small" variant="tonal" color="white">
-          {{ n }}
-        </v-chip>
-      </div>
-    </div>
-  </v-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
-import AppData from "@/helpers/AppData";
+import UserData from "@/helpers/UserData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
-import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
+import { ICONS } from "@/config/Icons";
+import { KEYS } from "@/constants/UserDataKeys";
+import { COLORS } from "@constants/Colors";
+import NameDrawProjection from "./NameDrawProjection.vue";
 
 const { show_format } = useModuleFormat("name_draw", manifest);
-const { rootStyle, textStyle, bgImage, imageStyle, container } = useModuleBodyStyle("name_draw");
 
 const projection = useModuleProjection("name_draw", {
   onAction(action) {
-    if (action === "draw") drawName();
+    if (action === "toggle") toggle();
+    else if (action === "draw") drawName();
     else if (action === "reset") reset();
+    else if (action === "toggle_list") showList.value = !showList.value;
     else if (action === "toggle_format") show_format.value = !show_format.value;
   },
 });
 
 const moduleContainer = ref(null);
-const fsRoot = ref(null);
-const showList = ref(true);
+const showList = ref(false);
 const namesText = ref("");
 const names = ref([]);
 const drawn = ref([]);
 const current = ref(null);
 const animating = ref(false);
-const fullscreen = ref(false);
+let spinTimer = null;
 
-const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
+const running = computed({
+  get: () => UserData.get(KEYS.MODULES.NAME_DRAW.RUNNING, false) === true,
+  set: (v) => UserData.set(KEYS.MODULES.NAME_DRAW.RUNNING, !!v),
+});
+
+const showDrawn = computed(() => UserData.get(KEYS.MODULES.NAME_DRAW.SHOW_DRAWN, false) === true);
+
 const pool = computed(() => names.value.filter((n) => !drawn.value.includes(n)));
+
+const progressPercent = computed(() =>
+  names.value.length ? (drawn.value.length / names.value.length) * 100 : 0
+);
 
 const t = (key) => moduleContainer.value?.t(key) || key;
 
-watch(fullscreen, (val) => {
-  if (val) nextTick(() => fsRoot.value?.focus());
-});
+// Carrega a lista persistida do UserData e prepara o textarea.
+function loadNames() {
+  const saved = UserData.get(KEYS.MODULES.NAME_DRAW.NAMES, null);
+  names.value = Array.isArray(saved) ? saved.filter((n) => typeof n === "string") : [];
+  namesText.value = names.value.join("\n");
+}
+
+onMounted(loadNames);
+
+// Reage a mudanças da ribbon (ex: toggle "exibir sorteados na projeção").
+watch(
+  [running, showDrawn],
+  () => {
+    emitProjection();
+  },
+  { immediate: true }
+);
 
 function applyList() {
   names.value = namesText.value
     .split("\n")
     .map((n) => n.trim())
     .filter(Boolean);
+  UserData.set(KEYS.MODULES.NAME_DRAW.NAMES, names.value);
   drawn.value = [];
   current.value = null;
   showList.value = false;
+  emitProjection();
+}
+
+function toggle() {
+  running.value = !running.value;
+  // Ao iniciar, garante que a lista atual seja aplicada e trava a edição.
+  if (running.value && showList.value) applyList();
+}
+
+function effectDuration() {
+  const v = Number(UserData.get(KEYS.MODULES.NAME_DRAW.EFFECT_DURATION, 2000));
+  return v >= 100 ? v : 2000;
 }
 
 function drawName() {
-  if (!pool.value.length) return;
-  animating.value = true;
+  if (!pool.value.length || animating.value) return;
   const n = pool.value[Math.floor(Math.random() * pool.value.length)];
-  drawn.value.push(n);
-  current.value = n;
-  projection.emit({ text: n, active: true });
-  setTimeout(() => {
-    animating.value = false;
-  }, 400);
+  const duration = effectDuration();
+  const spinStep = 80; // ms entre cada troca de nome
+
+  animating.value = true;
+
+  let elapsed = 0;
+  spinTimer = setInterval(() => {
+    elapsed += spinStep;
+    if (elapsed >= duration) {
+      clearInterval(spinTimer);
+      spinTimer = null;
+      // Revela o nome sorteado somente após a animação.
+      drawn.value.push(n);
+      current.value = n;
+      animating.value = false;
+      emitProjection();
+      return;
+    }
+    // Mostra um nome aleatório qualquer (sem remover do pool) — efeito roleta.
+    const spin = pool.value[Math.floor(Math.random() * pool.value.length)];
+    current.value = spin;
+    emitProjection();
+  }, spinStep);
+}
+
+function emitProjection() {
+  projection.emit({
+    text: current.value || "",
+    reference: showDrawn.value ? drawn.value.slice() : [],
+    active: current.value != null,
+  });
 }
 
 function reset() {
+  clearInterval(spinTimer);
+  spinTimer = null;
+  animating.value = false;
   drawn.value = [];
   current.value = null;
-  projection.emit({ text: "", active: false });
-}
-
-function openFullscreen() {
-  if (!showList.value && !names.value.length) return;
-  if (showList.value) applyList();
-  fullscreen.value = true;
+  emitProjection();
 }
 
 function close() {
   reset();
 }
+
+onBeforeUnmount(() => {
+  clearInterval(spinTimer);
+  spinTimer = null;
+});
 </script>
 
 <style scoped>
-.name-display {
-  position: relative;
-  z-index: 1;
-  font-size: 2.5rem;
-  font-weight: 300;
-  text-align: center;
-  max-width: 320px;
-  word-break: break-word;
-  transition:
-    transform 0.2s,
-    opacity 0.2s;
-}
-.name-animating {
-  transform: scale(1.08);
-  opacity: 0.7;
-}
 .ndraw-bg-img {
   position: absolute;
   inset: 0;
@@ -225,45 +240,37 @@ function close() {
   pointer-events: none;
 }
 
-/* Fullscreen */
-.ndraw-fs-root {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
+.ndraw-list-drawer {
+  border-left: 1px solid var(--lj-surface-border);
+  background: var(--lj-surface-bg);
+  overflow: clip;
+}
+.ndraw-list-drawer__header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid var(--lj-surface-border);
+  background: var(--lj-surface-bg-soft, #eee);
+}
+.ndraw-list-drawer__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--lj-text-muted, #666);
+}
+.ndraw-list-drawer__body {
+  padding: 12px;
+}
+.ndraw-list-drawer__lock {
+  margin-top: 8px;
+}
+
+.ndraw-fs-footer {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  outline: none;
 }
-.ndraw-fs-name {
-  font-size: clamp(3rem, 15vw, 10rem);
-  font-weight: 100;
-  color: #fff;
-  text-align: center;
-  max-width: 90vw;
-  word-break: break-word;
-  line-height: 1.15;
-  transition:
-    transform 0.25s,
-    opacity 0.25s;
-}
-.ndraw-fs-remaining {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.4);
-}
-.ndraw-fs-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.ndraw-fs-history {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  max-width: 80vw;
-  padding: 0 24px;
+.ndraw-fs-footer-progress {
+  width: 400px;
 }
 </style>

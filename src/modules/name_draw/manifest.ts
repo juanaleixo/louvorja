@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import { KEYS } from "@/constants/UserDataKeys"
 
 const moduleId = ModuleEnum.NAME_DRAW;
 const modulePath = $modules.getPath(moduleId);
@@ -47,8 +48,66 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_name_draw_actions",
         title: "ribbon.groups.actions",
         buttons: [
-          { id: `${moduleId}_draw`, icon: "mdi-account-arrow-right", label: "ribbon.btn.name_draw_action", action: `${moduleId}_draw`, color: "#e91e63" },
-          { id: `${moduleId}_reset`, icon: "mdi-restart", label: "ribbon.btn.draw_reset", action: `${moduleId}_reset`, color: "#7f8c8d" },
+          {
+            id: `${moduleId}_toggle`,
+            icon: ICONS.PLAYER.PLAY_PAUSE,
+            label: "",
+            action: `${moduleId}_toggle`,
+            color: "#e91e63",
+            stateBinding: {
+              watchPath: KEYS.MODULES.NAME_DRAW.RUNNING,
+              iconOn: ICONS.PLAYER.STOP,
+              iconOff: ICONS.PLAYER.PLAY,
+              colorOn: "#e67e22",
+              colorOff: "#27ae60",
+              labelOn: `${modulePath}.actions.finish`,
+              labelOff: `${modulePath}.actions.start`,
+            },
+          },
+          {
+            id: `${moduleId}_draw`,
+            icon: ICONS.PLAYER.SHUFFLE,
+            label: "ribbon.btn.name_draw_action",
+            action: `${moduleId}_draw`,
+            color: "#e91e63",
+          },
+          {
+            id: `${moduleId}_reset`,
+            icon: ICONS.ACTIONS.RESTART,
+            label: "ribbon.btn.draw_reset",
+            action: `${moduleId}_reset`,
+            color: "#7f8c8d",
+          },
+        ],
+      },
+      {
+        id: "ctx_name_draw_list",
+        title: `${modulePath}.ribbon.list`,
+        buttons: [
+          {
+            id: `${moduleId}_toggle_list`,
+            icon: ICONS.FORMAT.LIST_BULLETED,
+            label: `${modulePath}.actions.list`,
+            action: `${moduleId}_toggle_list`,
+            color: "#9c27b0",
+          },
+          {
+            id: `${moduleId}_show_drawn`,
+            type: "switch",
+            optionKey: KEYS.MODULES.NAME_DRAW.SHOW_DRAWN,
+            label: `${modulePath}.ribbon.show_drawn`,
+            defaultValue: false,
+          },
+          {
+            id: `${moduleId}_effect_duration`,
+            type: "slider",
+            optionKey: KEYS.MODULES.NAME_DRAW.EFFECT_DURATION,
+            label: `${modulePath}.ribbon.effect_duration`,
+            defaultValue: 2000,
+            min: 500,
+            max: 5000,
+            step: 100,
+          },
         ],
       },
       {
