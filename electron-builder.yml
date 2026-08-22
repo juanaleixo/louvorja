@@ -93,12 +93,21 @@ nsis:
   # licenseFile: build/license_pt.txt
 
 # ---------------------------------------------------------------------------
-# macOS — DMG
+# macOS — DMG (Intel x64 + Apple Silicon arm64)
+# Cross-build de x64 no runner ARM funciona sem Rosetta: o electron-builder
+# baixa os dists do Electron por arquitetura (não há módulos nativos).
+# O latest-mac.yml gerado lista ambos — o auto-update escolhe por arch.
 # ---------------------------------------------------------------------------
 mac:
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
   icon: build/icon-512.png
   category: public.app-category.music
   # Assinatura + notarização (certificado Developer ID + credenciais Apple
