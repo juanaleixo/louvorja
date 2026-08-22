@@ -84,7 +84,7 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
         description: "Tecnologia, inovação e desenvolvimento de software",
         email: "contato@79team.com",
         website: "https://79team.com",
-        whatsapp: "79933001017",
+        whatsapp: "5579933001017",
       },
       {
         name: "Adalberto Correa",
