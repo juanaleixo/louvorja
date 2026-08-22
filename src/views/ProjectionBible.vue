@@ -1,7 +1,7 @@
 <template>
   <OverlayRenderer />
   <div
-    ref="root"
+    ref="container"
     class="projection-bible-root"
     :class="[`align-${vertical_align}`, `justify-${horizontal_align}`]"
     :style="{
@@ -71,19 +71,18 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { useContainerSize } from "@/composables/useContainerSize";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const MID = "modules.bible";
 
-const root = ref(null);
 const text = ref("");
 const reference = ref("");
 const active = ref(false);
 
-const sw = ref(0);
-const sh = ref(0);
+const { container, fontSizePc, measure } = useContainerSize();
 
 // Reactive trigger: força re-leitura do UserData quando broadcast chega.
 const _tick = ref(0);
@@ -109,14 +108,9 @@ const image = computed(() => ud("image", ""));
 const image_opacity = computed(() => ud("image_opacity", 100));
 const image_fit = computed(() => ud("image_fit", "cover"));
 
-function pcToPx(pc) {
-  const min = Math.min(sw.value, sh.value);
-  return ((pc || 0) * min) / 100 / 2;
-}
-
-const font_size_px = computed(() => pcToPx(font_size.value));
-const ref_font_size_px = computed(() => pcToPx(reference_font_size.value));
-const border_spacing_px = computed(() => pcToPx(border_spacing.value));
+const font_size_px = computed(() => fontSizePc(font_size.value));
+const ref_font_size_px = computed(() => fontSizePc(reference_font_size.value));
+const border_spacing_px = computed(() => fontSizePc(border_spacing.value));
 
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   console.log("[ProjectionBible] Recebido BIBLE_VERSE:", payload);
@@ -134,12 +128,6 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, () => {
   _tick.value += 1;
 });
 
-function onResize() {
-  if (!root.value) return;
-  sw.value = root.value.offsetWidth;
-  sh.value = root.value.offsetHeight;
-}
-
 function onKey(e) {
   if (e.key === "Escape") {
     e.preventDefault();
@@ -155,8 +143,6 @@ onMounted(() => {
   document.body.style.overflow = "hidden";
   document.body.style.background = "#000";
   document.body.style.height = "100vh";
-  onResize();
-  window.addEventListener("resize", onResize);
   window.addEventListener("keydown", onKey);
 
   // Pede o versículo atual à janela principal — necessário porque o
@@ -178,11 +164,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", onResize);
   window.removeEventListener("keydown", onKey);
 });
 
-watch([font, font_color, font_size, background_color, image], onResize);
+watch([font, font_color, font_size, background_color, image], measure);
 </script>
 
 <style scoped>

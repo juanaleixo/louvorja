@@ -49,6 +49,7 @@
         track: search_track,
       }"
       :filter="{ has_instrumental_music: filter_instrumental_music }"
+      :disabled_albums="disabledAlbums"
       :scroll="scroll"
       :has_scroll="has_scroll"
       sort_by="name"
@@ -136,13 +137,21 @@
 /* ########################################################### */
 /* ####### INSTALAÇÃO DO MODULO ############################## */
 /* ########################################################### */
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { useDisplay } from "vuetify";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
 import DateTime from "@/helpers/DateTime";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
+import Table from "@/components/DataTable.vue";
+import Search from "@/components/inputs/LjSearch.vue";
+import Checkbox from "@/components/inputs/LjCheckbox.vue";
+import MusicMenuTable from "@/components/MusicMenuTable.vue";
+import LetterPaginate from "@/components/LetterPagination.vue";
+
 const moduleContainer = ref(null);
 const t = (key) => {
   return moduleContainer.value?.t(key) || key;
@@ -153,12 +162,6 @@ const userdata = computed(() => {
 /* ########################################################### */
 /* ########################################################### */
 /* ########################################################### */
-
-import Table from "@/components/DataTable.vue";
-import Search from "@/components/inputs/LjSearch.vue";
-import Checkbox from "@/components/inputs/LjCheckbox.vue";
-import MusicMenuTable from "@/components/MusicMenuTable.vue";
-import LetterPaginate from "@/components/LetterPagination.vue";
 
 /* -------------------------------------------------- */
 /* STATE                                              */
@@ -206,6 +209,10 @@ const classform = computed(() => ({
 const compact = computed(() => displayWidth.value <= 800);
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 const shortTime = (t) => DateTime.shortTime(t);
+
+const disabledAlbums = computed(() => {
+  return $userdata.get(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+});
 
 /* -------------------------------------------------- */
 /* METHODS                                            */

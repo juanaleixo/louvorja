@@ -18,6 +18,7 @@ export enum ModuleEnum {
   FAVORITES = "favorites",
   HISTORY = "history",
   HYMNAL = "hymnal",
+  HYMNAL_1996 = "hymnal_1996",
   LITURGY = "liturgy",
   LYRIC = "lyric",
   MEDIA = "media",

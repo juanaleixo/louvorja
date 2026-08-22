@@ -34,13 +34,39 @@ export const contextualPages: RibbonPage[] = [
     defaultModule: null,
     groups: [
       {
-        id: "ctx_online_videos_actions",
-        title: "ribbon.groups.actions",
+        id: `${moduleCtxId}_settings`,
+        title: "ribbon.groups.settings",
         buttons: [
-          { id: `${moduleId}_personal_url`, type: "action_input", icon: ICONS.PROJECTION.START, label: "ribbon.btn.online_videos_personal_url", placeholder: "ribbon.btn.online_videos_personal_url_placeholder", action: `${moduleId}_personal_url`, color: "#3498db" },
-          { id: `${moduleId}_stop`, icon: ICONS.PROJECTION.STOP, label: "ribbon.btn.stop_projection", action: `${moduleId}_stop`, color: "#e74c3c" },
+          {
+            id: `${moduleId}_settings`,
+            icon: ICONS.UI.OPTIONS,
+            label: "ribbon.btn.settings",
+            action: `${moduleId}_settings`,
+          },
+        ],
+      },
+      {
+        id: "ctx_online_videos_actions",
+        title: "ribbon.groups.settings",
+        buttons: [
+          {
+            id: `${moduleId}_personal_url`,
+            type: "action_input",
+            icon: ICONS.PROJECTION.START,
+            label: "ribbon.btn.online_videos_personal_url",
+            placeholder: "ribbon.btn.online_videos_personal_url_placeholder",
+            action: `${moduleId}_personal_url`,
+            color: "#3498db",
+          },
+          {
+            id: `${moduleId}_stop`,
+            icon: ICONS.PROJECTION.STOP,
+            label: "ribbon.btn.stop_projection",
+            action: `${moduleId}_stop`,
+            color: "#e74c3c",
+          }
         ],
       },
     ],
   },
-]
+];

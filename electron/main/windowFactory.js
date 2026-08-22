@@ -13,6 +13,32 @@ const displays = require("./displays.js");
 /** Mantém referência das janelas abertas por feature para evitar duplicatas */
 const _openWindows = new Map();
 
+/** Referência à janela principal — usada para devolver o foco após abrir projeções. */
+let _mainWindow = null;
+
+/**
+ * Registra a janela principal. As janelas auxiliares (projeção, operador,
+ * retorno) nunca devem roubar o foco dela — o operador navega pela main
+ * (setas na Bíblia, atalhos) enquanto a projeção apenas exibe.
+ * @param {Electron.BrowserWindow|null} win
+ */
+function setMainWindow(win) {
+  _mainWindow = win;
+}
+
+/** Devolve o foco à janela principal (se viva) após abrir uma janela auxiliar. */
+function _refocusMainWindow() {
+  if (!_mainWindow || _mainWindow.isDestroyed()) return;
+  // Pequeno delay para o fullscreen/always-on-top "settle" primeiro.
+  setTimeout(() => {
+    try {
+      if (_mainWindow && !_mainWindow.isDestroyed() && !_mainWindow.isMinimized()) {
+        _mainWindow.focus();
+      }
+    } catch (_) { /* ignore */ }
+  }, 80);
+}
+
 function _routePath(route) {
   return String(route || "").split("?")[0].split("#")[0];
 }
@@ -42,13 +68,16 @@ function _isProjectionPresentationWindow(route, feature) {
  * @param {string} options.preloadPath
  * @param {string} [options.devUrl]        Em dev: http://localhost:5002
  * @param {string} [options.prodHtmlPath]  Em prod: dist/index.html
+ * @param {boolean|null} [options.devTools] Controle do DevTools automático (dev).
+ *        null (default) → comportamento automático (_isDevMode). true/false → override.
  * @returns {BrowserWindow}
  */
-function openOnMonitor({ route, feature, monitorId, fullscreen = true, frame = false, preloadPath, devUrl, prodHtmlPath, width, height, alwaysOnTop = false }) {
-  // Se já existe janela para essa feature, foca-a
+function openOnMonitor({ route, feature, monitorId, fullscreen = true, frame = false, preloadPath, devUrl, prodHtmlPath, width, height, alwaysOnTop = false, devTools = null }) {
+  // Se já existe janela para essa feature, mostra-a sem roubar o foco da main.
   const existing = _openWindows.get(feature);
   if (existing && !existing.isDestroyed()) {
-    existing.focus();
+    existing.showInactive();
+    _refocusMainWindow();
     return existing;
   }
 
@@ -122,11 +151,14 @@ function openOnMonitor({ route, feature, monitorId, fullscreen = true, frame = f
   // Em janelas fullscreen o atalho Ctrl+Shift+I pode não chegar até a página,
   // então a forma mais confiável de inspecionar é abrir aqui.
   // Também abre se LJ_DEVTOOLS=1 estiver setado (debug pontual em prod).
+  // O comportamento pode ser controlado pela tela "Opções do Desenvolvedor"
+  // (options.dev.devtools_projections) — o main.cjs passa `devTools` como override.
   const _isDevMode =
     process.env.ELECTRON_DEV === "1" ||
     process.env.LJ_DEVTOOLS === "1" ||
     !require("electron").app.isPackaged;
-  if (_isDevMode) {
+  const _openDevTools = devTools != null ? !!devTools : _isDevMode;
+  if (_openDevTools) {
     win.webContents.once("did-finish-load", () => {
       try { win.webContents.openDevTools({ mode: "detach" }); } catch (_) { /* ignore */ }
     });
@@ -215,11 +247,9 @@ function openOnMonitor({ route, feature, monitorId, fullscreen = true, frame = f
       win.setAlwaysOnTop(true, "pop-up-menu");
     }
     // Não roubar foco do main window — `showInactive` já fez isso.
-    // Mas precisamos garantir que a janela receba teclas (setas, Esc).
-    // Em Windows um focus() explícito é necessário pra capturar input.
-    if (isWin) {
-      try { win.focus(); } catch (_) { /* ignore */ }
-    }
+    // O operador navega pela janela principal (setas da Bíblia, atalhos);
+    // a projeção apenas exibe e recebe estado via BroadcastChannel.
+    _refocusMainWindow();
   };
   win.webContents.once("did-finish-load", showOnce);
   win.once("ready-to-show", showOnce);
@@ -341,4 +371,4 @@ function getWindow(feature) {
   return w && !w.isDestroyed() ? w : null;
 }
 
-module.exports = { openOnMonitor, close, listOpen, getWindow };
+module.exports = { openOnMonitor, close, listOpen, getWindow, setMainWindow };

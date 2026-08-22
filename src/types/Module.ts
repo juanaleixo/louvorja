@@ -26,8 +26,9 @@ export type CustomizationType =
 export interface CustomizationField {
   /** Tipo do controle de customização renderizado em CustomizationTools.vue */
   type: CustomizationType;
-  /** Chave i18n do label (ex: customization.font) */
-  label: string;
+  /** Chave i18n do label (ex: customization.font). Opcional — quando ausente,
+   *  o FormatPanel resolve o label pelos campos padrão (components.customization.*). */
+  label?: string;
   /** Valor padrão do campo */
   default?: string | number | boolean;
   /** Opções para campos do tipo "select" */
@@ -83,6 +84,9 @@ export interface Module {
   development?: boolean;
   /** Força exibição no menu principal. false omite o módulo da Ribbon. */
   showInMainMenu: boolean;
+  /** Visibilidade inicial no menu (persistida em modules.<id>.show_in_main_menu).
+   *  Default = showInMainMenu. Permite começar oculto mesmo instalado. */
+  defaultShowInMainMenu?: boolean;
   /** Código de idioma para módulos com idioma fixo (ex: pt, es) */
   language?: string;
   /**
@@ -127,5 +131,5 @@ export interface ModuleState {
   id: string;
   show?: boolean;
   minimized?: boolean;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }

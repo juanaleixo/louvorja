@@ -16,11 +16,15 @@
     </template>
 
     <div class="d-flex h-100">
-      <aside v-if="show_format" class="format-col">
-        <FormatPanel :module-id="'clock'" :manifest="manifest" />
-      </aside>
-      <div class="d-flex flex-column align-center justify-center pa-6 flex-grow-1" style="gap: 4px">
-        <div class="clock-time">{{ time }}</div>
+      <ModuleFormatDrawer v-model="show_format" :module-id="'clock'" :manifest="manifest" />
+      <div
+        ref="container"
+        class="d-flex flex-column align-center justify-center pa-6 flex-grow-1"
+        style="gap: 4px"
+        :style="rootStyle"
+      >
+        <img v-if="bgImage" :src="bgImage" class="clock-bg-img" :style="imageStyle" alt="" />
+        <div class="clock-time" :style="textStyle">{{ time }}</div>
         <div v-if="date" class="clock-date text-medium-emphasis">{{ date }}</div>
       </div>
     </div>
@@ -31,21 +35,22 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import UserData from "@/helpers/UserData";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 
-const { fmt, restoreFormat, show_format } = useModuleFormat("clock", manifest);
+const { fmt, show_format } = useModuleFormat("clock", manifest);
+const { rootStyle, textStyle, bgImage, imageStyle, container } = useModuleBodyStyle("clock");
 
 const projection = useModuleProjection("clock", {
   onAction(action) {
     if (action === "toggle_24h") toggle24h();
     else if (action === "toggle_seconds") toggleSeconds();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 
@@ -96,6 +101,15 @@ function formatDate(now) {
 // refaz tick imediatamente sem esperar 1s.
 useBroadcastListener(BROADCAST_TYPE.MODULE_FORMAT_CHANGED, (payload) => {
   if (payload?.module === "clock") tick();
+});
+
+// Ribbon usa optionKey (UserData.set → USERDATA_PATCH), que não dispara
+// MODULE_FORMAT_CHANGED. Re-tick para refletir hora/data ao vivo.
+useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
+  const p = payload;
+  if (p && typeof p.path === "string" && p.path.startsWith("modules.clock.")) {
+    tick();
+  }
 });
 
 function tick() {
@@ -153,21 +167,25 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .clock-time {
+  position: relative;
+  z-index: 1;
   font-size: 3rem;
   font-weight: 300;
   letter-spacing: 0.1em;
   font-variant-numeric: tabular-nums;
 }
 .clock-date {
+  position: relative;
+  z-index: 1;
   font-size: 0.9rem;
   text-transform: capitalize;
 }
-
-.format-col {
-  flex: 0 0 200px;
-  width: 200px;
-  border-right: 1px solid var(--lj-surface-border);
-  background: var(--lj-surface-bg);
+.clock-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 </style>

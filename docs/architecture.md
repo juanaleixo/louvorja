@@ -277,7 +277,15 @@ via `Platform.updater`. O comportamento varia conforme a plataforma:
 | **Windows (NSIS)** | electron-updater (provider GitHub) | electron-updater — `.exe` + blockmap (diferencial) + instalação silenciosa |
 | **macOS (DMG/zip)** | electron-updater | electron-updater — `.zip` (substitui o `.app`) |
 | **Linux AppImage** | electron-updater | electron-updater — substitui o AppImage |
-| **Linux deb/rpm** | GitHub API (`checkGithubRelease`) | download manual do asset `.deb`/`.rpm` → abre no gerenciador de pacotes |
+| **Linux deb/rpm** | electron-updater | electron-updater — via `dpkg`/`apt`/`rpm` (exige sudo) |
+
+O **fallback para GitHub API** (`checkGithubAndSetState`) é usado apenas quando o
+electron-updater está inativo (ex: dev, app não empacotado) ou falha. O flag
+`_checkedViaGithub` garante que o download use o mesmo mecanismo do check —
+evita o erro "Please check update first" quando o check caiu para a API.
+
+O `_state` do updater também carrega métricas de download (`bytesPerSecond`,
+`transferred`, `total`) usadas pelo diálogo de progresso.
 
 ### Opções da tela de Atualizações
 
@@ -293,13 +301,28 @@ Persistidas em `user_data.options` e aplicadas em runtime via `Platform.updater.
 ### Fluxo no boot
 
 1. `Shell.vue` (renderer) dispara o check ao iniciar (`Platform.updater.check()`).
-2. Em **dev** (app não empacotado) ou **deb/rpm**, o check cai para a **GitHub API**
+2. Em **dev** (app não empacotado) o check cai para a **GitHub API**
    (`checkGithubAndSetState`), que funciona em qualquer ambiente.
-3. Se houver versão nova e **auto-download desligado**: snackbar clicável com o número
-   da versão → abre a tela de Atualizações (`AppMenuAtualizacoes`).
+3. Se houver versão nova: abre o **`UpdateAvailableDialog`** (em vez da antiga
+   snackbar) com o changelog da versão nova, checkbox "não mostrar novamente"
+   (persistido em `SKIP_UPDATE_NOTIFICATION_VERSION`) e botão "Atualizar" que
+   inicia o download em segundo plano — exibindo taxa, tamanho e tempo restante.
 4. Se houver versão nova e **auto-download ligado**: baixa em background e acende o
    badge de atualização na `ShellTools`.
 5. Estado propagado ao renderer via IPC `updater:state` (`Platform.updater.onStateChange`).
+
+A ordem do fluxo de boot é: **atualização → release notes → startup check**.
+Cada etapa encadeia na próxima apenas quando concluída (ou dispensada), e há um
+timeout de segurança para o check não travar o boot.
+
+### Diálogos e dispensa
+
+| Item | Comportamento |
+|---|---|
+| `UpdateAvailableDialog` | Mostra release notes da **versão nova** (via `getReleaseNotes(version)`); download em background com progresso; erro → botão "Baixar manualmente" (abre a release no GitHub) |
+| `ReleaseNotesDialog` | Changelog da **versão instalada** (novidades do app atual) |
+| `SKIP_UPDATE_NOTIFICATION_VERSION` | "Não mostrar novamente" do diálogo de atualização |
+| `SKIP_RELEASE_NOTES_VERSION` | "Não mostrar novamente" das release notes |
 
 ### Badge da ShellTools
 
@@ -311,15 +334,62 @@ evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
 
 | Canal | Função |
 |---|---|
-| `updater:check` | Check (electron-updater ou GitHub API conforme plataforma) |
-| `updater:download` | Download (electron-updater) |
-| `updater:downloadPackage` | Download manual do asset `.deb`/`.rpm` (Linux) com progresso |
-| `updater:openPackage` | Abre o pacote baixado no gerenciador de pacotes |
+| `updater:check` | Check (electron-updater com fallback GitHub API) |
+| `updater:download` | Download (electron-updater ou manual conforme `_checkedViaGithub`) |
+| `updater:downloadPackage` | Download manual do asset com progresso (fallback) |
+| `updater:openPackage` | Abre o pacote baixado e fecha o app após lançá-lo |
 | `updater:openReleasePage` | Abre a release no browser (fallback) |
+| `updater:getReleaseNotes` | Release notes de uma versão (`version` opcional — default: versão instalada) |
 | `updater:getInstallType` | Retorna `"appimage"` \| `"deb"` \| `"rpm"` |
 | `updater:setOptions` | Aplica `{ useBeta, autoCheck, autoDownload }` em runtime |
 | `updater:install` | Fecha o app e instala a atualização baixada |
 | `updater:status` | Snapshot do estado atual |
+
+---
+
+## 🗂 Visibilidade de módulos e álbuns
+
+### Visibilidade de módulos no menu (`modules.<id>.show_in_main_menu`)
+
+Cada módulo pode ser mostrado/ocultado dinamicamente no menu (Ribbon) sem
+desinstalar. A chave persistida é `modules.<id>.show_in_main_menu`
+(helper `moduleShowInMainMenu(id)` em `UserDataKeys.ts`), distinta do
+`manifest.active` (instalação no boot).
+
+- **Fallback**: o valor do manifest — `defaultShowInMainMenu ?? showInMainMenu`
+  (campo `defaultShowInMainMenu` permite começar oculto mesmo instalado).
+- **Leitura**: `isModuleVisible(id)` em `config/modules/index.ts` (reativo via
+  Pinia — alterna em runtime).
+- **Ribbon**: `RibbonBar.vue` filtra botões por `isModuleVisible` no computed
+  `activeGroups`.
+- **Persistência no boot**: `ModuleManager` faz `setIfNull` da chave para todos
+  os módulos.
+
+Exemplo — `hymnal_1996` começa oculto (`defaultShowInMainMenu: false`); o toggle
+"Hinário 1996" na página de opções de álbuns controla a exibição na Ribbon.
+
+### Álbuns desativados (`options.disabled_albums`)
+
+A página **Álbuns** (`AppMenuAlbums.vue`, aberta via item "Álbuns" do AppMenu)
+permite desativar álbuns por checkbox. Álbuns desativados são persistidos em
+`KEYS.OPTIONS.DISABLED_ALBUMS` e:
+
+- **Ocultados** das listas de músicas (`musics`, `music_search`, `MusicSpotlight`,
+  `collections`) e da galeria — regra: a música é oculta se **não** pertencer a
+  nenhum álbum ativo.
+- **Não baixados** na sincronização (`useSyncManager.collectFiles` filtra
+  `DISABLED_ALBUMS`).
+- O `DataTable` recebe `disabled_albums` como prop e aplica o filtro.
+
+A página de álbuns também tem:
+- **Campo de pesquisa** para filtrar álbuns por nome.
+- **Expansion panels** por categoria (painel "Hinário" é o primeiro, com o
+  checkbox do Hinário 1996).
+- **Auto-expandir** os panels com resultados ao pesquisar.
+
+O **Hinário 1996** (álbum `id 629`) é sincronizado bidirecionalmente com o toggle
+"Hinário 1996": desativar o módulo adiciona `629` a `DISABLED_ALBUMS` (e vice-versa),
+fazendo as músicas dele sumirem de todas as listas e da sincronização.
 
 ---
 

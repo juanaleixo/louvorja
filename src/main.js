@@ -11,6 +11,7 @@ import "./assets/styles/utilities.css";
 import "./assets/styles/main.css";
 import "./assets/styles/fonts.css";
 import "./assets/styles/appmenu-options.css";
+import "./assets/styles/vuetify-overrides.css";
 //Modules
 import ModuleManager from "@/helpers/ModuleManager";
 import $storage from "@/helpers/Storage";
@@ -28,11 +29,13 @@ import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
 import $idb from "@/helpers/IndexedDB";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
+import Projection from "@/helpers/Projection";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
 import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
 import { ModuleEnum } from "@/enums/ModuleEnum";
+import { KEYS } from "@/constants/UserDataKeys";
 
 loadFonts();
 
@@ -350,6 +353,21 @@ $storage.hydrate().then(async () => {
           Broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, last);
         }
       }
+
+      // Módulos genéricos (/projection/module) — responde pelo cache do
+      // Broadcast.ts. Mesmo padrão do REQUEST_BIBLE_STATE acima: o cache é
+      // preenchido por qualquer emissão de MODULE_PROJECTION_VALUE (em
+      // qualquer janela), então a projeção recém-aberta recebe o estado
+      // atual mesmo se o módulo que emitiu não estiver montado aqui.
+      if (msg.type === BROADCAST_TYPE.REQUEST_MODULE_STATE) {
+        const moduleId = msg.payload?.module;
+        if (moduleId) {
+          const last = Broadcast.getLastPayload(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, moduleId);
+          if (last) {
+            Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, last);
+          }
+        }
+      }
     });
 
     // Quando o servidor HTTP sobe (auto-start ou clique manual), pede ao
@@ -519,8 +537,16 @@ $storage.hydrate().then(async () => {
       () => {
         // Função para encerrar tudo exceto música (que pode ter confirmação)
         const closeEverythingElse = () => {
-          // Bíblia
-          Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+          // Bíblia: se "Tecla ESC encerra a projeção" estiver ativada, ou se
+          // nenhum versículo está sendo projetado, encerra a projeção (fecha
+          // as janelas). Caso contrário apenas limpa o versículo, mantendo a
+          // projeção ativa.
+          const escClosesProjection = UserData.get(KEYS.MODULES.BIBLE.ESC_CLOSES_PROJECTION, false);
+          const lastVerse = Broadcast.getLastPayload(BROADCAST_TYPE.BIBLE_VERSE);
+          const hasVerse = !!(lastVerse && lastVerse.text);
+          Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, {
+            action: escClosesProjection || !hasVerse ? "stop" : "clear",
+          });
 
           // Módulos genéricos (counter, timer, etc.)
           const moduleIds = [
@@ -534,6 +560,12 @@ $storage.hydrate().then(async () => {
           ];
           for (const id of moduleIds) {
             Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, { module: id, active: false });
+            // Fecha a janela de projeção do módulo (counter, timer, clock, etc.).
+            //  - Desktop: Projection.close → IPC windows:close → windowFactory.
+            //  - Web/PWA: broadcast que a própria janela escuta e se fecha
+            //    (window.open com noopener não devolve referência para fechar).
+            Projection.close(id);
+            Broadcast.send(BROADCAST_TYPE.MODULE_PROJECTION_CLOSE, { module: id });
           }
         };
 

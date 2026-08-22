@@ -23,7 +23,7 @@ O frontend **não tem banco de dados embutido**. Todos os dados (letras, hinos, 
 
 ## Pré-requisitos
 
-- Node.js 18+
+- Node.js 20+ (recomendado 24 — versão usada nos workflows do GitHub Actions)
 - npm 9+
 
 ---

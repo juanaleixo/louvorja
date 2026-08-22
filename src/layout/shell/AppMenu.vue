@@ -52,12 +52,14 @@
               </h2>
 
               <!-- Painéis específicos por item -->
-              <AppMenuOpcoes v-if="activeItem?.id === 'settings'" />
+              <AppMenuOpcoes v-if="activeItem?.id === 'settings'" :initial-tab="optionsTab" />
               <AppMenuSobre v-else-if="activeItem?.id === 'about'" />
               <AppMenuTransmitir v-else-if="activeItem?.id === 'transmission'" />
               <AppMenuSincronizar v-else-if="activeItem?.id === 'sync'" />
               <AppMenuAtualizacoes v-else-if="activeItem?.id === 'updates'" />
               <AppMenuImportExport v-else-if="activeItem?.id === 'import_export'" />
+              <AppMenuAlbums v-else-if="activeItem?.id === 'albums'" />
+              <AppMenuDev v-else-if="activeItem?.id === 'dev'" />
 
               <p v-else class="app-menu-content-placeholder">
                 {{ $t("shell.appmenu_content_placeholder") }}
@@ -78,10 +80,15 @@ import AppMenuTransmitir from "./AppMenuTransmitir.vue";
 import AppMenuSincronizar from "./AppMenuSincronizar.vue";
 import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
-import $modules from "@/helpers/Modules";
+import AppMenuAlbums from "./AppMenuAlbums.vue";
+import AppMenuDev from "./AppMenuDev.vue";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
+
+// Detecta modo desenvolvimento — controla a visibilidade do item
+// "Desenvolvedor" no menu (recursos de dev são ocultados em produção).
+const isDev = Platform.isDev;
 
 // Detecta macOS via Platform (Electron) ou navigator (web fallback) —
 // usado para ajustar o header da AppMenu (não sobrepor traffic lights)
@@ -98,6 +105,10 @@ const isMac = computed(() => {
 const open = ref(false);
 const trigger = ref(null);
 const activeItem = ref(null);
+
+// Aba inicial da tela de Opções quando aberta programaticamente
+// (ex: botão "Configurações" da ribbon da Liturgia → aba Slides).
+const optionsTab = ref("general");
 
 /**
  * Itens com `inline: true` são renderizados DENTRO do AppMenu
@@ -118,8 +129,9 @@ const items = computed(() => [
   {
     id: "albums",
     label: "shell.appmenu_items.albums",
-    action: () => $modules.open("collections"),
+    inline: true,
   },
+  ...(isDev ? [{ id: "dev", label: "shell.appmenu_items.dev", inline: true }] : []),
   { id: "donate", label: "shell.appmenu_items.donate", action: openDonation },
   { id: "exit", label: "shell.appmenu_items.exit", action: exitApp },
 ]);
@@ -131,6 +143,7 @@ function toggle() {
 
 function openMenu() {
   open.value = true;
+  optionsTab.value = "general";
   activeItem.value = items.value.find((i) => i.id === "settings") || items.value[0];
   document.addEventListener("keydown", onKeydown);
 }
@@ -187,15 +200,26 @@ function exitApp() {
 
 onMounted(() => {
   window.addEventListener("louvorja:open-updates", onOpenUpdates);
+  window.addEventListener("louvorja:open-options", onOpenOptions);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("louvorja:open-updates", onOpenUpdates);
+  window.removeEventListener("louvorja:open-options", onOpenOptions);
   document.removeEventListener("keydown", onKeydown);
 });
 
 function onOpenUpdates() {
   openAt("updates");
+}
+
+/**
+ * Abre o AppMenu na tela de Opções já na aba indicada (ex: "slides").
+ * Disparado pela ribbon da Liturgia (e possivelmente outros módulos).
+ */
+function onOpenOptions(e) {
+  optionsTab.value = e?.detail?.tab || "general";
+  openAt("settings");
 }
 </script>
 
@@ -237,7 +261,7 @@ function onOpenUpdates() {
 .app-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1500;
   background: var(--lj-black-alpha-40);
   font-family: var(--lj-font-shell);
 }

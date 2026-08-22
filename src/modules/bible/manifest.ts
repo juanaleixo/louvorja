@@ -24,19 +24,19 @@ export const module: Module = {
   order: 0,
   dependencies: [],
   customization: {
-    font: { type: "font", label: "customization.font", default: "Arial, sans-serif" },
-    font_color: { type: "color", label: "customization.color", default: "#FFFFFF" },
-    font_size: { type: "font-size", label: "customization.size", default: 15 },
-    reference_font: { type: "font", label: "customization.font", default: "Arial, sans-serif" },
-    reference_font_color: { type: "color", label: "customization.color", default: "#FB8C00" },
-    reference_font_size: { type: "font-size", label: "customization.size", default: 10 },
-    background_color: { type: "color", label: "customization.color", default: "#000000" },
-    border_spacing: { type: "border-spacing", label: "customization.border", default: 10 },
-    vertical_align: { type: "v-align", label: "customization.vertical", default: "center" },
-    horizontal_align: { type: "h-align", label: "customization.horizontal", default: "center" },
-    image: { type: "image", label: "customization.image", default: "" },
-    image_opacity: { type: "opacity", label: "customization.transparency", default: 100 },
-    image_fit: { type: "object-fit", label: "customization.adjust", default: "cover" },
+    font: { type: "font", default: "Arial, sans-serif" },
+    font_color: { type: "color", default: "#FFFFFF" },
+    font_size: { type: "font-size", default: 15 },
+    reference_font: { type: "font", default: "Arial, sans-serif" },
+    reference_font_color: { type: "color", default: "#FB8C00" },
+    reference_font_size: { type: "font-size", default: 10 },
+    background_color: { type: "color", default: "#000000" },
+    border_spacing: { type: "border-spacing", default: 10 },
+    vertical_align: { type: "v-align", default: "center" },
+    horizontal_align: { type: "h-align", default: "center" },
+    image: { type: "image", default: "" },
+    image_opacity: { type: "opacity", default: 100 },
+    image_fit: { type: "object-fit", default: "cover" },
   },
 }
 
@@ -52,28 +52,63 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_bible_general",
         title: "ribbon.groups.general",
         buttons: [
-          { id: `${moduleId}_clear`, icon: ICONS.ACTIONS.CLEAN, label: "ribbon.btn.bible_clear", action: `${moduleId}_clear`, color: "#7f8c8d" },
+          {
+            id: `${moduleId}_clear`,
+            icon: ICONS.ACTIONS.CLEAN,
+            label: "ribbon.btn.bible_clear",
+            action: `${moduleId}_clear`,
+            color: "#7f8c8d",
+          },
         ],
       },
       {
         id: "ctx_bible_controls",
         title: "ribbon.groups.controls",
         buttons: [
-          { id: `${moduleId}_prev_verse`, icon: ICONS.ACTIONS.PREVIOUS, label: "ribbon.btn.bible_prev_verse", action: `${moduleId}_prev_verse`, color: "#16a085" },
-          { id: `${moduleId}_next_verse`, icon: ICONS.ACTIONS.NEXT, label: "ribbon.btn.bible_next_verse", action: `${moduleId}_next_verse`, color: "#16a085" },
+          {
+            id: `${moduleId}_prev_verse`,
+            icon: ICONS.ACTIONS.PREVIOUS,
+            label: "ribbon.btn.bible_prev_verse",
+            action: `${moduleId}_prev_verse`,
+            color: "#16a085",
+          },
+          {
+            id: `${moduleId}_next_verse`,
+            icon: ICONS.ACTIONS.NEXT,
+            label: "ribbon.btn.bible_next_verse",
+            action: `${moduleId}_next_verse`,
+            color: "#16a085",
+          },
         ],
       },
       {
         id: "ctx_bible_format",
         title: "ribbon.groups.format",
         buttons: [
-          { id: `${moduleId}_format`, icon: ICONS.ACTIONS.FORMAT, label: "ribbon.btn.bible_format", action: `${moduleId}_format`, color: "#1b4f8a" },
-          { id: `${moduleId}_restore`, icon: ICONS.ACTIONS.RESTORE, label: "ribbon.btn.bible_restore", action: `${moduleId}_restore`, color: "#9b59b6" },
+          {
+            id: `${moduleId}_format`,
+            icon: ICONS.ACTIONS.FORMAT,
+            label: "ribbon.btn.bible_format",
+            action: `${moduleId}_format`,
+            color: "#1b4f8a",
+          },
         ],
       },
       {
-        id: "ctx_bible_screen",
-        title: "ribbon.groups.expanded_area",
+        id: `${moduleCtxId}_settings`,
+        title: "ribbon.groups.settings",
+        buttons: [
+          {
+            id: `${moduleId}_settings`,
+            icon: ICONS.UI.OPTIONS,
+            label: "ribbon.btn.settings",
+            action: `${moduleId}_settings`,
+          },
+        ],
+      },
+      {
+        id: `${moduleCtxId}_screen`,
+        title: "ribbon.groups.projection",
         buttons: [
           {
             id: `${moduleId}_project`,
@@ -95,4 +130,4 @@ export const contextualPages: RibbonPage[] = [
       },
     ],
   },
-]
+];

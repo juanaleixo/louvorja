@@ -112,6 +112,7 @@ import Database from "@/helpers/Database";
 import Modules from "@/helpers/Modules";
 import Media from "@/composables/useMedia";
 import UserData from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import type { CustomSong } from "@/helpers/CustomSongs";
 import CustomSongs from "@/helpers/CustomSongs";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
@@ -154,6 +155,14 @@ const selectedIdMusic = ref<number | string | null>(null);
 function filterValue(key: string, fallback = false): boolean {
   const v = UserData.get<boolean>(`modules.${manifest.id}.filter.${key}`, null);
   return v !== null ? v : fallback;
+}
+
+/** Álbuns desativados pelo usuário (oculta músicas sem álbum ativo). */
+function isMusicActiveByAlbum(m: SearchResult): boolean {
+  const disabled = UserData.get<number[]>(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+  if (!disabled.length) return true;
+  if (!Array.isArray(m.albums) || m.albums.length === 0) return true;
+  return m.albums.some((a) => !disabled.includes(Number(a.id_album)));
 }
 
 const _customCache = ref<SearchResult[]>([]);
@@ -213,7 +222,9 @@ async function doSearch() {
     }
 
     if (!filtroCustom || !q.startsWith("custom:")) {
-      const musics = (await Database.get<SearchResult[]>(`${locale.value}_musics`)) || [];
+      const musics = ((await Database.get<SearchResult[]>(`${locale.value}_musics`)) || []).filter(
+        (m) => isMusicActiveByAlbum(m)
+      );
 
       const musicKeys: string[] = [];
       if (filtroNome) musicKeys.push("name");

@@ -5,12 +5,22 @@
   "actions": {
     "draw": "Sortear",
     "reset": "Reiniciar",
-    "list": "Lista",
+    "list": "Lista de nomes",
     "fullscreen": "Tela cheia",
-    "apply": "Aplicar"
+    "apply": "Aplicar",
+    "start": "Iniciar sorteio",
+    "finish": "Finalizar sorteio"
   },
-  "data": { "drawn": "Sorteados", "remaining": "Restantes" },
+  "data": {
+    "drawn": "Sorteados",
+    "remaining": "Restantes",
+    "list": "Lista de nomes",
+    "locked": "Sorteio em andamento — lista bloqueada"
+  },
   "ribbon": {
-    "title_ctx": "Configurar Nomes"
+    "title_ctx": "Configurar Nomes",
+    "list": "Lista e exibição",
+    "show_drawn": "Exibir sorteados na projeção",
+    "effect_duration": "Duração da animação"
   }
 }

@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
   /** Plataforma do sistema operacional: "win32" | "darwin" | "linux" */
   platform: process.platform,
 
+  /** true quando rodando em desenvolvimento (ELECTRON_DEV=1 ou executável não empacotado). */
+  isDev: process.env.ELECTRON_DEV === "1" || process.defaultApp,
+
   /**
    * Sentinela para o Platform.js adapter detectar se está rodando no Electron.
    * No browser/PWA, window.louvorjaApi não existe (undefined), então isDesktop = false.

@@ -17,7 +17,7 @@
     "audio": "Audio",
     "audio_playback": "Audio Playback"
   },
-  "end_Action": {
+  "end_action": {
     "audio_not_configured": "Nenhum áudio configurado. Clique em Configurar áudio primeiro.",
     "music_not_configured": "Nenhuma música configurada. Clique em Configurar música primeiro.",
     "video_not_configured": "Nenhum vídeo configurado. Clique em Configurar vídeo primeiro.",
@@ -27,6 +27,12 @@
     "title_ctx": "Configurar Timer Culto",
     "toggle": "Iniciar/Pausar",
     "reset": "Reiniciar",
+    "mode": "Modo",
+    "set_time": "Definir hora",
+    "set_time_placeholder": "HH:MM",
+    "show_target_time": "Exibir hora na projeção",
+    "show_alert": "Destacar ao final",
+    "alert_seconds": "Segundos restantes para destacar",
     "timer_end": "Ao terminar",
     "timer_end_label": "Ação ao final",
     "end_nothing": "Nada",

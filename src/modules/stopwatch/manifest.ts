@@ -23,17 +23,17 @@ export const module: Module = {
   group: ModuleGroupEnum.TIME,
   order: 1,
   customization: {
-    font: { type: "font", label: "components.customization.font", default: "Arial, sans-serif" },
-    font_color: { type: "color", label: "components.customization.color", default: "#FFFFFF" },
-    font_size: { type: "font-size", label: "components.customization.size", default: 50 },
-    alert_color: { type: "color", label: "components.customization.alert_color", default: "#E74C3C" },
-    background_color: { type: "color", label: "components.customization.color", default: "#000000" },
-    border_spacing: { type: "border-spacing", label: "components.customization.border", default: 10 },
-    vertical_align: { type: "v-align", label: "components.customization.vertical", default: "center" },
-    horizontal_align: { type: "h-align", label: "components.customization.horizontal", default: "center" },
-    image: { type: "image", label: "components.customization.image", default: "" },
-    image_opacity: { type: "opacity", label: "components.customization.transparency", default: 100 },
-    image_fit: { type: "object-fit", label: "components.customization.adjust", default: "cover" },
+    font: { type: "font", default: "Arial, sans-serif" },
+    font_color: { type: "color", default: "#FFFFFF" },
+    font_size: { type: "font-size", default: 50 },
+    alert_color: { type: "color", default: "#E74C3C" },
+    background_color: { type: "color", default: "#000000" },
+    border_spacing: { type: "border-spacing", default: 10 },
+    vertical_align: { type: "v-align", default: "center" },
+    horizontal_align: { type: "h-align", default: "center" },
+    image: { type: "image", default: "" },
+    image_opacity: { type: "opacity", default: 100 },
+    image_fit: { type: "object-fit", default: "cover" },
   },
 }
 
@@ -85,18 +85,11 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_toggle_format`,
             color: "#1b4f8a",
           },
-          {
-            id: `${moduleId}_restore`,
-            icon: ICONS.ACTIONS.RESTORE,
-            label: "ribbon.btn.restore",
-            action: `${moduleId}_restore`,
-            color: "#9b59b6",
-          },
         ],
       },
       {
         id: "ctx_stopwatch_screen",
-        title: "ribbon.groups.expanded_area",
+        title: "ribbon.groups.projection",
         buttons: [
           {
             id: `${moduleId}_project`,

@@ -71,6 +71,7 @@
     "of": "de",
     "empty": "Sin diapositivas. Haz clic en Nuevo para crear.",
     "invalid_file": "Archivo inválido. Se espera presentación .slja exportada por LouvorJA.",
+    "save_error": "No se pudo guardar el slide.",
     "no_audio": "Sin audio adjunto",
     "untitled": "Nueva canción",
     "discard_changes": "¿Descartar cambios sin guardar?"

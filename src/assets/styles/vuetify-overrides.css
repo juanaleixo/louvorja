@@ -1,0 +1,38 @@
+/* ========================================================================
+   Vuetify Overrides — ajustes globais de componentes Vuetify.
+   Importado por último em src/main.js para vencer o CSS do Vuetify na cascata.
+   Use !important quando o seletor Vuetify tiver alta especificidade.
+   ======================================================================== */
+
+/* ---- Colapse panel (v-expansion-panels) -------------------------------- */
+.v-expansion-panel-title {
+  padding: 8px 16px !important;
+  min-height: 40px;
+}
+
+.v-expansion-panel-title__overlay {
+  font-size: var(--lj-text-sm);
+}
+
+.v-expansion-panel-text__wrapper {
+  padding-top: 4px !important;
+  padding-bottom: 8px !important;
+}
+
+/* ---- Selects Vuetify (v-select) compactos ------------------------------ */
+/* Reduz o padding vertical do campo de seleção em selects da tela de opções. */
+.v-field__input {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  min-height: 35px;
+}
+.v-list-item--density-default.v-list-item--one-line {
+  min-height: 20px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+/* ---- Drawer de formatação de módulos (velocidade entrada/saída) ------- */
+.module-format-drawer {
+  transition-duration: 0.35s !important;
+}

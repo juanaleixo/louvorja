@@ -115,7 +115,9 @@ export async function getSong(id: string): Promise<CustomSong | null> {
 }
 
 export async function saveSong(song: CustomSong): Promise<CustomSong> {
-  const updated: CustomSong = { ...song, updatedAt: new Date().toISOString() };
+  // Sanitiza reatividade do Vue (ref/reactive) antes do structured clone do IDB.
+  const plain: CustomSong = JSON.parse(JSON.stringify(song));
+  const updated: CustomSong = { ...plain, updatedAt: new Date().toISOString() };
   await $idb.put(STORE_SONGS, updated);
   return updated;
 }
@@ -142,7 +144,8 @@ export async function getCollection(id: string): Promise<CustomCollection | null
 }
 
 export async function saveCollection(col: CustomCollection): Promise<CustomCollection> {
-  const updated: CustomCollection = { ...col, updatedAt: new Date().toISOString() };
+  const plain: CustomCollection = JSON.parse(JSON.stringify(col));
+  const updated: CustomCollection = { ...plain, updatedAt: new Date().toISOString() };
   await $idb.put(STORE_COLLECTIONS, updated);
   return updated;
 }

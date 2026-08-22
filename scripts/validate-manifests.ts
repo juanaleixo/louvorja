@@ -49,34 +49,39 @@ function validate() {
 
     const content = readFileSync(file, "utf-8")
 
+    // Manifest gerado por factory (ex: createHymnalManifest) — a factory
+    // é tipada (Module) e garante os campos estruturais; os checks inline
+    // de objeto module não se aplicam aqui.
+    const usesFactory = content.includes("createHymnalManifest")
+
     // ── moduleId declarado com ModuleEnum ──
     const idEnumMatch = content.match(/moduleId\s*=\s*ModuleEnum\.(\w+);/)
-    if (!idEnumMatch) {
+    if (!usesFactory && !idEnumMatch) {
       console.log(formatRow(moduleId, "error", "moduleId não declarado com ModuleEnum.<KEY>"))
       errors++
     }
 
     // ── modulePath = $modules.getPath(moduleId) ──
-    if (!content.includes("$modules.getPath(moduleId)")) {
+    if (!usesFactory && !content.includes("$modules.getPath(moduleId)")) {
       console.log(formatRow(moduleId, "error", "$modules.getPath(moduleId) ausente"))
       errors++
     }
 
     // ── showInMainMenu: obrigatório ──
-    if (!content.includes("showInMainMenu:")) {
+    if (!usesFactory && !content.includes("showInMainMenu:")) {
       console.log(formatRow(moduleId, "error", "showInMainMenu ausente (obrigatório)"))
       errors++
     }
 
     // ── id no objeto module ──
-    if (!content.includes("id: moduleId")) {
+    if (!usesFactory && !content.includes("id: moduleId")) {
       console.log(formatRow(moduleId, "error", "id: deve usar moduleId (ModuleEnum)"))
       errors++
     }
 
     // ── title via i18n ──
     const titleI18n = content.match(/title:\s*`\$\{modulePath\}\.title`/)
-    if (!titleI18n) {
+    if (!usesFactory && !titleI18n) {
       console.log(formatRow(moduleId, "error", "title: deve usar `${modulePath}.title` (i18n)"))
       errors++
     }
@@ -87,7 +92,7 @@ function validate() {
     if (rawDesc) {
       console.log(formatRow(moduleId, "error", `description hardcoded: "${rawDesc[1]}" — deve usar i18n`))
       errors++
-    } else if (!descI18n) {
+    } else if (!usesFactory && !descI18n) {
       const hasDesc = content.includes("description:")
       if (!hasDesc) {
         console.log(formatRow(moduleId, "error", "description: campo obrigatório ausente"))
@@ -126,31 +131,31 @@ function validate() {
 
     // ── icon no objeto module (não opcional) ──
     const moduleIcon = content.match(/^\s{2}icon:\s/m)
-    if (!moduleIcon) {
+    if (!usesFactory && !moduleIcon) {
       console.log(formatRow(moduleId, "error", "module.icon: campo obrigatório no objeto module"))
       errors++
     }
 
     // ── color no objeto module ──
-    if (!content.match(/^\s{2}color:\s/m)) {
+    if (!usesFactory && !content.match(/^\s{2}color:\s/m)) {
       console.log(formatRow(moduleId, "error", "module.color: campo obrigatório no objeto module"))
       errors++
     }
 
     // ── category no objeto module ──
-    if (!content.includes("category:")) {
+    if (!usesFactory && !content.includes("category:")) {
       console.log(formatRow(moduleId, "error", "module.category: campo obrigatório"))
       errors++
     }
 
     // ── group no objeto module ──
-    if (!content.includes("group:")) {
+    if (!usesFactory && !content.includes("group:")) {
       console.log(formatRow(moduleId, "error", "module.group: campo obrigatório"))
       errors++
     }
 
     // ── order no objeto module ──
-    if (!content.match(/^\s{2}order:\s/m)) {
+    if (!usesFactory && !content.match(/^\s{2}order:\s/m)) {
       console.log(formatRow(moduleId, "error", "module.order: campo obrigatório"))
       errors++
     }

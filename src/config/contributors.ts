@@ -80,6 +80,13 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
     name: "Patrocinadores",
     contributors: [
       {
+        name: "79 Team",
+        description: "Tecnologia, inovação e desenvolvimento de software",
+        email: "contato@79team.com",
+        website: "https://79team.com",
+        whatsapp: "79933001017",
+      },
+      {
         name: "Adalberto Correa",
         description: "Blog Liga o Som",
         email: "adalberto@correa.ac",
@@ -94,17 +101,17 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
         facebook: "se7eninformatica",
       },
       {
+        name: "Grupo Evangelístico 300 de Gideão",
+        email: "grupoevangelistico300degideao@gmail.com",
+        website: "https://300gideao.com.br/",
+      },
+      {
         name: "Thiago Amaral de Oliveira",
         description: "Portal Adventista Baixo Guandu/ES",
         email: "thiagoamaraldeoliveira@gmail.com",
         website: "https://iasdbaixoguandu.com.br",
         website2: "https://esperancajovem.com.br",
         facebook: "thiagoguandu",
-      },
-      {
-        name: "Grupo Evangelístico 300 de Gideão",
-        email: "grupoevangelistico300degideao@gmail.com",
-        website: "https://300gideao.com.br/",
       },
     ],
   },

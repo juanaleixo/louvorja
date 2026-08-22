@@ -63,11 +63,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, type ComputedRef } from "vue";
+import { computed, type ComputedRef } from "vue";
 import { module as manifest } from "../manifest";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
+import { useContainerSize } from "@/composables/useContainerSize";
 import { ModuleState } from "@/types/Module";
 
 interface BibleData {
@@ -79,9 +80,7 @@ const props = defineProps<{
   height?: number;
 }>();
 
-const container = ref<HTMLElement | null>(null);
-const sWidth = ref(0);
-const sHeight = ref(0);
+const { container, fontSizePc } = useContainerSize();
 
 const module_ = computed(() => Modules.get(manifest.id) as ModuleState | undefined);
 
@@ -100,29 +99,4 @@ const userdata: ComputedRef<Record<string, any>> = computed(
 );
 
 const bible: ComputedRef<BibleData | null> = computed(() => AppData.get("modules.bible.data"));
-
-function fontSizePc(pc: number): number {
-  const v = Math.min(sWidth.value, sHeight.value);
-  return (pc * v) / 100 / 2;
-}
-
-function windowResize(): void {
-  const el = container.value;
-  if (el) {
-    sWidth.value = el.offsetWidth;
-    sHeight.value = el.offsetHeight;
-    if (sWidth.value <= 0 || sHeight.value <= 0) {
-      setTimeout(windowResize, 100);
-    }
-  }
-}
-
-onMounted(() => {
-  windowResize();
-  window.addEventListener("resize", windowResize);
-});
-
-onUnmounted(() => {
-  window.removeEventListener("resize", windowResize);
-});
 </script>

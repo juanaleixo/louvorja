@@ -27,10 +27,9 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { module as manifest } from "../manifest";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
+import { useContainerSize } from "@/composables/useContainerSize";
 
-const container = ref(null);
-const sWidth = ref(0);
-const sHeight = ref(0);
+const { container, fontSizePc } = useContainerSize();
 let timer = null;
 const time = ref(null);
 
@@ -83,22 +82,6 @@ const textStyle = computed(() => ({
   textAlign: horizontalAlign.value,
 }));
 
-function fontSizePc(pc) {
-  const v = Math.min(sWidth.value, sHeight.value);
-  return (pc * v) / 100 / 2;
-}
-
-function windowResize() {
-  const el = container.value;
-  if (el) {
-    sWidth.value = el.offsetWidth;
-    sHeight.value = el.offsetHeight;
-    if (sWidth.value <= 0 || sHeight.value <= 0) {
-      setTimeout(windowResize, 100);
-    }
-  }
-}
-
 function updateTime() {
   const now = new Date();
   const hours = now.getHours();
@@ -114,14 +97,11 @@ function updateTime() {
 }
 
 onMounted(() => {
-  windowResize();
-  window.addEventListener("resize", windowResize);
   updateTime();
   timer = setInterval(updateTime, 1000);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("resize", windowResize);
   clearInterval(timer);
 });
 </script>

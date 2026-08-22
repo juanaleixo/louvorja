@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
+import { KEYS } from "@/constants/UserDataKeys"
 
 const moduleId = ModuleEnum.SLIDE_EDITOR;
 const modulePath = $modules.getPath(moduleId);
@@ -55,7 +56,22 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_se_slides_actions",
         title: "ribbon.groups.actions",
         buttons: [
-          { id: "editor_project", icon: "mdi-presentation-play", label: "ribbon.btn.editor_project", action: "editor_project", color: "#9b59b6" },
+          {
+            id: "editor_project",
+            icon: ICONS.PROJECTION.START,
+            label: "ribbon.btn.editor_project",
+            action: "editor_project",
+            color: "#9b59b6",
+            stateBinding: {
+              watchPath: KEYS.MODULES.SLIDE_EDITOR.PROJECTING,
+              iconOn: ICONS.PROJECTION.STOP,
+              iconOff: ICONS.PROJECTION.START,
+              colorOn: "#e74c3c",
+              colorOff: "#9b59b6",
+              labelOn: "ribbon.btn.editor_stop_projection",
+              labelOff: "ribbon.btn.editor_project",
+            },
+          },
           { id: "editor_new_slide", icon: "mdi-image-plus-outline", label: "ribbon.btn.editor_new_slide", action: "editor_new_slide", color: "#1b4f8a" },
           { id: "editor_duplicate_slide", icon: "mdi-content-duplicate", label: "ribbon.btn.editor_duplicate_slide", action: "editor_duplicate_slide", color: "#3498db" },
           { id: "editor_remove_slide", icon: "mdi-image-remove-outline", label: "ribbon.btn.editor_remove_slide", action: "editor_remove_slide", color: "#e74c3c" },

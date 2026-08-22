@@ -308,6 +308,8 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => 
     if (url) projectUrl(url);
   } else if (data.action === "stop") {
     if (projectingId.value) stopProjection();
+  } else if (data.action === "settings") {
+    window.dispatchEvent(new CustomEvent("louvorja:open-options", { detail: { tab: "videos" } }));
   }
 });
 

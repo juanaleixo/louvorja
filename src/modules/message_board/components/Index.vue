@@ -25,10 +25,14 @@
     </template>
 
     <div class="d-flex h-100">
-      <aside v-if="show_format" class="format-col">
-        <FormatPanel :module-id="'message_board'" :manifest="manifest" />
-      </aside>
-      <div class="d-flex flex-column flex-grow-1" style="min-width: 0">
+      <ModuleFormatDrawer v-model="show_format" :module-id="'message_board'" :manifest="manifest" />
+      <div
+        ref="container"
+        class="d-flex flex-column flex-grow-1"
+        style="min-width: 0; position: relative"
+        :style="rootStyle"
+      >
+        <img v-if="bgImage" :src="bgImage" class="mb-bg-img" :style="imageStyle" alt="" />
         <!-- Input de novo recado -->
         <div class="pa-3 d-flex flex-column border-b" style="gap: 8px">
           <v-textarea
@@ -103,12 +107,13 @@
       ref="fsRoot"
       class="mb-fs-root"
       tabindex="0"
+      :style="rootStyle"
       @keydown.esc="fullscreen = false"
       @keydown.space.prevent="showing ? clearPresentation() : null"
       @click="fullscreen = false"
     >
       <Transition name="fade-slide" mode="out-in">
-        <div :key="fsText" class="mb-fs-text">{{ fsText || "" }}</div>
+        <div :key="fsText" class="mb-fs-text" :style="textStyle">{{ fsText || "" }}</div>
       </Transition>
       <div class="mb-fs-hint">ESC para fechar</div>
     </div>
@@ -119,21 +124,23 @@
 import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import $broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
 import { useModuleProjection } from "@/composables/useModuleProjection";
 import { useModuleFormat } from "@/composables/useModuleFormat";
+import { useModuleBodyStyle } from "@/composables/useModuleBodyStyle";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
-const { restoreFormat, show_format } = useModuleFormat("message_board", manifest);
+const { show_format } = useModuleFormat("message_board", manifest);
+const { rootStyle, textStyle, bgImage, imageStyle, container } =
+  useModuleBodyStyle("message_board");
 
 const projection = useModuleProjection("message_board", {
   onAction(action) {
     if (action === "clear") clearPresentation();
     else if (action === "toggle_format") show_format.value = !show_format.value;
-    else if (action === "restore") restoreFormat();
   },
 });
 
@@ -220,6 +227,8 @@ function close() {
   cursor: pointer;
 }
 .mb-fs-text {
+  position: relative;
+  z-index: 1;
   font-size: clamp(2rem, 6vw, 5rem);
   font-weight: 300;
   color: #fff;
@@ -228,6 +237,14 @@ function close() {
   line-height: 1.4;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
   max-width: 90vw;
+}
+.mb-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 .mb-fs-hint {
   position: absolute;
@@ -252,12 +269,5 @@ function close() {
 }
 .fade-slide-leave-to {
   opacity: 0;
-}
-.format-col {
-  flex: 0 0 200px;
-  width: 200px;
-  border-right: 1px solid var(--lj-surface-border);
-  background: var(--lj-surface-bg);
-  height: 100%;
 }
 </style>

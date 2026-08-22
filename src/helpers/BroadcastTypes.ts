@@ -72,6 +72,13 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Emitido por: RibbonBar. Recebido por: módulo correspondente. */
   MODULE_RIBBON_ACTION: "module_ribbon_action",
 
+  /** Ordena o fechamento da janela de projeção de um módulo genérico.
+   *  Payload: { module: string }
+   *  Emitido por: main.js (tecla ESC). Recebido por: ModuleProjection — que
+   *  fecha a própria janela. Necessário também no web/PWA, onde window.open
+   *  com noopener não devolve referência para o Projection.close() fechar. */
+  MODULE_PROJECTION_CLOSE: "module_projection_close",
+
   /** Texto do painel de recados. Emitido por message_board/Index.vue.
    *  Recebido por: (recepção futura). */
   MESSAGE_BOARD: "message_board",

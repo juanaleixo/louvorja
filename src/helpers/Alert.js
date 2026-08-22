@@ -55,6 +55,39 @@ export default {
     );
   },
 
+  /**
+   * Prompt com campo de texto. Substitui window.prompt (não suportado no
+   * Electron). O callback recebe a string digitada ou null se cancelado.
+   *
+   * @param {object|string} data         { title, text, input_default, input_placeholder }
+   * @param {function} callback          (value|null) => void
+   */
+  prompt(data, callback = function () {}) {
+    data = this.getData(data);
+
+    $appdata.set("alert.prompt", true);
+    $appdata.set("alert.input_value", data.input_default || "");
+    $appdata.set("alert.input_default", data.input_default || "");
+    $appdata.set("alert.input_placeholder", data.input_placeholder || "");
+
+    this.show(
+      {
+        ...data,
+        buttons: [
+          { text: "alert.cancel", color: "error", value: "cancel" },
+          { text: "alert.ok", color: "info", value: "ok" },
+        ],
+      },
+      (resp, ret) => {
+        $appdata.set("alert.prompt", false);
+        $appdata.set("alert.input_value", "");
+        $appdata.set("alert.input_default", "");
+        $appdata.set("alert.input_placeholder", "");
+        callback(resp, ret);
+      }
+    );
+  },
+
   info(data, callback = function () {}) {
     data = this.getData(data);
 

@@ -2,12 +2,12 @@ import type { Module } from "@/types/Module"
 import type { RibbonPage } from "@/types/Ribbon"
 import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
-import { MediaEnum } from "@/enums/MediaEnum"
 import { ICONS } from "@/config/Icons"
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { KEYS } from "@/constants/UserDataKeys";
+import { createTimerEndRibbonGroups } from "@/config/modules/ribbon/timerEndRibbon";
 
 const moduleId = ModuleEnum.TIMER_WORSHIP;
 const modulePath = $modules.getPath(moduleId);
@@ -25,17 +25,17 @@ export const module: Module = {
   group: ModuleGroupEnum.CHURCH,
   order: 2,
   customization: {
-    font: { type: "font", label: "components.customization.font", default: "Arial, sans-serif" },
-    font_color: { type: "color", label: "components.customization.color", default: "#FFFFFF" },
-    font_size: { type: "font-size", label: "components.customization.size", default: 50 },
-    alert_color: { type: "color", label: "components.customization.alert_color", default: "#E74C3C" },
-    background_color: { type: "color", label: "components.customization.color", default: "#000000" },
-    border_spacing: { type: "border-spacing", label: "components.customization.border", default: 10 },
-    vertical_align: { type: "v-align", label: "components.customization.vertical", default: "center" },
-    horizontal_align: { type: "h-align", label: "components.customization.horizontal", default: "center" },
-    image: { type: "image", label: "components.customization.image", default: "" },
-    image_opacity: { type: "opacity", label: "components.customization.transparency", default: 100 },
-    image_fit: { type: "object-fit", label: "components.customization.adjust", default: "cover" },
+    font: { type: "font", default: "Arial, sans-serif" },
+    font_color: { type: "color", default: "#FFFFFF" },
+    font_size: { type: "font-size", default: 50 },
+    alert_color: { type: "color", default: "#E74C3C" },
+    background_color: { type: "color", default: "#000000" },
+    border_spacing: { type: "border-spacing", default: 10 },
+    vertical_align: { type: "v-align", default: "center" },
+    horizontal_align: { type: "h-align", default: "center" },
+    image: { type: "image", default: "" },
+    image_opacity: { type: "opacity", default: 100 },
+    image_fit: { type: "object-fit", default: "cover" },
   },
 }
 
@@ -48,7 +48,7 @@ export const contextualPages: RibbonPage[] = [
     defaultModule: null,
     groups: [
       {
-        id: "ctx_tw_actions",
+        id: moduleCtxId + "_actions",
         title: "ribbon.groups.actions",
         buttons: [
           {
@@ -77,7 +77,71 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_tw_format",
+        id: moduleCtxId + "_screen",
+        title: "ribbon.groups.projection",
+        buttons: [
+          {
+            id: `${moduleId}_project`,
+            type: "screen",
+            feature: moduleId,
+            route: `/projection/module?module=${moduleId}`,
+            icon: ICONS.PROJECTION.START,
+            label: "ribbon.btn.project",
+            color: "#1b4f8a",
+          },
+        ],
+      },
+      {
+        id: moduleCtxId + "_time",
+        title: "ribbon.groups.time",
+        buttons: [
+          {
+            id: `${moduleId}_mode`,
+            type: "select",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.MODE,
+            label: `${modulePath}.ribbon.mode`,
+            defaultValue: "down",
+            options: [
+              { value: "up", label: `${modulePath}.mode.up` },
+              { value: "down", label: `${modulePath}.mode.down` },
+            ],
+          },
+          {
+            id: `${moduleId}_set_time`,
+            type: "action_input",
+            inputType: "time",
+            action: `${moduleId}_set_time`,
+            label: `${modulePath}.ribbon.set_time`,
+            placeholder: `${modulePath}.ribbon.set_time_placeholder`,
+          },
+          {
+            id: `${moduleId}_show_target_time`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.SHOW_TARGET_TIME,
+            label: `${modulePath}.ribbon.show_target_time`,
+            defaultValue: true,
+          },
+          {
+            id: `${moduleId}_show_alert`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.SHOW_ALERT,
+            label: `${modulePath}.ribbon.show_alert`,
+            defaultValue: true,
+          },
+          {
+            id: `${moduleId}_alert_seconds`,
+            type: "number",
+            optionKey: KEYS.MODULES.TIMER_WORSHIP.ALERT_SECONDS,
+            label: `${modulePath}.ribbon.alert_seconds`,
+            defaultValue: 60,
+            min: 5,
+            max: 600,
+            step: 5,
+          },
+        ],
+      },
+      {
+        id: moduleCtxId + "_format",
         title: "ribbon.groups.format",
         buttons: [
           {
@@ -87,17 +151,10 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_format`,
             color: "#1b4f8a",
           },
-          {
-            id: `${moduleId}_restore`,
-            icon: ICONS.ACTIONS.RESTORE,
-            label: "ribbon.btn.restore",
-            action: `${moduleId}_restore`,
-            color: "#9b59b6",
-          },
         ],
       },
       {
-        id: "ctx_tw_sound",
+        id: moduleCtxId + "_sound",
         title: "ribbon.groups.sound",
         buttons: [
           {
@@ -147,75 +204,7 @@ export const contextualPages: RibbonPage[] = [
           },
         ],
       },
-      {
-        id: "ctx_tw_end",
-        title: `${modulePath}.ribbon.timer_end`,
-        buttons: [
-          {
-            id: "tw_end_action",
-            type: "select",
-            optionKey: `${modulePath}.timer_end_action`,
-            label: `${modulePath}.ribbon.timer_end_label`,
-            options: [
-              { value: MediaEnum.NONE, label: `${modulePath}.ribbon.end_nothing` },
-              { value: MediaEnum.AUDIO, label: `${modulePath}.ribbon.end_audio` },
-              { value: MediaEnum.VIDEO, label: `${modulePath}.ribbon.end_video` },
-              { value: MediaEnum.ONLINE_VIDEO, label: `${modulePath}.ribbon.end_online_video` },
-              { value: MediaEnum.MUSIC, label: `${modulePath}.ribbon.end_music` },
-            ],
-          },
-          {
-            id: `${moduleId}_file_audio`,
-            icon: ICONS.UI.PLAYER,
-            label: `${modulePath}.ribbon.file_audio`,
-            action: `${moduleId}_file_audio`,
-            color: "#27ae60",
-            dependsOnOption: { path: `${modulePath}.timer_end_action`, value: "audio" },
-          },
-          {
-            id: `${moduleId}_file_video`,
-            icon: ICONS.MEDIA.VIDEO,
-            label: `${modulePath}.ribbon.file_video`,
-            action: `${moduleId}_file_video`,
-            color: "#e67e22",
-            dependsOnOption: { path: `${modulePath}.timer_end_action`, value: "video" },
-          },
-          {
-            id: `${moduleId}_online_video`,
-            icon: ICONS.MEDIA.YOUTUBE,
-            label: `${modulePath}.ribbon.online_video`,
-            action: `${moduleId}_online_video`,
-            color: "#e74c3c",
-            dependsOnOption: {
-              path: `${modulePath}.timer_end_action`,
-              value: "online_video",
-            },
-          },
-          {
-            id: `${moduleId}_music`,
-            icon: ICONS.MUSIC.MUSIC,
-            label: `${modulePath}.ribbon.music`,
-            action: `${moduleId}_music`,
-            color: "#1b4f8a",
-            dependsOnOption: { path: `${modulePath}.timer_end_action`, value: "music" },
-          },
-        ],
-      },
-      {
-        id: "ctx_tw_screen",
-        title: "ribbon.groups.expanded_area",
-        buttons: [
-          {
-            id: `${moduleId}_project`,
-            type: "screen",
-            feature: moduleId,
-            route: `/projection/module?module=${moduleId}`,
-            icon: ICONS.PROJECTION.START,
-            label: "ribbon.btn.project",
-            color: "#1b4f8a",
-          },
-        ],
-      },
+      ...createTimerEndRibbonGroups(moduleId),
     ],
   },
 ];

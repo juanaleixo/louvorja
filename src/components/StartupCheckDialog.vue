@@ -559,6 +559,13 @@ function toggleCategory(cat: Category, checked: boolean): void {
   }
 }
 
+/** Filtra álbuns desativados pelo usuário (não devem ser baixados). */
+function activeAlbumIds(ids: number[]): number[] {
+  const disabled = $userdata.get<number[]>(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+  if (!disabled.length) return ids;
+  return ids.filter((id) => !disabled.includes(Number(id)));
+}
+
 async function downloadAll(): Promise<void> {
   view.value = "downloading";
 
@@ -567,12 +574,12 @@ async function downloadAll(): Promise<void> {
   const allHymnal = scanData.value.hymnalIds.length > 0;
   const allBibles = scanData.value.bibleVersions.map((v) => v.id_bible_version);
 
-  await performDownload(allAlbums, allHymnal, allBibles);
+  await performDownload(new Set(activeAlbumIds([...allAlbums])), allHymnal, allBibles);
 }
 
 async function downloadSelected(): Promise<void> {
   view.value = "downloading";
-  await performDownload(new Set(selectedAlbums.value), selectedHymnal.value, [
+  await performDownload(new Set(activeAlbumIds(selectedAlbums.value)), selectedHymnal.value, [
     ...selectedBibles.value,
   ]);
 }
@@ -587,7 +594,7 @@ async function performDownload(
   selectedBibles.value = bibles;
 
   try {
-    const files = await sync.collectFiles(albums, hymnal, scanData.value.hymnalIds);
+    const files = await sync.collectFiles(albums, hymnal, scanData.value.hymnalIds, false, []);
 
     if (files.length > 0) {
       await sync.startDownloads(files);

@@ -54,23 +54,27 @@
               v-else-if="btn.type === 'screen'"
               :feature="btn.feature"
               :route="btn.route"
-              :icon-color="btn.color"
+              :icon-color="resolveBtnColor(btn)"
               :label="$t(btn.label)"
               :size="btn.size || 'large'"
               :testid="`ribbon-btn-${btn.id}`"
             />
             <div v-else-if="btn.type === 'action_input'" class="ribbon-action-input">
+              <label v-if="btn.inputType === 'time'" class="ribbon-field-label">
+                {{ $t(btn.label) }}
+              </label>
               <input
                 v-model="inputValues[btn.id]"
-                type="text"
+                :type="btn.inputType || 'text'"
                 class="ribbon-action-input__field"
-                style="width: 300px"
                 :placeholder="$t(btn.placeholder || '')"
                 @keydown.enter.prevent="executeInputAction(btn)"
+                @change="btn.inputType === 'time' && executeInputAction(btn)"
               />
               <RibbonButtonComponent
+                v-if="btn.inputType !== 'time'"
                 :icon="btn.icon || ''"
-                :icon-color="btn.color"
+                :icon-color="resolveBtnColor(btn)"
                 :label="$t(btn.label)"
                 size="medium"
                 :testid="`ribbon-btn-${btn.id}`"
@@ -81,6 +85,7 @@
               v-else-if="btn.type === 'select'"
               v-show="isDependencyMet(btn)"
               class="ribbon-field-wrap"
+              :data-testid="`ribbon-btn-${btn.id}`"
             >
               <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
               <select
@@ -109,6 +114,7 @@
               v-else-if="btn.type === 'slider'"
               v-show="isDependencyMet(btn)"
               class="ribbon-field-wrap"
+              :data-testid="`ribbon-btn-${btn.id}`"
             >
               <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
               <div class="ribbon-slider-row">
@@ -126,6 +132,23 @@
                 <span class="ribbon-slider-value">{{ getSelectValue(btn) }}ms</span>
               </div>
             </div>
+            <div
+              v-else-if="btn.type === 'number'"
+              v-show="isDependencyMet(btn)"
+              class="ribbon-field-wrap"
+              :data-testid="`ribbon-btn-${btn.id}`"
+            >
+              <label class="ribbon-field-label">{{ $t(btn.label) }}</label>
+              <input
+                class="ribbon-field-number"
+                type="number"
+                :min="btn.min"
+                :max="btn.max"
+                :step="btn.step ?? 1"
+                :value="getSelectValue(btn)"
+                @change="setSelectValue(btn, ($event.target as HTMLSelectElement)?.value)"
+              />
+            </div>
             <label v-else-if="btn.type === 'checkbox'" class="ribbon-field-checkbox">
               <input
                 type="checkbox"
@@ -134,11 +157,15 @@
               />
               <span>{{ $t(btn.label) }}</span>
             </label>
-            <div v-else-if="btn.type === 'switch'" class="ribbon-switch">
+            <div
+              v-else-if="btn.type === 'switch'"
+              class="ribbon-switch"
+              :data-testid="`ribbon-btn-${btn.id}`"
+            >
               <v-switch
                 :model-value="getCheckValue(btn)"
                 density="compact"
-                size="x-small"
+                size="small"
                 hide-details
                 :label="$t(btn.label)"
                 color="primary"
@@ -146,7 +173,13 @@
                 true-icon="mdi-check"
                 false-icon="mdi-close"
                 @update:model-value="setCheckValue(btn, $event)"
-              />
+              >
+                <template #label>
+                  <span class="ribbon-field-switch">
+                    {{ $t(btn.label) }}
+                  </span>
+                </template>
+              </v-switch>
             </div>
             <RibbonButtonComponent
               v-else
@@ -189,7 +222,9 @@ import $alert from "@/helpers/Alert";
 import $database from "@/helpers/Database";
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { getRibbonModules } from "@/config/modules";
+import { getRibbonModules, isModuleVisible } from "@/config/modules";
+import { KEYS } from "@/constants/UserDataKeys";
+import { COLORS } from "@constants/Colors";
 import type { RibbonButton, RibbonGroup, RibbonPage } from "@/types/Ribbon";
 import RibbonButtonComponent from "@/layout/shell/RibbonButtonComponent.vue";
 import RibbonGroupComponent from "@/layout/shell/RibbonGroupComponent.vue";
@@ -269,7 +304,10 @@ function setSelectValue(btn: RibbonButton, val: string | number): void {
 
 function getCheckValue(btn: RibbonButton): boolean {
   if (!btn.optionKey) return false;
-  return $userdata.get<boolean>(btn.optionKey, false) === true;
+  // Fallback para o defaultValue declarado (ex: clock show_date default true)
+  const v = $userdata.get<boolean | null>(btn.optionKey, null);
+  if (v === null) return btn.defaultValue === true;
+  return v;
 }
 
 function setCheckValue(btn: RibbonButton, checked: boolean | null): void {
@@ -293,7 +331,7 @@ function executeInputAction(btn: RibbonButton): void {
   const val = inputValues[btn.id]?.trim();
   if (!val) return;
   const m = btn.action?.match(
-    /^(counter|draw|name_draw|clock|stopwatch|timer|message_board|online_videos|custom_online_videos|background_sound)_(.+)$/
+    /^(counter|draw|name_draw|clock|stopwatch|timer_worship|timer|message_board|online_videos|custom_online_videos|background_sound)_(.+)$/
   );
   if (m) {
     Broadcast.send(BROADCAST_TYPE.MODULE_RIBBON_ACTION, {
@@ -312,7 +350,15 @@ const openModuleIds: ComputedRef<string[]> = computed(() => {
 const activePageObj: ComputedRef<RibbonPage | undefined> = computed(() =>
   modules.find((p: RibbonPage) => p.id === ribbonStore.activePage)
 );
-const activeGroups: ComputedRef<RibbonGroup[]> = computed(() => activePageObj.value?.groups || []);
+const activeGroups: ComputedRef<RibbonGroup[]> = computed(() => {
+  const groups = activePageObj.value?.groups || [];
+  // Remove botões de módulos ocultos via modules.<id>.show_in_main_menu
+  // (ex: Hinário 1996 desativado na página de opções).
+  return groups.map((g) => ({
+    ...g,
+    buttons: (g.buttons || []).filter((b) => !b.module || isModuleVisible(b.module)),
+  }));
+});
 const isContextualActive: ComputedRef<boolean> = computed(() => !!activePageObj.value?.contextual);
 const visiblePages: ComputedRef<RibbonPage[]> = computed(() => ribbonStore.visiblePages);
 
@@ -383,6 +429,7 @@ const BIBLE_ACTIONS: LiturgyActionMap = {
   bible_format: "toggle_format",
   bible_restore: "restore",
   bible_project: "project",
+  bible_settings: "settings",
 };
 
 const EDITOR_ACTIONS = new Set<string>([
@@ -424,6 +471,14 @@ function resolveBtnIcon(btn: RibbonButton): string {
 }
 
 function resolveBtnColor(btn: RibbonButton): string | undefined {
+  // Estilo de interface "Electron": todos os botões da ribbon usam a cor
+  // primária do tema ativo (stateBinding também — estado indicado por ícone).
+  // Em tema escuro os ícones ficam brancos para contraste na ribbon escura.
+  const uiStyle = $userdata.get<string>(KEYS.OPTIONS.UI_STYLE, "delphi");
+  if (uiStyle === "electron") {
+    const isDark = $appdata.get<boolean>(KEYS.SHELL.IS_DARK, false);
+    return isDark ? "#FFFFFF" : COLORS.PRIMARY;
+  }
   if (btn.stateBinding) {
     const val = $userdata.get(btn.stateBinding.watchPath);
     return val ? btn.stateBinding.colorOn || btn.color : btn.stateBinding.colorOff || btn.color;
@@ -448,6 +503,9 @@ function executeButton(btn: RibbonButton): void {
     }
     $modules.open(btn.module);
     $appdata.set(`modules.${btn.module}.last_btn`, btn.id);
+    // Navega para a página contextual mesmo quando o módulo já está ativo
+    // (o watch de active_module não dispara se o valor não muda).
+    selectContextualPageForModule(btn.module);
     return;
   }
   if (btn.action === "search_music") {
@@ -489,6 +547,7 @@ function executeButton(btn: RibbonButton): void {
       "message_board",
       "online_videos",
       "custom_online_videos",
+      "hymnal_1996",
       "hymnal",
       "bible_search",
       "music_search",
@@ -654,6 +713,24 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
   box-shadow: var(--lj-shadow-focus-navy-sm);
 }
 
+.ribbon-field-number {
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid rgba(var(--v-border-color), 0.4);
+  border-radius: 3px;
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  width: 90px;
+}
+
+.ribbon-field-number:focus {
+  border-color: var(--lj-navy);
+  box-shadow: var(--lj-shadow-focus-navy-sm);
+}
+
 .ribbon-slider-row {
   display: flex;
   align-items: center;
@@ -692,5 +769,6 @@ useBroadcastListener(BROADCAST_TYPE.RIBBON_SELECT_PAGE, (payload: unknown) => {
 }
 .ribbon-field-switch {
   padding: 0;
+  font-size: 14px;
 }
 </style>

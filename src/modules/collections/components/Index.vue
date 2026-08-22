@@ -118,6 +118,8 @@ import Modules from "@/helpers/Modules";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
 import Path from "@/helpers/Path";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import { useShell } from "@/composables/useShell";
 
 const { locale } = useI18n();
@@ -134,19 +136,23 @@ const error = ref(null);
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 
 const albums = computed(() => {
+  const disabled = $userdata.get(KEYS.OPTIONS.DISABLED_ALBUMS, []) || [];
+  const activeOnly = (list) =>
+    (list || []).filter((album) => !disabled.includes(Number(album.id_album)));
+
   if (!categories.value) return [];
   if (!id_category.value) {
     return [
       ...new Map(
         categories.value
-          .reduce((acc, category) => acc.concat(category.albums), [])
+          .reduce((acc, category) => acc.concat(activeOnly(category.albums)), [])
           .map((album) => [album.id_album, { ...album, subtitle: null }])
       ).values(),
     ].sort((a, b) => Strings.sort(a.name, b.name));
   }
-  return categories.value
-    .filter((item) => item.id_category === id_category.value)[0]
-    ?.albums.sort((a, b) => a.order - b.order);
+  return activeOnly(
+    categories.value.filter((item) => item.id_category === id_category.value)[0]?.albums
+  ).sort((a, b) => a.order - b.order);
 });
 
 const compact = computed(() => width.value <= 600);

@@ -34,46 +34,55 @@
           :key="s.id"
           width="240"
           class="cursor-pointer"
-          @click="openInEditor(s)"
+          @click="executeSong(s)"
         >
-          <div class="song-card-preview" :style="{ background: s.slides[0]?.cor_fundo || '#000' }">
+          <div class="song-card-preview" :style="songPreviewStyle(s)">
+            <div class="song-card-actions">
+              <v-btn
+                icon
+                size="x-small"
+                variant="flat"
+                :title="t('actions.edit')"
+                @click.stop="openInEditor(s)"
+              >
+                <v-icon>mdi-pencil</v-icon>
+              </v-btn>
+              <v-btn
+                icon
+                size="x-small"
+                variant="flat"
+                color="error"
+                :title="t('actions.delete')"
+                @click.stop="confirmDeleteSong(s)"
+              >
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+              <v-menu>
+                <template #activator="{ props }">
+                  <v-btn icon size="x-small" variant="flat" v-bind="props" @click.stop>
+                    <v-icon>mdi-dots-vertical</v-icon>
+                  </v-btn>
+                </template>
+                <v-list density="compact">
+                  <v-list-item
+                    :title="t('actions.export')"
+                    prepend-icon="mdi-download"
+                    @click="exportSong(s)"
+                  />
+                  <v-list-item
+                    :title="t('actions.rename')"
+                    prepend-icon="mdi-rename"
+                    @click="renameSong(s)"
+                  />
+                </v-list>
+              </v-menu>
+            </div>
             <div class="song-card-text" :style="{ color: s.slides[0]?.cor_letra || '#fff' }">
               {{ truncate(s.slides[0]?.letra || s.nome, 40) }}
             </div>
           </div>
-          <v-card-title class="text-body-2 d-flex align-center">
-            <span class="flex-1">{{ s.nome }}</span>
-            <v-menu>
-              <template #activator="{ props }">
-                <v-btn icon size="x-small" variant="text" v-bind="props" @click.stop>
-                  <v-icon>mdi-dots-vertical</v-icon>
-                </v-btn>
-              </template>
-              <v-list density="compact">
-                <v-list-item
-                  :title="t('actions.edit')"
-                  prepend-icon="mdi-pencil"
-                  @click="openInEditor(s)"
-                />
-                <v-list-item
-                  :title="t('actions.export')"
-                  prepend-icon="mdi-download"
-                  @click="exportSong(s)"
-                />
-                <v-list-item
-                  :title="t('actions.rename')"
-                  prepend-icon="mdi-rename"
-                  @click="renameSong(s)"
-                />
-                <v-divider />
-                <v-list-item
-                  :title="t('actions.delete')"
-                  prepend-icon="mdi-delete"
-                  base-color="error"
-                  @click="confirmDeleteSong(s)"
-                />
-              </v-list>
-            </v-menu>
+          <v-card-title class="text-body-2">
+            <span class="song-card-name">{{ s.nome }}</span>
           </v-card-title>
           <v-card-subtitle class="pb-2 text-caption">
             {{ s.slides.length }} {{ t("labels.slides") }}
@@ -214,6 +223,8 @@ import Modules from "@/helpers/Modules";
 import CustomSongs from "@/helpers/CustomSongs";
 import SljaConverter from "@/helpers/SljaConverter";
 import AudioLibrary from "@/helpers/AudioLibrary";
+import $alert from "@/helpers/Alert";
+import Media from "@/composables/useMedia";
 
 const SHARE_KEY = "slide_editor_song_v2";
 
@@ -224,6 +235,35 @@ const activeTab = ref("songs");
 const songs = ref([]);
 const collections = ref([]);
 const selectedCollectionId = ref(null);
+
+// Cache de URLs de imagem do primeiro slide de cada música (preview do card).
+const songPreviewImages = ref(new Map());
+
+function songPreviewStyle(s) {
+  const slide = s.slides?.[0] || {};
+  const img = songPreviewImages.value.get(s.id);
+  return {
+    background: slide.cor_fundo || "#000",
+    ...(img ? { backgroundImage: `url(${img})` } : {}),
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  };
+}
+
+async function resolvePreviewImages(list) {
+  const map = new Map();
+  for (const s of list) {
+    const tok = s.slides?.[0]?.imagem;
+    if (!tok) continue;
+    if (/^(https?|data|blob|file):/.test(tok)) {
+      map.set(s.id, tok);
+      continue;
+    }
+    const url = await AudioLibrary.resolveImage(tok);
+    if (url) map.set(s.id, url);
+  }
+  songPreviewImages.value = map;
+}
 
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 const t = (key) => moduleContainer.value?.t(key) || key;
@@ -257,9 +297,16 @@ function truncate(text, max = 60) {
   return text.length > max ? text.slice(0, max - 3) + "…" : text;
 }
 
+function askName(title, defaultValue) {
+  return new Promise((resolve) => {
+    $alert.prompt({ title, input_default: defaultValue }, (val) => resolve(val));
+  });
+}
+
 async function loadAll() {
   songs.value = await CustomSongs.listSongs();
   collections.value = await CustomSongs.listCollections();
+  resolvePreviewImages(songs.value);
   if (!selectedCollectionId.value && collections.value.length > 0) {
     selectedCollectionId.value = collections.value[0].id;
   }
@@ -284,8 +331,17 @@ function openInEditor(s) {
   Modules.open("slide_editor");
 }
 
+// Executa (projeta) a música personalizada com áudio e sincronia via Media.
+async function executeSong(s) {
+  try {
+    await Media.openCustomSong(s);
+  } catch (err) {
+    console.warn("[custom_collections] executeSong falhou:", err);
+  }
+}
+
 async function actNewSong() {
-  const nome = prompt(t("actions.new_song"), t("actions.new_song"));
+  const nome = await askName(t("actions.new_song"), t("actions.new_song"));
   if (!nome) return;
   const s = CustomSongs.newSong(nome);
   await CustomSongs.saveSong(s);
@@ -294,7 +350,7 @@ async function actNewSong() {
 }
 
 async function renameSong(s) {
-  const nome = prompt(t("actions.rename"), s.nome);
+  const nome = await askName(t("actions.rename"), s.nome);
   if (!nome) return;
   s.nome = nome;
   await CustomSongs.saveSong(s);
@@ -322,6 +378,9 @@ async function exportSong(s) {
         exp.imagem = path;
       } else {
         exp.imagem = "";
+        console.warn(
+          `[custom_collections] export: blob da imagem não encontrado (${slide.imagem}) — slide sairá sem fundo`
+        );
       }
     }
     slidesForExport.push(exp);
@@ -333,6 +392,7 @@ async function exportSong(s) {
     audio: audioBlob,
     audioName: s.audio_name || "audio.mp3",
     images: imagesMap,
+    nome: s.nome || "",
   });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -355,6 +415,9 @@ function showStatus(text, color = "info") {
 async function importSljaFile(file) {
   const data = await SljaConverter.loadSlja(file);
 
+  // Capa/abertura sem fundo herda a imagem do próximo slide que a tenha.
+  SljaConverter.fillMissingImages(data.slides);
+
   let audioToken = "";
   let audioName = "";
   if (data.audio) {
@@ -369,8 +432,9 @@ async function importSljaFile(file) {
     imgTokenByName.set(path, tok);
   }
   const newSong = {
-    id: CustomSongs.newId("song"),
-    nome: file.name.replace(/\.(slja|lja)$/i, ""),
+    id: crypto.randomUUID(),
+    // Nome: [Geral].nome → letra do 1º slide (capa) → nome do arquivo.
+    nome: SljaConverter.resolveSongName(data, file.name),
     audio_token: audioToken,
     audio_name: audioName,
     slides: data.slides.map((s) => {
@@ -378,8 +442,13 @@ async function importSljaFile(file) {
       const imgTok = imgName
         ? imgTokenByName.get(s.imagem) || imgTokenByName.get(imgName) || ""
         : "";
+      if (s.imagem && !imgTok) {
+        console.warn(
+          `[custom_collections] import: imagem "${s.imagem}" referenciada mas ausente no pacote .slja`
+        );
+      }
       return {
-        id: CustomSongs.newId("slide"),
+        id: crypto.randomUUID(),
         tipo: s.tipo,
         letra: s.letra,
         letra_aux: s.letra_aux,
@@ -398,6 +467,11 @@ async function importSljaFile(file) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
+  if (!newSong.slides.some((sl) => sl.tempo_seconds > 0)) {
+    console.warn(
+      "[custom_collections] import: arquivo .slja sem tempos de sincronia (todos tempo_seconds=0)"
+    );
+  }
   await CustomSongs.saveSong(newSong);
   return newSong;
 }
@@ -424,7 +498,7 @@ async function onImportSlja(e) {
 // ===== Collections =====
 
 async function actNewCollection() {
-  const nome = prompt(t("actions.new_collection"), t("actions.new_collection"));
+  const nome = await askName(t("actions.new_collection"), t("actions.new_collection"));
   if (!nome) return;
   const c = CustomSongs.newCollection(nome);
   await CustomSongs.saveCollection(c);
@@ -433,7 +507,7 @@ async function actNewCollection() {
 }
 
 async function renameCollection(c) {
-  const nome = prompt(t("actions.rename"), c.nome);
+  const nome = await askName(t("actions.rename"), c.nome);
   if (!nome) return;
   c.nome = nome;
   await CustomSongs.saveCollection(c);
@@ -477,6 +551,19 @@ async function persistCollectionOrder() {
   justify-content: center;
   padding: 8px;
   overflow: hidden;
+  position: relative;
+}
+.song-card-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  z-index: 1;
+}
+.song-card-actions .v-btn {
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
 }
 .song-card-text {
   font-size: 11px;
@@ -484,6 +571,12 @@ async function persistCollectionOrder() {
   white-space: pre-line;
   width: 100%;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.song-card-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .color-dot {
   width: 14px;

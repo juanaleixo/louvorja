@@ -22,6 +22,14 @@ const OPTIONS_ONLINE_VIDEO_PROJECTION = `${OPTIONS}.online_video_projection`
 export const KEY_LITURGY_DAYS = `${MODULES}.${ModuleEnum.LITURGY}.days`;
 export const KEY_LITURGY_ACTIVE_DAY = `${MODULES}.${ModuleEnum.LITURGY}.active_day`;
 
+/**
+ * Chave dinâmica de visibilidade de um módulo no menu principal.
+ * `modules.<id>.show_in_main_menu` — distinta de `manifest.active` (instalação no boot).
+ */
+export function moduleShowInMainMenu(id: string): string {
+  return `${MODULES}.${id}.show_in_main_menu`;
+}
+
 
 export const KEYS = {
   MODULES: {
@@ -32,6 +40,7 @@ export const KEYS = {
     BIBLE: {
       SHOW_RETURN: `${MODULES}.${ModuleEnum.BIBLE}.show_return`,
       IS_PLAYING: `${MODULES}.${ModuleEnum.BIBLE}.is_playing`,
+      ESC_CLOSES_PROJECTION: `${MODULES}.${ModuleEnum.BIBLE}.esc_closes_projection`,
     },
     BACKGROUND_SOUND: {
       IS_PLAYING: `${MODULES}.${ModuleEnum.BACKGROUND_SOUND}.is_playing`,
@@ -64,11 +73,28 @@ export const KEYS = {
     STOPWATCH: {
       RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,
     },
+    SLIDE_EDITOR: {
+      PROJECTING: `${MODULES}.${ModuleEnum.SLIDE_EDITOR}.projecting`,
+    },
     TIMER: {
       RUNNING: `${MODULES}.${ModuleEnum.TIMER}.running`,
+      MODE: `${MODULES}.${ModuleEnum.TIMER}.mode`,
+      TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.target_time`,
+      SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.show_target_time`,
+      SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER}.show_alert`,
+      ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER}.alert_seconds`,
+      END_ACTION: `${MODULES}.${ModuleEnum.TIMER}.timer_end_action`,
+      END_ACTION_AUDIO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_audio`,
+      END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_music`,
+      END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_video`,
+      END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_online_video`,
     },
     TIMER_WORSHIP: {
       RUNNING: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`,
+      MODE: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.mode`,
+      SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.show_target_time`,
+      SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.show_alert`,
+      ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.alert_seconds`,
       SOUND_START: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_start`,
       SOUND_FIVE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_five_min`,
       SOUND_ONE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_one_min`,
@@ -80,6 +106,12 @@ export const KEYS = {
       END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`,
       LAST_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.last_target_time`,
     },
+    NAME_DRAW: {
+      RUNNING: `${MODULES}.${ModuleEnum.NAME_DRAW}.running`,
+      SHOW_DRAWN: `${MODULES}.${ModuleEnum.NAME_DRAW}.show_drawn`,
+      EFFECT_DURATION: `${MODULES}.${ModuleEnum.NAME_DRAW}.effect_duration`,
+      NAMES: `${MODULES}.${ModuleEnum.NAME_DRAW}.names`,
+    },
     OVERLAY: {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
     },
@@ -88,11 +120,11 @@ export const KEYS = {
   OPTIONS: {
     LANGUAGE: `${OPTIONS}.language`,
     THEME: `${OPTIONS}.theme`,
+    UI_STYLE: `${OPTIONS}.ui_style`,
     MINIMIZE_ON_START: `${OPTIONS}.minimize_on_start`,
     SLIDE: {
       CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,
       TEXT_ALIGN: `${OPTIONS_SLIDE}.text_align`,
-      TEXT_SIZE: `${OPTIONS_SLIDE}.text_size`,
       SHOW_TITLE_FIRST_SLIDE: `${OPTIONS_SLIDE}.show_title_first_slide`,
       CUSTOM_TEXT_FORMAT: `${OPTIONS_SLIDE}.custom_text_format`,
       TITLE_COLOR: `${OPTIONS_SLIDE}.title_color`,
@@ -125,6 +157,7 @@ export const KEYS = {
     FULLSCREEN: `${OPTIONS}.fullscreen`,
     LAST_DB_CHECK: `${OPTIONS}.last_db_check`,
     LAST_APP_CHECK: `${OPTIONS}.last_app_check`,
+    DISABLED_ALBUMS: `${OPTIONS}.disabled_albums`,
     SKIP_RELEASE_NOTES_VERSION: `${OPTIONS}.skip_release_notes_version`,
     SKIP_UPDATE_NOTIFICATION_VERSION: `${OPTIONS}.skip_update_notification_version`,
     SKIP_STARTUP_CHECK: `${OPTIONS}.skip_startup_check`,
@@ -144,6 +177,11 @@ export const KEYS = {
     },
     START_WITH_OS: `${OPTIONS}.start_with_os`,
     YOUTUBE_ACTION: `${OPTIONS}.youtube_action`,
+    DEV: {
+      DEVTOOLS_MAIN_WINDOW: `${OPTIONS}.dev.devtools_main_window`,
+      DEVTOOLS_PROJECTIONS: `${OPTIONS}.dev.devtools_projections`,
+      LOGS_TERMINAL: `${OPTIONS}.dev.logs_terminal`,
+    },
     ONLINE_VIDEO_PROJECTION: {
       ALWAYS_ON_TOP: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.always_on_top`,
       SHOW_RETURN: `${OPTIONS_ONLINE_VIDEO_PROJECTION}.show_return`,

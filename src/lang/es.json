@@ -77,6 +77,7 @@
       "file_playback": "Archivo Playback"
     },
     "customization": {
+      "title": "Formato",
       "restore": "Restaurar",
       "restore_configs": "Restaurar Configuración",
       "restore_dialog": "¿Quieres restaurar la configuración?",
@@ -95,13 +96,19 @@
       "border": "Borde",
       "vertical": "Alineación vertical",
       "horizontal": "Alineación horizontal",
-      "alert_color": "Color de alerta"
+      "alert_color": "Color de alerta",
+      "hour_cycle": "Formato del reloj",
+      "time_format": "Formato de la hora",
+      "show_date": "Mostrar fecha",
+      "date_format": "Formato de la fecha"
     }
   },
   "alert": {
     "close": "Cerrar",
     "yes": "Sí",
     "no": "No",
+    "ok": "Aceptar",
+    "cancel": "Cancelar",
     "wait": "Aguardar...",
     "migrating": "Migrando datos..."
   },
@@ -129,6 +136,9 @@
       "title": "General",
       "theme": "Apariencia del programa:",
       "language": "Idioma:",
+      "ui_style": "Estilo de la interfaz:",
+      "ui_style_delphi": "Delphi",
+      "ui_style_electron": "Electron",
       "start_with_os": "Iniciar con el sistema operativo",
       "themes": {
         "light": "Claro",
@@ -148,7 +158,8 @@
       "open_at": "Abrir en el monitor:",
       "version": "Versión",
       "show_return": "Mostrar en la pantalla de retorno",
-      "open_return_at": "Pantalla de retorno en:"
+      "open_return_at": "Pantalla de retorno en:",
+      "esc_closes_projection": "La tecla ESC cierra la proyección"
     },
     "monitors": {
       "title": "Monitores",
@@ -275,6 +286,7 @@
       "app_idle": "Listo para verificar actualizaciones.",
       "app_checking": "Verificando…",
       "app_available": "Versión {version} disponible.",
+      "app_available_new": "Nueva versión disponible.",
       "app_up_to_date": "Tienes la versión más reciente.",
       "app_downloading": "Descargando actualización…",
       "app_downloaded": "Actualización descargada — lista para instalar.",
@@ -300,6 +312,16 @@
       "db_up_to_date": "Base de datos actualizada",
       "db_error": "No se pudo verificar.",
       "cache_cleared": "Caché limpiado."
+    },
+    "albums": {
+      "title": "Álbumes",
+      "hint": "Desactive álbumes para ocultarlos de las listas de canciones e impedir la descarga en la sincronización.",
+      "enable_hymnal_1996": "Himnario 1996",
+      "hymnal_panel_title": "Himnario",
+      "search": "Buscar álbumes…",
+      "select_all": "Seleccionar todos",
+      "no_results": "Ningún álbum encontrado para la búsqueda.",
+      "loading": "Cargando álbumes…"
     },
     "collections_download": {
       "title": "Descarga de Colectáneas",
@@ -333,6 +355,7 @@
       "failed": "{n} fallo(s) durante la descarga.",
       "no_connection_hint": "Sin conexión FTP en este momento — la app intentará reconectar al iniciar la descarga.",
       "hymnal": "Himnario Adventista",
+      "hymnal_1996": "Himnario 1996",
       "songs": "himnos",
       "refresh_catalog": "Actualizar colectáneas",
       "last_update": "Actualizado a las {time}",
@@ -406,6 +429,21 @@
       "fade": "Usar fundido al abrir/cerrar proyección",
       "fade_duration": "Duración del fundido",
       "custom_background": "Personalizar fondo de proyección"
+    },
+    "dev": {
+      "title": "Desarrollador",
+      "section_devtools": "Herramientas de Desarrollador",
+      "devtools_main_window": "Abrir DevTools en la ventana principal al iniciar",
+      "devtools_projections": "Abrir DevTools en nuevas ventanas de proyección",
+      "logs_terminal": "Enviar logs del renderer (warn/error) a la terminal",
+      "section_actions": "Acciones",
+      "reload_all": "Recargar todas las ventanas",
+      "clear_db_cache": "Limpiar caché de la base de datos",
+      "section_environment": "Entorno",
+      "env_mode": "Modo",
+      "env_packaged": "Empaquetado",
+      "env_userdata": "Carpeta de datos",
+      "env_unavailable": "Información no disponible (modo web)."
     }
   },
   "about": {
@@ -561,7 +599,6 @@
       "delete": "Borrar",
       "draws": "Sorteador",
       "error": "Error",
-      "expanded_area": "Área Expandida",
       "export": "Exportar",
       "favorites": "Favoritos",
       "file": "Archivo",
@@ -612,8 +649,6 @@
       "check_all": "Marcar Todos",
       "clear_liturgy": "Limpiar Liturgia",
       "clock": "Reloj",
-      "clock_24h": "12h / 24h",
-      "clock_seconds": "Segundos",
       "collections": "Colecciones",
       "copy_liturgy": "Copiar Liturgia",
       "counter": "Contador",
@@ -652,6 +687,7 @@
       "editor_play_pause": "Reproducir",
       "editor_prev": "Anterior",
       "editor_project": "Proyectar",
+      "editor_stop_projection": "Detener proyección",
       "editor_record_advance": "Grabar y Avanzar",
       "editor_record_clear": "Quitar grabaciones",
       "editor_record_retroactive": "Grabar Retroactivo",
@@ -707,6 +743,7 @@
       "search": "Pesquisar",
       "search_music": "Localizar Músicas",
       "sequence": "En Secuencia",
+      "settings": "Configuración",
       "show_notes": "Mostrar Panel de Anotaciones",
       "sing": "Cantado",
       "slide_editor": "Editor de Músicas",
@@ -808,6 +845,7 @@
       "feedback": "Enviar Comentarios",
       "check_update": "Buscar Actualizaciones",
       "albums": "Activar/Desactivar Álbumes",
+      "dev": "Desarrollador",
       "donate": "Haga su Donación",
       "exit": "Salir"
     },

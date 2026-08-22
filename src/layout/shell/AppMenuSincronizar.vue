@@ -152,6 +152,25 @@
                   </label>
                 </div>
 
+                <!-- Hinário 1996 (visível apenas se habilitado nas opções de álbuns) -->
+                <div
+                  v-if="hymnal1996Enabled && hymnal1996Ids.length"
+                  class="opt-cat opt-cat--special"
+                >
+                  <label class="opt-checkbox opt-cat-header">
+                    <input
+                      type="checkbox"
+                      :checked="selectedHymnal1996"
+                      :disabled="downloading || preparing || scanningCache || saving"
+                      @change="onHymnal1996Toggle(($event.target as HTMLInputElement).checked)"
+                    />
+                    <strong>{{ $t("options.collections_download.hymnal_1996") }}</strong>
+                    <small class="opt-download-count">
+                      · {{ hymnal1996Ids.length }} {{ $t("options.collections_download.songs") }}
+                    </small>
+                  </label>
+                </div>
+
                 <!-- Coletâneas (categorias > albums) -->
                 <div v-for="cat in categories" :key="cat.id_category" class="opt-cat">
                   <label class="opt-checkbox opt-cat-header">
@@ -503,7 +522,7 @@ import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
 import $alert from "@/helpers/Alert";
-import { KEYS } from "@/constants/UserDataKeys";
+import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { useSyncManager } from "@/composables/useSyncManager";
@@ -553,11 +572,15 @@ const scanCacheDone = ref<number>(0);
 const scanCacheTotal = ref<number>(0);
 const categories = ref<Category[]>([]);
 const hymnalIds = ref<number[]>([]);
+const hymnal1996Ids = ref<number[]>([]);
+const hymnal1996Enabled = ref<boolean>(false);
 const catalogTimestamp = ref<string | null>(null);
 const selectedAlbums = ref<Set<number>>(new Set());
 const selectedHymnal = ref<boolean>(false);
+const selectedHymnal1996 = ref<boolean>(false);
 const cachedAlbumsBaseline = ref<Set<number>>(new Set());
 const cachedHymnalBaseline = ref<boolean>(false);
+const cachedHymnal1996Baseline = ref<boolean>(false);
 
 const activeTab = ref<string>("collections");
 
@@ -601,14 +624,16 @@ const ftpStatusText = computed<string>(() => {
 });
 
 const hasAnySelection = computed<boolean>(
-  () => selectedAlbums.value.size > 0 || selectedHymnal.value
+  () => selectedAlbums.value.size > 0 || selectedHymnal.value || selectedHymnal1996.value
 );
 
 const hasPendingRemovals = computed<boolean>(() => {
   for (const id of cachedAlbumsBaseline.value) {
     if (!selectedAlbums.value.has(id)) return true;
   }
-  return cachedHymnalBaseline.value && !selectedHymnal.value;
+  if (cachedHymnalBaseline.value && !selectedHymnal.value) return true;
+  if (cachedHymnal1996Baseline.value && !selectedHymnal1996.value) return true;
+  return false;
 });
 
 const biblePercent = computed<number>(() =>
@@ -654,6 +679,10 @@ function onHymnalToggle(checked: boolean): void {
   selectedHymnal.value = checked;
 }
 
+function onHymnal1996Toggle(checked: boolean): void {
+  selectedHymnal1996.value = checked;
+}
+
 function toggleBibleVersion(id: number, checked: boolean): void {
   if (checked) selectedBibles.value.add(id);
   else selectedBibles.value.delete(id);
@@ -665,11 +694,13 @@ function selectAll(): void {
   categories.value.forEach((c) => c.albums?.forEach((a) => all.add(a.id_album)));
   selectedAlbums.value = all;
   if (hymnalIds.value.length) selectedHymnal.value = true;
+  if (hymnal1996Ids.value.length) selectedHymnal1996.value = true;
 }
 
 function deselectAll(): void {
   selectedAlbums.value = new Set();
   selectedHymnal.value = false;
+  selectedHymnal1996.value = false;
 }
 
 function selectAllBibles(): void {
@@ -688,9 +719,12 @@ function deselectAllBibles(): void {
 async function loadCatalog({ fresh = false }: { fresh?: boolean } = {}): Promise<void> {
   loadingCategories.value = true;
   try {
+    hymnal1996Enabled.value =
+      $userdata.get<boolean>(moduleShowInMainMenu("hymnal_1996"), false) === true;
     const result = await sync.loadCatalog(locale.value, { fresh });
     categories.value = result.categories as Category[];
     hymnalIds.value = result.hymnalIds;
+    hymnal1996Ids.value = result.hymnal1996Ids;
     catalogTimestamp.value = nowHHMM();
     await scanLocalCache();
   } catch (e) {
@@ -708,14 +742,21 @@ async function scanLocalCache(): Promise<void> {
   if (!Platform.storage?.checkLocal) return;
   scanningCache.value = true;
 
-  const result = await sync.scanCache(locale.value, categories.value, hymnalIds.value);
+  const result = await sync.scanCache(
+    locale.value,
+    categories.value,
+    hymnalIds.value,
+    hymnal1996Ids.value
+  );
   scanCacheDone.value = sync.scanProgress.value.done;
   scanCacheTotal.value = sync.scanProgress.value.total;
 
   selectedAlbums.value = result.cachedAlbums;
   selectedHymnal.value = result.hymnalCached;
+  selectedHymnal1996.value = result.hymnal1996Cached;
   cachedAlbumsBaseline.value = new Set(result.cachedAlbums);
   cachedHymnalBaseline.value = result.hymnalCached;
+  cachedHymnal1996Baseline.value = result.hymnal1996Cached;
   scanningCache.value = false;
   await refreshDiskUsage();
 }
@@ -742,7 +783,13 @@ async function startDownloads(): Promise<void> {
 
   let files: any[] = [];
   try {
-    files = await sync.collectFiles(selectedAlbums.value, selectedHymnal.value, hymnalIds.value);
+    files = await sync.collectFiles(
+      selectedAlbums.value,
+      selectedHymnal.value,
+      hymnalIds.value,
+      selectedHymnal1996.value,
+      hymnal1996Ids.value
+    );
   } catch (e) {
     console.error("[Sincronizar] collectFiles:", e);
     preparing.value = false;
@@ -769,6 +816,7 @@ async function saveSelection(): Promise<void> {
   saving.value = true;
   let removedAlbums = 0;
   let removedHymnal = false;
+  let removedHymnal1996 = false;
 
   try {
     const albumsToRemove = [...cachedAlbumsBaseline.value].filter(
@@ -790,7 +838,14 @@ async function saveSelection(): Promise<void> {
       removedHymnal = true;
     }
 
-    if (removedAlbums > 0 && removedHymnal) {
+    if (cachedHymnal1996Baseline.value && !selectedHymnal1996.value) {
+      const files = await sync.collectHymnalFileList(hymnal1996Ids.value);
+      await sync.removeFilesFromCache(files);
+      cachedHymnal1996Baseline.value = false;
+      removedHymnal1996 = true;
+    }
+
+    if (removedAlbums > 0 && (removedHymnal || removedHymnal1996)) {
       sync.downloadCompletedMsg.value = t("options.collections_download.save_done_both", {
         n: removedAlbums,
       });
@@ -798,7 +853,7 @@ async function saveSelection(): Promise<void> {
       sync.downloadCompletedMsg.value = t("options.collections_download.save_done_albums", {
         n: removedAlbums,
       });
-    } else if (removedHymnal) {
+    } else if (removedHymnal || removedHymnal1996) {
       sync.downloadCompletedMsg.value = t("options.collections_download.save_done_hymnal");
     } else {
       sync.downloadCompletedMsg.value = t("options.collections_download.save_nothing");
@@ -930,12 +985,12 @@ async function changeFolder(): Promise<void> {
 }
 
 async function toggleAutoCache(enabled: boolean): Promise<void> {
-  $userdata.set(KEYS.OPTIONS.AUTO_CACHE_MEDIA, !!enabled);
+  $userdata.set(KEYS.OPTIONS.AUTO_CACHE_MEDIA, enabled);
   if (Platform?.storage?.setAutoCache) {
-    await Platform.storage.setAutoCache(!!enabled);
+    await Platform.storage.setAutoCache(enabled);
   }
   const cur = (await Platform.userStore?.read("storage")) || {};
-  await Platform.userStore?.write("storage", { ...cur, autoCache: !!enabled });
+  await Platform.userStore?.write("storage", { ...cur, autoCache: enabled });
 }
 
 async function setQuotaGb(gb: number): Promise<void> {
@@ -977,7 +1032,9 @@ async function refreshDiskUsage(): Promise<void> {
   try {
     const result = await sync.refreshDiskUsage(
       cachedAlbumsBaseline.value,
-      cachedHymnalBaseline.value
+      cachedHymnalBaseline.value,
+      cachedHymnal1996Baseline.value,
+      hymnal1996Ids.value
     );
     diskUsage.value = result;
   } catch (e) {

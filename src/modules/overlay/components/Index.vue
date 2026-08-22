@@ -40,7 +40,11 @@
                   class="overlay-preview-img"
                   alt=""
                 />
-                <div v-else-if="slot.type === 'module_mirror'" class="overlay-preview-text">
+                <div
+                  v-else-if="slot.type === 'module_mirror'"
+                  class="overlay-preview-text"
+                  :style="previewTextStyle(slot)"
+                >
                   {{ moduleValues[slot.source_module || ""] || slot.source_module || "—" }}
                 </div>
               </div>
@@ -287,7 +291,7 @@ function previewImageStyle(slot: OverlaySlot): Record<string, string | number> {
 
 function previewTextStyle(slot: OverlaySlot): Record<string, string> {
   const s = slot.style;
-  const out: Record<string, string> = {
+  return {
     fontFamily: s.font || "Arial, sans-serif",
     fontSize: `clamp(5px, ${s.font_size || 5}vh, 80px)`,
     color: s.color || "#FFFFFF",
@@ -295,11 +299,8 @@ function previewTextStyle(slot: OverlaySlot): Record<string, string> {
     lineHeight: "1.3",
     fontWeight: "600",
     letterSpacing: "0.02em",
+    textShadow: s.text_shadow ? "0 2px 8px rgba(0,0,0,0.8)" : "none",
   };
-  if (s.text_shadow) {
-    out.textShadow = "0 2px 8px rgba(0,0,0,0.8)";
-  }
-  return out;
 }
 
 // Ações da Ribbon
@@ -400,7 +401,6 @@ onMounted(() => {
 
 .overlay-preview-text {
   text-transform: uppercase;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .overlay-preview-img {

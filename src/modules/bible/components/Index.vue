@@ -58,10 +58,7 @@
     <BibleSpotlight v-model="bibleSpotlightOpen" :initial-buffer="spotlightInitialBuffer" />
 
     <div v-if="!compact" class="bible-layout">
-      <!-- Coluna Formatar -->
-      <div v-if="show_format" class="bible-col bible-col--format">
-        <FormatPanel :module-id="moduleId" :manifest="manifest" />
-      </div>
+      <ModuleFormatDrawer v-model="show_format" :module-id="moduleId" :manifest="manifest" />
 
       <!-- Coluna Livros -->
       <div class="bible-col bible-col--books">
@@ -286,7 +283,7 @@ import { useDisplay } from "vuetify";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import Screen from "../components/Screen.vue";
-import FormatPanel from "@/components/FormatPanel.vue";
+import ModuleFormatDrawer from "@/components/ModuleFormatDrawer.vue";
 import LSelect from "@/components/inputs/LjSelect.vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
@@ -535,6 +532,7 @@ watch(
 
 function onKeydown(e: KeyboardEvent): void {
   if (!show.value) return;
+  if (AppData.get("active_module") !== moduleId) return;
   if (bibleSpotlightOpen.value) return;
   const tag = (e.target as HTMLElement)?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
@@ -929,14 +927,6 @@ async function stopProjection(): Promise<void> {
   await ProjectionWindows.closeBibleWindows();
 }
 
-function restoreFormat(): void {
-  const customization = (manifest as any).customization || {};
-  for (const [key, def] of Object.entries(customization)) {
-    UserData.set(`modules.${moduleId}.${key}`, (def as any)?.default ?? null);
-  }
-  Broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, { key: "*", value: null });
-}
-
 // Ações da ribbon contextual "Configurar Bíblia" → executa localmente.
 useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
   switch (payload?.action) {
@@ -952,11 +942,14 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, (payload: any) => {
     case "toggle_format":
       show_format.value = !show_format.value;
       break;
-    case "restore":
-      restoreFormat();
-      break;
     case "project":
       toggleProjection();
+      break;
+    case "stop":
+      stopProjection();
+      break;
+    case "settings":
+      window.dispatchEvent(new CustomEvent("louvorja:open-options", { detail: { tab: "bible" } }));
       break;
   }
 });
@@ -1029,6 +1022,7 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
 
 <style scoped>
 .bible-layout {
+  position: relative;
   display: flex;
   flex-direction: row;
   height: 100%;
@@ -1049,13 +1043,6 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
   min-height: 0;
   background: var(--lj-surface-bg);
   overflow: hidden;
-}
-
-.bible-col--format {
-  flex: 0 0 200px;
-  width: 200px;
-  padding: 8px 10px;
-  overflow-y: auto;
 }
 
 .bible-col--books {

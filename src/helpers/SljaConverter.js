@@ -94,7 +94,7 @@ function parseSlja(iniText) {
 
     slides.push({
       index: i,
-      tipo: sec.tipo || "LETRA",
+      tipo: sec.tipo || (i === 1 ? "CAPA" : "LETRA"),
       letra: decodeLetra(sec.letra || ""),
       letra_aux: decodeLetra(sec.letra_aux || ""),
       tamanho_letra: parseInt(sec.tamanho_letra || (i === 1 ? "18" : "14"), 10),
@@ -116,9 +116,66 @@ function parseSlja(iniText) {
       versao: geral.versao || "",
       url_musica: geral.url_musica || "",
       audio: geral.audio || "0",
+      // Nome da música gravado pelo LouvorJA no export (pode faltar em
+      // arquivos legados/Delphi).
+      nome: geral.nome || geral.titulo || "",
     },
     slides,
   };
+}
+
+/**
+ * Preenche a imagem dos slides ANTERIORES à primeira imagem do pacote.
+ *
+ * Uso na importação: quando o 1º slide (capa) não tem fundo mas um seguinte
+ * tem, os anteriores herdam essa imagem — igual ao comportamento da capa no
+ * LouvorJA. Slides posteriores à primeira imagem não são alterados (permanecem
+ * sem fundo), e a imagem_posicao original de cada slide é preservada.
+ *
+ * @param {Array<{imagem?: string}>} [slides]
+ * @returns {Array} Mesmo array, com `imagem` preenchida nos slides leading.
+ */
+function fillMissingImages(slides = []) {
+  let first = -1;
+  for (let i = 0; i < slides.length; i++) {
+    if (slides[i] && slides[i].imagem) {
+      first = i;
+      break;
+    }
+  }
+  if (first <= 0) return slides;
+
+  for (let i = 0; i < first; i++) {
+    slides[i].imagem = slides[first].imagem;
+  }
+  return slides;
+}
+
+/**
+ * Resolve o nome da música a partir do pacote .slja importado.
+ *
+ * Prioridade:
+ *   1. [Geral].nome (gravado pelo export do LouvorJA)
+ *   2. Letra do primeiro slide (convenção: a capa traz o nome da música)
+ *   3. Nome do arquivo .slja (sem extensão)
+ *
+ * @param {object} data        Resultado de loadSlja ({ meta, slides }).
+ * @param {string} fileName    Nome do arquivo importado (ex.: "hino.slja").
+ * @returns {string}           Nome resolvido (pode retornar "").
+ */
+function resolveSongName(data = {}, fileName = "") {
+  const iniNome = String((data.meta && data.meta.nome) || "").trim();
+  if (iniNome) return iniNome;
+
+  const firstSlide = Array.isArray(data.slides) ? data.slides[0] : null;
+  const capaNome = String((firstSlide && firstSlide.letra) || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (capaNome) return capaNome;
+
+  return String(fileName || "")
+    .trim()
+    .replace(/\.(slja|lja)$/i, "");
 }
 
 function buildIniFromSlides({ meta = {}, slides = [], audioPath = "" }) {
@@ -131,6 +188,7 @@ function buildIniFromSlides({ meta = {}, slides = [], audioPath = "" }) {
   };
   if (audioPath) sections["Geral"].url_musica = audioPath;
   if (meta.versao) sections["Geral"].versao = meta.versao;
+  if (meta.nome) sections["Geral"].nome = meta.nome;
 
   slides.forEach((s, idx) => {
     const i = idx + 1;
@@ -181,31 +239,36 @@ async function loadSlja(file) {
   }
   const parsed = parseSlja(iniText);
 
+  // Varredura da raiz com normalização de separador — zips gerados pelo
+  // Delphi gravam entradas como "imagens\foto.png" (barra invertida), que
+  // zip.folder() não encontra.
   let audio = null;
   let audioName = null;
-  const audioFolder = zip.folder("audio");
-  if (audioFolder) {
-    const audioFiles = [];
-    audioFolder.forEach((relativePath, zipEntry) => {
-      if (!zipEntry.dir) audioFiles.push({ relativePath, zipEntry });
-    });
-    if (audioFiles.length > 0) {
-      audio = await audioFiles[0].zipEntry.async("blob");
-      audioName = audioFiles[0].relativePath;
-    }
-  }
-
   const images = new Map();
-  const imgFolder = zip.folder("imagens") || zip.folder("images");
-  if (imgFolder) {
-    const imgPromises = [];
-    imgFolder.forEach((relativePath, zipEntry) => {
-      if (!zipEntry.dir) {
-        imgPromises.push(zipEntry.async("blob").then((blob) => images.set(relativePath, blob)));
-      }
-    });
-    await Promise.all(imgPromises);
-  }
+  const pending = [];
+
+  zip.forEach((relativePath, zipEntry) => {
+    if (zipEntry.dir) return;
+    const norm = relativePath.replace(/\\/g, "/");
+
+    const imgMatch = norm.match(/^imagens\/(.*)$/i) || norm.match(/^images\/(.*)$/i);
+    if (imgMatch) {
+      pending.push(zipEntry.async("blob").then((b) => images.set(imgMatch[1], b)));
+      return;
+    }
+
+    const audMatch = norm.match(/^audio\/(.*)$/i);
+    if (audMatch && !audio) {
+      pending.push(
+        zipEntry.async("blob").then((b) => {
+          audio = b;
+          audioName = audMatch[1];
+        })
+      );
+    }
+  });
+
+  await Promise.all(pending);
 
   return { ...parsed, audio, audioName, images };
 }
@@ -215,6 +278,7 @@ async function loadSlja(file) {
  *
  * @param {object} input
  * @param {object} [input.meta]                 Metadados gerais (versao, audio).
+ * @param {string} [input.nome]                 Nome da música — gravado em [Geral].nome.
  * @param {Array} input.slides                  Lista de slides (schema CustomSlide).
  * @param {Blob | null} [input.audio]           Blob do MP3 (será gravado em audio/<audioName>).
  * @param {string} [input.audioName]            Nome do arquivo de áudio (default: 'audio.mp3').
@@ -223,6 +287,7 @@ async function loadSlja(file) {
  */
 async function writeSlja({
   meta = {},
+  nome = "",
   slides = [],
   audio = null,
   audioName = "audio.mp3",
@@ -246,7 +311,11 @@ async function writeSlja({
     return { ...s, imagem: path };
   });
 
-  const iniText = buildIniFromSlides({ meta, slides: slidesForIni, audioPath });
+  const iniText = buildIniFromSlides({
+    meta: { ...meta, ...(nome ? { nome } : {}) },
+    slides: slidesForIni,
+    audioPath,
+  });
   zip.file("slides.lja", iniText);
 
   if (images && images.size > 0) {
@@ -270,4 +339,6 @@ export default {
   secondsToHms,
   decodeLetra,
   encodeLetra,
+  resolveSongName,
+  fillMissingImages,
 };
