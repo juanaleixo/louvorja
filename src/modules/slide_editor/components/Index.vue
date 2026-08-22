@@ -407,7 +407,7 @@
     <input ref="fileSlja" type="file" accept=".slja,.lja" hidden @change="onLoadSlja" />
     <input ref="fileTxt" type="file" accept=".txt" hidden @change="onImportTxt" />
     <input ref="fileAudio" type="file" accept="audio/*" hidden @change="onPickAudio" />
-    <input ref="fileImage" type="file" accept="image/*" hidden @change="onPickImage" />
+    <input ref="fileImage" type="file" accept="image/*,.heic,.heif" hidden @change="onPickImage" />
   </ModuleContainer>
 </template>
 
@@ -420,6 +420,7 @@ import $broadcast from "@/helpers/Broadcast";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import SljaConverter from "@/helpers/SljaConverter";
 import AudioLibrary from "@/helpers/AudioLibrary";
+import { ensureRenderableImage } from "@/helpers/ImageConvert";
 import CustomSongs from "@/helpers/CustomSongs";
 import $alert from "@/helpers/Alert";
 import { openProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
@@ -787,6 +788,7 @@ const RIBBON_HANDLERS = {
   open: actOpen,
   save: actSave,
   save_as: actSaveAs,
+  export: actExport,
   import_txt: actImportTxt,
   project: toggleProject,
   new_slide: actNewSlide,
@@ -1030,12 +1032,22 @@ async function actSaveAs() {
   const name = await askName(t("actions.save_as"), song.value.nome || t("data.untitled"));
   if (!name) return;
   try {
-    song.value.nome = name;
     const materialized = await materializeMedia(song.value);
-    const saved = await CustomSongs.saveSong(materialized);
+    // Salvar como cria um NOVO registro na biblioteca (não sobrescreve a origem).
+    const saved = await CustomSongs.saveSong({
+      ...materialized,
+      id: crypto.randomUUID(),
+      nome: name,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
     song.value = saved;
-    await downloadSlja(name);
     dirty.value = false;
+    $alert.info({
+      title: t("actions.save_as"),
+      text: name,
+      translate: false,
+    });
   } catch (err) {
     $alert.error({
       title: t("data.save_error"),
@@ -1043,6 +1055,11 @@ async function actSaveAs() {
       translate: false,
     });
   }
+}
+
+// Exporta a apresentação atual como arquivo .slja para download.
+async function actExport() {
+  await downloadSlja(songTitle.value);
 }
 
 async function downloadSlja(name) {
@@ -1351,7 +1368,9 @@ async function onPickImage(e) {
   e.target.value = "";
   if (!file) return;
   try {
-    const token = await AudioLibrary.importImage(file, file.name);
+    // HEIC/HEIF não decodifica no Chromium — converte para JPEG antes.
+    const { blob, name } = await ensureRenderableImage(file.name, file);
+    const token = await AudioLibrary.importImage(blob, name);
     activeSlide.value.imagem = token;
     await ensureImageResolved(token);
     markDirty();

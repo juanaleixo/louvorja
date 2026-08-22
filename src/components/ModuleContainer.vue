@@ -123,11 +123,13 @@ async function close() {
   emit("close");
 }
 
-function onScroll() {
-  emit("scroll");
+// Repassa o payload do Window (scroll_bottom etc.) — sem ele a paginação
+// incremental do DataTable nunca dispara no modo embedded.
+function onScroll(payload) {
+  emit("scroll", payload);
 }
-function onHasScroll() {
-  emit("hasScroll");
+function onHasScroll(value) {
+  emit("hasScroll", value);
 }
 
 onMounted(() => {

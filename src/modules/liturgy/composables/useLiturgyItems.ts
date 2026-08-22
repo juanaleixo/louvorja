@@ -17,6 +17,7 @@ import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
 import type { LiturgyItem, ScheduledCategory, LiturgyMusicItem } from "@/types/Liturgy";
 
 interface VideoItem {
@@ -588,7 +589,7 @@ export function useLiturgyItems(
     $media.openYouTube(embedUrl, item.item || item.subitem || url);
   }
 
-  const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+  const IMAGE_EXTS = IMAGE_FILE_EXTS;
   const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
   const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
 

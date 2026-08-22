@@ -47,6 +47,12 @@ const props = defineProps({
   letter: String,
   sort_by: String,
   disabled_albums: { type: Array, default: () => [] },
+  /**
+   * Mínimo de caracteres para o filtro textual ser aplicado (scroll infinito
+   * em listas grandes). Buscas numéricas exatas (nº do hino/track) escapam
+   * do gate — são match exato e barato.
+   */
+  search_min_length: { type: Number, default: 0 },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -108,7 +114,10 @@ watch(data, () => {
 watch(
   () => props.scroll,
   () => {
-    if (props.scroll.scroll_bottom <= 50 && data.value.length < filter_data.value.length) {
+    // Carrega +PAGE_SIZE ao se aproximar do fim do scroll (payload do
+    // ModuleContainer/Window). Sem métricas (popup sem payload), não cresce.
+    const sb = props.scroll?.scroll_bottom;
+    if (typeof sb === "number" && sb <= 150 && data.value.length < filter_data.value.length) {
       paginateData();
     }
   }
@@ -144,7 +153,17 @@ async function loadData() {
 
 function filterData() {
   limit.value = 0;
-  const value = Strings.clean(props.search);
+  let value = Strings.clean(props.search);
+
+  // Gate de performance: com search_min_length configurado, só filtra a partir
+  // do mínimo de caracteres (buscas curtas mostram a lista base). Buscas
+  // numéricas escapam do gate — match exato por nº do hino/track.
+  const belowMin =
+    props.search_min_length > 0 &&
+    value.length > 0 &&
+    value.length < props.search_min_length &&
+    !/^\d+$/.test(value);
+  if (belowMin) value = "";
 
   const searchable = props.searchable_fields
     ? Object.keys(props.searchable_fields).filter((key) => props.searchable_fields[key] === true)
@@ -200,10 +219,20 @@ function filterData() {
 
 function paginateData() {
   const PAGE_SIZE = 100;
+  const searching = Strings.clean(props.search).length > 0;
+
+  // Durante a busca, os resultados ficam limitados a no máximo 100.
+  if (searching) {
+    data.value = filter_data.value.slice(0, PAGE_SIZE);
+    loading.value = false;
+    return;
+  }
+
   limit.value += PAGE_SIZE;
   data.value = filter_data.value.slice(0, limit.value);
   loading.value = false;
 
+  // Fallback: sem barra de rolagem, segue paginando até completar.
   if (!props.has_scroll && data.value.length < filter_data.value.length) {
     if (_paginateRaf) cancelAnimationFrame(_paginateRaf);
     _paginateRaf = requestAnimationFrame(() => {

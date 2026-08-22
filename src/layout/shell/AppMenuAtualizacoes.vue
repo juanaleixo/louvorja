@@ -128,6 +128,10 @@
             <v-icon icon="mdi-broom" size="14" class="mr-1" />
             {{ $t("options.updates.clear_cache") }}
           </button>
+          <button type="button" class="opt-btn" @click="clearCollectionsCache">
+            <v-icon icon="mdi-broom" size="14" class="mr-1" />
+            {{ $t("options.updates.clear_cache_collections") }}
+          </button>
         </div>
       </div>
     </section>
@@ -162,7 +166,7 @@ interface DbConfig {
 type UpdateStatus = "idle" | "checking" | "ok" | "available" | "error";
 
 const isDesktop = computed(() => Platform.isDesktop);
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const appUpdate = ref<AppUpdateState>({
   status: "idle",
@@ -390,6 +394,17 @@ function formatLastCheck(iso: string): string {
 
 async function clearDbCache(): Promise<void> {
   sessionStorage.clear();
+  $database.invalidate(); // memória + tabela db_cache inteira
+  dbCacheCleared.value = true;
+  setTimeout(() => {
+    dbCacheCleared.value = false;
+  }, 4000);
+}
+
+/** Limpa apenas os caches de música/coletâneas do locale atual. */
+function clearCollectionsCache(): void {
+  const files = ["musics", "hymnal", "hymnal_1996", "categories"];
+  for (const f of files) $database.invalidate(`${locale.value}_${f}`);
   dbCacheCleared.value = true;
   setTimeout(() => {
     dbCacheCleared.value = false;

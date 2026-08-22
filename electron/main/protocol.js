@@ -83,6 +83,8 @@ const _MIME_TYPES = {
   ".webp": "image/webp",
   ".svg": "image/svg+xml",
   ".bmp": "image/bmp",
+  ".heic": "image/heic",
+  ".heif": "image/heif",
   ".pdf": "application/pdf",
   ".json": "application/json",
   ".txt": "text/plain",

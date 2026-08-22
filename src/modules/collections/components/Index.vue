@@ -73,35 +73,59 @@
 
     <v-alert v-if="error" type="error" :text="error" variant="tonal" border="start" class="ma-2" />
 
-    <div class="d-flex flex-wrap justify-center">
-      <v-card
-        v-for="album in albums"
-        :key="album.id_album"
-        :style="width > 350 ? 'min-width: 300px; max-width: 300px' : 'width:100%'"
-        theme="dark"
-        width="320"
-        class="ma-2"
-        :color="album.color || '#385F73'"
-        dark
-        @click="openAlbum(album.id_album)"
-      >
-        <div class="d-flex flex-no-wrap justify-space-between align-center">
-          <v-avatar
-            v-if="album.url_image"
-            class="ma-3"
-            :size="width > 350 ? 125 : 75"
-            tile
-            rounded="0"
-          >
-            <v-img :src="pathFile(album.url_image)" />
-          </v-avatar>
-          <div class="flex-grow-1 d-flex flex-column">
-            <div class="text-h6 pt-2" v-text="album.name" />
+    <div
+      class="collections-scroll"
+      @scroll="
+        ($event) => {
+          const el = $event.currentTarget;
+          if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) showMore();
+        }
+      "
+    >
+      <div class="px-4 pt-2">
+        <v-text-field
+          v-model="search"
+          density="compact"
+          hide-details
+          clearable
+          variant="outlined"
+          :placeholder="t('music_search.title')"
+          prepend-inner-icon="mdi-magnify"
+        />
+      </div>
+      <div class="d-flex flex-wrap justify-center">
+        <v-card
+          v-for="album in visibleAlbums"
+          :key="album.id_album"
+          :style="width > 350 ? 'min-width: 300px; max-width: 300px' : 'width:100%'"
+          theme="dark"
+          width="320"
+          class="ma-2"
+          :color="album.color || '#385F73'"
+          dark
+          @click="openAlbum(album.id_album)"
+        >
+          <div class="d-flex flex-no-wrap justify-space-between align-center">
+            <v-avatar
+              v-if="album.url_image"
+              class="ma-3"
+              :size="width > 350 ? 125 : 75"
+              tile
+              rounded="0"
+            >
+              <v-img :src="pathFile(album.url_image)" />
+            </v-avatar>
+            <div class="flex-grow-1 d-flex flex-column">
+              <div class="text-h6 pt-2" v-text="album.name" />
 
-            <div class="h6" v-text="album.subtitle" />
+              <div class="h6" v-text="album.subtitle" />
+            </div>
           </div>
-        </div>
-      </v-card>
+        </v-card>
+      </div>
+      <div v-if="visibleAlbums.length < filteredAlbums.length" class="text-center pa-4">
+        <v-progress-circular indeterminate size="24" />
+      </div>
     </div>
   </ModuleContainer>
 </template>
@@ -157,12 +181,37 @@ const albums = computed(() => {
 
 const compact = computed(() => width.value <= 600);
 
+// Scroll infinito: renderiza os álbuns em páginas à medida que se rola.
+const PAGE_SIZE = 30;
+const visibleCount = ref(PAGE_SIZE);
+const search = ref("");
+
+const filteredAlbums = computed(() => {
+  const q = Strings.clean(search.value);
+  // Busca textual só filtra a partir de 4 caracteres (performance).
+  if (!q || q.length < 4) return albums.value;
+  return albums.value.filter((a) => Strings.clean(a.name).includes(q));
+});
+
+const visibleAlbums = computed(() => visibleAlbumsFrom(filteredAlbums.value));
+
+function visibleAlbumsFrom(list) {
+  return list.slice(0, visibleCount.value);
+}
+
+function showMore() {
+  if (visibleCount.value < filteredAlbums.value.length) {
+    visibleCount.value += PAGE_SIZE;
+  }
+}
+
 const t = (key) => moduleContainer.value?.t(key) || key;
 const pathFile = (img) => Path.file(img);
 
 async function loadData() {
   id_category.value = null;
   categories.value = [];
+  visibleCount.value = PAGE_SIZE;
   loading.value = true;
 
   categories.value = await Database.get(`${locale.value}_categories`);
@@ -185,6 +234,7 @@ async function loadData() {
 
 function setCategory(id = null) {
   id_category.value = id;
+  visibleCount.value = PAGE_SIZE;
 }
 
 function openAlbum(id_album) {
@@ -211,3 +261,10 @@ onMounted(async () => {
   await loadData();
 });
 </script>
+
+<style scoped>
+.collections-scroll {
+  height: 100%;
+  overflow-y: auto;
+}
+</style>

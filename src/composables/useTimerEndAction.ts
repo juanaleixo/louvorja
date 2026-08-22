@@ -24,6 +24,8 @@ import $path from "@/helpers/Path";
 import $modules from "@/helpers/Modules";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
+import { ensureRenderableImage, isHeic } from "@/helpers/ImageConvert";
+import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
 import { KEYS } from "@/constants/UserDataKeys";
 import { MediaEnum } from "@/enums/MediaEnum";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
@@ -162,10 +164,20 @@ export function useTimerEndAction(moduleId: string, keys: TimerEndActionKeys) {
   async function handleFileVideo(): Promise<void> {
     const result = await pickFile("video/*,image/*");
     if (!result) return;
-    const url = resolveFilePath(result.path || "", result.file);
+    // HEIC/HEIF não decodifica no Chromium — converte quando o File está disponível.
+    let workPath = result.path || "";
+    let workFile = result.file;
+    if (workFile && isHeic(workFile.name, workFile.type)) {
+      const converted = await ensureRenderableImage(workFile.name, workFile);
+      workFile = new File([converted.blob], converted.name, {
+        type: converted.blob.type || "image/jpeg",
+      });
+      workPath = "";
+    }
+    const url = resolveFilePath(workPath, workFile);
     if (!url) return;
-    const ext = (result.path || result.file?.name || "").split(".").pop()?.toLowerCase() || "";
-    const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
+    const ext = (workPath || workFile?.name || "").split(".").pop()?.toLowerCase() || "";
+    const isImage = IMAGE_FILE_EXTS.includes(ext);
     $userdata.set(keys.END_ACTION_VIDEO, {
       url,
       type: isImage ? "image" : "video",

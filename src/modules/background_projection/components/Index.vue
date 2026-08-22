@@ -23,7 +23,7 @@
       </div>
 
       <!-- Category chips -->
-      <div v-if="categories.length" class="bg-category-chips">
+      <div v-if="categories.length || uncategorizedCount > 0" class="bg-category-chips">
         <v-chip
           v-for="cat in categories"
           :key="cat.id"
@@ -41,6 +41,16 @@
             class="mr-1"
           />
           {{ cat.name }}
+        </v-chip>
+        <!-- Virtual: arquivos sem categoria -->
+        <v-chip
+          v-if="uncategorizedCount > 0"
+          color="#607D8B"
+          :variant="selectedCategoryIds.has(UNCATEGORIZED_ID) ? 'flat' : 'outlined'"
+          size="small"
+          @click="toggleCategoryChip(UNCATEGORIZED_ID)"
+        >
+          {{ t("uncategorized") }} ({{ uncategorizedCount }})
         </v-chip>
       </div>
 
@@ -161,6 +171,14 @@
           <v-card-text>
             <v-list density="compact">
               <v-list-item
+                :title="t('uncategorized')"
+                @click="selectCategoryForImport(UNCATEGORIZED_ID)"
+              >
+                <template #prepend>
+                  <v-icon icon="mdi-image-multiple-outline" size="24" class="mr-3" />
+                </template>
+              </v-list-item>
+              <v-list-item
                 v-for="cat in categories"
                 :key="cat.id"
                 :title="cat.name"
@@ -218,6 +236,8 @@ import { DB_TABLE } from "@/constants/DbTables";
 import CategoryManagerDialog from "@/components/CategoryManagerDialog.vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
+import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
+import { ensureRenderableImage, isHeic } from "@/helpers/ImageConvert";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
 interface BgFile {
@@ -289,10 +309,18 @@ const libraryFilter = ref<"all" | "image" | "video">("all");
 const searchQuery = ref("");
 const files = ref<BgFile[]>([]);
 const selectedId = ref<string | null>(null);
+
+/** Id virtual dos arquivos adicionados sem categoria. */
+const UNCATEGORIZED_ID = "";
 const isPlaying = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const categories = ref<BgCategory[]>([]);
 const selectedCategoryIds = ref(new Set<string>());
+
+const uncategorizedCount = computed(() => {
+  const ids = new Set(categories.value.map((c) => c.id));
+  return files.value.filter((f) => !f.categoryId || !ids.has(f.categoryId)).length;
+});
 const showManageDialog = ref(false);
 const showCategorySelect = ref(false);
 const saving = ref(false);
@@ -418,7 +446,14 @@ async function removeFile(file: BgFile): Promise<void> {
 const filteredFiles = computed(() => {
   let list = files.value;
   if (selectedCategoryIds.value.size > 0) {
-    list = list.filter((f) => selectedCategoryIds.value.has(f.categoryId));
+    const catIds = new Set(categories.value.map((c) => c.id));
+    list = list.filter(
+      (f) =>
+        selectedCategoryIds.value.has(f.categoryId) ||
+        // Chip virtual "Sem categoria": arquivos sem categoria ou órfãos.
+        (selectedCategoryIds.value.has(UNCATEGORIZED_ID) &&
+          (!f.categoryId || !catIds.has(f.categoryId)))
+    );
   }
   if (libraryFilter.value !== "all") {
     list = list.filter((f) => f.type === libraryFilter.value);
@@ -472,6 +507,7 @@ async function handleSaveCategory(cat: BgCategory): Promise<void> {
     await saveCategory(cat);
     categories.value = await loadCategories();
     selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
+    if (uncategorizedCount.value > 0) selectedCategoryIds.value.add(UNCATEGORIZED_ID);
   } finally {
     saving.value = false;
   }
@@ -483,7 +519,7 @@ async function handleDeleteCategory(id: string): Promise<void> {
   selectedCategoryIds.value = new Set([...selectedCategoryIds.value].filter((cid) => cid !== id));
 }
 
-const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+const IMAGE_EXTS = IMAGE_FILE_EXTS;
 const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
 
 function getFileType(ext: string): "image" | "video" | null {
@@ -521,10 +557,7 @@ let pendingCategoryId = ref<string | null>(null);
 const pendingDropFiles = ref<File[]>([]);
 
 async function addFiles(): Promise<void> {
-  if (!categories.value.length) {
-    Alert.info(t("alert_no_category"));
-    return;
-  }
+  // Sem categoria é sempre uma opção — não bloqueia mais sem categorias.
   showCategorySelect.value = true;
 }
 
@@ -567,7 +600,7 @@ async function importFilePath(rawPath: string): Promise<void> {
   const name = rawPath.split("/").pop() || rawPath.split("\\").pop() || rawPath;
   const ext = name.split(".").pop()?.toLowerCase() || "";
   const fileType = getFileType(ext);
-  if (!fileType || !pendingCategoryId.value) return;
+  if (!fileType || pendingCategoryId.value == null) return;
   const file: BgFile = {
     id: crypto.randomUUID(),
     name,
@@ -579,6 +612,10 @@ async function importFilePath(rawPath: string): Promise<void> {
   if (fileType === "image") file.thumb = buildThumbPath(rawPath);
   await saveFile(file);
   files.value.unshift(file);
+  // Garante que o chip "Sem categoria" fique ativo ao adicionar sem categoria.
+  if (pendingCategoryId.value === UNCATEGORIZED_ID) {
+    selectedCategoryIds.value.add(UNCATEGORIZED_ID);
+  }
   if (fileType === "video" && Platform.isDesktop) {
     const url = resolvePath(rawPath);
     generateVideoThumbnail(url).then((thumb) => {
@@ -591,14 +628,26 @@ async function importFilePath(rawPath: string): Promise<void> {
 }
 
 async function importFileBlob(f: File): Promise<void> {
-  if (!pendingCategoryId.value) return;
-  const fileType = f.type.startsWith("image/")
+  if (pendingCategoryId.value == null) return;
+  // HEIC/HEIF não decodifica no Chromium — converte para JPEG antes.
+  let workFile = f;
+  if (isHeic(f.name, f.type)) {
+    try {
+      const converted = await ensureRenderableImage(f.name, f);
+      workFile = new File([converted.blob], converted.name, {
+        type: converted.blob.type || "image/jpeg",
+      });
+    } catch (e) {
+      console.warn("[background_projection] falha ao converter HEIC:", e);
+    }
+  }
+  const fileType = workFile.type.startsWith("image/")
     ? "image"
-    : f.type.startsWith("video/")
+    : workFile.type.startsWith("video/")
       ? "video"
       : null;
   if (!fileType) return;
-  const path = URL.createObjectURL(f);
+  const path = URL.createObjectURL(workFile);
   const { data, mime } = await readFileData(f);
   const file: BgFile = {
     id: crypto.randomUUID(),
@@ -614,6 +663,10 @@ async function importFileBlob(f: File): Promise<void> {
   createdObjectUrls.set(file.id, path);
   await saveFile(file);
   files.value.unshift(file);
+  // Garante que o chip "Sem categoria" fique ativo ao adicionar sem categoria.
+  if (pendingCategoryId.value === UNCATEGORIZED_ID) {
+    selectedCategoryIds.value.add(UNCATEGORIZED_ID);
+  }
   if (fileType === "video") {
     generateVideoThumbnail(path).then((thumb) => {
       if (thumb) {
@@ -664,11 +717,6 @@ async function onDrop(e: DragEvent): Promise<void> {
   dragCounter = 0;
   const droppedFiles = e.dataTransfer?.files;
   if (!droppedFiles?.length) return;
-
-  if (!categories.value.length) {
-    Alert.info({ text: t("alert_no_category") });
-    return;
-  }
 
   const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
@@ -774,6 +822,7 @@ onMounted(async () => {
   categories.value = await loadCategories();
   selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
   files.value = await loadLibrary();
+  if (uncategorizedCount.value > 0) selectedCategoryIds.value.add(UNCATEGORIZED_ID);
   for (const f of files.value) {
     if (f.path.startsWith("blob:")) {
       if (f.data && f.mime) {

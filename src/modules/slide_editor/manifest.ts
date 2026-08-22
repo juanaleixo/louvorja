@@ -40,6 +40,7 @@ export const contextualPages: RibbonPage[] = [
           { id: "editor_open", icon: "mdi-folder-open-outline", label: "ribbon.btn.editor_open", action: "editor_open", color: "#16a085" },
           { id: "editor_save", icon: "mdi-content-save", label: "ribbon.btn.editor_save", action: "editor_save", color: "#27ae60" },
           { id: "editor_save_as", icon: "mdi-content-save-edit-outline", label: "ribbon.btn.editor_save_as", action: "editor_save_as", color: "#27ae60" },
+          { id: "editor_export", icon: "mdi-file-export-outline", label: "ribbon.btn.editor_export", action: "editor_export", color: "#27ae60" },
           { id: "editor_import_txt", icon: "mdi-file-import-outline", label: "ribbon.btn.editor_import_txt", action: "editor_import_txt", color: "#7f8c8d" },
         ],
       },
