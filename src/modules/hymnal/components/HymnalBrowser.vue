@@ -155,6 +155,7 @@ function buildSljaSlides(data) {
     letra_aux: "",
     imagem: data.url_image ? String(data.url_image).split("/").pop() : "",
     imagem_posicao: data.image_position || 5,
+    tempo_seconds: 0,
   });
 
   const lyricList = data.lyric
@@ -175,6 +176,9 @@ function buildSljaSlides(data) {
       letra_aux: lyric.aux_lyric || "",
       imagem: prevImg,
       imagem_posicao: lyric.image_position || data.image_position || 5,
+      // Instante de início do slide na música — preserva a sincronia ao
+      // reimportar no editor/coletâneas.
+      tempo_seconds: DateTime.toNumber(lyric.time),
     });
   }
 
@@ -255,6 +259,7 @@ async function exportMusic() {
           audio: audioBlob,
           audioName: `${nameSlug}.mp3`,
           images,
+          nome: data.name || "",
         });
 
         const url = URL.createObjectURL(sljaBlob);

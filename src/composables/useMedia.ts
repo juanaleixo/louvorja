@@ -19,6 +19,7 @@ import { Music } from "@/types/Music";
 import { LyricOpenParams } from "@/types/Lyric";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { MediaOpenParams } from "@/types/Media";
+import AudioLibrary from "@/helpers/AudioLibrary";
 
 const _audio = useAudioPlayback();
 const _slides = useSlides();
@@ -230,7 +231,7 @@ const _self = {
           });
         }
       } catch (error) {
-        $alert.error({ text: "modules.media.alerts.open_remote_error", error });
+        $alert.error({ text: "modules.remote_control.messages.error", error });
       }
       return;
     }
@@ -264,7 +265,6 @@ const _self = {
     $appdata.set("modules.media.loading", true);
 
     let data = await $database.get<Music>(`music_${id_music}`);
-    console.log(data);
     if (data == null || _loadingId !== id_music) {
       this.close(true);
       return;
@@ -286,44 +286,151 @@ const _self = {
       );
     }
 
-    _slides.setSlides(slidesArray, timesArray, data.name ?? "");
+    const audioUrl =
+      mode == "audio" || mode == "instrumental"
+        ? $path.file(
+            mode == "audio"
+              ? (data.url_music as string)
+              : (data.url_instrumental_music as string)
+          )
+        : null;
+
+    this._launchProjection({
+      slides: slidesArray,
+      times: timesArray,
+      title: data.name ?? "",
+      audioUrl,
+      idCheck: id_music,
+      retryFn: (id) => _self.open(id),
+      minimized: !!minimized,
+      mode,
+    });
+  },
+
+  /**
+   * Executa uma música personalizada (Coletâneas Pessoais / Editor de Músicas).
+   *
+   * Monta os slides no useSlides, toca o áudio (se houver audio_token) com
+   * sincronia, marca a mídia como ativa (para o ESC global oferecer
+   * confirmação de encerramento) e abre as janelas de projeção.
+   */
+  async openCustomSong(song: {
+    nome?: string;
+    audio_token?: string;
+    audio_name?: string;
+    slides?: Array<{
+      tipo?: string;
+      letra?: string;
+      letra_aux?: string;
+      cor_letra?: string;
+      cor_letra_aux?: string;
+      imagem?: string;
+      imagem_posicao?: number | string;
+      tamanho_letra?: number;
+      tamanho_letra_aux?: number;
+      tempo_seconds?: number;
+    }>;
+  }): Promise<void> {
+    $dev.write("open custom song", song?.nome);
+
+    _audio.stop();
+    this.clearVariables();
+
+    const slidesArray: Slide[] = [];
+    const timesArray: number[] = [];
+    for (const s of song.slides || []) {
+      let urlImage: string | undefined;
+      if (s.imagem) {
+        urlImage = (await AudioLibrary.resolveImage(s.imagem)) || undefined;
+      }
+      slidesArray.push({
+        lyric: s.letra || "",
+        aux_lyric: s.letra_aux || "",
+        url_image: urlImage,
+        image_position: typeof s.imagem_posicao === "number" ? s.imagem_posicao - 1 : 4,
+        cover: s.tipo === "CAPA",
+        tipo: s.tipo,
+        color: s.cor_letra,
+        color_aux: s.cor_letra_aux,
+        font_size_pct: s.tamanho_letra,
+        font_size_aux_pct: s.tamanho_letra_aux,
+        name: song.nome || "",
+      });
+      // tempo_seconds é o instante de INÍCIO do slide (mesma convenção do
+      // Media.open com os campos time do banco) — usar direto, sem acumular.
+      timesArray.push(Number(s.tempo_seconds) || 0);
+    }
+    if (!slidesArray.length) {
+      this.close(true);
+      return;
+    }
+
+    const audioUrl = song.audio_token
+      ? (await AudioLibrary.resolveAudio(song.audio_token)) || null
+      : null;
+
+    _loadingId = null;
+    const minimizeOnStart = $userdata.get("options.minimize_on_start", false);
+
+    this._launchProjection({
+      slides: slidesArray,
+      times: timesArray,
+      title: song.nome || "",
+      audioUrl,
+      idCheck: null,
+      retryFn: () => {},
+      minimized: !!minimizeOnStart,
+      mode: "audio",
+    });
+  },
+
+  /**
+   * Helper compartilhado entre `open` e `openCustomSong`: registra os slides,
+   * transmite SLIDES_DATA, marca a mídia ativa e dispara o pipeline de áudio
+   * (via _loadAudioSrc — lazy-load/erro/retry) e a abertura das projeções.
+   */
+  _launchProjection(opts: {
+    slides: Slide[];
+    times: number[];
+    title: string;
+    audioUrl: string | null;
+    idCheck: string | number | null;
+    retryFn: (id: string | number) => void;
+    minimized: boolean;
+    mode: string;
+  }): void {
+    _slides.setSlides(opts.slides, opts.times, opts.title);
 
     $broadcast.send(BROADCAST_TYPE.SLIDES_DATA, {
-      slides:      slidesArray,
-      title:       data.name,
+      slides: opts.slides,
+      title: opts.title,
       slide_index: 0,
     });
 
-    if (minimized) {
+    if (opts.minimized) {
       this.minimize();
     } else {
       this.maximize();
     }
 
-    if (mode == "audio" || mode == "instrumental") {
+    if (opts.audioUrl) {
       const volume = $appdata.get("modules.media.config.volume");
       _audio.setVolume(volume as number);
       _audio.getElement().currentTime = 0;
       $appdata.set("modules.media.config.is_paused", true);
-
-      const audioUrl = $path.file(
-        mode == "audio"
-          ? (data.url_music as string)
-          : (data.url_instrumental_music as string)
-      );
-      $appdata.set("modules.media.config.audio", audioUrl);
-
+      $appdata.set("modules.media.config.audio", opts.audioUrl);
+      $appdata.set("modules.media.config.audio_only", false);
       _slides.bindAudio(_audio);
-
-      _loadAudioSrc(audioUrl, id_music, (id) => _self.open(id));
+      _loadAudioSrc(opts.audioUrl, opts.idCheck, opts.retryFn);
     } else {
       $appdata.set("modules.media.config.audio", "");
+      $appdata.set("modules.media.config.audio_only", false);
       $appdata.set("modules.media.loading", false);
-      // Modo sem áudio: broadcast imediato do slide de capa para a projeção
+      // Sem áudio: broadcast imediato do slide de capa para a projeção.
       _slides.broadcastSlide();
     }
 
-    $appdata.set("modules.media.config.mode", mode);
+    $appdata.set("modules.media.config.mode", opts.mode);
 
     // Replica fmMusica + fmMusicaRetorno + fmMusicaOperador do Delphi:
     // ao iniciar uma música, abre as janelas auxiliares conforme

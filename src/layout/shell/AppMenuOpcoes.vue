@@ -285,21 +285,6 @@
           </select>
         </div>
         <div class="opt-row">
-          <label class="opt-label" for="opt-slides-main-text-size">
-            {{ $t("options.slides.text_size") }}
-          </label>
-          <input
-            id="opt-slides-main-text-size"
-            type="number"
-            min="6"
-            max="60"
-            class="opt-input opt-input--num"
-            :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_SIZE, 17)"
-            @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_SIZE, Number($v($event)) || 17)"
-          />
-        </div>
-
-        <div class="opt-row">
           <label class="opt-checkbox">
             <input
               type="checkbox"

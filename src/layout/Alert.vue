@@ -17,6 +17,16 @@
         <small v-if="alert.error" class="alert-error" v-html="alert.error" />
       </div>
 
+      <div v-if="alert.prompt" class="alert-body alert-body--input">
+        <input
+          v-model="promptValue"
+          type="text"
+          class="alert-input"
+          :placeholder="alert.input_placeholder || ''"
+          @keydown.enter="clickBtn('ok')"
+        />
+      </div>
+
       <footer class="alert-actions">
         <button
           v-for="(btn, index) in alert.buttons"
@@ -44,6 +54,11 @@ const show = computed({
   set: (v) => $appdata.set("alert.show", v),
 });
 
+const promptValue = computed({
+  get: () => alert.value?.input_value ?? alert.value?.input_default ?? "",
+  set: (v) => $appdata.set("alert.input_value", v),
+});
+
 const variant = computed(() => alert.value?.color || "info");
 
 const iconForVariant = computed(() => {
@@ -57,7 +72,12 @@ const iconForVariant = computed(() => {
 });
 
 function clickBtn(value) {
-  $appdata.set("alert.value", value);
+  if (alert.value?.prompt) {
+    const entered = (promptValue.value || "").trim();
+    $appdata.set("alert.value", value === "ok" ? entered : null);
+  } else {
+    $appdata.set("alert.value", value);
+  }
   $appdata.set("alert.show", false);
 }
 </script>
@@ -127,6 +147,25 @@ function clickBtn(value) {
   font-family: var(--lj-font-mono);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.alert-body--input {
+  padding-top: 0;
+}
+.alert-input {
+  width: 100%;
+  padding: var(--lj-space-2) var(--lj-space-3);
+  border: 1px solid var(--lj-surface-border-strong);
+  border-radius: var(--lj-radius-sm);
+  background: var(--lj-surface-bg);
+  color: var(--lj-text);
+  font-family: inherit;
+  font-size: var(--lj-text-base);
+  outline: none;
+}
+.alert-input:focus {
+  border-color: var(--lj-navy);
+  box-shadow: var(--lj-shadow-focus-navy-sm);
 }
 
 .alert-actions {

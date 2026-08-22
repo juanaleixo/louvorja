@@ -73,6 +73,9 @@ export const KEYS = {
     STOPWATCH: {
       RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,
     },
+    SLIDE_EDITOR: {
+      PROJECTING: `${MODULES}.${ModuleEnum.SLIDE_EDITOR}.projecting`,
+    },
     TIMER: {
       RUNNING: `${MODULES}.${ModuleEnum.TIMER}.running`,
       MODE: `${MODULES}.${ModuleEnum.TIMER}.mode`,
@@ -122,7 +125,6 @@ export const KEYS = {
     SLIDE: {
       CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,
       TEXT_ALIGN: `${OPTIONS_SLIDE}.text_align`,
-      TEXT_SIZE: `${OPTIONS_SLIDE}.text_size`,
       SHOW_TITLE_FIRST_SLIDE: `${OPTIONS_SLIDE}.show_title_first_slide`,
       CUSTOM_TEXT_FORMAT: `${OPTIONS_SLIDE}.custom_text_format`,
       TITLE_COLOR: `${OPTIONS_SLIDE}.title_color`,

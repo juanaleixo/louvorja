@@ -99,7 +99,7 @@ function close(id) {
   gap: var(--lj-space-2);
   padding: 0 var(--lj-space-2) 0 var(--lj-space-4);
   background: var(--lj-subtab-bg);
-  border: 1px solid var(--lj-subtabs-border);
+  border: 3px solid var(--lj-subtabs-border);
   border-bottom: none;
   border-radius: var(--lj-radius-tab);
   margin-right: 2px;

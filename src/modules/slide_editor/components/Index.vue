@@ -422,7 +422,9 @@ import SljaConverter from "@/helpers/SljaConverter";
 import AudioLibrary from "@/helpers/AudioLibrary";
 import CustomSongs from "@/helpers/CustomSongs";
 import $alert from "@/helpers/Alert";
-import { openProjectionWindows } from "@/helpers/ProjectionWindows";
+import { openProjectionWindows, closeProjectionWindows } from "@/helpers/ProjectionWindows";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import { useSlideStyle } from "@/composables/useSlideStyle";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
@@ -463,8 +465,14 @@ const transparentBg = computed({
 
 const songTitle = computed(() => song.value.nome || t("data.untitled"));
 
-function renameSong() {
-  const name = prompt(t("labels.name"), song.value.nome || "");
+function askName(title, defaultValue) {
+  return new Promise((resolve) => {
+    $alert.prompt({ title, input_default: defaultValue }, (val) => resolve(val));
+  });
+}
+
+async function renameSong() {
+  const name = await askName(t("labels.name"), song.value.nome || "");
   if (name && name !== song.value.nome) {
     song.value.nome = name;
     markDirty();
@@ -780,7 +788,7 @@ const RIBBON_HANDLERS = {
   save: actSave,
   save_as: actSaveAs,
   import_txt: actImportTxt,
-  project: actProject,
+  project: toggleProject,
   new_slide: actNewSlide,
   duplicate_slide: actDuplicateSlide,
   remove_slide: actRemoveSlide,
@@ -815,6 +823,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("lj:open-song", onOpenSong);
+  if (isProjecting.value) actStopProject();
   AudioLibrary.clearSession();
 });
 
@@ -828,7 +837,7 @@ function confirmDiscard() {
 }
 
 function onClose() {
-  isProjecting.value = false;
+  if (isProjecting.value) actStopProject();
   AudioLibrary.clearSession();
 }
 
@@ -856,6 +865,9 @@ async function onLoadSlja(e) {
   try {
     const data = await SljaConverter.loadSlja(file);
 
+    // Capa/abertura sem fundo herda a imagem do próximo slide que a tenha.
+    SljaConverter.fillMissingImages(data.slides);
+
     let audioToken = "";
     let audioName = "";
     if (data.audio) {
@@ -873,8 +885,9 @@ async function onLoadSlja(e) {
     }
 
     const newSong = {
-      id: CustomSongs.newId("song"),
-      nome: file.name.replace(/\.(slja|lja)$/i, "") || t("data.untitled"),
+      id: crypto.randomUUID(),
+      // Nome: [Geral].nome → letra do 1º slide (capa) → nome do arquivo.
+      nome: SljaConverter.resolveSongName(data, file.name) || t("data.untitled"),
       audio_token: audioToken,
       audio_name: audioName,
       slides: data.slides.map((s) => {
@@ -882,8 +895,13 @@ async function onLoadSlja(e) {
         const imgTok = imgName
           ? imgTokenByName.get(s.imagem) || imgTokenByName.get(imgName) || ""
           : "";
+        if (s.imagem && !imgTok) {
+          console.warn(
+            `[slide_editor] import: imagem "${s.imagem}" referenciada mas ausente no pacote .slja`
+          );
+        }
         return {
-          id: CustomSongs.newId("slide"),
+          id: crypto.randomUUID(),
           tipo: s.tipo,
           letra: s.letra,
           letra_aux: s.letra_aux,
@@ -902,6 +920,11 @@ async function onLoadSlja(e) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    if (!newSong.slides.some((sl) => sl.tempo_seconds > 0)) {
+      console.warn(
+        "[slide_editor] import: arquivo .slja sem tempos de sincronia (todos tempo_seconds=0)"
+      );
+    }
     song.value = newSong;
     current.value = 0;
     dirty.value = false;
@@ -925,6 +948,9 @@ async function buildExportSlja() {
         exportSlide.imagem = path;
       } else {
         exportSlide.imagem = "";
+        console.warn(
+          `[slide_editor] export: blob da imagem não encontrado (${s.imagem}) — slide sairá sem fundo`
+        );
       }
     }
     slidesForExport.push(exportSlide);
@@ -934,6 +960,11 @@ async function buildExportSlja() {
   let audioName = song.value.audio_name || "audio.mp3";
   if (song.value.audio_token) {
     audioBlob = await AudioLibrary.getAudioBlob(song.value.audio_token);
+    if (!audioBlob) {
+      console.warn(
+        `[slide_editor] export: blob do áudio não encontrado (${song.value.audio_token}) — pacote sairá sem áudio`
+      );
+    }
   }
 
   return SljaConverter.writeSlja({
@@ -941,6 +972,7 @@ async function buildExportSlja() {
     audio: audioBlob,
     audioName,
     images: imagesMap,
+    nome: song.value.nome || "",
   });
 }
 
@@ -987,7 +1019,7 @@ async function actSave() {
     });
   } catch (err) {
     $alert.error({
-      title: t("data.invalid_file"),
+      title: t("data.save_error"),
       text: String(err?.message || err),
       translate: false,
     });
@@ -995,7 +1027,7 @@ async function actSave() {
 }
 
 async function actSaveAs() {
-  const name = prompt(t("actions.save_as"), song.value.nome || t("data.untitled"));
+  const name = await askName(t("actions.save_as"), song.value.nome || t("data.untitled"));
   if (!name) return;
   try {
     song.value.nome = name;
@@ -1006,7 +1038,7 @@ async function actSaveAs() {
     dirty.value = false;
   } catch (err) {
     $alert.error({
-      title: t("data.invalid_file"),
+      title: t("data.save_error"),
       text: String(err?.message || err),
       translate: false,
     });
@@ -1050,7 +1082,7 @@ async function onImportTxt(e) {
   const newSlide = CustomSongs.newSlide({
     ...slides.value[idx],
     letra: text,
-    id: CustomSongs.newId("slide"),
+    id: crypto.randomUUID(),
     tempo_seconds: 0,
   });
   slides.value.splice(idx + 1, 0, newSlide);
@@ -1096,6 +1128,7 @@ async function broadcastCurrentSlide() {
 
 // Flag de "estamos projetando" para esta sessão do editor. Enquanto verdadeiro,
 // trocas de slide refletem imediatamente nas janelas de projeção abertas.
+// Espelhada em UserData (PROJECTING) para o ícone dinâmico da ribbon.
 const isProjecting = ref(false);
 
 async function actProject() {
@@ -1105,7 +1138,23 @@ async function actProject() {
     console.warn("[slide_editor] openProjectionWindows falhou:", err);
   }
   isProjecting.value = true;
+  $userdata.set(KEYS.MODULES.SLIDE_EDITOR.PROJECTING, true);
   await broadcastCurrentSlide();
+}
+
+function actStopProject() {
+  isProjecting.value = false;
+  $userdata.set(KEYS.MODULES.SLIDE_EDITOR.PROJECTING, false);
+  // Limpa a tela e encerra as janelas de projeção de música.
+  $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
+  closeProjectionWindows().catch((e) => {
+    console.warn("[slide_editor] closeProjectionWindows falhou:", e);
+  });
+}
+
+function toggleProject() {
+  if (isProjecting.value) actStopProject();
+  else void actProject();
 }
 
 // Re-emite quando a janela /projection (ou /projection/return) monta e pede
@@ -1113,6 +1162,14 @@ async function actProject() {
 useBroadcastListener(BROADCAST_TYPE.REQUEST_SLIDE_STATE, () => {
   if (!isProjecting.value) return;
   broadcastCurrentSlide();
+});
+
+// Se algo externo encerrar a projeção (ESC global, Media.close), reseta o
+// estado local e o flag da ribbon para o ícone voltar ao inicial.
+useBroadcastListener(BROADCAST_TYPE.MEDIA_CLOSE, () => {
+  if (!isProjecting.value) return;
+  isProjecting.value = false;
+  $userdata.set(KEYS.MODULES.SLIDE_EDITOR.PROJECTING, false);
 });
 
 // Reflete trocas e edições do slide ativo na janela de projeção ao vivo,
@@ -1148,7 +1205,7 @@ function actNewSlide() {
 function actDuplicateSlide() {
   const s = slides.value[current.value];
   if (!s) return;
-  slides.value.splice(current.value + 1, 0, { ...s, id: CustomSongs.newId("slide") });
+  slides.value.splice(current.value + 1, 0, { ...s, id: crypto.randomUUID() });
   current.value += 1;
   markDirty();
 }
@@ -1175,7 +1232,7 @@ function splitSlideAt(idx) {
     if (i === 0) return { ...s, letra };
     return {
       ...s,
-      id: CustomSongs.newId("slide"),
+      id: crypto.randomUUID(),
       letra,
       tempo_seconds: 0,
     };

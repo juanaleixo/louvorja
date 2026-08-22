@@ -23,23 +23,9 @@
   <!-- Modo EMBEDDED (default — replica PageControl Delphi) -->
   <div v-else-if="show" v-show="isActiveEmbedded" class="module-embedded">
     <header class="module-embedded-header">
-      <div v-if="moduleIcon" class="module-embedded-icon">
-        <v-icon :icon="moduleIcon" size="18" />
-      </div>
-      <div class="module-embedded-title">
-        {{ headerTitle }}
-      </div>
       <div v-if="$slots.header" class="module-embedded-slot-header">
         <slot name="header" />
       </div>
-      <button
-        type="button"
-        class="module-embedded-action module-embedded-action--close"
-        :title="$t('alert.close')"
-        @click="close"
-      >
-        <v-icon icon="mdi-close" size="14" />
-      </button>
     </header>
 
     <div class="module-embedded-body">

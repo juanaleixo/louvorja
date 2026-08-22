@@ -74,8 +74,8 @@ import { useSlideStyle } from "@/composables/useSlideStyle";
 function _resolveImage(url) {
   if (!url) return null;
   if (typeof url !== "string") return null;
-  // Já é URL absoluta (http/https/louvorja/file/data)?
-  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(url) || url.startsWith("data:")) return url;
+  // Já é URL absoluta (http/https/louvorja/file/blob/data)?
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(url)) return url;
   try {
     return Path.file(url);
   } catch {

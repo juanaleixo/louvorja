@@ -11,7 +11,7 @@ const modulePath = $modules.getPath(moduleId);
 
 export const module: Module = {
   id: moduleId,
-  name: "Coletâneas Pessoais",
+  name: "Coletâneas Personalizadas",
   description: `${modulePath}.description`,
   title: `${modulePath}.title`,
   icon: ICONS.MODULES.CUSTOM_COLLECTONS,

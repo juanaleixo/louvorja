@@ -25,11 +25,19 @@ export function useContainerSize() {
     return ((Number(pc) || 50) * v) / 100 / 2;
   }
 
+  // Converte % da ALTURA do container em px — mesma semântica de cqh/vh
+  // usada pelos slides (tamanho_letra = % da altura). Fallback 16px enquanto
+  // o container não foi medido (measure faz retry a cada 100ms).
+  function pctOfHeight(pc: number | string | undefined): number {
+    if (height.value <= 0) return 16;
+    return ((Number(pc) || 0) / 100) * height.value;
+  }
+
   onMounted(() => {
     measure();
     window.addEventListener("resize", measure);
   });
   onUnmounted(() => window.removeEventListener("resize", measure));
 
-  return { container, width, height, measure, fontSizePc };
+  return { container, width, height, measure, fontSizePc, pctOfHeight };
 }

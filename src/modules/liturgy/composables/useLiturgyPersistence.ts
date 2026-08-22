@@ -2,6 +2,7 @@ import { ref, computed, type Ref, type ComputedRef } from "vue";
 import { useI18n } from "vue-i18n";
 import $liturgy from "@/helpers/Liturgy";
 import $userdata from "@/helpers/UserData";
+import $alert from "@/helpers/Alert";
 import { KEYS } from "@/constants/UserDataKeys";
 import type { ScheduledCategory, ScheduledItem } from "@/types/Liturgy";
 import pt from "../lang/pt.json";
@@ -106,11 +107,12 @@ export function useLiturgyPersistence() {
   }
 
   function addCategory(): void {
-    const nome = prompt(t("schedules.new_category"));
-    if (!nome || !nome.trim()) return;
-    const id = $liturgy.addScheduledCategory(nome.trim());
-    _refreshScheduled();
-    activeCatId.value = id;
+    $alert.prompt({ title: t("schedules.new_category") }, (nome: string | null) => {
+      if (!nome || !nome.trim()) return;
+      const id = $liturgy.addScheduledCategory(nome.trim());
+      _refreshScheduled();
+      activeCatId.value = id;
+    });
   }
 
   function startEditingCategory(c: ScheduledCategory): void {

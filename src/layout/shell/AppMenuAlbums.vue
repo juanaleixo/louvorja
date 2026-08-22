@@ -5,7 +5,7 @@
       <p class="opt-hint">{{ $t("options.albums.hint") }}</p>
 
       <!-- Pesquisa -->
-      <div class="opt-row opt-row--col" style="margin-bottom: 8px">
+      <div class="opt-row opt-row--col">
         <v-text-field
           v-model="search"
           :label="$t('options.albums.search')"
@@ -13,6 +13,7 @@
           hide-details
           clearable
           prepend-inner-icon="mdi-magnify"
+          width="400px"
         />
       </div>
 
