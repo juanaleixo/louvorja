@@ -18,9 +18,7 @@ vi.mock("@/helpers/IndexedDB", () => ({
       idbStore.delete(id);
     }),
     clear: vi.fn(async () => {
-      for (const k of [...idbStore.keys()]) {
-        if (k.startsWith("db:")) idbStore.delete(k);
-      }
+      idbStore.clear();
     }),
   },
 }));
@@ -67,8 +65,8 @@ describe("Database — cache em camadas", () => {
     // Segunda chamada: memória — sem nova rede.
     await db.get("pt_musics");
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    // IDB recebeu o registro persistido.
-    expect(idbStore.get("db:pt_musics")).toBeTruthy();
+    // IDB recebeu o registro persistido (chave = nome do arquivo).
+    expect(idbStore.get("pt_musics")).toBeTruthy();
   });
 
   it("sobrevive ao fechamento do programa (memória vazia → lê do IDB sem rede)", async () => {
@@ -102,11 +100,11 @@ describe("Database — cache em camadas", () => {
     await db.get("pt_musics");
     await db.get("pt_hymnal");
 
-    db.invalidate("db:pt_musics");
-    expect(idbStore.has("db:pt_musics")).toBe(false);
-    expect(idbStore.has("db:pt_hymnal")).toBe(true);
+    db.invalidate("pt_musics");
+    expect(idbStore.has("pt_musics")).toBe(false);
+    expect(idbStore.has("pt_hymnal")).toBe(true);
 
     db.invalidate();
-    expect(idbStore.has("db:pt_hymnal")).toBe(false);
+    expect(idbStore.has("pt_hymnal")).toBe(false);
   });
 });
