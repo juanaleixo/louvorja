@@ -176,12 +176,16 @@ Gerenciado via `src/helpers/IndexedDB.ts`. Tabelas definidas em `src/constants/D
 
 ```
 louvorja/
-├── background_projection_library
-├── background_projection_categories
-├── background_sound_categories
-├── media_deck_library
-├── settings              ← wallpaper, preferências diversas
-└── ... (futuras migrações)
+├── settings                                  ← wallpaper, preferências diversas
+├── cache                                     ← cache de JSONs do banco (Database)
+├── background_projection.library / .category
+├── background_sound.category / .library
+├── overlay.image / .slots
+├── custom_online_videos.videos / .thumbnails ← Meus Vídeos Online
+├── custom_collections.songs / .collections   ← Coletâneas personalizadas
+├── media_library.library                     ← Biblioteca de mídia
+├── audio_library / image_library             ← bibliotecas legadas de mídia
+└── liturgy.library                           ← liturgias salvas
 ```
 
 Helper genérico para a tabela `settings`:
@@ -192,6 +196,25 @@ import { getSetting, saveSetting } from "@/helpers/SettingsStorage";
 await saveSetting({ id: "main", image: arrayBuffer, mime: "image/png", color: "#000", position: "cover" });
 const wp = await getSetting("main");
 ```
+
+#### Cache do banco em camadas (`Database.ts`)
+
+`$database.get(file)` resolve o JSON em três camadas:
+
+1. **Memória** — instantânea, vale na sessão.
+2. **IndexedDB (`cache`)** — sobrevive ao fechamento; entrada `{ id, data, ts, v }`.
+3. **Rede** — `VITE_URL_DATABASE` com header `Api-Token`; grava nas duas camadas acima.
+
+- **Validade**: sem TTL por tempo — a entrada vale até invalidação explícita ou nova
+  versão do app (`VITE_DB_VERSION`). Trocar a versão invalida todo o cache de uma vez.
+- **`opts.fresh`** — ignora as camadas de cache e usa cache-buster por timestamp
+  (usado no botão "Atualizar coletâneas", evita CDN/proxy servirem versão antiga).
+- **Stale-if-error** — sem rede, qualquer entrada existente é usada em vez de falhar
+  (essencial para uso offline).
+- **Invalidação**: `$database.invalidate()` limpa tudo; `invalidate("pt_musics")`
+  limpa uma chave específica. A tela **Opções → Atualizações** expõe dois botões:
+  *Limpar cache do programa* (tudo) e *limpar apenas coletâneas*
+  (`{locale}_{musics,hymnal,hymnal_1996,categories}`).
 
 ---
 
@@ -232,6 +255,9 @@ Helpers principais:
 | `Projection.ts` | Abertura unificada de janelas de projeção |
 | `ProjectionWindows.ts` | Abre/fecha janelas por feature (monitor-aware) |
 | `IndexedDB.ts` | CRUD unificado no IndexedDB |
+| `Database.ts` | JSONs do banco com cache em camadas (memória → IDB → rede) e stale-if-error |
+| `ImageConvert.ts` | HEIC/HEIF → JPEG (`heic2any`) na importação |
+| `SljaConverter.js` | Import/export `.slja` do editor legado Delphi (JSZip + INI) |
 | `SettingsStorage.ts` | CRUD na tabela `settings` do IDB |
 | `FilePicker.ts` | `pickImage()` e `pickImageData()` — seletor de imagens |
 | `UserData.ts` | Preferências do usuário (Pinia + persistência) |
@@ -259,7 +285,7 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 | `slide_change` | useSlides | Projection, ProjectionReturn, Obs, Operator |
 | `bible_verse` | bible/Index.vue | ObsBible, ProjectionBible |
 | `media_close` | useMedia.close() | Projection, Obs, FileProjection |
-| `file_projection` | liturgy / media_deck | FileProjection, FileProjectionReturn |
+| `file_projection` | liturgy / media_library | FileProjection, FileProjectionReturn |
 | `background_projection` | background_projection | BackgroundProjection |
 | `wallpaper_update` | RibbonWallpaper, Opções | BackgroundProjection, FileProjection |
 | `module_ribbon_action` | RibbonBar | Módulo alvo |
@@ -390,6 +416,91 @@ A página de álbuns também tem:
 O **Hinário 1996** (álbum `id 629`) é sincronizado bidirecionalmente com o toggle
 "Hinário 1996": desativar o módulo adiciona `629` a `DISABLED_ALBUMS` (e vice-versa),
 fazendo as músicas dele sumirem de todas as listas e da sincronização.
+
+---
+
+## 🎬 Vídeos Online
+
+Duas fontes de vídeos YouTube projetáveis, mescladas na liturgia:
+
+### Módulo `online_videos` (catálogo da API)
+
+- Fonte: `GET https://api.louvorja.com.br/{locale}/collections/online`
+  → `{ channels[], playlists[], videos[] }`; cada vídeo:
+  `{ video_id, playlist_id, title, sequence, default_image }`.
+- **Cache**: resposta inteira gravada no IDB sob a chave
+  `${locale}_collections_online` na tabela `cache` — compartilhada com a liturgia.
+- **Navegação hierárquica**: canais → playlists do canal → vídeos da playlist.
+- **Busca com escopo pelo nível**: nível 1 = todos os vídeos; nível 2 =
+  playlists do canal aberto; nível 3 = playlist aberta. Filtro por título.
+- **Deduplicação por `video_id`** — a API retorna uma entrada por
+  `(playlist, vídeo)`; o mesmo vídeo pode repetir entre playlists, então os
+  resultados agregados são deduplicados mantendo a primeira ocorrência.
+- **Thumbnails** com cadeia de fallback: `maxresdefault` → `hqdefault` →
+  `default_image` da API (`onerror` avança o passo).
+- Botão *play all* no canal/playlist projeta o primeiro vídeo da sequência.
+
+### Módulo `custom_online_videos` (Meus Vídeos)
+
+- CRUD do usuário em `custom_online_videos.videos`; thumbnails baixadas
+  (maxres/hq) e cacheadas em `custom_online_videos.thumbnails`.
+- **Adicionar**: sem campo nome — o título é buscado via oEmbed do YouTube
+  (`youtube.com/oembed`, timeout 5s); fallback = ID do vídeo.
+- **Editar**: campo nome disponível para alteração manual.
+- Registros são salvos como cópia plana (`{ ...v }`) — Proxy reativo do Vue não
+  é clonável pelo IndexedDB (`DataCloneError`).
+- Ribbon: Adicionar, alternar Lista/Miniatura, URL direta, Parar projeção.
+
+### Integração na Liturgia (item "Vídeo On-line")
+
+- `LiturgyVideoSearch.vue` — dialog de busca no padrão do `LiturgyMusicSearch`:
+  filtro sem acentos, navegação ↑↓/Enter, colunas Origem | Vídeo.
+- Mescla **Meus Vídeos + catálogo da API** (precedência dos customs; dedupe por
+  URL), ordenado alfabeticamente. Os 3 defaults hardcoded sobrevivem apenas como
+  fallback offline total (sem cache e sem rede).
+- Ícone da origem: imagem do canal (`default_image` do canal, resolvido via
+  vídeo → playlist → canal) para a API; ícone do módulo
+  (`ICONS.MODULES.CUSTOM_ONLINE_VIDEOS`) para Meus Vídeos.
+- Execução: embed YouTube via `$media.openYouTube`.
+
+---
+
+## 🖼 Suporte a imagens HEIC/HEIF
+
+Fotos de iPhone (`.heic/.heif`) não são decodificadas pelo Chromium. O helper
+`src/helpers/ImageConvert.ts` resolve com `heic2any` (libheif WASM, import
+estático — funciona offline):
+
+| Função | Uso |
+|---|---|
+| `isHeic(name?, mime?)` | Detecção por extensão ou MIME |
+| `heicToJpeg(blob)` | Conversão para JPEG quality 0.92 |
+| `ensureRenderableImage(name, blob)` | Converte se preciso e ajusta extensão para `.jpg` |
+
+Pontos de conversão **na entrada** (antes de gravar no IDB): Biblioteca de
+Mídia (drag-and-drop, file picker e import em lote), Editor de Slides,
+Projeção de Fundo, picker de imagens do Overlay e imagem da ação final do
+Timer/Timer Worship. A projeção da Biblioteca de Mídia tem ainda **fallback
+preguiçoso**: HEIC já registrado sem conversão é convertido on-demand e
+cacheado por item (`heicProjectionCache`).
+
+O protocolo `louvorja://local` registra os MIME `.heic/.heif`, e a constante
+compartilhada `IMAGE_FILE_EXTS` (`src/constants/ImageFileExts.ts`) inclui
+`heic/heif` em todos os accepts/filtros.
+
+---
+
+## ♾ Scroll infinito e busca incremental (DataTable)
+
+Listas longas (músicas, hinários, coletâneas) paginam incrementalmente:
+
+- `ModuleContainer` repassa ao corpo o payload de scroll/hasScroll da janela —
+  necessário no modo embedded, onde a janela não rola internamente.
+- `DataTable` pagina de 100 em 100 registros quando o scroll chega a ~150px do fim.
+- Durante busca ativa, resultados são limitados a 100 itens (evita renderizar
+  milhares de nós por digitação); limpeza da busca restaura a paginação.
+- Prop `search_min_length`: só dispara a busca a partir de N caracteres
+  (hinários/músicas/coletâneas usam 3; coletâneas personalizadas, 4).
 
 ---
 
@@ -534,6 +645,11 @@ Vite 7 com `manualChunks` para separar vendor chunks:
 - `vendor-vue`: Vue 3 + Vue Router + Pinia + Vue I18n
 - `vendor-i18n`: vue-i18n
 - `vendor-fuse`: fuse.js
+
+**Empacotamento desktop** (`electron-builder.yml`): Windows NSIS; **macOS gera
+dmg + zip para x64 e arm64 (Intel e Apple Silicon)** — os dois arquitetos são
+anexados à release pelo workflow `.github/workflows/release.yml`; Linux
+AppImage/deb/rpm.
 
 Aliases em `vite.config.js`:
 

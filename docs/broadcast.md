@@ -63,8 +63,8 @@ $broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, { slide_index: 0 });
 | `REQUEST_BIBLE_STATE` | `"request_bible_state"` | ProjectionBible | bible/Index (re-emite) |
 | `MESSAGE_BOARD` | `"message_board"` | message_board/Index | (futuro) |
 | `MEDIA_CLOSE` | `"media_close"` | useMedia.close() | Projection, Obs, FileProjection |
-| `FILE_PROJECTION` | `"file_projection"` | liturgy / media_deck / timer_worship | FileProjection, FileProjectionReturn |
-| `FILE_PROJECTION_PAGE` | `"file_projection_page"` | media_deck (PDF nav) | FileProjection |
+| `FILE_PROJECTION` | `"file_projection"` | liturgy / media_library / background_sound / timer end action | FileProjection, FileProjectionReturn |
+| `FILE_PROJECTION_PAGE` | `"file_projection_page"` | media_library (PDF nav) | FileProjection |
 | `ONLINE_VIDEO_PROJECTION` | `"online_video_projection"` | useMedia.openYouTube() | FileProjection |
 | `BACKGROUND_PROJECTION` | `"background_projection"` | background_projection module | BackgroundProjection, BackgroundProjectionReturn |
 | `WALLPAPER_UPDATE` | `"wallpaper_update"` | RibbonWallpaper, AppMenuOpcoes | BackgroundProjection, FileProjection |
