@@ -125,7 +125,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Baixar artifacts dos 3 OSes
+      - name: Baixar artifacts dos 3 OSes (macOS Intel + ARM)
         uses: actions/download-artifact@v4
         with:
           path: artifacts

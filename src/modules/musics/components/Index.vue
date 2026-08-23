@@ -10,30 +10,42 @@
   >
     <template #header>
       <div :class="classform.group">
-        <div :class="classform.group_item" style="flex-basis: 600px">
+        <div :class="classform.group_item" style="margin-top: 10px">
           <Search
             v-model="search"
+            style="width: 400px; height: 40px"
+            class="lj-u-gap-2"
             :label="t('inputs.search')"
             :error="data.filter_count <= 0"
             :disabled="disabled"
             :disabled-hint="t('inputs.search_disabled')"
           />
-        </div>
-        <div :class="classform.group_item" style="flex-basis: 350px">
-          <Checkbox v-model="userdata.search.name" :label="t('inputs.filter_name')" />
-          <Checkbox v-model="userdata.search.lyric" :label="t('inputs.filter_lyric')" />
-          <Checkbox v-model="userdata.search.album" :label="t('inputs.filter_album')" />
-          <Checkbox v-model="userdata.search.track" :label="t('inputs.filter_track')" />
-        </div>
-        <v-divider vertical />
-        <div :class="classform.group_item" style="flex-basis: 200px">
-          <div>
-            <Checkbox
-              v-model="userdata.filter.instrumental_music"
-              switch
-              :label="t('inputs.filter_instrumental')"
-            />
-          </div>
+          <Checkbox
+            v-model="userdata.search.name"
+            class="lj-u-gap-6"
+            :label="t('inputs.filter_name')"
+          />
+          <Checkbox
+            v-model="userdata.search.lyric"
+            class="lj-u-gap-6"
+            :label="t('inputs.filter_lyric')"
+          />
+          <Checkbox
+            v-model="userdata.search.album"
+            class="lj-u-gap-6"
+            :label="t('inputs.filter_album')"
+          />
+          <Checkbox
+            v-model="userdata.search.track"
+            class="lj-u-gap-6"
+            :label="t('inputs.filter_track')"
+          />
+          <Checkbox
+            v-model="userdata.filter.instrumental_music"
+            class="lj-u-gap-6"
+            switch
+            :label="t('inputs.filter_instrumental')"
+          />
         </div>
       </div>
     </template>
@@ -42,6 +54,7 @@
       v-model="data"
       :search="search"
       :letter="letter"
+      :search_min_length="3"
       :searchable_fields="{
         name: search_name,
         lyric: search_lyric,
@@ -117,6 +130,7 @@
       variant="tonal"
       border="start"
       class="ma-2"
+      style="max-height: 60px"
     />
 
     <template #footer>

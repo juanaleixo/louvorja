@@ -19,6 +19,7 @@
       v-model="data"
       :search="search"
       letter=""
+      :search_min_length="3"
       :searchable_fields="{
         track: true,
         name: true,
@@ -71,6 +72,7 @@
       variant="tonal"
       border="start"
       class="ma-2"
+      style="max-height: 60px"
     />
 
     <template #footer>

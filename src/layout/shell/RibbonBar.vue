@@ -437,6 +437,7 @@ const EDITOR_ACTIONS = new Set<string>([
   "editor_open",
   "editor_save",
   "editor_save_as",
+  "editor_export",
   "editor_import_txt",
   "editor_project",
   "editor_new_slide",

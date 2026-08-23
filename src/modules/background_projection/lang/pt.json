@@ -27,6 +27,7 @@
   "category_icon": "Ícone",
   "category_color": "Cor",
   "select_category": "Selecionar categoria",
+  "uncategorized": "Sem categoria",
   "no_categories": "Nenhuma categoria. Crie uma primeiro.",
   "confirm_delete_category": "Excluir esta categoria?",
   "custom_image": "Imagem personalizada",

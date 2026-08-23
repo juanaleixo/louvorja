@@ -47,7 +47,7 @@
       ref="fileInput"
       type="file"
       multiple
-      accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
+      accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/heic,image/heif,.heic,.heif"
       style="display: none"
       @change="onFilesSelected"
     />
@@ -68,6 +68,7 @@ import {
   deleteImage as deleteFromDb,
   resolveImageUrl,
 } from "@/helpers/Overlay";
+import { ensureRenderableImage } from "@/helpers/ImageConvert";
 import { ICONS } from "@/config/Icons";
 
 const { t: _t } = useI18n();
@@ -122,7 +123,10 @@ async function deleteImage(img) {
 
 async function addFile(file) {
   try {
-    const record = await importFile(file);
+    // HEIC/HEIF não decodifica no Chromium — converte para JPEG antes.
+    const { blob, name } = await ensureRenderableImage(file.name, file);
+    const renderable = new File([blob], name, { type: blob.type || "image/jpeg" });
+    const record = await importFile(renderable);
     images.value.unshift(record);
     selectImage(record);
   } catch (e) {

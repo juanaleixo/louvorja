@@ -15,7 +15,7 @@
       @drop.prevent="onDrop"
     >
       <!-- Category chips -->
-      <div v-if="categories.length" class="bgs-chips">
+      <div v-if="categories.length || uncategorizedCount > 0" class="bgs-chips">
         <span class="bgm-header-title">{{ t("categories") }}</span>
         <div
           v-for="cat in categories"
@@ -33,7 +33,28 @@
           <span class="bgs-chip-count">
             {{ libraryFiles.filter((f) => f.categoryId === cat.id).length }}
           </span>
-          <button class="bgs-chip-add" :title="t('add_audio')" @click.stop="addAudioFiles(cat)">
+          <button class="bgs-chip-add" :title="t('add_audio')" @click.stop="addAudioFiles(cat.id)">
+            <v-icon icon="mdi-plus" size="12" />
+          </button>
+        </div>
+        <!-- Virtual: arquivos sem categoria -->
+        <div
+          v-if="uncategorizedCount > 0"
+          class="bgs-chip"
+          :class="{ 'bgm-chip--active': selectedCategoryIds.has(UNCATEGORIZED_ID) }"
+          style="--chip-color: #607d8b"
+          @click="toggleCategoryChip(UNCATEGORIZED_ID)"
+        >
+          <span class="bgs-chip-icon-wrap">
+            <v-icon icon="mdi-music-note-outline" size="14" />
+          </span>
+          <span class="bgm-chip-name">{{ t("uncategorized") }}</span>
+          <span class="bgs-chip-count">{{ uncategorizedCount }}</span>
+          <button
+            class="bgs-chip-add"
+            :title="t('add_audio')"
+            @click.stop="addAudioFiles(UNCATEGORIZED_ID)"
+          >
             <v-icon icon="mdi-plus" size="12" />
           </button>
         </div>
@@ -120,16 +141,20 @@
             {{ t("add_audio") }}
           </v-card-title>
           <v-card-text>
-            <div v-if="!categories.length" class="bgs-empty" style="min-height: 60px">
-              <p>{{ t("no_categories") }}</p>
-            </div>
-            <v-list v-else density="compact">
+            <v-list density="compact">
               <v-list-subheader>{{ t("select_category") }}</v-list-subheader>
+              <v-list-item :title="t('uncategorized')" @click="addAudioFiles(UNCATEGORIZED_ID)">
+                <template #prepend>
+                  <span class="mr-5">
+                    <v-icon icon="mdi-music-note-outline" size="35" />
+                  </span>
+                </template>
+              </v-list-item>
               <v-list-item
                 v-for="cat in categories"
                 :key="cat.id"
                 :title="cat.name"
-                @click="addAudioFiles(cat)"
+                @click="addAudioFiles(cat.id)"
               >
                 <template #prepend>
                   <span class="mr-5">
@@ -299,6 +324,20 @@ const t = (key: string, named?: Record<string, unknown>): string =>
 const categories = ref<CategoryFileData[]>([]);
 const libraryFiles = ref<BgSoundFile[]>([]);
 const selectedCategoryIds = ref(new Set<string>());
+
+/** Id virtual dos arquivos adicionados sem categoria. */
+const UNCATEGORIZED_ID = "";
+
+const uncategorizedCount = computed(() => {
+  const ids = new Set(categories.value.map((c) => c.id));
+  return libraryFiles.value.filter((f) => !f.categoryId || !ids.has(f.categoryId)).length;
+});
+
+function selectAllCategoriesAndUncategorized(): void {
+  const next = new Set(categories.value.map((c) => c.id));
+  if (uncategorizedCount.value > 0) next.add(UNCATEGORIZED_ID);
+  selectedCategoryIds.value = next;
+}
 const showManageDialog = ref(false);
 const showAddAudioDialog = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -425,21 +464,37 @@ const visibleFiles = computed(() => {
     ext: string;
   }[] = [];
   const audioExts = /\.(mp3|wav|ogg|flac|m4a|aac|wma|opus|webm)$/i;
-  for (const cat of categories.value) {
-    if (!selectedCategoryIds.value.has(cat.id)) continue;
-    const catFiles = libraryFiles.value.filter((f) => f.categoryId === cat.id);
-    for (const f of catFiles) {
-      const extMatch = f.fileName.match(audioExts);
+  const catById = new Map(categories.value.map((c) => [c.id, c]));
+  const selected = selectedCategoryIds.value;
+
+  for (const f of libraryFiles.value) {
+    const cat = catById.get(f.categoryId);
+    // Sem categoria (ou categoria removida): aparece apenas no chip virtual.
+    if (!cat) {
+      if (!selected.has(UNCATEGORIZED_ID)) continue;
       result.push({
         file: f,
-        categoryId: cat.id,
-        categoryName: cat.name,
-        color: cat.color,
-        icon: cat.iconType === "icon" ? cat.icon : "mdi-music",
-        displayName: f.name || (extMatch ? f.fileName.replace(audioExts, "") : f.fileName),
-        ext: extMatch ? extMatch[1].toUpperCase() : "",
+        categoryId: UNCATEGORIZED_ID,
+        categoryName: t("uncategorized"),
+        color: "#607d8b",
+        icon: "mdi-music-note-outline",
+        displayName:
+          f.name || (f.fileName.match(audioExts) ? f.fileName.replace(audioExts, "") : f.fileName),
+        ext: f.fileName.match(audioExts)?.[1]?.toUpperCase() || "",
       });
+      continue;
     }
+    if (!selected.has(cat.id)) continue;
+    const extMatch = f.fileName.match(audioExts);
+    result.push({
+      file: f,
+      categoryId: cat.id,
+      categoryName: cat.name,
+      color: cat.color,
+      icon: cat.iconType === "icon" ? cat.icon : "mdi-music",
+      displayName: f.name || (extMatch ? f.fileName.replace(audioExts, "") : f.fileName),
+      ext: extMatch ? extMatch[1].toUpperCase() : "",
+    });
   }
   return result;
 });
@@ -458,7 +513,7 @@ const volumeIcon = computed(() => {
 
 function openManageCategories(): void {
   showManageDialog.value = true;
-  selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
+  selectAllCategoriesAndUncategorized();
 }
 
 function toggleCategoryChip(id: string): void {
@@ -473,7 +528,7 @@ async function handleSaveCategory(cat: CategoryFileData): Promise<void> {
   try {
     await saveCategoryRecord(cat);
     categories.value = await loadCategories();
-    selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
+    selectAllCategoriesAndUncategorized();
   } finally {
     saving.value = false;
   }
@@ -566,15 +621,12 @@ async function readFileData(file: File): Promise<{ data: ArrayBuffer; mime: stri
 }
 
 function openAddAudioMenu(): void {
-  if (!categories.value.length) {
-    Alert.info({ title: t("add_audio"), text: t("no_categories") });
-    return;
-  }
+  // Sem categoria é sempre uma opção — não bloqueia mais sem categorias.
   showAddAudioDialog.value = true;
 }
 
-async function addAudioFiles(cat: CategoryFileData): Promise<void> {
-  pendingCategoryId = cat.id;
+async function addAudioFiles(categoryId: string): Promise<void> {
+  pendingCategoryId = categoryId;
   showAddAudioDialog.value = false;
 
   await nextTick();
@@ -583,10 +635,11 @@ async function addAudioFiles(cat: CategoryFileData): Promise<void> {
     const files = [...pendingDropFiles.value];
     pendingDropFiles.value = [];
     for (const f of files) {
-      await addFileRecord(f, cat.id);
+      await addFileRecord(f, categoryId);
     }
     libraryFiles.value = await loadLibrary();
     rebuildAllBlobUrls(libraryFiles.value);
+    selectAllCategoriesAndUncategorized();
     return;
   }
 
@@ -621,6 +674,9 @@ async function onAudioFilesSelected(e: Event): Promise<void> {
   input.value = "";
   libraryFiles.value = await loadLibrary();
   rebuildAllBlobUrls(libraryFiles.value);
+  // Garante que o chip "Sem categoria" fique ativo quando o arquivo for
+  // adicionado sem categoria — senão ele não aparece na lista.
+  selectAllCategoriesAndUncategorized();
 }
 
 async function removeFile(categoryId: string, file: MediaFile): Promise<void> {
@@ -917,7 +973,7 @@ onMounted(async () => {
   libraryFiles.value = await loadLibrary();
   rebuildIconUrls(categories.value);
   rebuildAllBlobUrls(libraryFiles.value);
-  selectedCategoryIds.value = new Set(categories.value.map((c) => c.id));
+  selectAllCategoriesAndUncategorized();
 });
 
 onBeforeUnmount(() => {

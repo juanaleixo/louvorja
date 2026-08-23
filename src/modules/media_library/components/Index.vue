@@ -55,7 +55,7 @@
                 v-if="file.thumb"
                 :src="file.thumb"
                 class="media-grid-item-thumb"
-                cover
+                contain
                 height="70"
               />
               <div v-else class="media-grid-item-thumb media-grid-item-thumb--icon">
@@ -216,7 +216,7 @@
         ref="fileInput"
         type="file"
         multiple
-        accept="image/*,video/*,.pdf"
+        accept="image/*,video/*,.pdf,.heic,.heif"
         style="display: none"
         @change="onFilesSelected"
       />
@@ -238,8 +238,10 @@ import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import $idb from "@/helpers/IndexedDB";
+import { ensureRenderableImage, isHeic, heicToJpeg } from "@/helpers/ImageConvert";
 import { DB_TABLE } from "@/constants/DbTables";
 import { KEYS } from "@/constants/UserDataKeys";
+import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -423,10 +425,10 @@ async function onDrop(e: DragEvent): Promise<void> {
 
   for (const f of Array.from(droppedFiles)) {
     const filePath = (f as any).path;
-    if (filePath) {
+    if (filePath && !isHeic(f.name, (f as File).type)) {
       const name = f.name;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
+      const isImage = IMAGE_FILE_EXTS.includes(ext);
       const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
@@ -443,17 +445,23 @@ async function onDrop(e: DragEvent): Promise<void> {
       files.value.unshift(file);
       if (isVideo) generateAndStoreThumb(file);
     } else {
-      const isImage = f.type.startsWith("image/");
-      const isVideo = f.type.startsWith("video/");
+      // Sem caminho (web) ou HEIC/HEIF: converte e armazena autocontido.
+      const { blob, name } = await ensureRenderableImage(f.name, f);
+      const isImage =
+        IMAGE_FILE_EXTS.includes(name.split(".").pop()?.toLowerCase() || "") ||
+        blob.type.startsWith("image/");
+      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(
+        f.name.split(".").pop()?.toLowerCase() || ""
+      );
       const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const fileId = "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      const path = URL.createObjectURL(f);
-      const { data, mime } = await readFileData(f);
+      const path = URL.createObjectURL(blob);
+      const { data, mime } = await readFileData(new File([blob], name, { type: blob.type }));
       const file: MediaFile = {
         id: fileId,
-        name: f.name,
+        name,
         path,
         type: fileType,
         addedAt: Date.now(),
@@ -547,7 +555,7 @@ async function addFiles(): Promise<void> {
     for (const rawPath of paths) {
       const name = rawPath.split("/").pop() || rawPath.split("\\").pop() || rawPath;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
+      const isImage = IMAGE_FILE_EXTS.includes(ext);
       const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
@@ -574,10 +582,10 @@ async function onFilesSelected(e: Event): Promise<void> {
   if (!input.files?.length) return;
   for (const f of Array.from(input.files)) {
     const filePath = (f as any).path;
-    if (filePath) {
+    if (filePath && !isHeic(f.name, (f as File).type)) {
       const name = f.name;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext);
+      const isImage = IMAGE_FILE_EXTS.includes(ext);
       const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
@@ -594,17 +602,24 @@ async function onFilesSelected(e: Event): Promise<void> {
       files.value.unshift(file);
       if (isVideo) generateAndStoreThumb(file);
     } else {
-      const isImage = f.type.startsWith("image/");
-      const isVideo = f.type.startsWith("video/");
+      // Sem caminho (web/drag-drop) ou HEIC/HEIF: armazena autocontido com
+      // os bytes convertidos para JPEG — o Chromium não decodifica HEIC.
+      const { blob, name } = await ensureRenderableImage(f.name, f);
+      const isImage =
+        IMAGE_FILE_EXTS.includes(name.split(".").pop()?.toLowerCase() || "") ||
+        blob.type.startsWith("image/");
+      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(
+        f.name.split(".").pop()?.toLowerCase() || ""
+      );
       const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
       const fileId = "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      const path = URL.createObjectURL(f);
-      const { data, mime } = await readFileData(f);
+      const path = URL.createObjectURL(blob);
+      const { data, mime } = await readFileData(new File([blob], name, { type: blob.type }));
       const file: MediaFile = {
         id: fileId,
-        name: f.name,
+        name,
         path,
         type: fileType,
         addedAt: Date.now(),
@@ -687,6 +702,28 @@ function resolvePath(raw: string): string {
   return raw;
 }
 
+// Cache de objectURLs de HEIC já convertidos para projeção (por item.id).
+const heicProjectionCache = new Map<string, string>();
+
+/**
+ * HEIC/HEIF não decodifica no Chromium — converte para JPEG na hora e
+ * cacheia o objectURL por item. Registros convertidos na importação não
+ * passam por aqui.
+ */
+async function resolveRenderableUrl(item: PlaylistItem): Promise<string> {
+  const raw = resolvePath(item.path);
+  if (!isHeic(item.name)) return raw;
+
+  const cached = heicProjectionCache.get(item.id);
+  if (cached) return cached;
+
+  const bytes = await fetch(raw).then((r) => r.blob());
+  const jpeg = await heicToJpeg(bytes);
+  const url = URL.createObjectURL(jpeg);
+  heicProjectionCache.set(item.id, url);
+  return url;
+}
+
 async function playIndex(index: number): Promise<void> {
   const item = playlist.value[index];
   if (!item) return;
@@ -698,7 +735,7 @@ async function playIndex(index: number): Promise<void> {
   currentPdfPage.value = 1;
   currentPdfTotalPages.value = 0;
 
-  const url = resolvePath(item.path);
+  const url = isHeic(item.name) ? await resolveRenderableUrl(item) : resolvePath(item.path);
   const isVideo = item.type === "video";
 
   const payload: Record<string, unknown> = { url, type: item.type, title: item.name };
