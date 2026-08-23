@@ -85,6 +85,7 @@
     "bloco_pick": "-- sem bloco --",
     "video_select": "Vídeo",
     "video_pick": "-- selecione um vídeo --",
+    "video_search_btn": "Buscar vídeo…",
     "video_url_or_select": "URL do vídeo ou selecione um salvo",
     "music_version_label": "Versão",
     "music_version_sung": "Cantada",
@@ -148,6 +149,16 @@
     "col_music": "Música",
     "empty": "Nenhuma música disponível.",
     "empty_search": "Nenhuma música encontrada para esta busca."
+  },
+  "video_search": {
+    "title": "Busca de Vídeos",
+    "find_label": "Localizar Vídeo:",
+    "col_source": "Origem",
+    "col_video": "Vídeo",
+    "empty": "Nenhum vídeo disponível.",
+    "empty_search": "Nenhum vídeo encontrado para esta busca.",
+    "source_custom": "Meus vídeos",
+    "source_online": "On-line"
   },
   "schedules": {
     "title": "Itens Agendados",

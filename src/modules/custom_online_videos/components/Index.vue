@@ -65,6 +65,7 @@
         <v-card-title>{{ editingId ? t("edit_title") : t("add_title") }}</v-card-title>
         <v-card-text>
           <v-text-field
+            v-if="editingId"
             v-model="formName"
             :label="t('name')"
             :placeholder="t('name_placeholder')"
@@ -79,13 +80,16 @@
             :placeholder="t('url_placeholder')"
             variant="outlined"
             density="compact"
+            :autofocus="!editingId"
             @keydown.enter="saveVideo"
           />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="dialogOpen = false">{{ t("cancel") }}</v-btn>
-          <v-btn color="primary" variant="tonal" @click="saveVideo">{{ t("save") }}</v-btn>
+          <v-btn color="primary" variant="tonal" :loading="saving" @click="saveVideo">
+            {{ t("save") }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -131,6 +135,7 @@ const dialogOpen = ref<boolean>(false);
 const editingId = ref<string | null>(null);
 const formName = ref<string>("");
 const formUrl = ref<string>("");
+const saving = ref<boolean>(false);
 let objectUrlIndex: Record<string, string> = {};
 
 function extractYoutubeId(url: string): string | null {
@@ -144,6 +149,20 @@ function buildEmbedUrl(url: string): string | null {
   const id = extractYoutubeId(url);
   if (!id) return null;
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&controls=0`;
+}
+
+async function fetchYoutubeTitle(ytId: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${ytId}`)}&format=json`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return typeof json.title === "string" && json.title ? json.title : null;
+  } catch {
+    return null;
+  }
 }
 
 async function loadVideos(): Promise<void> {
@@ -226,43 +245,49 @@ function openEdit(v: VideoItem): void {
 }
 
 async function saveVideo(): Promise<void> {
+  if (saving.value) return;
   const name = formName.value.trim();
   const url = formUrl.value.trim();
-  if (!name) {
-    $alert.error({ text: "modules.custom_online_videos.name_required" });
-    return;
-  }
-  if (!extractYoutubeId(url)) {
+  const ytId = extractYoutubeId(url);
+  if (!ytId) {
     $alert.error({ text: "modules.custom_online_videos.invalid_url" });
     return;
   }
-  if (editingId.value) {
-    const v = videos.value.find((x) => x.id === editingId.value);
-    if (v) {
-      v.name = name;
-      v.url = url;
-      await saveVideoInternal(v);
-      if (thumbUrls[v.id]) {
-        URL.revokeObjectURL(thumbUrls[v.id]);
-        delete thumbUrls[v.id];
-        delete objectUrlIndex[v.id];
+  saving.value = true;
+  try {
+    if (editingId.value) {
+      if (!name) {
+        $alert.error({ text: "modules.custom_online_videos.name_required" });
+        return;
       }
-      const ytId = extractYoutubeId(url);
-      if (ytId) fetchAndCacheThumbnail(v, ytId);
+      const v = videos.value.find((x) => x.id === editingId.value);
+      if (v) {
+        v.name = name;
+        v.url = url;
+        await saveVideoInternal({ ...v });
+        if (thumbUrls[v.id]) {
+          URL.revokeObjectURL(thumbUrls[v.id]);
+          delete thumbUrls[v.id];
+          delete objectUrlIndex[v.id];
+        }
+        fetchAndCacheThumbnail(v, ytId);
+      }
+    } else {
+      const title = (await fetchYoutubeTitle(ytId)) || ytId;
+      const v: VideoItem = {
+        id: crypto.randomUUID(),
+        name: title,
+        url,
+        createdAt: new Date().toISOString(),
+      };
+      await saveVideoInternal(v);
+      videos.value.unshift(v);
+      fetchAndCacheThumbnail(v, ytId);
     }
-  } else {
-    const v: VideoItem = {
-      id: crypto.randomUUID(),
-      name,
-      url,
-      createdAt: new Date().toISOString(),
-    };
-    await saveVideoInternal(v);
-    videos.value.unshift(v);
-    const ytId = extractYoutubeId(url);
-    if (ytId) fetchAndCacheThumbnail(v, ytId);
+    dialogOpen.value = false;
+  } finally {
+    saving.value = false;
   }
-  dialogOpen.value = false;
 }
 
 async function confirmDelete(v: VideoItem): Promise<void> {
