@@ -9,6 +9,7 @@ export enum ModuleEnum {
   BASE_MODULE = "base_module",
   BIBLE = "bible",
   BIBLE_SEARCH = "bible_search",
+  CHILDREN = "children",
   CLOCK = "clock",
   COLLECTIONS = "collections",
   COUNTER = "counter",

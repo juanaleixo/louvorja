@@ -47,6 +47,7 @@ const CATALOG_TABLES = [
   DB_TABLE.ALBUMS,
   DB_TABLE.MUSIC_CATEGORIES,
   DB_TABLE.DOXOLOGY_ALBUMS,
+  DB_TABLE.CHILDREN_ALBUMS,
   DB_TABLE.ONLINE_VIDEOS_CHANNELS,
   DB_TABLE.ONLINE_VIDEOS_PLAYLISTS,
   DB_TABLE.ONLINE_VIDEOS,
@@ -93,6 +94,9 @@ function fetchUrlFor(file: string): string {
   if (/^.{2}_doxology_albums$/.test(file)) {
     return `${apiOrigin()}/${file.slice(0, 2)}/${ENDPOINT_CATEGORIES.DOXOLOGY}`;
   }
+  if (/^.{2}_children_albums$/.test(file)) {
+    return `${apiOrigin()}/${file.slice(0, 2)}/${ENDPOINT_CATEGORIES.CHILDREN}`;
+  }
   return $path.db(`/${file}`);
 }
 
@@ -106,13 +110,14 @@ interface Route {
 
 /** Resolve tabela/estratégia a partir da chave do arquivo. `null` = registro único na `cache`. */
 function routeFor(file: string): Route | null {
-  const m = file.match(/_(musics|hymnal|hymnal_1996|doxology_albums)$/);
+  const m = file.match(/_(musics|hymnal|hymnal_1996|doxology_albums|children_albums)$/);
   if (m) {
     const tableMap: Record<string, { table: string; idKey: string }> = {
       musics: { table: DB_TABLE.MUSICS, idKey: "id_music" },
       hymnal: { table: DB_TABLE.HYMNAL, idKey: "id_music" },
       hymnal_1996: { table: DB_TABLE.HYMNAL_1996, idKey: "id_music" },
       doxology_albums: { table: DB_TABLE.DOXOLOGY_ALBUMS, idKey: "id_album" },
+      children_albums: { table: DB_TABLE.CHILDREN_ALBUMS, idKey: "id_album" },
     };
     const entry = tableMap[m[1]];
     return { kind: "items", table: entry.table, idKey: entry.idKey };

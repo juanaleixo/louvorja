@@ -1,0 +1,11 @@
+{
+  "title": "Infantil",
+  "description": "Álbumes de músicas infantiles.",
+  "albums": "Álbumes",
+  "musics": "Músicas",
+  "search": "Buscar…",
+  "empty_albums": "Ningún álbum disponible.",
+  "empty_musics": "Ninguna música en este álbum.",
+  "load_error": "Error al cargar el contenido infantil.",
+  "play": "Reproducir"
+}

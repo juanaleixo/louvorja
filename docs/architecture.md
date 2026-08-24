@@ -231,13 +231,14 @@ sem alteração:
 | `{locale}_bible_version` / `_bible_book` | bible_versions / bible_books | itens |
 | `bible_<v>_<livro>_<cap>` | bible_chapters | registro individual |
 | `{locale}_collections_online` | online_videos_channels/playlists/videos | composto (3 tabelas) |
-| `{locale}_doxology_albums` | doxology_albums | itens (1 linha/álbum) |
+| `{locale}_doxology_albums` · `{locale}_children_albums` | doxology_albums / children_albums | itens (1 linha/álbum) |
 | demais | cache | registro único |
 
 **URLs de rede por chave** (`fetchUrlFor`): a maioria vem do json_db estático
-(`Path.db`); `_collections_online` e `_doxology_albums` são **rotas REST** da
-API (`{origin}/{lang}/collections/online` e
-`{origin}/{lang}/albums/category/doxology`, onde origin é `VITE_URL_DATABASE`
+(`Path.db`); `_collections_online`, `_doxology_albums` e `_children_albums`
+são **rotas REST** da API (`{origin}/{lang}/collections/online`,
+`{origin}/{lang}/albums/category/doxology` e
+`{origin}/{lang}/albums/category/children`, onde origin é `VITE_URL_DATABASE`
 sem o sufixo `/json_db`) e não existem como arquivos em `/json_db`. O mesmo
 vale para o script `npm run jsondb`. Toda resposta 200 é injetada
 automaticamente no IDB via `writeRouted`.
@@ -273,7 +274,7 @@ jsondb/
 │   └── pt/ · es/               ← catálogos por idioma
 │       ├── {loc}_musics/_hymnal/_hymnal_1996/_categories/
 │       │   _bible_version/_bible_book/_doxology_albums/
-│       │   _collections_online
+│       │   _children_albums/_collections_online
 ├── albums/album_<id>.json      ← derivados, sem idioma
 ├── musics/music_<id>.json
 └── bible/bible_<v>_<livro>_<cap>.json

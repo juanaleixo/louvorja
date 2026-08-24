@@ -83,6 +83,8 @@ function restPathFor(key) {
   if (online) return `${online[1]}/collections/online`;
   const dox = key.match(/^(..)_doxology_albums$/);
   if (dox) return `${dox[1]}/albums/category/doxology`;
+  const kids = key.match(/^(..)_children_albums$/);
+  if (kids) return `${kids[1]}/albums/category/children`;
   return null;
 }
 
@@ -198,47 +200,50 @@ async function main() {
     }
   }
 
-  // 1c) Doxologia — álbuns da categoria (slug) via rota REST paginada.
-  // Envelope Laravel: mescla `data[]` de todas as páginas. Não grava
-  // arquivo vazio (evita congelar falha transiente).
+  // 1c) Categorias por slug (Doxologia/Infantil) — álbuns via rota REST
+  // paginada. Envelope Laravel: mescla `data[]` de todas as páginas. Não
+  // grava arquivo vazio (evita congelar falha transiente).
+  const SLUG_KEYS = ["_doxology_albums", "_children_albums"];
   for (const locale of LOCALES) {
-    const key = `${locale}_doxology_albums`;
-    const relPath = path.join("lang", locale, key);
-    if (!FORCE && fs.existsSync(absOf(relPath))) {
-      if (!parsed.has(key)) {
-        try {
-          parsed.set(key, JSON.parse(fs.readFileSync(absOf(relPath), "utf-8")));
-        } catch {
-          /* corrompido — rebaixa */
+    for (const suffix of SLUG_KEYS) {
+      const key = `${locale}${suffix}`;
+      const relPath = path.join("lang", locale, key);
+      if (!FORCE && fs.existsSync(absOf(relPath))) {
+        if (!parsed.has(key)) {
+          try {
+            parsed.set(key, JSON.parse(fs.readFileSync(absOf(relPath), "utf-8")));
+          } catch {
+            /* corrompido — rebaixa */
+          }
+        }
+        if (Array.isArray(parsed.get(key)) && parsed.get(key).length > 0) {
+          stats.skipped++;
+          console.log(`→ ${relPath}.json skip (já existe)`);
+          continue;
         }
       }
-      if (Array.isArray(parsed.get(key)) && parsed.get(key).length > 0) {
-        stats.skipped++;
-        console.log(`→ ${relPath}.json skip (já existe)`);
+      console.log(`↓ ${key} paginado…`);
+      const rows = [];
+      let page = 1;
+      let lastPage = 1;
+      do {
+        // fetchJson resolve a rota REST {origin}/{lang}/albums/category/<slug>.
+        const res = await fetchJson(key, `?page=${page}`);
+        if (res.status === 404) break;
+        if (res.status !== 200) throw new Error(`${key} página ${page}: HTTP ${res.status}`);
+        rows.push(...(Array.isArray(res.data?.data) ? res.data.data : []));
+        lastPage = Number(res.data?.last_page ?? page);
+        page++;
+      } while (page <= lastPage);
+      if (!rows.length) {
+        console.warn(`[jsondb] ${key}: export vazio — não gravando arquivo`);
         continue;
       }
+      saveRel(relPath, rows);
+      parsed.set(key, rows);
+      stats.downloaded++;
+      console.log(`✓ ${relPath}.json ok (${rows.length} álbuns, ${lastPage} páginas)`);
     }
-    console.log(`↓ ${key} paginado…`);
-    const rows = [];
-    let page = 1;
-    let lastPage = 1;
-    do {
-      // fetchJson resolve a rota REST {origin}/{lang}/albums/category/doxology.
-      const res = await fetchJson(key, `?page=${page}`);
-      if (res.status === 404) break;
-      if (res.status !== 200) throw new Error(`${key} página ${page}: HTTP ${res.status}`);
-      rows.push(...(Array.isArray(res.data?.data) ? res.data.data : []));
-      lastPage = Number(res.data?.last_page ?? page);
-      page++;
-    } while (page <= lastPage);
-    if (!rows.length) {
-      console.warn(`[jsondb] ${key}: export vazio — não gravando arquivo`);
-      continue;
-    }
-    saveRel(relPath, rows);
-    parsed.set(key, rows);
-    stats.downloaded++;
-    console.log(`✓ ${relPath}.json ok (${rows.length} álbuns, ${lastPage} páginas)`);
   }
 
   // 2) Derivação de ids
@@ -263,10 +268,12 @@ async function main() {
         if (Number.isFinite(id)) albumIds.add(id);
       }
     }
-    // Doxologia: álbuns vindos da rota REST de categorias por slug.
-    for (const a of asArray(parsed.get(`${loc}_doxology_albums`))) {
-      const id = Number(a?.id_album);
-      if (Number.isFinite(id)) albumIds.add(id);
+    // Categorias por slug (Doxologia/Infantil): álbuns vindos de rotas REST.
+    for (const suffix of ["_doxology_albums", "_children_albums"]) {
+      for (const a of asArray(parsed.get(`${loc}${suffix}`))) {
+        const id = Number(a?.id_album);
+        if (Number.isFinite(id)) albumIds.add(id);
+      }
     }
   }
 

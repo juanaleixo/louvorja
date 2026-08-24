@@ -26,6 +26,7 @@ export const DB_TABLE = {
   ALBUMS: "albums",
   MUSIC_CATEGORIES: "music_categories",
   DOXOLOGY_ALBUMS: ModuleEnum.DOXOLOGY + ".albums",
+  CHILDREN_ALBUMS: ModuleEnum.CHILDREN + ".albums",
   ONLINE_VIDEOS: ModuleEnum.ONLINE_VIDEOS,
   ONLINE_VIDEOS_CHANNELS: "online_videos_channels",
   ONLINE_VIDEOS_PLAYLISTS: "online_videos_playlists",
