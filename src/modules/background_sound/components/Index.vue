@@ -579,11 +579,6 @@ async function onDrop(e: DragEvent): Promise<void> {
   const droppedFiles = e.dataTransfer?.files;
   if (!droppedFiles?.length) return;
 
-  if (!categories.value.length) {
-    Alert.info({ title: t("add_audio"), text: t("no_categories") });
-    return;
-  }
-
   const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
     const ext = f.name.split(".").pop()?.toLowerCase() || "";
@@ -874,6 +869,17 @@ watch(
   () => $appdata.get("modules.media.show"),
   (show) => {
     if (autoPause.value && show && bg.isPlaying.value) {
+      bg.fadeOut(fadeOutDuration.value, () => bg.pause());
+    }
+  }
+);
+
+// Música tocando (áudio puro ou letra) — cobre openAudio/openLyric,
+// que não abrem o módulo de Mídia.
+watch(
+  () => $appdata.get("modules.media.is_playing"),
+  (playing) => {
+    if (autoPause.value && playing && bg.isPlaying.value) {
       bg.fadeOut(fadeOutDuration.value, () => bg.pause());
     }
   }

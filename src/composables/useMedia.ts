@@ -472,6 +472,7 @@ const _self = {
 
       this.clearVariables();
       $appdata.set("modules.media.show", false);
+      $appdata.set("modules.media.is_playing", false);
       $appdata.set("modules.media.minimized", false);
       $broadcast.send(BROADCAST_TYPE.MEDIA_CLOSE);
       closeProjectionWindows().catch((e) => {
@@ -494,6 +495,7 @@ const _self = {
     _audio.stop();
     this.clearVariables();
     $appdata.set("modules.media.show", false);
+    $appdata.set("modules.media.is_playing", false);
     $appdata.set("modules.media.minimized", false);
 
     // Reseta o estado de slides — sem isso o `useSlides.slides` retém o
@@ -529,6 +531,7 @@ const _self = {
     }
 
     $appdata.set("modules.lyric.show", true);
+    $appdata.set("modules.media.is_playing", true);
   },
 
   closeLyric(): void {
@@ -553,6 +556,8 @@ const _self = {
 
     _audio.stop();
     this.clearVariables();
+    // Sinal para módulos como Som de Fundo (auto-pausa).
+    $appdata.set("modules.media.is_playing", true);
 
     const mode = params.mode || "audio";
 

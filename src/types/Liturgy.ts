@@ -18,6 +18,8 @@ export interface LiturgyItem {
   has_instrumental_music: boolean
   checked?: string
   blocoId?: string
+  /** Id do item de origem em módulos externos (media_library / background_sound). */
+  ref_id?: string
 }
 
 export interface LiturgyMusicItem {

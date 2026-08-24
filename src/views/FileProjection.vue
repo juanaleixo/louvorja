@@ -37,6 +37,8 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Broadcast from "@/helpers/Broadcast";
 import Media from "@/composables/useMedia";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import $idb from "@/helpers/IndexedDB";
+import { DB_TABLE } from "@/constants/DbTables";
 import {
   FileProjectionState,
   VideoMediaState,
@@ -153,7 +155,22 @@ async function loadPdf(url: string, pageNum = 1): Promise<void> {
   }
 }
 
-function _activateProjection(p: FileProjectionState): void {
+async function _activateProjection(p: FileProjectionState): Promise<void> {
+  // URLs blob só existem no documento que as criou — quando o payload traz
+  // a referência da biblioteca, recria o objeto localmente lendo o IDB.
+  if (p.libRef?.id && p.url?.startsWith("blob:")) {
+    try {
+      const rec = await $idb.get<{ data?: ArrayBuffer; mime?: string }>(
+        p.libRef.table || DB_TABLE.MEDIA_LIBRARY,
+        p.libRef.id
+      );
+      if (rec?.data && rec.mime) {
+        p = { ...p, url: URL.createObjectURL(new Blob([rec.data], { type: rec.mime })) };
+      }
+    } catch (e) {
+      console.warn("[FileProjection] libRef resolve falhou:", e);
+    }
+  }
   fileProjection.active = true;
   fileProjection.type = p.type || "image";
   fileProjection.url = p.url || "";

@@ -3,9 +3,11 @@ export enum LiturgyItemTypeEnum {
   ARQUIVO = "arquivo",
   BLOCO = "bloco",
   ITENS_AGENDADOS = "itens-agendados",
+  MEDIA_LIBRARY = "biblioteca-midia",
   MUSICA = "musica",
   SITE = "site",
   VIDEO_ONLINE = "video-online",
+  BG_SOUND = "som-de-fundo",
 }
 
 export namespace LiturgyItemTypeEnum {

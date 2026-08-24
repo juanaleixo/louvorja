@@ -648,10 +648,12 @@ async function importFileBlob(f: File): Promise<void> {
       : null;
   if (!fileType) return;
   const path = URL.createObjectURL(workFile);
-  const { data, mime } = await readFileData(f);
+  // Persiste os bytes do arquivo CONVERTIDO — gravar o HEIC cru quebraria
+  // thumb e projeção após reiniciar (Chromium não decodifica HEIC).
+  const { data, mime } = await readFileData(workFile);
   const file: BgFile = {
     id: crypto.randomUUID(),
-    name: f.name,
+    name: workFile.name,
     path,
     type: fileType,
     categoryId: pendingCategoryId.value,
@@ -826,6 +828,22 @@ onMounted(async () => {
   for (const f of files.value) {
     if (f.path.startsWith("blob:")) {
       if (f.data && f.mime) {
+        // Auto-cura: registros antigos podem ter HEIC cru persistido —
+        // converte para JPEG, atualiza o registro e regrava.
+        if (f.type === "image" && isHeic(f.name, f.mime)) {
+          try {
+            const converted = await ensureRenderableImage(
+              f.name,
+              new Blob([f.data], { type: f.mime })
+            );
+            f.data = await converted.blob.arrayBuffer();
+            f.mime = converted.blob.type || "image/jpeg";
+            f.name = converted.name;
+            await saveFile(f);
+          } catch (e) {
+            console.warn("[background_projection] auto-cura HEIC falhou:", e);
+          }
+        }
         const url = createObjectUrl(f.id, f.data, f.mime);
         f.path = url;
         if (f.type === "image") f.thumb = url;

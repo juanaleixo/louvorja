@@ -30,6 +30,8 @@ export interface FileProjectionState {
   title: string;
   page?: number;
   totalPages?: number;
+  /** Referência para re-resolver URLs blob via IndexedDB na janela alvo. */
+  libRef?: { table?: string; id: string };
 }
 
 export interface MediaFile {

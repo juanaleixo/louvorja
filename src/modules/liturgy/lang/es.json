@@ -57,7 +57,9 @@
     "itens-agendados": "Ítems Programados",
     "musica": "Música",
     "site": "Sitio",
-    "video-online": "Vídeo Online"
+    "video-online": "Vídeo Online",
+    "biblioteca-midia": "Biblioteca de Medios",
+    "som-de-fundo": "Sonido de Fondo"
   },
   "inputs": {
     "type": "Tipo",
@@ -92,7 +94,11 @@
     "music_version_pb": "Playback",
     "music_version_lyric": "Solo letra",
     "music_version_audio-only": "Solo audio",
-    "music_version_playback-only": "Solo audio playback"
+    "music_version_playback-only": "Solo audio playback",
+    "library_select": "Ítem de la Biblioteca de Medios",
+    "library_search_btn": "Buscar en la biblioteca…",
+    "sound_select": "Sonido de fondo",
+    "sound_search_btn": "Buscar sonidos…"
   },
   "data": {
     "empty": "Liturgia vacía",
@@ -232,5 +238,17 @@
     "duplicate_prefix_n": "Copia ({n}) de",
     "duplicate_success": "Liturgia duplicada como \"{name}\".",
     "delete_confirm": "Eliminar la liturgia \"<b>{name}</b>\"?"
+  },
+  "alerts": {
+    "media_not_found": "Ítem no encontrado en la biblioteca. Puede haber sido eliminado."
+  },
+  "library_search": {
+    "title_media": "Biblioteca de Medios",
+    "title_sound": "Sonidos de Fondo",
+    "find_label": "Buscar:",
+    "col_name": "Nombre",
+    "col_detail": "Tipo",
+    "empty": "Ningún ítem disponible.",
+    "empty_search": "Ningún ítem encontrado para esta búsqueda."
   }
 }

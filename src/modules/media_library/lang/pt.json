@@ -31,5 +31,9 @@
   "ribbon": {
     "title_ctx": "Gerenciar Biblioteca de Mídia",
     "background": "Fundo da Projeção"
-  }
+  },
+  "categories": "Categorias",
+  "uncategorized": "Sem categoria",
+  "select_category": "Selecionar categoria",
+  "manage_categories": "Gerenciar Categorias"
 }

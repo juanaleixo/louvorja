@@ -40,5 +40,6 @@
   "remove_image": "Remover imagem",
   "ribbon": {
     "title_ctx": "Gerenciar Som de Fundo"
-  }
+  },
+  "categories": "Categorias"
 }
