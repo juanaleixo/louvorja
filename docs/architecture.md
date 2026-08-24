@@ -177,7 +177,20 @@ Gerenciado via `src/helpers/IndexedDB.ts`. Tabelas definidas em `src/constants/D
 ```
 louvorja/
 ├── settings                                  ← wallpaper, preferências diversas
-├── cache                                     ← cache de JSONs do banco (Database)
+├── cache                                     ← datasets não roteados + blobs legados
+│
+│   ─── Catálogos normalizados (1 registro por entidade) ───
+├── musics                                    ← resumos {locale}_musics + detalhes music_<id>
+├── hymnal / hymnal_1996                      ← hinos item a item (referenciam id_music)
+├── albums                                    ← álbum por álbum (referenciam musics[])
+├── music_categories                          ← categoria por categoria (referenciam albums[])
+├── online_videos_channels / online_videos_playlists / online_videos
+│                                             ← catálogo online normalizado; playlist → channel_id,
+│                                                video → playlist_id
+├── bible_versions / bible_books              ← versão/livro por registro
+├── bible_chapters                            ← 1 capítulo por chave (bible_<v>_<livro>_<cap>)
+│
+│   ─── Bibliotecas dos módulos ───
 ├── background_projection.library / .category
 ├── background_sound.category / .library
 ├── overlay.image / .slots
@@ -199,22 +212,88 @@ const wp = await getSetting("main");
 
 #### Cache do banco em camadas (`Database.ts`)
 
-`$database.get(file)` resolve o JSON em três camadas:
+`$database.get(chave)` resolve o JSON em três camadas:
 
 1. **Memória** — instantânea, vale na sessão.
-2. **IndexedDB (`cache`)** — sobrevive ao fechamento; entrada `{ id, data, ts, v }`.
+2. **IndexedDB** — tabela roteada pela chave (ver abaixo), com registros item a item.
 3. **Rede** — `VITE_URL_DATABASE` com header `Api-Token`; grava nas duas camadas acima.
 
-- **Validade**: sem TTL por tempo — a entrada vale até invalidação explícita ou nova
-  versão do app (`VITE_DB_VERSION`). Trocar a versão invalida todo o cache de uma vez.
-- **`opts.fresh`** — ignora as camadas de cache e usa cache-buster por timestamp
-  (usado no botão "Atualizar coletâneas", evita CDN/proxy servirem versão antiga).
-- **Stale-if-error** — sem rede, qualquer entrada existente é usada em vez de falhar
-  (essencial para uso offline).
-- **Invalidação**: `$database.invalidate()` limpa tudo; `invalidate("pt_musics")`
-  limpa uma chave específica. A tela **Opções → Atualizações** expõe dois botões:
-  *Limpar cache do programa* (tudo) e *limpar apenas coletâneas*
-  (`{locale}_{musics,hymnal,hymnal_1996,categories}`).
+**Roteamento** (`routeFor` em `Database.ts`) — a leitura reconstrói exatamente as
+formas antigas, então consumidores continuam usando `$database.get("pt_musics")`
+sem alteração:
+
+| Chave | Tabela | Estratégia |
+|---|---|---|
+| `{locale}_musics` · `_hymnal` · `_hymnal_1996` | respectiva | itens (1 linha/música) |
+| `music_<id>` | musics | registro individual (`m:<id>`) |
+| `album_<id>` | albums | registro individual |
+| `{locale}_categories` | music_categories | itens |
+| `{locale}_bible_version` / `_bible_book` | bible_versions / bible_books | itens |
+| `bible_<v>_<livro>_<cap>` | bible_chapters | registro individual |
+| `{locale}_collections_online` | online_videos_channels/playlists/videos | composto (3 tabelas) |
+| demais | cache | registro único |
+
+**URLs de rede por chave** (`fetchUrlFor`): a maioria vem do json_db estático
+(`Path.db`); `_collections_online` é **rota REST** da API
+(`{origin}/{lang}/collections/online`, onde origin é `VITE_URL_DATABASE` sem o
+sufixo `/json_db`) e não existe como arquivo em `/json_db`. O mesmo vale para o
+script `npm run jsondb`. Toda resposta 200 é injetada automaticamente no IDB
+via `writeRouted`.
+
+- **Registro de item**: `{ id: "{chave}:{id}", file, dataId, seq, data, ts, v }` —
+  `seq` preserva a ordem do servidor na reconstrução; `v` (versão do app,
+  `VITE_DB_VERSION`) invalida o dataset inteiro quando muda.
+- **Escrita incremental (diff)**: no refresh compara com as linhas existentes e
+  grava apenas itens **novos/alterados**, remove os ausentes — músicas novas
+  entram na tabela sem reescrever tudo.
+- **Migração legada**: blobs antigos na tabela `cache` sob a mesma chave são
+  lidos uma última vez, migrados para as tabelas novas e apagados da `cache`.
+- **Stale-if-error** — sem rede, qualquer entrada existente é usada em vez de falhar.
+- **`opts.fresh`** — ignora memória/IDB e usa cache-buster por timestamp
+  (botão "Atualizar coletâneas").
+- **Invalidação**: `$database.invalidate()` limpa todas as tabelas gerenciadas;
+  `invalidate("pt_musics")` apaga só as linhas daquele dataset (pt não afeta es).
+  A tela **Opções → Atualizações** expõe os dois botões de limpeza.
+  Em **Sincronizar → Armazenamento** fica o botão **Restaurar banco de dados**
+  (`Seed.restore()`: limpa tudo + reinjeta o pacote jsondb).
+
+#### Pacote jsondb empacotado + seed inicial (`Seed.ts`)
+
+`npm run jsondb` (`scripts/fetch-jsondb.mjs`, execução manual) baixa da API
+todos os JSONs que o app consome e grava em `./jsondb/`, empacotado via
+`extraResources` para `resourcesPath/jsondb`. Log por arquivo (download ok,
+skip por existência, 404, falha); layout antigo é migrado automaticamente:
+
+```
+jsondb/
+├── _manifest.json              ← data/contagens
+├── lang/
+│   └── pt/ · es/               ← catálogos por idioma
+│       ├── {loc}_musics/_hymnal/_hymnal_1996/_categories/
+│       │   _bible_version/_bible_book/_collections_online
+├── albums/album_<id>.json      ← derivados, sem idioma
+├── musics/music_<id>.json
+└── bible/bible_<v>_<livro>_<cap>.json
+```
+
+No boot (`main.js` → `Seed.start()`), **somente desktop**:
+
+1. Flag única em settings (`id: "seed"`): já marcada = no-op instantâneo.
+2. Primeiro start: injeta os datasets **críticos** (catálogos dos dois idiomas)
+   ANTES de montar a UI — start inicial funcional sem internet.
+3. Bulk (álbuns, detalhes `music_*`, capítulos de todas as versões) roda em
+   background após o mount.
+4. Injeção usa `$database.needsSeed(chave)` + `$database.seed(chave, dados)` —
+   mesma normalização/diff das escritas de rede; datasets já válidos são pulados.
+
+Dados novos publicados na API durante o uso seguem o fluxo normal
+(rede → diff nas tabelas), independente do pacote.
+
+**Versões da Bíblia "baixadas"** (`helpers/BibleDownloads.ts`): detecção
+unificada por união — capítulos completos no IDB (`bible_chapters`) ∪ cache
+em disco legado (`userData/json_db`) ∪ flag manual
+(`BIBLE_DOWNLOADED_VERSIONS`). Usada pelo select do módulo Bíblia, Controle
+Remoto, Sincronizar e StartupCheck.
 
 ---
 

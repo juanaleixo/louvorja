@@ -21,6 +21,18 @@
   "save": "Salvar",
   "cancel": "Cancelar",
   "name_required": "Informe um nome para o vídeo.",
+  "add_video": "Adicionar vídeo",
+  "categories": "Categorias",
+  "new_category": "Nova Categoria",
+  "edit_category": "Editar Categoria",
+  "category_name": "Nome da Categoria",
+  "category_icon": "Ícone",
+  "category_color": "Cor",
+  "select_category": "Categoria",
+  "uncategorized": "Sem categoria",
+  "no_categories": "Nenhum vídeo salvo. Crie uma categoria ou clique em \"Adicionar Vídeo\" para começar.",
+  "confirm_delete_category": "Excluir esta categoria? Os vídeos dela também serão apagados.",
+  "manage_categories": "Gerenciar Categorias",
   "ribbon": {
     "title_ctx": "Meus Vídeos Online"
   }

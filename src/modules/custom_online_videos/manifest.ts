@@ -52,6 +52,13 @@ export const contextualPages: RibbonPage[] = [
             action: `${moduleId}_toggle_view`,
             color: "#7f8c8d",
           },
+          {
+            id: `${moduleId}_manage_categories`,
+            icon: "mdi-tune",
+            label: `${modulePath}.manage_categories`,
+            action: `${moduleId}_manage_categories`,
+            color: "#1976d2",
+          },
         ],
       },
       {

@@ -21,6 +21,18 @@
   "save": "Guardar",
   "cancel": "Cancelar",
   "name_required": "Ingresa un nombre para el video.",
+  "add_video": "Agregar video",
+  "categories": "Categorías",
+  "new_category": "Nueva Categoría",
+  "edit_category": "Editar Categoría",
+  "category_name": "Nombre de la Categoría",
+  "category_icon": "Ícono",
+  "category_color": "Color",
+  "select_category": "Categoría",
+  "uncategorized": "Sin categoría",
+  "no_categories": "Ningún video guardado. Crea una categoría o haz clic en \"Agregar Video\" para comenzar.",
+  "confirm_delete_category": "¿Eliminar esta categoría? Los videos de ella también serán eliminados.",
+  "manage_categories": "Administrar Categorías",
   "ribbon": {
     "title_ctx": "Mis Videos en Línea"
   }

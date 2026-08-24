@@ -5,57 +5,107 @@
     </template>
 
     <div class="cv-body">
-      <div v-if="!videos.length" class="cv-empty">{{ t("empty") }}</div>
+      <!-- Chips de categorias (filtro) -->
+      <div v-if="categories.length || uncategorizedCount > 0" class="cv-chips">
+        <span class="cv-chips-title">{{ t("categories") }}</span>
+        <div
+          v-for="cat in categories"
+          :key="cat.id"
+          class="cv-chip"
+          :class="{ 'cv-chip--active': selectedCategoryIds.has(cat.id) }"
+          :style="{ '--chip-color': cat.color }"
+          @click="toggleCategoryChip(cat.id)"
+        >
+          <span class="cv-chip-icon-wrap">
+            <Icon v-if="cat.iconType === 'icon'" :icon="cat.icon" size="14" />
+            <v-img v-else :src="cat.icon" width="14" height="14" />
+          </span>
+          <span class="cv-chip-name">{{ cat.name }}</span>
+          <span class="cv-chip-count">
+            {{ videos.filter((v) => v.categoryId === cat.id).length }}
+          </span>
+          <button class="cv-chip-add" :title="t('add_video')" @click.stop="openAdd(cat.id)">
+            <v-icon icon="mdi-plus" size="12" />
+          </button>
+        </div>
+        <div
+          v-if="uncategorizedCount > 0"
+          class="cv-chip cv-chip--uncategorized"
+          :class="{ 'cv-chip--active': selectedCategoryIds.has(UNCATEGORIZED_ID) }"
+          @click="toggleCategoryChip(UNCATEGORIZED_ID)"
+        >
+          <span class="cv-chip-icon-wrap">
+            <v-icon icon="mdi-youtube" size="14" />
+          </span>
+          <span class="cv-chip-name">{{ t("uncategorized") }}</span>
+          <span class="cv-chip-count">{{ uncategorizedCount }}</span>
+          <button class="cv-chip-add" :title="t('add_video')" @click.stop="openAdd()">
+            <v-icon icon="mdi-plus" size="12" />
+          </button>
+        </div>
+      </div>
+
+      <div v-if="!videos.length" class="cv-empty">
+        {{ categories.length ? t("empty") : t("no_categories") }}
+      </div>
 
       <!-- List view -->
       <div v-else-if="viewMode === 'list'" class="cv-list">
-        <div
-          v-for="v in videos"
-          :key="v.id"
-          class="cv-list-item"
-          :class="{ 'cv-list-item--active': projectingId === v.id }"
-        >
-          <v-icon icon="mdi-youtube" size="20" color="#e74c3c" />
-          <span class="cv-list-name">{{ v.name }}</span>
-          <v-spacer />
-          <v-btn
-            size="x-small"
-            variant="tonal"
-            color="primary"
-            :disabled="projectingId == v.id"
-            @click="projectVideo(v)"
-          >
-            {{ t("project") }}
-          </v-btn>
-          <v-btn size="x-small" variant="text" icon="mdi-pencil" @click="openEdit(v)" />
-          <v-btn size="x-small" variant="text" icon="mdi-delete" @click="confirmDelete(v)" />
-        </div>
+        <template v-for="v in filteredVideos" :key="v.id">
+          <div class="cv-list-item" :class="{ 'cv-list-item--active': projectingId === v.id }">
+            <v-icon icon="mdi-youtube" size="20" color="#e74c3c" />
+            <span class="cv-list-name">{{ v.name }}</span>
+            <span v-if="categoryName(v.categoryId)" class="cv-list-category">
+              {{ categoryName(v.categoryId) }}
+            </span>
+            <v-spacer />
+            <v-btn
+              size="x-small"
+              variant="tonal"
+              color="primary"
+              :disabled="projectingId == v.id"
+              @click="projectVideo(v)"
+            >
+              {{ t("project") }}
+            </v-btn>
+            <v-btn size="x-small" variant="text" icon="mdi-pencil" @click="openEdit(v)" />
+            <v-btn size="x-small" variant="text" icon="mdi-delete" @click="confirmDelete(v)" />
+          </div>
+        </template>
       </div>
 
       <!-- Grid / Thumbnail view -->
       <div v-else class="cv-grid">
-        <div
-          v-for="v in videos"
-          :key="v.id"
-          class="cv-grid-card"
-          :class="{ 'cv-grid-card--active': projectingId === v.id }"
-          @click="projectVideo(v)"
-        >
-          <div class="cv-grid-thumb">
-            <img v-if="thumbUrls[v.id]" :src="thumbUrls[v.id]" alt="" class="cv-grid-img" />
-            <div v-else class="cv-grid-placeholder">
-              <v-icon icon="mdi-youtube" size="40" color="#e74c3c" />
+        <template v-for="v in filteredVideos" :key="v.id">
+          <div
+            class="cv-grid-card"
+            :class="{ 'cv-grid-card--active': projectingId === v.id }"
+            @click="projectVideo(v)"
+          >
+            <div class="cv-grid-thumb">
+              <img v-if="thumbUrls[v.id]" :src="thumbUrls[v.id]" alt="" class="cv-grid-img" />
+              <div v-else class="cv-grid-placeholder">
+                <v-icon icon="mdi-youtube" size="40" color="#e74c3c" />
+              </div>
+              <div class="cv-grid-overlay">
+                <v-icon icon="mdi-play-circle" size="36" color="#fff" />
+              </div>
             </div>
-            <div class="cv-grid-overlay">
-              <v-icon icon="mdi-play-circle" size="36" color="#fff" />
+            <div class="cv-grid-name">{{ v.name }}</div>
+            <div v-if="categoryName(v.categoryId)" class="cv-grid-category">
+              {{ categoryName(v.categoryId) }}
+            </div>
+            <div class="cv-grid-actions">
+              <v-btn size="x-small" variant="text" icon="mdi-pencil" @click.stop="openEdit(v)" />
+              <v-btn
+                size="x-small"
+                variant="text"
+                icon="mdi-delete"
+                @click.stop="confirmDelete(v)"
+              />
             </div>
           </div>
-          <div class="cv-grid-name">{{ v.name }}</div>
-          <div class="cv-grid-actions">
-            <v-btn size="x-small" variant="text" icon="mdi-pencil" @click.stop="openEdit(v)" />
-            <v-btn size="x-small" variant="text" icon="mdi-delete" @click.stop="confirmDelete(v)" />
-          </div>
-        </div>
+        </template>
       </div>
     </div>
 
@@ -83,6 +133,13 @@
             :autofocus="!editingId"
             @keydown.enter="saveVideo"
           />
+          <v-select
+            v-model="formCategoryId"
+            :label="t('select_category')"
+            :items="categorySelectItems"
+            variant="outlined"
+            density="compact"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -93,17 +150,32 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Gerenciar Categorias -->
+    <CategoryManagerDialog
+      v-model="showManageDialog"
+      :categories="categories"
+      :saving="saving"
+      :icon-options="iconOptions"
+      :color-presets="colorPresets"
+      module-id="custom_online_videos"
+      @save="handleSaveCategory"
+      @delete="handleDeleteCategory"
+    />
   </ModuleContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
+import CategoryManagerDialog, { CategoryFileData } from "@/components/CategoryManagerDialog.vue";
+import Icon from "@/components/Icon.vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import $alert from "@/helpers/Alert";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
+import { ICONS } from "@/config/Icons";
 import { RibbonAction } from "@/types/Ribbon";
 import Media from "@/composables/useMedia";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
@@ -113,6 +185,7 @@ interface VideoItem {
   name: string;
   url: string;
   createdAt: string;
+  categoryId?: string;
 }
 
 interface ThumbnailCache {
@@ -123,6 +196,10 @@ interface ThumbnailCache {
 
 const VIDEOS_TABLE = DB_TABLE.CUSTOM_ONLINE_VIDEOS;
 const THUMBS_TABLE = DB_TABLE.CUSTOM_ONLINE_VIDEOS_THUMBNAILS;
+const STORE_CATEGORY = DB_TABLE.CUSTOM_ONLINE_VIDEOS_CATEGORIES;
+
+/** Id virtual dos vídeos adicionados sem categoria. */
+const UNCATEGORIZED_ID = "";
 
 const moduleContainer = ref<{ t(key: string): string } | null>(null);
 const t = (key: string): string => moduleContainer.value?.t(key) || key;
@@ -135,8 +212,116 @@ const dialogOpen = ref<boolean>(false);
 const editingId = ref<string | null>(null);
 const formName = ref<string>("");
 const formUrl = ref<string>("");
+const formCategoryId = ref<string>(UNCATEGORIZED_ID);
 const saving = ref<boolean>(false);
 let objectUrlIndex: Record<string, string> = {};
+
+// ─── Categorias ──────────────────────────────────────────────────────
+
+const categories = ref<CategoryFileData[]>([]);
+const selectedCategoryIds = ref(new Set<string>());
+const showManageDialog = ref<boolean>(false);
+
+const iconOptions = Object.values(ICONS.CATEGORY).map((value) => ({ value }));
+
+const colorPresets = [
+  "#4CAF50",
+  "#2196F3",
+  "#9C27B0",
+  "#FF9800",
+  "#F44336",
+  "#00BCD4",
+  "#3F51B5",
+  "#E91E63",
+  "#8BC34A",
+];
+
+async function loadCategories(): Promise<void> {
+  categories.value = (await $idb.getAll<CategoryFileData>(STORE_CATEGORY)).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}
+
+function categoryName(categoryId?: string): string {
+  if (!categoryId) return "";
+  return categories.value.find((c) => c.id === categoryId)?.name || "";
+}
+
+const uncategorizedCount = computed(() => {
+  const ids = new Set(categories.value.map((c) => c.id));
+  return videos.value.filter((v) => !v.categoryId || !ids.has(v.categoryId)).length;
+});
+
+const filteredVideos = computed(() => {
+  if (!selectedCategoryIds.value.size) return videos.value;
+  return videos.value.filter(
+    (v) =>
+      selectedCategoryIds.value.has(v.categoryId || UNCATEGORIZED_ID) ||
+      (uncategorizedCount.value > 0 &&
+        !v.categoryId &&
+        selectedCategoryIds.value.has(UNCATEGORIZED_ID))
+  );
+});
+
+const categorySelectItems = computed(() => [
+  { title: t("uncategorized"), value: UNCATEGORIZED_ID },
+  ...categories.value.map((c) => ({ title: c.name, value: c.id })),
+]);
+
+function toggleCategoryChip(id: string): void {
+  const next = new Set(selectedCategoryIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selectedCategoryIds.value = next;
+}
+
+/** Após carregar/salvar, garante que tudo fique visível. */
+function selectAllCategoriesAndUncategorized(): void {
+  const next = new Set(categories.value.map((c) => c.id));
+  if (uncategorizedCount.value > 0) next.add(UNCATEGORIZED_ID);
+  selectedCategoryIds.value = next;
+}
+
+/** Salva cópia plana — Proxy reativo não é clonável pelo IndexedDB. */
+async function saveCategoryRecord(cat: CategoryFileData): Promise<void> {
+  const plain = {
+    id: String(cat.id),
+    name: String(cat.name),
+    icon: String(cat.icon),
+    iconType: String(cat.iconType) as "icon" | "image",
+    ...(cat.iconData && cat.iconData.byteLength > 0
+      ? { iconData: cat.iconData, iconMime: String(cat.iconMime || "image/png") }
+      : {}),
+    color: String(cat.color),
+  };
+  await $idb.put(STORE_CATEGORY, plain);
+}
+
+async function handleSaveCategory(cat: CategoryFileData): Promise<void> {
+  saving.value = true;
+  try {
+    await saveCategoryRecord(cat);
+    await loadCategories();
+    selectAllCategoriesAndUncategorized();
+  } finally {
+    saving.value = false;
+  }
+}
+
+/** Excluir categoria apaga TAMBÉM os vídeos dela (padrão som de fundo). */
+async function handleDeleteCategory(id: string): Promise<void> {
+  const affected = videos.value.filter((v) => v.categoryId === id);
+  for (const v of affected) {
+    if (projectingId.value === v.id) await stopProjection();
+    await deleteVideoInternal(v.id);
+  }
+  videos.value = videos.value.filter((v) => v.categoryId !== id);
+  await $idb.del(STORE_CATEGORY, id);
+  categories.value = categories.value.filter((c) => c.id !== id);
+  const next = new Set(selectedCategoryIds.value);
+  next.delete(id);
+  selectedCategoryIds.value = next;
+}
 
 function extractYoutubeId(url: string): string | null {
   const m = url.match(
@@ -230,10 +415,11 @@ async function fetchAndCacheThumbnail(v: VideoItem, ytId: string): Promise<void>
   }
 }
 
-function openAdd(): void {
+function openAdd(presetCategoryId?: string): void {
   editingId.value = null;
   formName.value = "";
   formUrl.value = "";
+  formCategoryId.value = presetCategoryId ?? UNCATEGORIZED_ID;
   dialogOpen.value = true;
 }
 
@@ -241,6 +427,7 @@ function openEdit(v: VideoItem): void {
   editingId.value = v.id;
   formName.value = v.name;
   formUrl.value = v.url;
+  formCategoryId.value = v.categoryId || UNCATEGORIZED_ID;
   dialogOpen.value = true;
 }
 
@@ -264,6 +451,7 @@ async function saveVideo(): Promise<void> {
       if (v) {
         v.name = name;
         v.url = url;
+        v.categoryId = formCategoryId.value || undefined;
         await saveVideoInternal({ ...v });
         if (thumbUrls[v.id]) {
           URL.revokeObjectURL(thumbUrls[v.id]);
@@ -279,11 +467,13 @@ async function saveVideo(): Promise<void> {
         name: title,
         url,
         createdAt: new Date().toISOString(),
+        categoryId: formCategoryId.value || undefined,
       };
       await saveVideoInternal(v);
       videos.value.unshift(v);
       fetchAndCacheThumbnail(v, ytId);
     }
+    selectAllCategoriesAndUncategorized();
     dialogOpen.value = false;
   } finally {
     saving.value = false;
@@ -333,6 +523,8 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload: unknown) => 
     if (url) projectUrl(url);
   } else if (data.action === "stop") {
     if (projectingId.value) stopProjection();
+  } else if (data.action === "manage_categories") {
+    showManageDialog.value = true;
   } else if (data.action === "settings") {
     window.dispatchEvent(new CustomEvent("louvorja:open-options", { detail: { tab: "videos" } }));
   }
@@ -344,6 +536,8 @@ function close(): void {
 
 onMounted(async () => {
   await loadVideos();
+  await loadCategories();
+  selectAllCategoriesAndUncategorized();
 });
 
 onBeforeUnmount(() => {
@@ -377,6 +571,100 @@ onBeforeUnmount(() => {
   padding: 32px 16px;
   color: rgba(var(--lj-on-surface-ch), 0.5);
   font-size: 13px;
+}
+
+/* ── Chips de categorias (filtro) ── */
+.cv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cv-chips-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(var(--lj-on-surface-ch), 0.6);
+  margin-right: 2px;
+}
+.cv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--chip-color);
+  background: transparent;
+  color: var(--chip-color);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    opacity 0.12s;
+  opacity: 0.5;
+  outline: none;
+  white-space: nowrap;
+}
+.cv-chip:hover {
+  opacity: 0.85;
+}
+.cv-chip--active {
+  background: color-mix(in srgb, var(--chip-color) 20%, transparent);
+  opacity: 1;
+}
+.cv-chip--uncategorized {
+  --chip-color: #607d8b;
+}
+.cv-chip-icon-wrap {
+  display: flex;
+  align-items: center;
+}
+.cv-chip-count {
+  font-size: 10px;
+  background: color-mix(in srgb, var(--chip-color) 30%, transparent);
+  border-radius: 10px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+.cv-chip-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  opacity: 0.6;
+  transition:
+    opacity 0.1s,
+    background 0.1s;
+}
+.cv-chip-add:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--chip-color) 20%, transparent);
+}
+
+/* Etiqueta de categoria no item/card */
+.cv-list-category,
+.cv-grid-category {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(var(--lj-on-surface-ch), 0.08);
+  color: rgba(var(--lj-on-surface-ch), 0.6);
+  white-space: nowrap;
+}
+.cv-grid-category {
+  margin: 0 8px 2px;
+  display: inline-block;
+  width: fit-content;
 }
 
 /* List view */

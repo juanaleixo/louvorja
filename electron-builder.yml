@@ -26,6 +26,13 @@ extraResources: [
     "from": "src/constants",
     "to": "constants",
     "filter": ["**/*"]
+  },
+  {
+    # JSONs do banco baixados por `npm run jsondb` — lidos pelo seed do IndexedDB
+    # (electron/main/seed.js). Ausente = seed não roda; app segue via rede.
+    "from": "jsondb",
+    "to": "jsondb",
+    "filter": ["**/*"]
   }
 ]
 

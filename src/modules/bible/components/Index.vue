@@ -8,6 +8,7 @@
           :items="versions_list ?? []"
           item-value="value"
           item-title="title"
+          @click="refreshDownloadedVersions"
         />
 
         <v-checkbox
@@ -293,6 +294,7 @@ import Modules from "@/helpers/Modules";
 import AppData from "@/helpers/AppData";
 import UserData from "@/helpers/UserData";
 import Database from "@/helpers/Database";
+import { resolveDownloadedBibleVersions } from "@/helpers/BibleDownloads";
 import Broadcast from "@/helpers/Broadcast";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import { scrollToElement } from "@/helpers/Dom";
@@ -398,9 +400,20 @@ const chapters = computed(() => book.value?.chapters);
 const bibleSpotlightOpen = ref(false);
 const spotlightInitialBuffer = ref("");
 
-const downloadedVersions = computed(() => {
-  const ids: number[] = UserData.get(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, []) || [];
-  return new Set(ids);
+const downloadedVersions = ref<Set<number>>(new Set());
+
+/** IDB ∪ disco ∪ flag manual — ver helpers/BibleDownloads. */
+async function refreshDownloadedVersions(): Promise<void> {
+  try {
+    downloadedVersions.value = await resolveDownloadedBibleVersions(locale.value);
+  } catch (e) {
+    console.warn("[bible] refreshDownloadedVersions:", e);
+  }
+}
+
+// Troca de idioma muda as listas de versões/livros — revalida.
+watch(locale, () => {
+  void refreshDownloadedVersions();
 });
 
 const versions_list = computed(() =>
@@ -547,6 +560,7 @@ function onKeydown(e: KeyboardEvent): void {
 onMounted(async () => {
   window.addEventListener("keydown", onKeydown);
   await loadData();
+  void refreshDownloadedVersions();
 });
 
 onUnmounted(() => {

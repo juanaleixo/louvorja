@@ -8,16 +8,16 @@
     <v-card>
       <v-card-title class="d-flex align-center ga-1">
         <v-icon icon="mdi-tune" />
-        {{ $t(modulePrefix + ".manage_categories") }}
+        {{ $t("shell.category.manage_categories") }}
         <v-spacer />
         <v-btn size="x-small" color="primary" class="text-label-large" @click="openNewCategory">
           <v-icon start icon="mdi-plus" />
-          {{ $t(modulePrefix + ".new_category") }}
+          {{ $t("shell.category.new_category") }}
         </v-btn>
       </v-card-title>
       <v-card-text>
         <div v-if="categories.length === 0" class="cat-empty">
-          <p>{{ $t(modulePrefix + ".no_categories") }}</p>
+          <p>{{ $t("shell.category.no_categories") }}</p>
         </div>
         <div v-else class="cat-manage-list">
           <div v-for="cat in categories" :key="cat.id" class="cat-manage-item">
@@ -53,7 +53,7 @@
     <v-card>
       <v-card-title class="text-body-1 font-weight-medium">
         <v-icon :icon="editingId ? 'mdi-pencil' : 'mdi-plus'" class="mr-1" />
-        {{ editingId ? $t(modulePrefix + ".edit_category") : $t(modulePrefix + ".new_category") }}
+        {{ editingId ? $t("shell.category.edit_category") : $t("shell.category.new_category") }}
       </v-card-title>
       <v-card-text>
         <v-text-field
@@ -61,13 +61,13 @@
           density="compact"
           hide-details
           variant="outlined"
-          :label="$t(modulePrefix + '.category_name')"
+          :label="$t('shell.category.category_name')"
           class="mb-4"
         />
 
         <v-row>
           <v-col cols="12" sm="6">
-            <label class="cat-label">{{ $t(modulePrefix + ".category_color") }}</label>
+            <label class="cat-label">{{ $t("components.customization.color") }}</label>
             <div class="cat-color-swatches">
               <button
                 v-for="c in colorPresets"
@@ -80,7 +80,7 @@
             </div>
           </v-col>
           <v-col cols="12" sm="6">
-            <label class="cat-label">{{ $t(modulePrefix + ".category_icon") }}</label>
+            <label class="cat-label">{{ $t("shell.icon") }}</label>
             <div class="cat-icon-grid">
               <button
                 v-for="opt in iconOptions"
@@ -93,10 +93,10 @@
               </button>
             </div>
             <v-divider class="my-2" />
-            <label class="cat-label">{{ $t(modulePrefix + ".custom_image") }}</label>
+            <label class="cat-label">{{ $t("shell.category.custom_image") }}</label>
             <v-btn size="small" variant="tonal" @click="triggerIconUpload">
               <v-icon start icon="mdi-upload" />
-              {{ $t(modulePrefix + ".upload_image") }}
+              {{ $t("shell.category.upload_image") }}
             </v-btn>
             <input
               ref="iconFileInput"
@@ -122,10 +122,10 @@
       <v-card-actions>
         <v-btn v-if="editingId" variant="text" color="error" @click="deleteFromForm">
           <v-icon start icon="mdi-delete" />
-          {{ $t("delete") }}
+          {{ $t("actions.delete") }}
         </v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="showForm = false">{{ $t("cancel") }}</v-btn>
+        <v-btn variant="text" @click="showForm = false">{{ $t("actions.cancel") }}</v-btn>
         <v-btn
           variant="tonal"
           color="primary"
@@ -133,7 +133,7 @@
           :loading="saving"
           @click="saveForm"
         >
-          {{ $t("save") }}
+          {{ $t("actions.save") }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -164,8 +164,6 @@ const props = defineProps<{
   colorPresets: string[];
   moduleId: string;
 }>();
-
-const modulePrefix = computed(() => $modules.getPath(props.moduleId));
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];

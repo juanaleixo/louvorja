@@ -6,6 +6,7 @@
   "videos": "Vídeos",
   "videos_count": "vídeo(s)",
   "empty": "Ningún elemento disponible.",
+  "load_error": "Error al cargar los vídeos.",
   "search": "Buscar video...",
   "search_results": "Resultados",
   "play_all": "Reproducir todas",

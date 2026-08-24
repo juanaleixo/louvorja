@@ -819,7 +819,7 @@ export function useLiturgyItems(
     { title: "Só o Começo - Vocal Livre", url: "https://www.youtube.com/watch?v=XktoQTwHSK4" },
   ];
 
-  function apiChannelImages(data: OnlineApiData): Map<string, string> {
+  function apiChannelImages(data: Partial<OnlineApiData>): Map<string, string> {
     const chImg = new Map(
       (data.channels ?? []).map((c) => [c.channel_id, c.default_image || ""])
     );
@@ -828,40 +828,11 @@ export function useLiturgyItems(
     );
   }
 
-  async function loadOnlineApiVideos(): Promise<{
-    videos: OnlineApiVideo[];
-    playlistTitles: Map<string, string>;
-    playlistImages: Map<string, string>;
-  }> {
-    const cacheKey = `${getLocale()}_collections_online`;
-    try {
-      const cached = await $idb.get<OnlineApiData>(DB_TABLE.DB_CACHE, cacheKey);
-      if (cached && typeof cached === "object" && Array.isArray(cached.videos)) {
-        return {
-          videos: cached.videos,
-          playlistTitles: new Map((cached.playlists ?? []).map((p) => [p.playlist_id, p.title])),
-          playlistImages: apiChannelImages(cached),
-        };
-      }
-    } catch {
-      /* sem cache — tenta a rede */
-    }
-    try {
-      const resp = await fetch(`https://api.louvorja.com.br/${getLocale()}/collections/online`);
-      if (!resp.ok)
-        return { videos: [], playlistTitles: new Map(), playlistImages: new Map() };
-      const json = (await resp.json()) as OnlineApiData;
-      if (!json || !Array.isArray(json.videos))
-        return { videos: [], playlistTitles: new Map(), playlistImages: new Map() };
-      await $idb.put(DB_TABLE.DB_CACHE, { id: cacheKey, ...json });
-      return {
-        videos: json.videos,
-        playlistTitles: new Map((json.playlists ?? []).map((p) => [p.playlist_id, p.title])),
-        playlistImages: apiChannelImages(json),
-      };
-    } catch {
-      return { videos: [], playlistTitles: new Map(), playlistImages: new Map() };
-    }
+  /** Cache em camadas (memória → tabelas online_* no IDB → rede) via Database. */
+  async function loadOnlineApiVideos(): Promise<OnlineApiData | null> {
+    return $database.get<OnlineApiData>(`${getLocale()}_collections_online`, {
+      silent: true,
+    });
   }
 
   async function loadVideosList(): Promise<void> {
@@ -876,7 +847,11 @@ export function useLiturgyItems(
 
     const seen = new Set(all.map((v) => v.url));
     const api = await loadOnlineApiVideos();
-    for (const av of api.videos) {
+    const titles = new Map(
+      (api?.playlists ?? []).map((p) => [p.playlist_id, p.title])
+    );
+    const images = apiChannelImages(api ?? {});
+    for (const av of api?.videos ?? []) {
       const url = `https://www.youtube.com/watch?v=${av.video_id}`;
       if (seen.has(url)) continue;
       seen.add(url);
@@ -885,8 +860,8 @@ export function useLiturgyItems(
         name: av.title,
         url,
         source: "online",
-        origin: api.playlistTitles.get(av.playlist_id) || "",
-        originIcon: api.playlistImages.get(av.playlist_id) || "",
+        origin: titles.get(av.playlist_id) || "",
+        originIcon: images.get(av.playlist_id) || "",
       });
     }
 
