@@ -25,6 +25,8 @@
   "remove_image": "Quitar imagen",
   "fade_duration": "Duración del fundido",
   "bg_position": "Ajuste del fondo",
+  "select_category": "Seleccionar categoría",
+  "uncategorized": "Sin categoría",
   "alert_no_category": "Cree una categoría primero.",
   "alert_type_not_supported": "Tipo de archivo no soportado. Use imágenes (jpg, png, gif, etc.) o vídeos (mp4, webm, etc.).",
   "alert_some_ignored": "{count} de {total} archivos son soportados. Los demás fueron ignorados.",

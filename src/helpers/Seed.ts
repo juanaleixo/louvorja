@@ -31,6 +31,7 @@ function criticalKeys(): string[] {
       "_categories",
       "_bible_version",
       "_bible_book",
+      "_doxology_albums",
       "_collections_online",
     ]) {
       keys.push(`${locale}${suffix}`);

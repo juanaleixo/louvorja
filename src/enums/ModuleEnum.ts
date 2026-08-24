@@ -15,6 +15,7 @@ export enum ModuleEnum {
   CUSTOM_COLLECTIONS = "custom_collections",
   CUSTOM_ONLINE_VIDEOS = "custom_online_videos",
   DRAW = "draw",
+  DOXOLOGY = "doxology",
   FAVORITES = "favorites",
   HISTORY = "history",
   HYMNAL = "hymnal",

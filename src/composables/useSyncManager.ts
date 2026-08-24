@@ -132,6 +132,26 @@ export function useSyncManager() {
         .filter((n) => Number.isFinite(n));
     }
 
+    // Doxologia — categoria virtual com os álbuns da rota por slug
+    // ({lang}_doxology_albums). Injetada aqui, flui automaticamente para
+    // Sincronizar, check inicial, scan de cache, download e uso em disco.
+    try {
+      const dox = await Database.get<Array<{ id_album: number | string; name: string }>>(
+        `${lang}_doxology_albums`,
+        { silent: true }
+      );
+      if (Array.isArray(dox) && dox.length > 0) {
+        categories.push({
+          id_category: -1,
+          name: "Doxologia",
+          order: 9999,
+          albums: dox.map((a) => ({ id_album: Number(a.id_album), name: a.name })),
+        });
+      }
+    } catch {
+      /* doxologia indisponível — segue sem a seção */
+    }
+
     return { categories, hymnalIds, hymnal1996Ids };
   }
 

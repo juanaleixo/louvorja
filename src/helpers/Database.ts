@@ -40,12 +40,13 @@ const META_ID = "__meta__";
 
 /** Tabelas gerenciadas pelo Database — limpas por `invalidate()` sem argumento. */
 const CATALOG_TABLES = [
-  DB_TABLE.DB_CACHE,
+  DB_TABLE.CACHE,
   DB_TABLE.MUSICS,
   DB_TABLE.HYMNAL,
   DB_TABLE.HYMNAL_1996,
   DB_TABLE.ALBUMS,
   DB_TABLE.MUSIC_CATEGORIES,
+  DB_TABLE.DOXOLOGY_ALBUMS,
   DB_TABLE.ONLINE_VIDEOS_CHANNELS,
   DB_TABLE.ONLINE_VIDEOS_PLAYLISTS,
   DB_TABLE.ONLINE_VIDEOS,
@@ -53,6 +54,12 @@ const CATALOG_TABLES = [
   DB_TABLE.BIBLE_BOOKS,
   DB_TABLE.BIBLE_CHAPTERS,
 ];
+
+enum ENDPOINT_CATEGORIES {
+  VIDEOS_ONLINE = "collections/online",
+  DOXOLOGY = "albums/category/doxology",
+  CHILDREN = "albums/category/children",
+}
 
 /** Cache em memória — primeira camada (instantânea, mesma sessão). */
 const _memory = new Map<string, CacheEntry<unknown>>();
@@ -76,12 +83,15 @@ function apiOrigin(): string {
 
 /**
  * URL de rede por chave. A maioria dos JSONs vive no json_db estático;
- * `_collections_online` é rota REST da API (não existe como arquivo em
- * /json_db).
+ * `_collections_online` e `_doxology_albums` são rotas REST da API (não
+ * existem como arquivos em /json_db).
  */
 function fetchUrlFor(file: string): string {
   if (/^.{2}_collections_online$/.test(file)) {
-    return `${apiOrigin()}/${file.slice(0, 2)}/collections/online`;
+    return `${apiOrigin()}/${file.slice(0, 2)}/${ENDPOINT_CATEGORIES.VIDEOS_ONLINE}`;
+  }
+  if (/^.{2}_doxology_albums$/.test(file)) {
+    return `${apiOrigin()}/${file.slice(0, 2)}/${ENDPOINT_CATEGORIES.DOXOLOGY}`;
   }
   return $path.db(`/${file}`);
 }
@@ -96,11 +106,16 @@ interface Route {
 
 /** Resolve tabela/estratégia a partir da chave do arquivo. `null` = registro único na `cache`. */
 function routeFor(file: string): Route | null {
-  const m = file.match(/_(musics|hymnal|hymnal_1996)$/);
+  const m = file.match(/_(musics|hymnal|hymnal_1996|doxology_albums)$/);
   if (m) {
-    const table =
-      m[1] === "musics" ? DB_TABLE.MUSICS : m[1] === "hymnal" ? DB_TABLE.HYMNAL : DB_TABLE.HYMNAL_1996;
-    return { kind: "items", table, idKey: "id_music" };
+    const tableMap: Record<string, { table: string; idKey: string }> = {
+      musics: { table: DB_TABLE.MUSICS, idKey: "id_music" },
+      hymnal: { table: DB_TABLE.HYMNAL, idKey: "id_music" },
+      hymnal_1996: { table: DB_TABLE.HYMNAL_1996, idKey: "id_music" },
+      doxology_albums: { table: DB_TABLE.DOXOLOGY_ALBUMS, idKey: "id_album" },
+    };
+    const entry = tableMap[m[1]];
+    return { kind: "items", table: entry.table, idKey: entry.idKey };
   }
   if (/^music_\d+$/.test(file)) return { kind: "detail-music", table: DB_TABLE.MUSICS };
   if (/^album_\d+$/.test(file)) return { kind: "single", table: DB_TABLE.ALBUMS };
@@ -172,7 +187,7 @@ async function readRouted<T>(file: string, r: Route | null): Promise<T | null> {
   let data: T | null = null;
   if (!r) {
     // Rota padrão: registro único na tabela cache.
-    const row = await $idb.get<CacheEntry<T>>(DB_TABLE.DB_CACHE, file);
+    const row = await $idb.get<CacheEntry<T>>(DB_TABLE.CACHE, file);
     data = row && isValidV(row.v) ? (row.data as T) : null;
     return data;
   }
@@ -187,10 +202,10 @@ async function readRouted<T>(file: string, r: Route | null): Promise<T | null> {
   if (data !== null) return data;
 
   // Migração legada: blob antigo na tabela cache sob a mesma chave.
-  const legacy = await $idb.get<CacheEntry<T>>(DB_TABLE.DB_CACHE, file);
+  const legacy = await $idb.get<CacheEntry<T>>(DB_TABLE.CACHE, file);
   if (legacy && isValidV(legacy.v) && legacy.data != null) {
     await writeRouted(file, legacy.data, r);
-    void $idb.del(DB_TABLE.DB_CACHE, file);
+    void $idb.del(DB_TABLE.CACHE, file);
     $dev.write(`Migrado para tabelas normalizadas`, file);
     return legacy.data;
   }
@@ -250,7 +265,7 @@ async function writeItems(
 async function writeRouted(file: string, data: unknown, r: Route | null): Promise<void> {
   if (!r) {
     // Registro único na tabela cache (comportamento clássico).
-    await $idb.put<CacheEntry<unknown>>(DB_TABLE.DB_CACHE, {
+    await $idb.put<CacheEntry<unknown>>(DB_TABLE.CACHE, {
       id: file,
       data,
       ts: Date.now(),
@@ -339,7 +354,7 @@ export default {
     _memory.delete(file);
     const r = routeFor(file);
     if (!r) {
-      void $idb.del(DB_TABLE.DB_CACHE, file);
+      void $idb.del(DB_TABLE.CACHE, file);
     } else if (r.kind === "items") {
       void purgeFileRows(r.table!, file);
     } else if (r.kind === "composite-online") {
@@ -401,7 +416,19 @@ export default {
       });
       if (response.status === 404) return null;
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = (await response.json()) as T;
+      let data = (await response.json()) as T;
+      // Envelope Laravel paginado ({current_page, data[], last_page}) →
+      // array cru, para rotas "items" servidas por REST.
+      const route = routeFor(file);
+      if (
+        route?.kind === "items" &&
+        data !== null &&
+        typeof data === "object" &&
+        !Array.isArray(data) &&
+        Array.isArray((data as Record<string, unknown>).data)
+      ) {
+        data = (data as unknown as { data: T }).data;
+      }
 
       await writeRouted(file, data, routeFor(file));
       _memory.set(file, { id: file, data, ts: Date.now(), v: getVersion() });
@@ -441,7 +468,7 @@ export default {
     try {
       const r = routeFor(file);
       if (!r) {
-        const row = await $idb.get<CacheEntry<unknown>>(DB_TABLE.DB_CACHE, file);
+        const row = await $idb.get<CacheEntry<unknown>>(DB_TABLE.CACHE, file);
         return !row || !isValidV(row.v);
       }
       if (r.kind === "items") {
