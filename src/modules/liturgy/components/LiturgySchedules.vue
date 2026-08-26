@@ -38,6 +38,21 @@
               :class="['lit-schedules-cat', { 'is-active': activeCatId === c.id }]"
               @click="setActiveCatId(c.id)"
             >
+              <v-menu :close-on-content-click="false" location="bottom">
+                <template #activator="{ props: colorProps }">
+                  <span
+                    v-bind="colorProps"
+                    class="lit-schedules-cat-color"
+                    :style="{ background: c.cor || '#1976d2' }"
+                  />
+                </template>
+                <v-color-picker
+                  :model-value="c.cor || '#1976d2'"
+                  mode="hex"
+                  hide-inputs
+                  @update:model-value="updateCatColor(c.id, String($event))"
+                />
+              </v-menu>
               <input
                 v-if="editingCatId === c.id"
                 v-model="editingCatName"
@@ -87,6 +102,7 @@
 
           <div v-else class="lit-schedules-table">
             <div class="lit-schedules-row lit-schedules-row--head">
+              <div class="col-icon"></div>
               <div class="col-date">{{ t("schedules.date") }}</div>
               <div class="col-name">{{ t("schedules.item_name") }}</div>
               <div class="col-file">{{ t("schedules.file") }}</div>
@@ -96,6 +112,9 @@
               {{ t("schedules.no_items") }}
             </div>
             <div v-for="it in categoryItems" :key="it.id" class="lit-schedules-row">
+              <div class="col-icon">
+                <v-icon :icon="fileTypeIcon(String(it.arquivo || ''))" size="16" />
+              </div>
               <div class="col-date">
                 <input
                   v-model="it.data"
@@ -106,10 +125,10 @@
               </div>
               <div class="col-name">
                 <input
-                  v-model="it.nome"
+                  :value="fileName(String(it.arquivo || ''))"
                   type="text"
                   class="lit-input"
-                  @change="updateScheduled(it)"
+                  readonly
                 />
               </div>
               <div class="col-file">
@@ -174,6 +193,7 @@ const props = withDefaults(
     setActiveCatId: (id: string | number) => void;
     addCategory: () => void;
     saveCategoryName: (id: string | number, name: string) => void;
+    updateCategoryColor: (id: string | number, color: string) => void;
     removeCategory: (id: string | number) => void;
     addScheduledItem: () => void;
     updateScheduled: (it: ScheduledItem) => void;
@@ -204,6 +224,47 @@ function startEditingCategory(c: ScheduledCategory) {
 function doSaveCatName(id: string | number) {
   props.saveCategoryName(id, editingCatName.value);
   editingCatId.value = null;
+}
+
+function updateCatColor(id: string | number, color: string) {
+  props.updateCategoryColor(id, color);
+}
+
+const FILE_ICON_MAP: Record<string, string> = {
+  mp4: "mdi-video",
+  webm: "mdi-video",
+  mkv: "mdi-video",
+  mov: "mdi-video",
+  avi: "mdi-video",
+  m4v: "mdi-video",
+  mp3: "mdi-music-note",
+  wav: "mdi-music-note",
+  ogg: "mdi-music-note",
+  flac: "mdi-music-note",
+  aac: "mdi-music-note",
+  m4a: "mdi-music-note",
+  opus: "mdi-music-note",
+  wma: "mdi-music-note",
+  jpg: "mdi-image",
+  jpeg: "mdi-image",
+  png: "mdi-image",
+  webp: "mdi-image",
+  gif: "mdi-image",
+  bmp: "mdi-image",
+  heic: "mdi-image",
+  heif: "mdi-image",
+  pdf: "mdi-file-pdf-box",
+};
+
+function fileTypeIcon(path?: string): string {
+  if (!path) return "mdi-file-outline";
+  const ext = path.split(".").pop()?.toLowerCase() || "";
+  return FILE_ICON_MAP[ext] || "mdi-file-outline";
+}
+
+function fileName(path?: string): string {
+  if (!path) return "";
+  return path.split(/[\\/]/).pop() || path;
 }
 </script>
 
@@ -300,6 +361,14 @@ function doSaveCatName(id: string | number) {
   color: var(--lj-navy);
   font-weight: 500;
 }
+.lit-schedules-cat-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
 .lit-empty {
   flex: 1;
   display: flex;
@@ -318,7 +387,7 @@ function doSaveCatName(id: string | number) {
 }
 .lit-schedules-row {
   display: grid;
-  grid-template-columns: 130px 1fr 1fr 30px;
+  grid-template-columns: 30px 130px 1fr 1fr 30px;
   gap: 4px;
   padding: 4px 8px;
   border-bottom: 1px solid rgba(var(--v-border-color), 0.1);

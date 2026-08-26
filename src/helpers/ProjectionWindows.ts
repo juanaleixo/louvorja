@@ -227,6 +227,34 @@ export async function openFileProjectionWindows(): Promise<void> {
 }
 
 /**
+ * Abre a janela de projeção de Anúncios (reutiliza preferências de arquivo).
+ */
+export async function openAnnouncementsWindow(): Promise<void> {
+  const prefs = await _readPrefs();
+  const fullscreen = $userdata.get(KEYS.OPTIONS.FILE_PROJECTION.FULLSCREEN, true) as boolean;
+  const alwaysOnTop = $userdata.get(
+    KEYS.OPTIONS.FILE_PROJECTION.ALWAYS_ON_TOP,
+    true
+  ) as boolean;
+  const monitor =
+    prefs[PROJECTION_TYPE.FILE] ?? prefs[PROJECTION_TYPE.MUSIC] ?? null;
+  if (monitor != null) {
+    await _open(
+      PROJECTION_URL.ANNOUNCEMENTS,
+      PROJECTION_TYPE.ANNOUNCEMENTS,
+      monitor,
+      fullscreen,
+      alwaysOnTop,
+      true
+    );
+  }
+}
+
+export async function closeAnnouncementsWindow(): Promise<void> {
+  await _close(PROJECTION_TYPE.ANNOUNCEMENTS);
+}
+
+/**
  * Abre janelas de projeção para VÍDEOS ON-LINE (YouTube).
  * Usa a feature "online_video" diretamente, sem passar pelo fallback
  * "file_projection", para não conflitar com a configuração do

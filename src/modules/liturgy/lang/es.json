@@ -59,7 +59,8 @@
     "site": "Sitio",
     "video-online": "Vídeo Online",
     "biblioteca-midia": "Biblioteca de Medios",
-    "som-de-fundo": "Sonido de Fondo"
+    "som-de-fundo": "Sonido de Fondo",
+    "anuncios": "Anuncios"
   },
   "inputs": {
     "type": "Tipo",
@@ -250,5 +251,9 @@
     "col_detail": "Tipo",
     "empty": "Ningún ítem disponible.",
     "empty_search": "Ningún ítem encontrado para esta búsqueda."
+  },
+  "anuncios": {
+    "select_label": "Selecciona los anuncios a proyectar:",
+    "all": "Todos"
   }
 }

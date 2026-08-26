@@ -69,6 +69,11 @@ const routes = [
     component: () => import("@/views/FileProjection.vue"),
   },
   {
+    path: PROJECTION_URL.ANNOUNCEMENTS,
+    name: "AnnouncementsProjection",
+    component: () => import("@/views/AnnouncementsProjection.vue"),
+  },
+  {
     path: PROJECTION_URL.FILE_RETURN,
     name: "FileProjectionReturn",
     component: () => import("@/views/FileProjectionReturn.vue"),

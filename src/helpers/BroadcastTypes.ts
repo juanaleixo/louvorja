@@ -96,6 +96,8 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Payload: { page: number }
    *  Emitido por: media_library (next/prev em PDF). Recebido por: FileProjection. */
   FILE_PROJECTION_PAGE: "file_projection_page",
+  ANNOUNCEMENTS_STATE: "announcements_state",
+  ANNOUNCEMENTS_CONTROL: "announcements_control",
 
   /** Projeção de fundo (imagem/vídeo) do módulo Projeção de Fundo.
    *  Payload: { url: string, type: "image" | "video", title?: string }

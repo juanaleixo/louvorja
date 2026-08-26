@@ -8,6 +8,7 @@ export enum LiturgyItemTypeEnum {
   SITE = "site",
   VIDEO_ONLINE = "video-online",
   BG_SOUND = "som-de-fundo",
+  ANUNCIOS = "anuncios",
 }
 
 export namespace LiturgyItemTypeEnum {

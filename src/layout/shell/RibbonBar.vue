@@ -556,6 +556,7 @@ function executeButton(btn: RibbonButton): void {
       "overlay",
       "background_sound",
       "background_projection",
+      "scheduled_items",
     ];
     const pattern = new RegExp(`^(${actions.join("|")})_(.+)$`);
     const m = btn.action.match(pattern);

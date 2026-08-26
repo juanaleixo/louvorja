@@ -59,7 +59,8 @@
     "site": "Site",
     "video-online": "Vídeo Online",
     "biblioteca-midia": "Biblioteca de Mídia",
-    "som-de-fundo": "Som de Fundo"
+    "som-de-fundo": "Som de Fundo",
+    "anuncios": "Anúncios"
   },
   "inputs": {
     "type": "Tipo",
@@ -250,5 +251,9 @@
     "col_detail": "Tipo",
     "empty": "Nenhum item disponível.",
     "empty_search": "Nenhum item encontrado para esta busca."
+  },
+  "anuncios": {
+    "select_label": "Selecione os anúncios a projetar:",
+    "all": "Todos"
   }
 }

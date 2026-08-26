@@ -28,18 +28,19 @@
             "
           >
             <option :value="LiturgyItemTypeEnum.ANOTACAO">{{ t("types.anotacao") }}</option>
+            <option :value="LiturgyItemTypeEnum.ANUNCIOS">{{ t("types.anuncios") }}</option>
             <option :value="LiturgyItemTypeEnum.ARQUIVO">{{ t("types.arquivo") }}</option>
+            <option :value="LiturgyItemTypeEnum.MEDIA_LIBRARY">
+              {{ t("types.biblioteca-midia") }}
+            </option>
             <option :value="LiturgyItemTypeEnum.BLOCO">{{ t("types.bloco") }}</option>
             <option :value="LiturgyItemTypeEnum.ITENS_AGENDADOS">
               {{ t("types.itens-agendados") }}
             </option>
             <option :value="LiturgyItemTypeEnum.MUSICA">{{ t("types.musica") }}</option>
-            <option :value="LiturgyItemTypeEnum.VIDEO_ONLINE">{{ t("types.video-online") }}</option>
-            <option :value="LiturgyItemTypeEnum.MEDIA_LIBRARY">
-              {{ t("types.biblioteca-midia") }}
-            </option>
-            <option :value="LiturgyItemTypeEnum.BG_SOUND">{{ t("types.som-de-fundo") }}</option>
             <option :value="LiturgyItemTypeEnum.SITE">{{ t("types.site") }}</option>
+            <option :value="LiturgyItemTypeEnum.BG_SOUND">{{ t("types.som-de-fundo") }}</option>
+            <option :value="LiturgyItemTypeEnum.VIDEO_ONLINE">{{ t("types.video-online") }}</option>
           </select>
         </div>
 
@@ -360,6 +361,30 @@
         />
       </div>
 
+      <!-- Painel ANÚNCIOS -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.ANUNCIOS" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.anuncios") }}</div>
+        <div class="lit-field">
+          <label>{{ t("anuncios.select_label") }}</label>
+        </div>
+        <label class="lit-an-check lit-an-check--all">
+          <input
+            type="checkbox"
+            :checked="allAnnouncementsSelected"
+            @change="toggleAllAnnouncements(($event.target as HTMLInputElement).checked)"
+          />
+          <strong>{{ t("anuncios.all") }}</strong>
+        </label>
+        <label v-for="a in announcementItems" :key="a.id" class="lit-an-check">
+          <input
+            type="checkbox"
+            :checked="(form as LiturgyItem).anuncios_ids?.includes(a.id) ?? false"
+            @change="toggleAnnouncement(a.id, ($event.target as HTMLInputElement).checked)"
+          />
+          <span>{{ a.nome }}</span>
+        </label>
+      </div>
+
       <!-- BLOCO -->
       <div v-if="form.tipo === LiturgyItemTypeEnum.BLOCO" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.bloco") }}</div>
@@ -395,7 +420,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
@@ -608,6 +633,63 @@ function onBgSoundPicked(item: LibrarySearchItem): void {
   props.setFormField("item", item.name);
   props.setFormField("subitem", item.name);
   props.setFormField("subtipo", "audio");
+}
+
+// ─── Anúncios ────────────────────────────────────────────────────────
+
+interface AnnouncementOption {
+  id: string;
+  nome: string;
+  ordem: number;
+}
+
+const announcementItems = ref<AnnouncementOption[]>([]);
+const allAnnouncementsSelected = computed(() => {
+  const ids = (props.form as LiturgyItem).anuncios_ids || [];
+  return announcementItems.value.length > 0 && ids.length === announcementItems.value.length;
+});
+
+async function loadAnnouncementOptions(): Promise<void> {
+  const all = await $idb.getAll<{ id: string; nome: string; ordem: number }>(
+    DB_TABLE.ANNOUNCEMENTS
+  );
+  announcementItems.value = all.sort((a, b) => a.ordem - b.ordem);
+  // Item padrão para passar na validação de nome.
+  if (!(props.form as LiturgyItem).item) {
+    props.setFormField("item", t("types.anuncios"));
+  }
+}
+
+watch(announcementItems, () => {
+  if (announcementItems.value.length && !(props.form as LiturgyItem).anuncios_ids?.length) {
+    props.setFormField(
+      "anuncios_ids",
+      announcementItems.value.map((a) => a.id)
+    );
+  }
+});
+
+// Carrega a lista quando o tipo muda para Anúncios.
+watch(
+  () => (props.form as LiturgyItem).tipo,
+  (tipo) => {
+    if (tipo === LiturgyItemTypeEnum.ANUNCIOS) {
+      // nextTick garante que o DOM e o IDB estão prontos.
+      void nextTick(() => void loadAnnouncementOptions());
+    }
+  },
+  { immediate: true }
+);
+
+function toggleAllAnnouncements(checked: boolean): void {
+  props.setFormField("anuncios_ids", checked ? announcementItems.value.map((a) => a.id) : []);
+}
+
+function toggleAnnouncement(id: string, checked: boolean): void {
+  const ids = new Set((props.form as LiturgyItem).anuncios_ids || []);
+  if (checked) ids.add(id);
+  else ids.delete(id);
+  props.setFormField("anuncios_ids", [...ids]);
 }
 
 function onVersionChange(e: Event) {

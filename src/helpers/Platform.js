@@ -107,6 +107,16 @@ export default {
   },
 
   /**
+   * Resolve o caminho real de um File (Electron 32+ removeu File.path).
+   * null quando rodando no browser/PWA.
+   *
+   * @returns {{ getPathForFile } | null}
+   */
+  get webUtils() {
+    return api?.getPathForFile ? { getPathForFile: api.getPathForFile } : null;
+  },
+
+  /**
    * JSONs empacotados (resourcesPath/jsondb) para o seed do IndexedDB.
    * null quando rodando no browser/PWA ou sem o pacote presente.
    *
@@ -225,6 +235,11 @@ export default {
    */
   get storage() {
     return api?.storage ?? null;
+  },
+
+  /** Lista arquivos de um diretório local (auto-populate). */
+  readDir(dirPath) {
+    return api?.storage?.readDir?.(dirPath) ?? Promise.resolve([]);
   },
 
   /**

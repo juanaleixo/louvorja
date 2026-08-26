@@ -123,6 +123,7 @@ export const KEYS = {
     UI_STYLE: `${OPTIONS}.ui_style`,
     MINIMIZE_ON_START: `${OPTIONS}.minimize_on_start`,
     SLIDE: {
+      SLIDES: `${OPTIONS_SLIDE}.slides`,
       CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,
       TEXT_ALIGN: `${OPTIONS_SLIDE}.text_align`,
       SHOW_TITLE_FIRST_SLIDE: `${OPTIONS_SLIDE}.show_title_first_slide`,

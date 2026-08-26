@@ -938,6 +938,27 @@ ipcMain.handle("storage:openDir", () => storage.openFilesDir());
 ipcMain.handle("storage:setFilesDir", (_e, newDir, opts) => storage.setFilesDir(newDir, opts));
 ipcMain.handle("storage:enforceQuota", (_e, maxBytes) => storage.enforceQuota(maxBytes));
 
+/** Lista todos os arquivos de um diretório (recursivo, com caminhos relativos). */
+ipcMain.handle("storage:readDir", async (_e, dirPath) => {
+  const fs = require("fs-extra");
+  const path = require("path");
+  if (!(await fs.pathExists(dirPath))) return [];
+  async function walk(dir) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...await walk(full));
+      } else {
+        files.push(path.relative(dirPath, full));
+      }
+    }
+    return files;
+  }
+  return walk(dirPath);
+});
+
 ipcMain.handle("storage:chooseDir", async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   const result = await dialog.showOpenDialog(win, {

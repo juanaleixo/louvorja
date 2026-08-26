@@ -306,6 +306,10 @@ Remoto, Sincronizar e StartupCheck.
 - Tradução global em `src/lang/pt.json` e `src/lang/es.json`
 - Tradução por módulo em `src/modules/<id>/lang/`
 - Chave de tradução: `modules.<id>.<key>` no i18n global
+- Helper `tt(key)` prefixa `modules.<id>.` automaticamente — usar para chaves do módulo
+- Helper `t(key)` acessa chaves globais (ex.: `t("actions.save")`) — usar para chaves compartilhadas
+- Regra: `modules.<id>.*` é exclusiva do módulo; global define apenas chaves compartilhadas (`actions.*`, `components.*`, etc.)
+- Detalhes completos em `docs/i18n.md`
 
 ---
 
@@ -373,6 +377,12 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 | `wallpaper_update` | RibbonWallpaper, Opções | BackgroundProjection, FileProjection |
 | `module_ribbon_action` | RibbonBar | Módulo alvo |
 | `userdata:patch` | UserData.set() | Todas as janelas |
+| `announcements_state` | announcements module | AnnouncementsProjection |
+| `announcements_control` | announcements module | AnnouncementsProjection |
+| `bible_ribbon_action` | RibbonBar | Módulo bíblia |
+| `liturgy_ribbon_action` | RibbonBar | Módulo liturgia |
+| `module_projection_close` | módulos de projeção | Janela de projeção |
+| `ribbon:select_page` | Módulos | RibbonBar |
 
 ---
 
@@ -568,8 +578,35 @@ preguiçoso**: HEIC já registrado sem conversão é convertido on-demand e
 cacheado por item (`heicProjectionCache`).
 
 O protocolo `louvorja://local` registra os MIME `.heic/.heif`, e a constante
-compartilhada `IMAGE_FILE_EXTS` (`src/constants/ImageFileExts.ts`) inclui
+compartilhada `IMAGE_EXT` (`src/constants/FileTypes.ts`) inclui
 `heic/heif` em todos os accepts/filtros.
+
+---
+
+## 📁 Constantes de tipos de arquivo (FileTypes.ts)
+
+Todas as listas de extensões de arquivo usadas no programa estão centralizadas
+em `src/constants/FileTypes.ts`:
+
+| Constante | Extensões |
+|---|---|
+| `IMAGE_EXT` | jpg, jpeg, png, webp, gif, bmp, svg, heic, heif |
+| `AUDIO_EXT` | mp3, wav, ogg, flac, aac, m4a, wma, opus |
+| `VIDEO_EXT` | mp4, webm, mkv, mov, avi, m4v |
+
+**Uso:**
+```ts
+import { IMAGE_EXT, AUDIO_EXT, VIDEO_EXT } from "@/constants/FileTypes";
+
+if (IMAGE_EXT.includes(ext)) kind = "image";
+else if (VIDEO_EXT.includes(ext)) kind = "video";
+else if (AUDIO_EXT.includes(ext)) kind = "audio";
+```
+
+**Regras:**
+- Nunca defina listas inline — importe de `FileTypes.ts`.
+- Para adicionar nova extensão, edite `FileTypes.ts` e todos os consumidores
+  usam automaticamente.
 
 ---
 
@@ -626,7 +663,11 @@ src/
 │   ├── useSlideStyle.ts           # Estilos de slides
 │   └── useBroadcastListener.ts    # Listener BroadcastChannel c/ cleanup
 ├── constants/
+│   ├── Bible.ts              # Constantes da Bíblia
+│   ├── Colors.ts             # Paleta de cores
 │   ├── DbTables.ts           # Nomes das tabelas do IndexedDB
+│   ├── FileTypes.ts          # Constantes de extensões (IMAGE_EXT, AUDIO_EXT, VIDEO_EXT)
+│   ├── ImageFileExts.ts      # Re-export de IMAGE_EXT (compatibilidade legada)
 │   ├── Projection.ts         # Constantes de projeção
 │   └── UserDataKeys.ts       # Chaves de user_data
 ├── helpers/                  # Utilitários
@@ -636,15 +677,25 @@ src/
 │   ├── SettingsStorage.ts
 │   ├── Snackbar.ts           # Snackbar global (suporta action opcional)
 │   └── ...
-├── modules/                  # 30+ módulos do sistema
+├── modules/                  # 37 módulos do sistema
+│   ├── announcements/        # Slides de anúncios para projeção
 │   ├── background_projection/    # Projeção de fundo
 │   ├── background_sound/         # Música de fundo
+│   ├── liturgy/                  # Planejador de culto
+│   ├── media_library/            # Biblioteca de mídia
 │   ├── overlay/                  # Overlays customizáveis
+│   ├── scheduled_items/          # Itens agendados por categoria/data
 │   └── ...
-├── views/                    # Rotas de projeção
-│   ├── Projection.vue
-│   ├── FileProjection.vue
-│   ├── BackgroundProjection.vue
+├── views/                    # Rotas de projeção / shell
+│   ├── Main.vue              # Shell principal (/)
+│   ├── Popup.vue             # Janela popup para módulos
+│   ├── Projection.vue        # Projeção fullscreen (monitor 2)
+│   ├── ProjectionReturn.vue  # Stage display
+│   ├── AnnouncementsProjection.vue  # Projeção de anúncios
+│   ├── Obs.vue               # Captura OBS (slides)
+│   ├── ObsBible.vue          # Captura OBS (versículos)
+│   ├── Operator.vue          # Grade de slides (operador)
+│   ├── Clock.vue             # Relógio fullscreen
 │   └── ...
 └── router/                   # Vue Router (hash + history)
 ```

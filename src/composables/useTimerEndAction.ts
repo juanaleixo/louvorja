@@ -25,11 +25,11 @@ import $modules from "@/helpers/Modules";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
 import { ensureRenderableImage, isHeic } from "@/helpers/ImageConvert";
-import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
 import { KEYS } from "@/constants/UserDataKeys";
 import { MediaEnum } from "@/enums/MediaEnum";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
 import type { Music } from "@/types/Music";
+import { IMAGE_EXT } from "@constants/FileTypes";
 
 export interface TimerEndActionKeys {
   END_ACTION: string;
@@ -177,7 +177,7 @@ export function useTimerEndAction(moduleId: string, keys: TimerEndActionKeys) {
     const url = resolveFilePath(workPath, workFile);
     if (!url) return;
     const ext = (workPath || workFile?.name || "").split(".").pop()?.toLowerCase() || "";
-    const isImage = IMAGE_FILE_EXTS.includes(ext);
+    const isImage = IMAGE_EXT.includes(ext);
     $userdata.set(keys.END_ACTION_VIDEO, {
       url,
       type: isImage ? "image" : "video",

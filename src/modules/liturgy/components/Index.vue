@@ -83,6 +83,7 @@
       :add-scheduled-item="addScheduledItem"
       :update-scheduled="updateScheduled"
       :remove-scheduled="removeScheduled"
+      :update-category-color="updateCategoryColor"
     />
 
     <v-dialog v-model="copyDialog" max-width="400">
@@ -201,6 +202,7 @@ const {
   openSchedulesDialog,
   addCategory,
   saveCategoryName,
+  updateCategoryColor,
   removeCategory,
   addScheduledItem,
   updateScheduled,

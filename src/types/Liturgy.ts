@@ -20,6 +20,8 @@ export interface LiturgyItem {
   blocoId?: string
   /** Id do item de origem em módulos externos (media_library / background_sound). */
   ref_id?: string
+  /** Ids dos anúncios selecionados (tipo anuncios), na ordem de projeção. */
+  anuncios_ids?: string[]
 }
 
 export interface LiturgyMusicItem {
@@ -31,11 +33,15 @@ export interface LiturgyMusicItem {
 export interface ScheduledCategory {
   id: string | number
   nome: string
+  cor?: string
+  auto_folder?: string
   [key: string]: unknown
 }
 
 export interface ScheduledItem {
   id: string | number
+  duracao?: number
+  arquivo_jpeg?: ArrayBuffer
   [key: string]: unknown
 }
 

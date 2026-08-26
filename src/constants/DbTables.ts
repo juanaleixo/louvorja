@@ -25,6 +25,7 @@ export const DB_TABLE = {
   HYMNAL_1996: ModuleEnum.HYMNAL_1996,
   ALBUMS: "albums",
   MUSIC_CATEGORIES: "music_categories",
+  ANNOUNCEMENTS: ModuleEnum.ANNOUNCEMENTS + ".library",
   DOXOLOGY_ALBUMS: ModuleEnum.DOXOLOGY + ".albums",
   CHILDREN_ALBUMS: ModuleEnum.CHILDREN + ".albums",
   ONLINE_VIDEOS: ModuleEnum.ONLINE_VIDEOS,
@@ -50,6 +51,8 @@ export const DB_TABLE = {
   AUDIO_LIBRARY: "audio_library",
   IMAGE_LIBRARY: "image_library",
   LITURGY_LIBRARY: ModuleEnum.LITURGY + ".library",
+  SCHEDULED_CATEGORIES: ModuleEnum.LITURGY + ".scheduled_categories",
+  SCHEDULED_ITEMS: ModuleEnum.LITURGY + ".scheduled_items",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];

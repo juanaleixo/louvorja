@@ -236,7 +236,7 @@ import { DB_TABLE } from "@/constants/DbTables";
 import CategoryManagerDialog from "@/components/CategoryManagerDialog.vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
+import { IMAGE_EXT, VIDEO_EXT } from "@/constants/FileTypes";
 import { ensureRenderableImage, isHeic } from "@/helpers/ImageConvert";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
@@ -519,12 +519,9 @@ async function handleDeleteCategory(id: string): Promise<void> {
   selectedCategoryIds.value = new Set([...selectedCategoryIds.value].filter((cid) => cid !== id));
 }
 
-const IMAGE_EXTS = IMAGE_FILE_EXTS;
-const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
-
 function getFileType(ext: string): "image" | "video" | null {
-  if (IMAGE_EXTS.includes(ext)) return "image";
-  if (VIDEO_EXTS.includes(ext)) return "video";
+  if (IMAGE_EXT.includes(ext)) return "image";
+  if (VIDEO_EXT.includes(ext)) return "video";
   return null;
 }
 
@@ -723,7 +720,7 @@ async function onDrop(e: DragEvent): Promise<void> {
   const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
     const ext = f.name.split(".").pop()?.toLowerCase() || "";
-    if (IMAGE_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
+    if (IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext)) {
       valid.push(f);
     }
   }

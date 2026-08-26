@@ -329,7 +329,7 @@ import $idb from "@/helpers/IndexedDB";
 import { ensureRenderableImage, isHeic, heicToJpeg } from "@/helpers/ImageConvert";
 import { DB_TABLE } from "@/constants/DbTables";
 import { KEYS } from "@/constants/UserDataKeys";
-import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
+import { IMAGE_EXT, VIDEO_EXT } from "@/constants/FileTypes";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -611,10 +611,7 @@ async function onDrop(e: DragEvent): Promise<void> {
   const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
     const ext = f.name.split(".").pop()?.toLowerCase() || "";
-    const isMedia =
-      IMAGE_FILE_EXTS.includes(ext) ||
-      ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext) ||
-      ext === "pdf";
+    const isMedia = IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext) || ext === "pdf";
     if (isMedia) valid.push(f);
   }
   if (!valid.length) {
@@ -636,8 +633,8 @@ async function importDroppedEntry(f: File, categoryId: string): Promise<void> {
   if (filePath && !isHeic(f.name, (f as File).type)) {
     const name = f.name;
     const ext = name.split(".").pop()?.toLowerCase() || "";
-    const isImage = IMAGE_FILE_EXTS.includes(ext);
-    const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
+    const isImage = IMAGE_EXT.includes(ext);
+    const isVideo = VIDEO_EXT.includes(ext);
     const isPdf = ext === "pdf";
     if (!isImage && !isVideo && !isPdf) return;
     const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -657,11 +654,9 @@ async function importDroppedEntry(f: File, categoryId: string): Promise<void> {
     // Sem caminho (web) ou HEIC/HEIF: converte e armazena autocontido.
     const { blob, name } = await ensureRenderableImage(f.name, f);
     const isImage =
-      IMAGE_FILE_EXTS.includes(name.split(".").pop()?.toLowerCase() || "") ||
+      IMAGE_EXT.includes(name.split(".").pop()?.toLowerCase() || "") ||
       blob.type.startsWith("image/");
-    const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(
-      f.name.split(".").pop()?.toLowerCase() || ""
-    );
+    const isVideo = VIDEO_EXT.includes(f.name.split(".").pop()?.toLowerCase() || "");
     const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
     if (!isImage && !isVideo && !isPdf) return;
     const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -785,8 +780,8 @@ async function doAddFiles(categoryId: string): Promise<void> {
     for (const rawPath of paths) {
       const name = rawPath.split("/").pop() || rawPath.split("\\").pop() || rawPath;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = IMAGE_FILE_EXTS.includes(ext);
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
+      const isImage = IMAGE_EXT.includes(ext);
+      const isVideo = VIDEO_EXT.includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -834,8 +829,8 @@ async function onFilesSelected(e: Event): Promise<void> {
     if (filePath && !isHeic(f.name, (f as File).type)) {
       const name = f.name;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = IMAGE_FILE_EXTS.includes(ext);
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
+      const isImage = IMAGE_EXT.includes(ext);
+      const isVideo = VIDEO_EXT.includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -856,11 +851,9 @@ async function onFilesSelected(e: Event): Promise<void> {
       // os bytes convertidos para JPEG — o Chromium não decodifica HEIC.
       const { blob, name } = await ensureRenderableImage(f.name, f);
       const isImage =
-        IMAGE_FILE_EXTS.includes(name.split(".").pop()?.toLowerCase() || "") ||
+        IMAGE_EXT.includes(name.split(".").pop()?.toLowerCase() || "") ||
         blob.type.startsWith("image/");
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(
-        f.name.split(".").pop()?.toLowerCase() || ""
-      );
+      const isVideo = VIDEO_EXT.includes(f.name.split(".").pop()?.toLowerCase() || "");
       const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);

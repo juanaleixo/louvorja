@@ -3,6 +3,7 @@ import { DB_TABLE } from "@/constants/DbTables";
 import Platform from "@/helpers/Platform";
 import type { OverlayImageRecord, OverlaySlot } from "@/types/Overlay";
 import { KEYS } from "@/constants/UserDataKeys";
+import { IMAGE_EXT } from "@/constants/FileTypes";
 
 // ── Tables ──
 
@@ -60,7 +61,7 @@ export function resolveImageUrl(record: OverlayImageRecord | null): string {
 
 export async function importFile(file: File): Promise<OverlayImageRecord> {
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  if (!["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(ext))
+  if (!IMAGE_EXT.includes(ext))
     throw new Error("Formato de imagem não suportado");
 
   const record: OverlayImageRecord = {

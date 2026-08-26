@@ -27,7 +27,9 @@ import Path from "@/helpers/Path";
 import Media from "@/composables/useMedia";
 import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
+import { IMAGE_EXT, AUDIO_EXT, VIDEO_EXT } from "@/constants/FileTypes";
 import $idb from "@/helpers/IndexedDB";
+import ScheduledStore from "@/helpers/ScheduledStore";
 import Seed from "@/helpers/Seed";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Projection from "@/helpers/Projection";
@@ -239,9 +241,6 @@ $storage.hydrate().then(async () => {
                   case "arquivo": {
                     const dir = item.dir || "";
                     const ext = dir.split(".").pop().toLowerCase();
-                    const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
-                    const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
-                    const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
 
                     let url;
                     if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) {
@@ -257,7 +256,7 @@ $storage.hydrate().then(async () => {
 
                     if (!url) break;
 
-                    if (IMAGE_EXTS.includes(ext)) {
+                    if (IMAGE_EXT.includes(ext)) {
                       const payload = { url, type: "image", title: item.item || "" };
                       try {
                         localStorage.setItem("lj_file_projection", JSON.stringify(payload));
@@ -266,7 +265,7 @@ $storage.hydrate().then(async () => {
                       }
                       ProjectionWindows.openFileProjectionWindows().catch(() => {});
                       Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
-                    } else if (VIDEO_EXTS.includes(ext)) {
+                    } else if (VIDEO_EXT.includes(ext)) {
                       const payload = { url, type: "video", title: item.item || "" };
                       try {
                         localStorage.setItem("lj_file_projection", JSON.stringify(payload));
@@ -277,7 +276,7 @@ $storage.hydrate().then(async () => {
                       Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
                       Media.openAudio({ url, title: item.item || "" });
                       AppData.set("modules.media.config.video_file", true);
-                    } else if (AUDIO_EXTS.includes(ext)) {
+                    } else if (AUDIO_EXT.includes(ext)) {
                       Media.openAudio({ url, title: item.item || "" });
                     } else {
                       const valid = Liturgy.validateUrl(dir);
@@ -404,6 +403,13 @@ $storage.hydrate().then(async () => {
 
     // Inicializa IndexedDB unificado (cria tabelas se necessário)
     await $idb.init();
+
+    // Hidrata o cache de Itens Agendados (migra UserData → IDB se preciso).
+    try {
+      await ScheduledStore.hydrate();
+    } catch (e) {
+      console.warn("[main] ScheduledStore.hydrate falhou:", e);
+    }
 
     // Seed do pacote jsondb (desktop): no primeiro start injeta os catálogos
     // críticos ANTES da UI montar — start inicial funcional sem internet.

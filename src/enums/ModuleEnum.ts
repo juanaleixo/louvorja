@@ -4,6 +4,7 @@
 export enum ModuleEnum {
   ALBUM = "album",
   ANIMATION = "animation",
+  ANNOUNCEMENTS = "announcements",
   BACKGROUND_SOUND = "background_sound",
   BACKGROUND_PROJECTION = "background_projection",
   BASE_MODULE = "base_module",
@@ -32,6 +33,7 @@ export enum ModuleEnum {
   ONLINE_VIDEOS = "online_videos",
   OVERLAY = "overlay",
   REMOTE_CONTROL = "remote_control",
+  SCHEDULED_ITEMS = "scheduled_items",
   SLIDE_EDITOR = "slide_editor",
   STOPWATCH = "stopwatch",
   THEME = "theme",
