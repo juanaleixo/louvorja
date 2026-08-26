@@ -3,8 +3,11 @@
   "name": "Ellen G. White",
   "description": "Busque e projete trechos dos livros, artigos e escritos de Ellen G. White (EGW Writings)",
   "category": "bible",
+  "development": true,
   "icon": "mdi-book-open-variant",
-  "dependencies": ["bible"],
+  "dependencies": [
+    "bible"
+  ],
   "moduleOptions": {
     "size": "large"
   }
