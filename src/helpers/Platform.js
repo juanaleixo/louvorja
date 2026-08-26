@@ -107,6 +107,16 @@ export default {
   },
 
   /**
+   * JSONs empacotados (resourcesPath/jsondb) para o seed do IndexedDB.
+   * null quando rodando no browser/PWA ou sem o pacote presente.
+   *
+   * @returns {{ list, get, dir } | null}
+   */
+  get seed() {
+    return api?.seed ?? null;
+  },
+
+  /**
    * Cliente de download FTP (D3).
    * Permite verificar conexão, baixar arquivos e monitorar progresso.
    * null quando rodando no browser/PWA.

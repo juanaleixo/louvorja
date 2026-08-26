@@ -25,11 +25,26 @@ interface VideoItem {
   name: string;
   url: string;
   createdAt?: string;
+  source?: "custom" | "online";
+  origin?: string;
+  originIcon?: string;
 }
 
 interface OnlineVideoDefaultItem {
   title: string;
   url: string;
+}
+
+interface OnlineApiVideo {
+  video_id: string;
+  playlist_id: string;
+  title: string;
+}
+
+interface OnlineApiData {
+  channels?: { channel_id: string; default_image: string }[];
+  playlists?: { playlist_id: string; channel_id: string; title: string }[];
+  videos?: OnlineApiVideo[];
 }
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
@@ -804,21 +819,59 @@ export function useLiturgyItems(
     { title: "Só o Começo - Vocal Livre", url: "https://www.youtube.com/watch?v=XktoQTwHSK4" },
   ];
 
+  function apiChannelImages(data: Partial<OnlineApiData>): Map<string, string> {
+    const chImg = new Map(
+      (data.channels ?? []).map((c) => [c.channel_id, c.default_image || ""])
+    );
+    return new Map(
+      (data.playlists ?? []).map((p) => [p.playlist_id, chImg.get(p.channel_id) || ""])
+    );
+  }
+
+  /** Cache em camadas (memória → tabelas online_* no IDB → rede) via Database. */
+  async function loadOnlineApiVideos(): Promise<OnlineApiData | null> {
+    return $database.get<OnlineApiData>(`${getLocale()}_collections_online`, {
+      silent: true,
+    });
+  }
+
   async function loadVideosList(): Promise<void> {
     let all: VideoItem[] = [];
     try {
-      all = await $idb.getAll<VideoItem>(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
-      all.sort((a, b) => (a.createdAt! > b.createdAt! ? -1 : 1));
+      const customs = await $idb.getAll<VideoItem>(DB_TABLE.CUSTOM_ONLINE_VIDEOS);
+      customs.sort((a, b) => ((a.createdAt || "") > (b.createdAt || "") ? -1 : 1));
+      all = customs.map((v) => ({ ...v, source: "custom" as const }));
     } catch {
       all = [];
     }
+
     const seen = new Set(all.map((v) => v.url));
-    for (const def of ONLINE_VIDEO_DEFAULTS) {
-      if (!seen.has(def.url)) {
-        all.push({ id: def.url, name: def.title, url: def.url });
-        seen.add(def.url);
+    const api = await loadOnlineApiVideos();
+    const titles = new Map(
+      (api?.playlists ?? []).map((p) => [p.playlist_id, p.title])
+    );
+    const images = apiChannelImages(api ?? {});
+    for (const av of api?.videos ?? []) {
+      const url = `https://www.youtube.com/watch?v=${av.video_id}`;
+      if (seen.has(url)) continue;
+      seen.add(url);
+      all.push({
+        id: av.video_id,
+        name: av.title,
+        url,
+        source: "online",
+        origin: titles.get(av.playlist_id) || "",
+        originIcon: images.get(av.playlist_id) || "",
+      });
+    }
+
+    if (!all.length) {
+      for (const def of ONLINE_VIDEO_DEFAULTS) {
+        all.push({ id: def.url, name: def.title, url: def.url, source: "custom" });
       }
     }
+
+    all.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     videosCache.value = all;
   }
 

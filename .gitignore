@@ -47,3 +47,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# JSONs empacotados do banco (gerados por npm run jsondb)
+/jsondb/

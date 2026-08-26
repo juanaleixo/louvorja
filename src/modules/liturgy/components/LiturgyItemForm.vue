@@ -286,20 +286,23 @@
         <div class="lit-panel-title">{{ t("types.video-online") }}</div>
         <div class="lit-field">
           <label>{{ t("inputs.video_select") }}</label>
-          <select
-            :value="form.url"
-            class="lit-select lit-select--full"
-            @change="onVideoPicked($event)"
-          >
-            <option value="">{{ t("inputs.video_pick") }}</option>
-            <option v-for="v in videosList" :key="v.id" :value="v.url">
-              {{ v.name }}
-            </option>
-          </select>
+          <button type="button" class="lit-btn lit-btn--ghost" @click="videoSearchOpen = true">
+            <v-icon icon="mdi-magnify" size="14" />
+            <span>{{ t("inputs.video_search_btn") }}</span>
+          </button>
+        </div>
+        <div v-if="form.url" class="lit-video-selected">
+          <v-icon icon="mdi-youtube" size="16" color="#e74c3c" />
+          <span class="lit-video-selected-name">{{ selectedVideoName }}</span>
         </div>
         <div v-if="!videosList?.length" class="lit-hint mt-2">
           {{ t("inputs.video_empty") }}
         </div>
+        <LiturgyVideoSearch
+          v-model="videoSearchOpen"
+          :videos-list="videosList"
+          @pick="onVideoSearchPicked"
+        />
       </div>
 
       <!-- BLOCO -->
@@ -344,6 +347,7 @@ import es from "../lang/es.json";
 import Liturgy from "@/helpers/Liturgy";
 import DateTime from "@/helpers/DateTime";
 import LiturgyMusicSearch from "./LiturgyMusicSearch.vue";
+import LiturgyVideoSearch, { type VideoSearchItem } from "./LiturgyVideoSearch.vue";
 import type { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
@@ -467,15 +471,19 @@ function updateDurationForVersion(version: string, _music?: LiturgyMusicItem) {
   props.setFormField("duration", minutes);
 }
 
-function onVideoPicked(e: Event) {
-  const select = e.target as HTMLSelectElement;
-  const url = select.value;
-  props.setFormField("url", url);
-  if (url) {
-    const video = props.videosList?.find((v) => v.url === url);
-    if (video) props.setFormField("item", video.name);
-  }
+function onVideoSearchPicked(v: { name: string; url: string }) {
+  props.setFormField("url", v.url);
+  props.setFormField("item", v.name);
 }
+
+const videoSearchOpen = ref(false);
+
+const selectedVideoName = computed(() => {
+  const url = (props.form as LiturgyItem).url || "";
+  if (!url) return "";
+  const video: VideoSearchItem | undefined = props.videosList?.find((v) => v.url === url);
+  return video?.name || (props.form as LiturgyItem).item || url;
+});
 
 function onVersionChange(e: Event) {
   const version = (e.target as HTMLSelectElement).value;
@@ -662,6 +670,20 @@ textarea.lit-input {
   font-size: 11px;
   color: rgba(var(--lj-on-surface-ch), 0.6);
   padding: 4px 0;
+}
+.lit-video-selected {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: rgba(var(--lj-on-surface-ch), 0.05);
+}
+.lit-video-selected-name {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ====================== Color picker ====================== */

@@ -38,6 +38,33 @@ Detalhes em [docs/architecture.md](docs/architecture.md#-auto-update-do-app-d8).
 
 ---
 
+## Cache offline do banco
+
+Os JSONs do banco (músicas, hinários, categorias, coletâneas) são carregados em
+três camadas: **memória → IndexedDB → rede**. Sem TTL por tempo — o cache vale
+até uma invalidação explícita ou nova versão do app, e sem rede o app continua
+funcionando com a última cópia (stale-if-error).
+
+Em **Opções → Atualizações** há dois botões de limpeza: *cache completo do
+programa* e *apenas coletâneas* (força re-download na próxima abertura).
+
+Detalhes em [docs/architecture.md](docs/architecture.md#cache-do-banco-em-camadas-databasets).
+
+---
+
+## Vídeos On-line
+
+- **Vídeos Online** — catálogo de vídeos YouTube por canal/playlist servido pela
+  API (`{locale}/collections/online`), com busca por título, thumbnails e
+  projeção direta.
+- **Meus Vídeos Online** — sua lista pessoal: cole uma URL do YouTube e o título
+  é preenchido automaticamente; renomeável na edição. Lista em miniaturas ou
+  lista simples.
+- **Liturgia** — ao adicionar um item "Vídeo On-line", a busca cobre as duas
+  fontes (seus vídeos + catálogo), exibindo o canal de origem.
+
+---
+
 ## Stack
 
 | Tecnologia | Versão | Nota |
@@ -53,6 +80,8 @@ Detalhes em [docs/architecture.md](docs/architecture.md#-auto-update-do-app-d8).
 | Vuetify | 4.0.6 | UI framework |
 | pdfjs-dist | ^6.x | Renderização de PDF |
 | idb | — | IndexedDB unificado |
+| heic2any | ^4.x | Conversão HEIC/HEIF → JPEG na importação |
+| jszip | — | Import/export `.slja` e coletâneas |
 
 ---
 

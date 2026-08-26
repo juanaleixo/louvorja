@@ -28,6 +28,7 @@ import Media from "@/composables/useMedia";
 import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
 import $idb from "@/helpers/IndexedDB";
+import Seed from "@/helpers/Seed";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Projection from "@/helpers/Projection";
 import Shortcuts from "@/helpers/Shortcuts";
@@ -403,6 +404,15 @@ $storage.hydrate().then(async () => {
 
     // Inicializa IndexedDB unificado (cria tabelas se necessário)
     await $idb.init();
+
+    // Seed do pacote jsondb (desktop): no primeiro start injeta os catálogos
+    // críticos ANTES da UI montar — start inicial funcional sem internet.
+    // Com a flag marcada é um check rápido e segue direto para o mount.
+    try {
+      await Seed.start();
+    } catch (e) {
+      console.warn("[main] seed jsondb falhou:", e);
+    }
 
     app.mount("#app");
 

@@ -133,6 +133,15 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     dir: () => ipcRenderer.invoke("jsonCache:dir"),
   },
 
+  seed: {
+    /** Lista as chaves JSON empacotadas (resourcesPath/jsondb) */
+    list: () => ipcRenderer.invoke("seed:list"),
+    /** Conteúdo parseado de uma chave do pacote (ou null) */
+    get: (key) => ipcRenderer.invoke("seed:get", key),
+    /** Diretório jsondb em uso (debug) */
+    dir: () => ipcRenderer.invoke("seed:dir"),
+  },
+
   // -------------------------------------------------------------------------
   // D3 — Download FTP de mídia
   // -------------------------------------------------------------------------

@@ -1,24 +1,17 @@
 {
-  "title": "Vídeos On-line",
-  "description": "Colección de vídeos de YouTube y URLs personalizadas para proyección.",
-  "collection": "Colección",
-  "personal": "URL Personalizada",
-  "personal_hint": "Pega una URL de YouTube para proyectar",
-  "project": "Proyectar",
-  "stop": "Detener Proyección",
-  "projecting": "Proyectando...",
-  "empty_collection": "No hay videos disponibles en la colección.",
-  "invalid_url": "URL de YouTube inválida. Verifique e intente nuevamente.",
-  "videos": {
-    "video_1": "Sólo el Amor",
-    "video_2": "Dios Proveerá",
-    "video_3": "Lugar Secreto",
-    "video_4": "Aguas Purificadoras",
-    "video_5": "Raridad",
-    "video_6": "Océanos"
-  },
+  "title": "Vídeos En línea",
+  "description": "Videos en línea de los canales y playlists para proyección.",
+  "channels": "Canales",
+  "playlists": "Playlists",
+  "videos": "Vídeos",
+  "videos_count": "vídeo(s)",
+  "empty": "Ningún elemento disponible.",
+  "load_error": "Error al cargar los vídeos.",
+  "search": "Buscar video...",
+  "search_results": "Resultados",
+  "play_all": "Reproducir todas",
   "actions": { "project": "Proyectar", "stop": "Detener" },
   "ribbon": {
-    "title_ctx": "Vídeos On-line"
+    "title_ctx": "Vídeos En línea"
   }
 }

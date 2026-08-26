@@ -404,6 +404,10 @@
       "refresh": "Recarregar",
       "clear_cache_confirm": "Limpar todo o cache de banco? O programa vai baixar tudo de novo na próxima abertura.",
       "clear_files_confirm": "Apagar TODOS os arquivos de mídia baixados? Esta ação não pode ser desfeita.",
+      "restore_db": "Restaurar banco de dados",
+      "restore_db_confirm": "Restaurar o banco de dados para os JSONs originais do programa? Os dados baixados/atualizados pela internet serão perdidos.",
+      "restore_db_done": "Banco de dados restaurado.",
+      "restore_db_error": "Falha ao restaurar o banco de dados.",
       "move_confirm": "Mover o conteúdo atual para a nova pasta?",
       "change_failed": "Falha ao alterar a pasta de mídia."
     },
@@ -793,6 +797,18 @@
     "close": "fechar",
     "results": "resultados",
     "load_more": "Carregar mais",
+    "category": {
+      "categories": "Categorias",
+      "manage_categories": "Gerenciar Categorias",
+      "category_name": "Nome da Categoria",
+      "new_category": "Nova categoria",
+      "edit_category": "Editar categoria",
+      "upload_image": "Carregar imagem",
+      "custom_image": "Imagem personalizada",
+      "uncategorized": "Sem categoria",
+      "no_categories": "Nenhuma categoria. Crie uma primeiro.",
+      "confirm_delete_category": "Excluir esta categoria?"
+    },
     "cat": {
       "action": "Ações",
       "module": "Módulos",
@@ -881,7 +897,8 @@
     "proj_windows": "Abrir janelas de projeção",
     "proj_open_projection": "Abrir projeção (tela cheia)",
     "proj_open_return": "Abrir retorno (operador)",
-    "proj_open_operator": "Abrir grade do operador"
+    "proj_open_operator": "Abrir grade do operador",
+    "icon": "Ícone"
   },
   "formatacao": {
     "title": "Formatação",

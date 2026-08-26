@@ -508,6 +508,16 @@
                 <v-icon icon="mdi-refresh" size="14" class="mr-1" />
                 {{ $t("options.storage.refresh") }}
               </button>
+              <button
+                v-if="Platform.isDesktop"
+                type="button"
+                class="opt-btn"
+                :disabled="restoringDb"
+                @click="restoreDatabase"
+              >
+                <v-icon icon="mdi-database-refresh" size="14" class="mr-1" />
+                {{ $t("options.storage.restore_db") }}
+              </button>
             </div>
           </section>
         </v-window-item>
@@ -526,6 +536,8 @@ import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { useSyncManager } from "@/composables/useSyncManager";
+import $snackbar from "@/helpers/Snackbar";
+import Seed from "@/helpers/Seed";
 import type { BibleVersion } from "@/types/Bible";
 
 /* ---- Tipos ---- */
@@ -1017,6 +1029,26 @@ async function clearFiles(): Promise<void> {
     if (btn !== "yes") return;
     await Platform?.storage?.clearFiles?.();
     await reloadStats();
+  }) as (...args: unknown[]) => unknown);
+}
+
+const restoringDb = ref(false);
+
+/** Restaura o banco: limpa as tabelas do IndexedDB e reinjeta os JSONs empacotados. */
+async function restoreDatabase(): Promise<void> {
+  $alert.yesno("options.storage.restore_db_confirm", (async (btn) => {
+    if (btn !== "yes" || restoringDb.value) return;
+    restoringDb.value = true;
+    try {
+      await Seed.restore();
+      $snackbar.success(t("options.storage.restore_db_done"));
+      await reloadStats();
+    } catch (e) {
+      console.error("[Sincronizar] restoreDatabase:", e);
+      $alert.error({ text: t("options.storage.restore_db_error") });
+    } finally {
+      restoringDb.value = false;
+    }
   }) as (...args: unknown[]) => unknown);
 }
 

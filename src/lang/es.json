@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Loor JA"
+    "name": "Louvor JA"
   },
   "modules": {
     "liturgy": {
@@ -404,6 +404,10 @@
       "refresh": "Recargar",
       "clear_cache_confirm": "¿Limpiar todo el caché del banco? El programa descargará todo de nuevo al abrir.",
       "clear_files_confirm": "¿Eliminar TODOS los archivos de medios descargados? Esta acción no se puede deshacer.",
+      "restore_db": "Restaurar base de datos",
+      "restore_db_confirm": "¿Restaurar la base de datos a los JSON originales del programa? Los datos descargados/actualizados por internet se perderán.",
+      "restore_db_done": "Base de datos restaurada.",
+      "restore_db_error": "Fallo al restaurar la base de datos.",
       "move_confirm": "¿Mover el contenido actual a la nueva carpeta?",
       "change_failed": "Falló el cambio de la carpeta de medios."
     },
@@ -793,6 +797,18 @@
     "close": "cerrar",
     "results": "resultados",
     "load_more": "Cargar más",
+    "category": {
+      "categories": "Categorías",
+      "manage_categories": "Gestionar Categorías",
+      "category_name": "Nombre de la Categoría",
+      "new_category": "Nueva categoría",
+      "edit_category": "Editar categoria",
+      "upload_image": "Carregar imagem",
+      "custom_image": "Imagem personalizada",
+      "uncategorized": "Sin categoría",
+      "no_categories": "Ninguna categoría. Cree una primero.",
+      "confirm_delete_category": "¿Eliminar esta categoría?"
+    },
     "cat": {
       "action": "Acciones",
       "module": "Módulos",
@@ -881,7 +897,8 @@
     "proj_windows": "Abrir ventanas de proyección",
     "proj_open_projection": "Abrir proyección (pantalla completa)",
     "proj_open_return": "Abrir retorno (operador)",
-    "proj_open_operator": "Abrir cuadrícula del operador"
+    "proj_open_operator": "Abrir cuadrícula del operador",
+    "icon": "Ícono"
   },
   "formatacao": {
     "title": "Formato",

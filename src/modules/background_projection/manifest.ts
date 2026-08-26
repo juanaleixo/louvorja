@@ -64,7 +64,7 @@ export const contextualPages: RibbonPage[] = [
         title: "ribbon.groups.files",
         buttons: [
           { id: `${moduleId}_add_file`, icon: ICONS.ACTIONS.ADD, label: `${modulePath}.add_file`, action: `${moduleId}_add_file`, color: COLORS.PRIMARY },
-          { id: `${moduleId}_manage_categories`, icon: ICONS.CATEGORY.MUSIC, label: `${modulePath}.manage_categories`, action: `${moduleId}_manage_categories`, color: COLORS.PRIMARY },
+          { id: `${moduleId}_manage_categories`, icon: ICONS.CATEGORY.MUSIC, label: `shell.category.manage_categories`, action: `${moduleId}_manage_categories`, color: COLORS.PRIMARY },
         ],
       },
       {

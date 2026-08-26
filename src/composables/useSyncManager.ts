@@ -4,6 +4,7 @@ import Platform from "@/helpers/Platform";
 import Database from "@/helpers/Database";
 import $userdata from "@/helpers/UserData";
 import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
+import { DB_TABLE } from "@/constants/DbTables";
 import { BOOKS } from "@/constants/Bible";
 import type { BibleVersion } from "@/types/Bible";
 
@@ -260,6 +261,22 @@ export function useSyncManager() {
     if (!books || books.length === 0) return [];
 
     const downloaded: number[] = [];
+    // Capítulos presentes no IndexedDB (seed do pacote jsondb + downloads
+    // em runtime). O disco (userData/json_db) continua valendo como
+    // complemento para usuários legados.
+    const stored = new Map<number, Set<string>>();
+    const loadStored = async (versionId: number): Promise<Set<string>> => {
+      if (!stored.has(versionId)) {
+        stored.set(
+          versionId,
+          await Database.getStoredIdsForPrefix(
+            DB_TABLE.BIBLE_CHAPTERS,
+            `bible_${versionId}_`
+          )
+        );
+      }
+      return stored.get(versionId)!;
+    };
 
     for (const ver of versions) {
       const allKeys: string[] = [];
@@ -271,11 +288,14 @@ export function useSyncManager() {
       }
 
       try {
+        const inIdb = await loadStored(ver.id_bible_version);
         if ((Platform.storage as any)?.checkJson) {
           const exists = await (Platform.storage as any).checkJson(allKeys) as Record<string, boolean>;
-          if (allKeys.every((k) => exists[k])) {
+          if (allKeys.every((k) => exists[k] || inIdb.has(k))) {
             downloaded.push(ver.id_bible_version);
           }
+        } else if (allKeys.every((k) => inIdb.has(k))) {
+          downloaded.push(ver.id_bible_version);
         }
       } catch (e) {
         console.warn(`[useSyncManager] scan bible version ${ver.id_bible_version}:`, e);
@@ -319,11 +339,26 @@ export function useSyncManager() {
     }
 
     const allKeys = allChapters.map((c) => `bible_${c.versionId}_${c.bookId}_${c.n}`);
+    // Capítulos já presentes no IndexedDB (seed/jsondb) não são rebaixados.
+    const storedByVersion = new Map<number, Set<string>>();
+    for (const vId of versionIds) {
+      storedByVersion.set(
+        vId,
+        await Database.getStoredIdsForPrefix(DB_TABLE.BIBLE_CHAPTERS, `bible_${vId}_`)
+      );
+    }
     let toDownload = allChapters;
 
     if ((Platform.storage as any)?.checkJson) {
       const exists = await (Platform.storage as any).checkJson(allKeys) as Record<string, boolean>;
-      toDownload = allChapters.filter((c) => !exists[`bible_${c.versionId}_${c.bookId}_${c.n}`]);
+      toDownload = allChapters.filter((c) => {
+        const k = `bible_${c.versionId}_${c.bookId}_${c.n}`;
+        return !exists[k] && !storedByVersion.get(c.versionId)?.has(k);
+      });
+    } else {
+      toDownload = allChapters.filter(
+        (c) => !storedByVersion.get(c.versionId)?.has(`bible_${c.versionId}_${c.bookId}_${c.n}`)
+      );
     }
 
     bibleProgress.value = { ...bibleProgress.value, total: toDownload.length };

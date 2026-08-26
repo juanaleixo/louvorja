@@ -26,6 +26,7 @@ const { createMainWindow } = require("./main/windows.js");
 const userStore = require("./main/userStore.js");
 const protocolModule = require("./main/protocol.js");
 const jsonCache = require("./main/jsonCache.js");
+const seedDb = require("./main/seed.js");
 const downloader = require("./main/download/index.js");
 const displays = require("./main/displays.js");
 const windowFactory = require("./main/windowFactory.js");
@@ -564,6 +565,19 @@ ipcMain.handle("jsonCache:clear", () => {
 ipcMain.handle("jsonCache:dir", () => {
   return jsonCache.dir();
 });
+
+// ---------------------------------------------------------------------------
+// IPC handlers do seed de jsondb empacotado → IndexedDB
+// ---------------------------------------------------------------------------
+
+/** Lista as chaves JSON disponíveis no pacote (resourcesPath/jsondb) */
+ipcMain.handle("seed:list", () => seedDb.list());
+
+/** Retorna o conteúdo parseado de uma chave do pacote */
+ipcMain.handle("seed:get", (_event, key) => seedDb.get(key));
+
+/** Diretório jsondb em uso (debug) */
+ipcMain.handle("seed:dir", () => seedDb.dir());
 
 // ---------------------------------------------------------------------------
 // IPC handlers do downloader FTP (D3)

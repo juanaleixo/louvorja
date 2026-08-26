@@ -18,6 +18,7 @@
     "version:bug": "npm version patch",
     "serve": "vite preview",
     "validate:manifests": "npx tsx scripts/validate-manifests.ts",
+    "jsondb": "node scripts/fetch-jsondb.mjs",
     "typecheck": "vue-tsc --noEmit",
     "prebuild": "npm run validate:manifests && npm run typecheck",
     "build": "vite build",
