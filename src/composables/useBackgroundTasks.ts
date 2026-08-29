@@ -55,7 +55,7 @@ function _ensureDownloadListeners(): void {
       if (task && task.status === "running") {
         task._failed = (task._failed ?? 0) + 1;
         const total = task._total ?? 0;
-        const processed = task._done + task._failed;
+        const processed = (task._done ?? 0) + task._failed;
         task.progress = total > 0 ? Math.round((processed / total) * 100) : 0;
       }
     }),
