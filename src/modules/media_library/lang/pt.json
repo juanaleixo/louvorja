@@ -32,6 +32,8 @@
     "title_ctx": "Gerenciar Biblioteca de Mídia",
     "background": "Fundo da Projeção"
   },
+  "bg_color": "Cor de fundo",
+  "bg_position": "Posição",
   "categories": "Categorias",
   "uncategorized": "Sem categoria",
   "select_category": "Selecionar categoria",

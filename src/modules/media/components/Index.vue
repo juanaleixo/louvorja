@@ -164,6 +164,7 @@ import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
 import Media from "@/composables/useMedia";
+import { useFileProjection } from "@/composables/useFileProjection";
 import Path from "@/helpers/Path";
 
 const { t: i18nT } = useI18n();
@@ -296,6 +297,8 @@ function _isInTextField() {
 
 function _onKeyNav(e) {
   if (!module_.value?.show && !module_.value?.minimized) return;
+  // Não intercepta quando anúncios/projeção de arquivos está ativa.
+  if (useFileProjection().isProjecting.value) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return; // deixa Ctrl+arrow etc passar
   if (_isInTextField()) return;
 

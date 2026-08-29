@@ -60,10 +60,10 @@
           </v-btn-toggle>
           <v-menu v-model="yearMonthMenuOpen" :close-on-content-click="false" location="bottom">
             <template #activator="{ props: menuProps }">
-              <button class="si-cal-title" v-bind="menuProps">
+              <v-btn class="si-cal-title" v-bind="menuProps">
                 {{ calTitle }}
                 <v-icon icon="mdi-chevron-down" size="14" class="ml-1" />
-              </button>
+              </v-btn>
             </template>
             <v-card>
               <v-card-text class="pa-2 d-flex" style="gap: 8px; align-items: center">
@@ -90,7 +90,7 @@
           event-start="start"
           event-end="end"
           :max-events="5"
-          :event-height="calendarType === 'week' ? 20 : 14"
+          :event-height="calendarType === 'week' ? 20 : 18"
           :event-more-text="moreEventsText"
           :event-timed="() => false"
           :interval-height="calendarType === 'week' ? 0 : 48"

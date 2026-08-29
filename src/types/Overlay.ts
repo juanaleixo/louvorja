@@ -113,7 +113,7 @@ export function createOverlaySlot(overrides: Partial<OverlaySlot> = {}): Overlay
     name: "Novo overlay",
     enabled: true,
     type: "text",
-    content: "",
+    content: "Texto",
     file_id: "",
     source_module: null,
     position: { anchor: "bottom-center", offset_x: 0, offset_y: 0 },

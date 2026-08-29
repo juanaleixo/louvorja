@@ -72,6 +72,9 @@ export const KEYS = {
     },
     STOPWATCH: {
       RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,
+      MODE: `${MODULES}.${ModuleEnum.STOPWATCH}.mode`,
+      TARGET_SECONDS: `${MODULES}.${ModuleEnum.STOPWATCH}.target_seconds`,
+      SHOW_SECONDS: `${MODULES}.${ModuleEnum.STOPWATCH}.show_seconds`,
     },
     SLIDE_EDITOR: {
       PROJECTING: `${MODULES}.${ModuleEnum.SLIDE_EDITOR}.projecting`,

@@ -13,10 +13,12 @@
     "remove": "Quitar"
   },
   "data": {
-    "empty": "Ningún aviso. Use el campo arriba para agregar.",
+    "empty": "Ningún aviso. Abra la lista para agregar.",
+    "list": "Avisos",
     "showing": "Mostrando en proyección"
   },
   "ribbon": {
-    "title_ctx": "Configurar Avisos"
+    "title_ctx": "Configurar Avisos",
+    "toggle_list": "Avisos"
   }
 }

@@ -3,12 +3,14 @@
     id="footer-bar"
     class="footer"
     :class="{
-      'footer--active': hasPlayer || hasBgSound,
+      'footer--active': hasPlayer || hasBgSound || hasProjection,
       'footer--bg-sound': hasPlayer && hasBgSound,
-      'footer--bg-only': hasBgSound && !hasPlayer,
+      'footer--bg-only': hasBgSound && !hasPlayer && !hasProjection,
+      'footer--fp-only': hasProjection && !hasPlayer && !hasBgSound,
     }"
   >
     <BackgroundSoundPlayer v-if="hasBgSound" />
+    <FileProjectionBar v-if="hasProjection" />
     <div v-if="hasPlayer" class="player">
       <div class="player-title" :class="{ 'player-title--youtube': isYouTube }">
         <v-icon
@@ -162,6 +164,8 @@ import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import Database from "@/helpers/Database";
 import DateTime from "@/helpers/DateTime";
 import BackgroundSoundPlayer from "@/components/BackgroundSoundPlayer.vue";
+import FileProjectionBar from "@/components/FileProjectionBar.vue";
+import { useFileProjection } from "@/composables/useFileProjection";
 
 const dbVersion = ref(0);
 
@@ -169,6 +173,7 @@ const version = computed(() => `${packageJson.version}.${dbVersion.value}`);
 const media = computed(() => Modules.get("media"));
 
 const bg = useBackgroundSound();
+const fp = useFileProjection();
 
 const hasPlayer = computed(() => {
   try {
@@ -179,6 +184,7 @@ const hasPlayer = computed(() => {
 });
 
 const hasBgSound = computed(() => !!bg.currentFile.value);
+const hasProjection = computed(() => fp.isProjecting.value);
 
 const hasAudio = computed(() => {
   const url = media.value?.config?.audio;
@@ -293,6 +299,9 @@ onMounted(loadDBVersion);
 
 .footer--bg-only {
   height: 30px;
+}
+.footer--fp-only {
+  height: 36px;
 }
 
 .footer--active {

@@ -479,7 +479,8 @@ const sync = useSyncManager();
 const downloadPercent = computed(() => {
   const total = sync.downloadProgress.value.total;
   if (total <= 0) return 0;
-  return Math.round((sync.downloadProgress.value.done / total) * 100);
+  const processed = sync.downloadProgress.value.done + sync.downloadProgress.value.failed;
+  return Math.round((processed / total) * 100);
 });
 
 const biblePercent = computed(() => {

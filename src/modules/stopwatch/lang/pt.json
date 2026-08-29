@@ -5,6 +5,9 @@
   "actions": { "start": "Iniciar", "pause": "Pausar", "reset": "Zerar", "set": "Definir tempo" },
   "alarm": { "done": "Tempo esgotado!" },
   "ribbon": {
-    "title_ctx": "Configurar Cronômetro"
+    "title_ctx": "Configurar Cronômetro",
+    "mode": "Modo",
+    "set_time": "Tempo",
+    "show_seconds": "Exibir segundos"
   }
 }

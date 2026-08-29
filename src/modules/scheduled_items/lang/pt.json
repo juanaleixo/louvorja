@@ -29,15 +29,18 @@
   "view_week": "Semana",
   "pick_category": "Selecione a categoria...",
   "duplicate_category_day": "Já existe um item para esta categoria neste dia.",
-  "add_auto": "Adicionar Automaticamente",
   "add_auto_dialog": "Auto-preencher itens agendados",
   "add_auto_folder": "Pasta com os arquivos",
   "add_auto_choose_folder": "Escolher pasta…",
-  "add_auto_hint": "A estrutura deve seguir o padrão:<br>{ano}/{numero_mes}_{nome_mes}/{texto} {DD-MM-AA}_{arquivo}.{ext}<br>Ex.: <code>2026/9_SETEMBRO/1. 05-09-26_Réveillon da Páscoa.mp4</code>",
+  "add_auto_hint": "A estrutura deve seguir o padrão:<br>[ano]/[numero_mes]_[nome_mes]/[texto] [DD-MM-AA]_[arquivo].[ext]<br>Ex.: <code>2026/9_SETEMBRO/1. 05-09-26_Réveillon da Páscoa.mp4</code>",
   "add_auto_scan": "Escanear",
   "add_auto_result": "{n} itens criados com sucesso.",
   "add_auto_created": "{n} itens criados",
   "add_auto_updated": "{n} itens atualizados",
   "add_auto_no_files": "Nenhum arquivo encontrado no padrão.",
-  "add_auto_desktop_only": "Disponível apenas no desktop."
+  "add_auto_desktop_only": "Disponível apenas no desktop.",
+  "ribbon": {
+    "title_ctx": "Gerenciar Itens Agendados",
+    "add_auto": "Auto Configurar"
+  }
 }

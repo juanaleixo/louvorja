@@ -67,7 +67,7 @@ export function useSyncManager() {
 
   // Download (collections)
   const downloading = ref(false);
-  const downloadProgress = ref({ done: 0, total: 0, currentFile: "" });
+  const downloadProgress = ref({ done: 0, failed: 0, total: 0, currentFile: "" });
   const downloadFailedCount = ref(0);
   const downloadCompletedMsg = ref("");
 
@@ -533,19 +533,22 @@ export function useSyncManager() {
     if (!Platform.download || files.length === 0) return;
 
     downloading.value = true;
-    downloadProgress.value = { done: 0, total: files.length, currentFile: "" };
+    downloadProgress.value = { done: 0, failed: 0, total: files.length, currentFile: "" };
     downloadFailedCount.value = 0;
     downloadCompletedMsg.value = "";
 
     const cleanupFns: CleanupFn[] = [];
+    let firstProgress = true;
 
     cleanupFns.push(
       Platform.download.onProgress((d: any) => {
         downloadProgress.value = {
           done: downloadProgress.value.done,
-          total: d.total,
+          failed: downloadProgress.value.failed,
+          total: firstProgress ? d.total : downloadProgress.value.total,
           currentFile: d.file ? (d.file.split("/").pop() ?? "") : "",
         };
+        firstProgress = false;
       })
     );
     cleanupFns.push(
@@ -556,6 +559,7 @@ export function useSyncManager() {
     cleanupFns.push(
       Platform.download.onFileError(() => {
         downloadFailedCount.value += 1;
+        downloadProgress.value = { ...downloadProgress.value, failed: downloadProgress.value.failed + 1 };
       })
     );
 

@@ -29,15 +29,18 @@
   "view_week": "Semana",
   "pick_category": "Selecciona la categoría...",
   "duplicate_category_day": "Ya existe un ítem para esta categoría en este día.",
-  "add_auto": "Agregar Automáticamente",
   "add_auto_dialog": "Auto-completar ítems programados",
   "add_auto_folder": "Carpeta con los archivos",
   "add_auto_choose_folder": "Elegir carpeta…",
-  "add_auto_hint": "La estructura debe seguir el patrón:<br>{año}/{número_mes}_{nombre_mes}/{texto} {DD-MM-AA}_{archivo}.{ext}<br>Ej.: <code>2026/9_SETEMBRO/1. 05-09-26_Uma decisão Difícil.mp4</code>",
+  "add_auto_hint": "La estructura debe seguir el patrón:<br>[año]/[número_mes]_[nombre_mes]/[texto] [DD-MM-AA]_[archivo].[ext]<br>Ej.: <code>2026/9_SETEMBRO/1. 05-09-26_Uma decisão Difícil.mp4</code>",
   "add_auto_scan": "Escanear",
   "add_auto_result": "{n} ítems creados con éxito.",
   "add_auto_created": "{n} ítems creados",
   "add_auto_updated": "{n} ítems actualizados",
   "add_auto_no_files": "Ningún archivo encontrado en el patrón.",
-  "add_auto_desktop_only": "Disponible solo en escritorio."
+  "add_auto_desktop_only": "Disponible solo en escritorio.",
+  "ribbon": {
+    "title_ctx": "Gestionar Elementos Programados",
+    "add_auto": "Auto Configure"
+  }
 }

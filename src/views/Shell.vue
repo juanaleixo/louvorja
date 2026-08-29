@@ -7,7 +7,11 @@
     <!-- PageControl interno (tabs dos módulos abertos) -->
     <OpenModulesTabs />
 
-    <v-main class="shell-main" :class="{ 'shell-main--player-active': playerActive }">
+    <v-main
+      class="shell-main"
+      :class="{ 'shell-main--active': footerActive }"
+      :style="{ '--footer-height': footerHeight }"
+    >
       <div class="shell-grid">
         <div class="shell-center">
           <div class="shell-content">
@@ -74,6 +78,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import type { BibleSearchResult } from "@/types/Bible";
 
 import { registerShell } from "@/composables/useShell";
+import { useFileProjection } from "@/composables/useFileProjection";
 
 const { locale, t } = useI18n();
 const vuetifyTheme = useTheme();
@@ -93,12 +98,24 @@ const liturgyModuleOpen = computed(() => {
   return $appdata.get<boolean>(KEYS.MODULES.LITURGY.SHOW, false) === true;
 });
 
-const playerActive = computed(() => {
+const fp = useFileProjection();
+
+const playerMinimized = computed(() => {
   try {
     return $appdata.get<boolean>(KEYS.MODULES.MEDIA.MINIMIZED, false) === true;
   } catch (_) {
     return false;
   }
+});
+
+const hasProjection = computed(() => fp.isProjecting.value);
+
+const footerActive = computed(() => playerMinimized.value || hasProjection.value);
+
+const footerHeight = computed(() => {
+  if (playerMinimized.value) return "var(--lj-player-height)";
+  if (hasProjection.value) return "36px";
+  return "0px";
 });
 
 // Listeners externos (eventos globais que substituem acoplamento direto via shell._ref)
@@ -502,8 +519,8 @@ onBeforeUnmount(() => {
   transition: padding-bottom 0.3s ease;
 }
 
-.shell-main--player-active {
-  padding-bottom: var(--lj-player-height);
+.shell-main--active {
+  padding-bottom: var(--footer-height);
 }
 .shell-grid {
   display: flex;

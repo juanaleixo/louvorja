@@ -45,7 +45,7 @@ class HttpQueue extends EventEmitter {
     items.forEach((item) => {
       const localAbs = path.isAbsolute(item.local)
         ? item.local
-        : path.join(paths.userData(), "files", item.local);
+        : path.join(paths.filesDir(), item.local);
       this.queue.push({
         remote: item.remote,
         local: localAbs,

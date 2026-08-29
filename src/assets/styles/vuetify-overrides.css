@@ -36,3 +36,15 @@
 .module-format-drawer {
   transition-duration: 0.35s !important;
 }
+
+/* ---- v-btn-toggle: cor em variant outlined --------------------------------
+   Bug Vuetify 4: VBtnGroup injeta flat:true + variant via provideDefaults.
+   O .v-btn--variant-outlined aplica "color: inherit" que sobrepõe a utility
+   text-{color}. Regra abaixo força a cor no botão ativo. Sem !important
+   porque vuetify-overrides.css é unlayered e vence @layer do Vuetify. */
+.v-btn-toggle .v-btn--variant-outlined.v-btn--active {
+  color: var(--lj-navy-active);
+}
+.v-btn-toggle .v-btn--variant-text.v-btn--active {
+  color: var(--lj-navy-active);
+}

@@ -23,6 +23,7 @@ import Modules from "@/helpers/Modules";
 import Dev from "@/helpers/Dev";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
+import { useFileProjection } from "@/composables/useFileProjection";
 import Path from "@/helpers/Path";
 import Media from "@/composables/useMedia";
 import Broadcast from "@/helpers/Broadcast";
@@ -585,8 +586,14 @@ $storage.hydrate().then(async () => {
           }
         };
 
+        // Projeção de anúncios
+        const fp = useFileProjection();
+        if (fp.isProjecting.value && fp.currentType.value === "announcements") {
+          fp.stopProjection();
+          Projection.close("announcements");
+        }
         // Projeção de arquivos de imagem e vídeo
-        if (Broadcast.getLastPayload(BROADCAST_TYPE.FILE_PROJECTION)) {
+        else if (Broadcast.getLastPayload(BROADCAST_TYPE.FILE_PROJECTION)) {
           $alert.yesno("modules.media.alerts.close_projection", (btn) => {
             if (btn === "yes") {
               Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { action: "clear" });

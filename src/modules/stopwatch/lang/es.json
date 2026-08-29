@@ -10,6 +10,9 @@
   },
   "alarm": { "done": "¡Tiempo agotado!" },
   "ribbon": {
-    "title_ctx": "Configurar Cronómetro"
+    "title_ctx": "Configurar Cronómetro",
+    "mode": "Modo",
+    "set_time": "Tiempo",
+    "show_seconds": "Mostrar segundos"
   }
 }

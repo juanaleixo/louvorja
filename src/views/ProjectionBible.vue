@@ -43,6 +43,7 @@
                 : horizontal_align === 'end'
                   ? 'right'
                   : 'center',
+            ...textShadowStyle,
           }"
         >
           {{ text }}
@@ -97,6 +98,9 @@ function ud(key, fallback = null) {
 const font = computed(() => ud("font", "Arial, sans-serif"));
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 15));
+const text_shadow = computed(() => ud("text_shadow", false));
+const text_shadow_color = computed(() => ud("text_shadow_color", "#000000"));
+const text_shadow_blur = computed(() => ud("text_shadow_blur", 4));
 const reference_font = computed(() => ud("reference_font", "Arial, sans-serif"));
 const reference_font_color = computed(() => ud("reference_font_color", "#FB8C00"));
 const reference_font_size = computed(() => ud("reference_font_size", 10));
@@ -111,6 +115,14 @@ const image_fit = computed(() => ud("image_fit", "cover"));
 const font_size_px = computed(() => fontSizePc(font_size.value));
 const ref_font_size_px = computed(() => fontSizePc(reference_font_size.value));
 const border_spacing_px = computed(() => fontSizePc(border_spacing.value));
+
+const textShadowStyle = computed(() => {
+  if (!text_shadow.value) return {};
+  const color = text_shadow_color.value || "#000000";
+  const blur = text_shadow_blur.value || 4;
+  const css = `0 0 ${blur}px ${color}, 0 0 ${blur}px ${color}`;
+  return { textShadow: css };
+});
 
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   console.log("[ProjectionBible] Recebido BIBLE_VERSE:", payload);
@@ -212,7 +224,6 @@ watch([font, font_color, font_size, background_color, image], measure);
 .projection-bible-text {
   white-space: pre-wrap;
   line-height: 1.45;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 .projection-bible-reference {

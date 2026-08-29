@@ -10,6 +10,7 @@ import $alert from "@/helpers/Alert";
 import $path from "@/helpers/Path";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { useFileProjection } from "@/composables/useFileProjection";
 import {
   openFileProjectionWindows,
   openAnnouncementsWindow,
@@ -776,6 +777,9 @@ export function useLiturgyItems(
       ts: Date.now(),
     });
     $appdata.set("modules.media.is_playing", true);
+    // Ativa a barra de controles global.
+    const fp = useFileProjection();
+    fp.start("announcements", selected[0]?.nome || "", selected.length, 0);
     await openAnnouncementsWindow();
     // Espera a janela de projeção montar antes de enviar o broadcast.
     await new Promise((r) => setTimeout(r, 300));
