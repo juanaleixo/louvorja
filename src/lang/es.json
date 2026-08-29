@@ -470,7 +470,8 @@
   },
   "remote_control": {
     "tabs": {
-      "slides": "Diapositivas"
+      "slides": "Diapositivas",
+      "announcements": "Anuncios"
     },
     "bible": {
       "clear_screen": "Limpiar la Pantalla",
@@ -482,6 +483,13 @@
       "close_projection": "Cerrar Proyección",
       "projection_closed": "Proyección finalizada",
       "error_change": "Error al cambiar diapositiva"
+    },
+    "announcements": {
+      "empty": "Ningún anuncio registrado",
+      "with_image": "Tiene imagen",
+      "controls": "Controles de Anuncios",
+      "stop_projection": "Finalizar Proyección",
+      "projection_closed": "Proyección de anuncios finalizada"
     },
     "errors": {
       "generic": "Error"

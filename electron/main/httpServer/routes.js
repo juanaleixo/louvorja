@@ -362,6 +362,60 @@ function setupRoutes(app, { getMainWindow, getUserData, jsonCache: _cache, getDa
   });
 
   // ---------------------------------------------------------------
+  // /api/announcements?action=list|project|next|prev|stop
+  // Controle remoto de anúncios
+  // ---------------------------------------------------------------
+  app.get("/api/announcements", (req, res) => {
+    const mainWindow = getMainWindow();
+    const action = req.query.action || "list";
+
+    if (action === "list") {
+      if (!mainWindow) {
+        return res.status(503).json({ error: "Janela principal não disponível" });
+      }
+      const { ipcMain } = require("electron");
+      const channel = "_announcements_list_reply_" + Date.now();
+      const timeout = setTimeout(() => {
+        ipcMain.removeAllListeners(channel);
+        res.status(504).json({ error: "Timeout ao buscar anúncios" });
+      }, 5000);
+      ipcMain.once(channel, (_event, data) => {
+        clearTimeout(timeout);
+        res.json(data);
+      });
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-list", replyChannel: channel });
+      return;
+    }
+
+    if (!mainWindow) {
+      return res.status(503).json({ error: "Janela principal não disponível" });
+    }
+
+    if (action === "project") {
+      const ids = req.query.ids ? req.query.ids.split(",").filter(Boolean) : [];
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-project", ids });
+      return res.json({ status: "ok", action: "announcements-project" });
+    }
+
+    if (action === "next") {
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-next" });
+      return res.json({ status: "ok", action: "announcements-next" });
+    }
+
+    if (action === "prev") {
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-prev" });
+      return res.json({ status: "ok", action: "announcements-prev" });
+    }
+
+    if (action === "stop") {
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-stop" });
+      return res.json({ status: "ok", action: "announcements-stop" });
+    }
+
+    res.status(400).json({ error: "action inválida", valid: ["list", "project", "next", "prev", "stop"] });
+  });
+
+  // ---------------------------------------------------------------
   // /api/liturgy — itens da liturgia do dia
   // ---------------------------------------------------------------
   app.get("/api/liturgy", (req, res) => {

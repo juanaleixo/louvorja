@@ -78,7 +78,11 @@
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="toggleBackgroundProjection">
-          <v-icon :icon="isBgPlaying ? 'mdi-projector' : 'mdi-projector-off'" :size="sizeIcon" />
+          <v-icon
+            :icon="!isBgPlaying ? ICONS.PROJECTION.START : ICONS.PROJECTION.STOP"
+            :color="!isBgPlaying ? COLORS.SURFACE : COLORS.DANGER"
+            :size="sizeIcon"
+          />
         </button>
       </template>
       {{ isBgPlaying ? "Desativar projeção de fundo" : "Ativar projeção de fundo" }}
@@ -156,6 +160,8 @@ import {
 import Broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBackgroundTasks, type BackgroundTask } from "@/composables/useBackgroundTasks";
+import { ICONS } from "@/config/Icons";
+import { COLORS } from "@constants/Colors";
 
 const { t } = useI18n();
 const vuetifyTheme = useTheme();

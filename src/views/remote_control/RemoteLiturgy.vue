@@ -99,6 +99,8 @@ async function executeLiturgyItem(item: LiturgyItem): Promise<void> {
       emit("show-snackbar", t("components.music_menu.execute") + ": " + item.item);
       if (item.tipo === "musica") {
         emit("update:tab", "slides");
+      } else if (item.tipo === "anuncios") {
+        emit("update:tab", "announcements");
       } else {
         setTimeout(fetchLiturgy, 500);
       }

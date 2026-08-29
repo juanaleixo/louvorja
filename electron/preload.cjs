@@ -78,6 +78,17 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     return () => ipcRenderer.off(channel, wrappedHandler);
   },
 
+  /**
+   * Envia evento one-way para o main process via ipcRenderer.send().
+   * Usado para responder a solicitações do main (ex: lista de anúncios).
+   *
+   * @param {string} channel
+   * @param {*} data
+   */
+  send(channel, data) {
+    ipcRenderer.send(channel, data);
+  },
+
   // -------------------------------------------------------------------------
   // D1 — Storage persistente em arquivos JSON (userData/storage/)
   // -------------------------------------------------------------------------

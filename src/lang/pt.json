@@ -470,7 +470,8 @@
   },
   "remote_control": {
     "tabs": {
-      "slides": "Slides"
+      "slides": "Slides",
+      "announcements": "Anúncios"
     },
     "bible": {
       "clear_screen": "Limpar a Tela",
@@ -482,6 +483,13 @@
       "close_projection": "Fechar Projeção",
       "projection_closed": "Projeção encerrada",
       "error_change": "Erro ao trocar slide"
+    },
+    "announcements": {
+      "empty": "Nenhum anúncio cadastrado",
+      "with_image": "Possui imagem",
+      "controls": "Controles de Anúncios",
+      "stop_projection": "Encerrar Projeção",
+      "projection_closed": "Projeção de anúncios encerrada"
     },
     "errors": {
       "generic": "Erro"

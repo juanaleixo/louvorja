@@ -441,6 +441,73 @@ $storage.hydrate().then(async () => {
             case "bible-close":
               Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
               break;
+            case "announcements-list": {
+              const allAnn = await $idb.getAll(DB_TABLE.ANNOUNCEMENTS);
+              const sorted = allAnn.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+              const simplified = sorted.map((a) => ({
+                id: String(a.id),
+                nome: a.nome,
+                ordem: a.ordem,
+                hasImage: !!a.imageData,
+                hasVideo: !!a.videoData,
+              }));
+              const replyChannel = data?.replyChannel;
+              if (replyChannel && Platform.api?.send) {
+                Platform.api.send(replyChannel, { status: "ok", announcements: simplified });
+              }
+              break;
+            }
+            case "announcements-project": {
+              const ids = data.ids || [];
+              const allAnn = await $idb.getAll(DB_TABLE.ANNOUNCEMENTS);
+              const sorted = allAnn.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+              const clickedId = ids.length ? ids[0] : null;
+              const startIdx = clickedId
+                ? Math.max(
+                    0,
+                    sorted.findIndex((a) => String(a.id) === clickedId)
+                  )
+                : 0;
+              if (sorted.length) {
+                const payload = {
+                  slides: sorted.map((a) => ({
+                    id: String(a.id),
+                    nome: a.nome,
+                    ordem: a.ordem,
+                    texto: a.texto,
+                    imageData: a.imageData,
+                    imageMime: a.imageMime,
+                    videoData: a.videoData,
+                    videoMime: a.videoMime,
+                    style: a.style,
+                  })),
+                  index: startIdx,
+                };
+                await $idb.put(DB_TABLE.CACHE, {
+                  id: "announcements_projection_state",
+                  data: payload,
+                  ts: Date.now(),
+                });
+                AppData.set("modules.media.is_playing", true);
+                const fp = useFileProjection();
+                fp.start("announcements", sorted[startIdx]?.nome || "", sorted.length, startIdx);
+                ProjectionWindows.openAnnouncementsWindow().catch(() => {});
+                await new Promise((r) => setTimeout(r, 300));
+                Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_STATE, payload);
+              }
+              break;
+            }
+            case "announcements-next":
+              Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_CONTROL, { action: "next" });
+              break;
+            case "announcements-prev":
+              Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_CONTROL, { action: "prev" });
+              break;
+            case "announcements-stop":
+              Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_CONTROL, { action: "stop" });
+              ProjectionWindows.closeAnnouncementsWindow().catch(() => {});
+              AppData.set("modules.media.is_playing", false);
+              break;
             default:
               console.warn("Ação desconhecida:", action);
               break;
