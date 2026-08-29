@@ -1,0 +1,1 @@
+const r={PRIMARY:"rgb(var(--v-theme-primary))",SECONDARY:"rgb(var(--v-theme-secondary))",SURFACE:"rgb(var(--v-theme-surface))",DANGER:"rgb(var(--v-theme-danger))",WARNING:"rgb(var(--v-theme-warning))"};export{r as C};

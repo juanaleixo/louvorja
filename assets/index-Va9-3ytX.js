@@ -1,0 +1,1 @@
+import{B as t}from"./BaseModule-Dt4LTgOW.js";import{e as r,p as s}from"./pt-CDpif01b.js";import{m}from"./manifest--4NASWUm.js";import"./Icons-BMLKJbQL.js";import"./index-De0WBvd8.js";import"./vendor-vue-Bwuas3Ge.js";import"./vendor-i18n-CvdIZpTB.js";class l extends t{constructor(){const o={...m,translations:{pt:s,es:r}};super(o)}}export{l as default};

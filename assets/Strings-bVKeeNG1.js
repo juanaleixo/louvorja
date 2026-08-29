@@ -1,0 +1,1 @@
+const t={clean(e){return e=e||"",e.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"")},sort(e,r){if(typeof e=="number"&&typeof r=="number")return e-r;const o=String(e||""),n=String(r||"");return o.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").localeCompare(n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""))}};export{t as S};

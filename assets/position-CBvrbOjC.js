@@ -1,0 +1,1 @@
+import{bd as s,p as i}from"./index-De0WBvd8.js";import{t as n}from"./vendor-vue-Bwuas3Ge.js";const e=["static","relative","fixed","absolute","sticky"],u=i({position:{type:String,validator:o=>e.includes(o)}},"position");function c(o,t=s()){return{positionClasses:n(()=>o.position?`${t}--${o.position}`:void 0)}}export{u as m,c as u};
