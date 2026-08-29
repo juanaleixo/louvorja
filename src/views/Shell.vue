@@ -79,10 +79,12 @@ import type { BibleSearchResult } from "@/types/Bible";
 
 import { registerShell } from "@/composables/useShell";
 import { useFileProjection } from "@/composables/useFileProjection";
+import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
 
 const { locale, t } = useI18n();
 const vuetifyTheme = useTheme();
 const display = useDisplay();
+const bgTasks = useBackgroundTasks();
 
 const cmdPaletteOpen = ref(false);
 const musicSearchOpen = ref(false);
@@ -181,6 +183,8 @@ function _handleUpdaterState(
   state: {
     status: string;
     newVersion?: string | null;
+    progress?: number;
+    error?: string | null;
   } | null
 ) {
   if (!state) return;
@@ -192,6 +196,16 @@ function _handleUpdaterState(
     "| startupCheckPending:",
     _startupCheckPending
   );
+
+  if (state.status === "downloading") {
+    bgTasks.registerTask("app-update", "shell.background_tasks.app_update");
+    bgTasks.updateTask("app-update", { progress: state.progress ?? 0 });
+  } else if (state.status === "downloaded") {
+    bgTasks.completeTask("app-update");
+  } else if (state.status === "error") {
+    bgTasks.updateTask("app-update", { status: "error", error: state.error ?? undefined });
+  }
+
   if (state.status === "available") {
     const autoDownload = $userdata.get<boolean>(KEYS.OPTIONS.AUTO_DOWNLOAD_UPDATES, false) === true;
     $appdata.set(KEYS.SHELL.APP_UPDATE_AVAILABLE, true);

@@ -201,16 +201,22 @@ function exitApp() {
 onMounted(() => {
   window.addEventListener("louvorja:open-updates", onOpenUpdates);
   window.addEventListener("louvorja:open-options", onOpenOptions);
+  window.addEventListener("louvorja:open-about", onOpenAbout);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("louvorja:open-updates", onOpenUpdates);
   window.removeEventListener("louvorja:open-options", onOpenOptions);
+  window.removeEventListener("louvorja:open-about", onOpenAbout);
   document.removeEventListener("keydown", onKeydown);
 });
 
 function onOpenUpdates() {
   openAt("updates");
+}
+
+function onOpenAbout() {
+  openAt("about");
 }
 
 /**

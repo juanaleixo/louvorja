@@ -352,6 +352,19 @@ Helpers principais:
 | `Snackbar.ts` | Snackbar global; aceita `action?: () => void` opcional (executada no clique) |
 | `Platform.js` | Adapter web/desktop |
 
+Composables principais:
+
+| Composable | Função |
+|------------|--------|
+| `useMedia` | Player de áudio/vídeo/youtube — sincronização de slides, crossfade, broadcast |
+| `useBackgroundTasks` | Singleton — gerencia tarefas de download em segundo plano (progresso, cancel, dismiss) |
+| `useSyncManager` | Downloads de coletâneas (FTP → HttpQueue) e bíblia (HTTP sequencial) + scan de integridade |
+| `useBroadcastListener` | Listener de BroadcastChannel com cleanup automático via `onUnmounted` |
+| `useBroadcastSender` | Envio de mensagens via BroadcastChannel |
+| `useFileProjection` | Barra de controle de projeção de arquivos (mini-player no footer) |
+| `useProjectionState` | Estado reativo da projeção (slides atuais, transições) |
+| `useSlideStyle` | Estilos dinâmicos de slides (cores, fontes, fundo) |
+
 ---
 
 ## 📡 Comunicação Entre Janelas
@@ -445,9 +458,16 @@ timeout de segurança para o check não travar o boot.
 
 ### Badge da ShellTools
 
-`ShellTools.vue` mostra um ícone **amarelo pulsante** (`mdi-download-circle`) quando
-`appdata app_update_available` é verdadeiro. O clique abre a tela de Atualizações via
-evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
+`ShellTools.vue` mostra dois indicadores no header:
+
+1. **Badge de atualização** — ícone amarelo pulsante (`mdi-download-circle`) quando
+   `appdata app_update_available` é verdadeiro. O clique abre a tela de Atualizações via
+   evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
+
+2. **Badge de processos em segundo plano** — ícone `mdi-progress-download` com
+   `v-badge` (contagem de tarefas ativas) quando `useBackgroundTasks.hasActiveTasks`
+   é true. O clique abre um `v-menu` com a lista de tarefas, barras de progresso,
+   detalhe (arquivo atual) e botões de cancelamento/dismiss.
 
 ### IPC handlers principais
 
@@ -463,6 +483,38 @@ evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
 | `updater:setOptions` | Aplica `{ useBeta, autoCheck, autoDownload }` em runtime |
 | `updater:install` | Fecha o app e instala a atualização baixada |
 | `updater:status` | Snapshot do estado atual |
+
+---
+
+## 📦 Processos em Segundo Plano
+
+O sistema de background tasks gerencia downloads que continuam mesmo após o
+fechamento do diálogo de origem. É composto por:
+
+- **`useBackgroundTasks.ts`** — singleton com `reactive Map<BackgroundTask>`. Estado reativo
+  (`tasks`, `hasActiveTasks`, `activeCount`) consumido pelo `ShellTools.vue`.
+  Mantém listeners IPC próprios para downloads de coletâneas que persistem
+  independentemente do lifecycle dos componentes.
+- **`ShellTools.vue`** — botão `mdi-progress-download` com `v-badge` (contagem)
+  e `v-menu` com lista de tarefas, barras de progresso e botões de cancelamento/dismiss.
+- **`useSyncManager.ts`** — registra tarefas (`sync-collections`, `sync-bible`) no singleton
+  ao iniciar downloads. Atualiza progresso via callbacks IPC e refs.
+- **`Shell.vue`** — registra tarefa `app-update` quando o updater entra em `status: "downloading"`.
+
+**Fluxo de dados:**
+```
+StartupCheckDialog / AppMenuSincronizar
+  → useSyncManager.startDownloads() / downloadBibleVersions()
+    → useBackgroundTasks.registerTask(id, label, cancelFn)
+    → useBackgroundTasks.updateTask(id, { progress, detail })
+    → useBackgroundTasks.completeTask(id) / cancelTask(id)
+Shell.vue (updater)
+  → useBackgroundTasks.registerTask("app-update")
+  → useBackgroundTasks.updateTask / completeTask
+ShellTools.vue
+  ← useBackgroundTasks.tasks (computed)
+  ← useBackgroundTasks.hasActiveTasks, activeCount
+```
 
 ---
 
@@ -657,11 +709,17 @@ src/
 │   ├── CategoryManagerDialog.vue  # Diálogo de categorias (compartilhado)
 │   ├── OverlayRenderer.vue        # Overlays sobre projeção
 │   ├── Slide.vue                  # Renderizador de slides
+│   ├── StartupCheckDialog.vue     # Verificação inicial + download de coletâneas/bíblia
 │   └── format-fields/             # Campos de formatação (FieldColor, FieldFont, etc.)
 ├── composables/             # Composables Vue reativos
-│   ├── useProjectionState.ts      # Estado da projeção
-│   ├── useSlideStyle.ts           # Estilos de slides
-│   └── useBroadcastListener.ts    # Listener BroadcastChannel c/ cleanup
+│   ├── useBackgroundTasks.ts       # Singleton — tarefas em segundo plano (ShellTools)
+│   ├── useSyncManager.ts           # Downloads de coletâneas/bíblia + scan de integridade
+│   ├── useMedia.ts                 # Player de áudio/vídeo/youtube
+│   ├── useProjectionState.ts       # Estado da projeção
+│   ├── useSlideStyle.ts            # Estilos de slides
+│   ├── useBroadcastListener.ts     # Listener BroadcastChannel c/ cleanup
+│   ├── useBroadcastSender.ts       # Envio BroadcastChannel
+│   └── useFileProjection.ts        # Barra de controle de projeção
 ├── constants/
 │   ├── Bible.ts              # Constantes da Bíblia
 │   ├── Colors.ts             # Paleta de cores
@@ -818,20 +876,23 @@ icon: "mdi-play"
 Exceção: templates de módulos com `<v-icon icon="mdi-...">` inline são tolerados
 mas **prefira** extrair para `ICONS.*`.
 
-### `KEYS.*` — UserData nunca com string literal
+### `KEYS.*` — UserData/AppData nunca com string literal
 
-Toda leitura/escrita em `$userdata.get/set` **deve** usar as constantes de
-`src/constants/UserDataKeys.ts`:
+Toda leitura/escrita em `$userdata.get/set` e `$appdata.get/set` **deve** usar
+as constantes de `src/constants/UserDataKeys.ts`:
 
 ```ts
 import $userdata from "@/helpers/UserData";
+import $appdata from "@/helpers/AppData";
 import { KEYS } from "@/constants/UserDataKeys";
 
 // ✅ Correto
 $userdata.get(KEYS.OPTIONS.THEME);
+$appdata.get(KEYS.MODULES.MEDIA.IS_PLAYING);
 
 // ❌ Errado — string hardcoded
 $userdata.get("theme");
+$appdata.get("modules.media.is_playing");
 ```
 
 Para adicionar nova chave: edite `src/constants/UserDataKeys.ts` e referencie

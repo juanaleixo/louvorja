@@ -38,7 +38,15 @@ src/
 │   ├── LetterPagination.vue
 │   ├── Search.vue
 │   ├── Select.vue
-│   └── CheckBox.vue
+│   ├── CheckBox.vue
+│   └── StartupCheckDialog.vue  # Diálogo de verificação inicial + download de coletâneas/bíblia
+├── composables/         # Composables Vue (singleton ou por componente)
+│   ├── useBackgroundTasks.ts   # Singleton — tarefas em segundo plano (ShellTools)
+│   ├── useSyncManager.ts       # Downloads de coletâneas/bíblia + scan de integridade
+│   ├── useMedia.ts             # Player de áudio/vídeo/youtube
+│   ├── useBroadcastListener.ts
+│   ├── useBroadcastSender.ts
+│   └── useFileProjection.ts
 ├── helpers/             # Utilitários e serviços
 │   ├── ModuleManager.js # Instala e registra módulos
 │   ├── Modules.js       # Abre/fecha/minimiza módulos
@@ -59,6 +67,12 @@ src/
 │   ├── Popup.js         # Gerencia janelas popup
 │   ├── Window.js        # Utilitários de janela
 │   └── Dev.js           # Logs de desenvolvimento
+├── constants/           # Constantes e enums
+│   ├── UserDataKeys.ts  # KEYS.* — chaves para $appdata/$userdata (sem hardcoded)
+│   ├── DbTables.ts      # Nomes das tabelas IndexedDB
+│   ├── FileTypes.ts     # IMAGE_EXT, AUDIO_EXT, VIDEO_EXT
+│   ├── Projection.ts    # Constantes de projeção (BACKGROUND, etc.)
+│   └── Bible.ts         # BOOKS[] — mapa de livros da Bíblia
 ├── lang/                # Traduções globais (pt.json, es.json)
 ├── layout/              # Componentes de layout da shell
 │   ├── Header.vue
@@ -70,9 +84,14 @@ src/
 │   ├── Alert.vue
 │   ├── Loading.vue
 │   ├── Footer.vue
-│   └── SystemBar.vue
+│   ├── SystemBar.vue
+│   └── shell/
+│       ├── ShellTools.vue       # Botões do header: busca, favoritos, tema, projeção fundo, background tasks
+│       ├── AppMenuSincronizar.vue  # Download de coletâneas/bíblia + gerenciamento de storage
+│       └── AppMenuAtualizacoes.vue # Verificação e download de atualizações do app
 ├── modules/             # Módulos do sistema (ver ADR 0003)
 │   ├── album/
+│   ├── background_projection/  # Projeção de fundo (imagens/vídeos)
 │   ├── bible/
 │   ├── clock/           # Relógio digital (12h/24h, fullscreen → /clock)
 │   ├── collections/
@@ -105,7 +124,8 @@ src/
     ├── Obs.vue              # /obs — captura transparente para OBS (slides)
     ├── ObsBible.vue         # /obs/bible — captura OBS de versículos da Bíblia
     ├── Operator.vue         # /operator — grade de slides com navegação por teclado
-    └── Clock.vue            # /clock — relógio digital em tela cheia
+    ├── Clock.vue            # /clock — relógio digital em tela cheia
+    └── Shell.vue            # Shell principal — boot, updater, startup check, layout
 ```
 
 ## Convenções de Módulos
@@ -231,18 +251,21 @@ icon: "mdi-play"
 
 ### `KEYS.*` — UserData sempre por constante
 
-Toda leitura/escrita em `$userdata.get/set` deve usar `KEYS.*` de
-`src/constants/UserDataKeys.ts`:
+Toda leitura/escrita em `$userdata.get/set` e `$appdata.get/set` deve usar
+`KEYS.*` de `src/constants/UserDataKeys.ts`:
 
 ```ts
 import $userdata from "@/helpers/UserData";
+import $appdata from "@/helpers/AppData";
 import { KEYS } from "@/constants/UserDataKeys";
 
 // ✅ Correto
 $userdata.get(KEYS.OPTIONS.THEME);
+$appdata.get(KEYS.MODULES.MEDIA.IS_PLAYING);
 
 // ❌ Errado — string hardcoded
 $userdata.get("theme");
+$appdata.get("modules.media.is_playing");
 ```
 
 Para adicionar nova chave: edite `src/constants/UserDataKeys.ts` e referencie
@@ -305,6 +328,38 @@ const song   = await $database.get(`music_${id}`);
 | `go_to_slide` | `Operator.vue` | `Media.js` (via listener em getElement) |
 | `bible_verse` | `bible/Index.vue` selVerse | ObsBible |
 | `message_board` | `message_board/index.vue` | (recepção futura) |
+
+---
+
+## Processos em Segundo Plano
+
+O sistema de background tasks gerencia downloads que continuam mesmo após o
+fechamento do diálogo de origem. É composto por:
+
+- **`useBackgroundTasks.ts`** — singleton com `reactive Map<BackgroundTask>`. Estado reativo
+  (`tasks`, `hasActiveTasks`, `activeCount`) consumido pelo `ShellTools.vue`.
+  Mantém listeners IPC próprios para downloads de coletâneas que persistem
+  independentemente do lifecycle dos componentes.
+- **`ShellTools.vue`** — botão `mdi-progress-download` com `v-badge` (contagem)
+  e `v-menu` com lista de tarefas, barras de progresso e botões de cancelamento/dismiss.
+- **`useSyncManager.ts`** — registra tarefas (`sync-collections`, `sync-bible`) no singleton
+  ao iniciar downloads. Atualiza progresso via callbacks IPC e refs.
+- **`Shell.vue`** — registra tarefa `app-update` quando o updater entra em `status: "downloading"`.
+
+**Fluxo de dados:**
+```
+StartupCheckDialog / AppMenuSincronizar
+  → useSyncManager.startDownloads() / downloadBibleVersions()
+    → useBackgroundTasks.registerTask(id, label, cancelFn)
+    → useBackgroundTasks.updateTask(id, { progress, detail })
+    → useBackgroundTasks.completeTask(id) / cancelTask(id)
+Shell.vue (updater)
+  → useBackgroundTasks.registerTask("app-update")
+  → useBackgroundTasks.updateTask / completeTask
+ShellTools.vue
+  ← useBackgroundTasks.tasks (computed)
+  ← useBackgroundTasks.hasActiveTasks, activeCount
+```
 
 ---
 
@@ -431,12 +486,16 @@ O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLi
 | Feature | Origem Delphi | Status |
 |---|---|---|
 | Verificação de versão do banco | API `louvorja.com.br/params` | ✅ módulo `update` |
-| Download de coletâneas via FTP | `fmAtualiza.pas` | ⚠️ roadmap |
-| Verificação de integridade de arquivos | `fmArquivosFalta/Excesso.pas` | ⚠️ roadmap |
+| Download de coletâneas via FTP | `fmAtualiza.pas` | ✅ `useSyncManager` + Electron `download/` |
+| Verificação de integridade de arquivos | `fmArquivosFalta/Excesso.pas` | ✅ `StartupCheckDialog` |
+| Processos em segundo plano | — | ✅ `useBackgroundTasks` + `ShellTools` v-menu |
 
 **Implementação:**
 - Módulo `update` — verifica versão, mostra changelog, botão de atualizar
-- Usa `basic-ftp` (já está no `package.json`) para download
+- `useSyncManager` composable — download de coletâneas (FTP → HttpQueue) e bíblia (HTTP sequencial)
+- `StartupCheckDialog` — verificação inicial com botão "Minimizar" para background
+- `useBackgroundTasks` singleton — gerencia tarefas de download em segundo plano
+- `ShellTools.vue` — v-menu com badges de progresso, cancelamento com confirmação
 
 ---
 

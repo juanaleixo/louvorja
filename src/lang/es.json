@@ -856,6 +856,16 @@
     "empty_ribbon_page": "Seleccione una pestaña",
     "not_implemented": "No implementado",
     "appmenu_content_placeholder": "Seleccione una opción del menú para configurar.",
+    "background_tasks": {
+      "title": "Procesos en segundo plano",
+      "empty": "Ningún proceso en curso",
+      "running": "En curso",
+      "completed": "Completado",
+      "error": "Error",
+      "cancelled": "Cancelado",
+      "confirm_cancel": "¿Desea cancelar esta descarga?",
+      "app_update": "Actualización de la app"
+    },
     "appmenu_items": {
       "about": "Acerca de",
       "settings": "Opciones",
@@ -1005,7 +1015,12 @@
     "dont_show_again": "No mostrar esta verificación al inicio",
     "select_files": "Seleccionar Archivos",
     "download_all": "Descargar Todo",
-    "sync_hint": "Puede descargar álbumes o versiones bíblicas específicas después en el menú Opciones > Sincronizar."
+    "sync_hint": "Puede descargar álbumes o versiones bíblicas específicas después en el menú Opciones > Sincronizar.",
+    "minimize": "Minimizar",
+    "task": {
+      "collections": "Descargando colecciones",
+      "bible": "Descargando Biblia"
+    }
   },
   "release_notes": {
     "title": "Novedades de la versión",

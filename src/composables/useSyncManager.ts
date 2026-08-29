@@ -8,6 +8,7 @@ import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { DB_TABLE } from "@/constants/DbTables";
 import { BOOKS } from "@/constants/Bible";
 import type { BibleVersion } from "@/types/Bible";
+import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
 
 interface FileEntry {
   remote: string;
@@ -56,6 +57,7 @@ export interface ScanResult {
 
 export function useSyncManager() {
   const { t, locale } = useI18n();
+  const bgTasks = useBackgroundTasks();
 
   // FTP
   const ftpOk = ref(false);
@@ -340,6 +342,10 @@ export function useSyncManager() {
     bibleProgress.value = { done: 0, total: 0, currentFile: "" };
     bibleCompletedMsg.value = "";
 
+    bgTasks.registerTask("sync-bible", "startup_check.task.bible", () => {
+      bibleCancelled.value = true;
+    });
+
     const books = await Database.get<Array<{ id_bible_book: number; chapters?: number }>>(
       `${lang}_bible_book`
     );
@@ -400,6 +406,10 @@ export function useSyncManager() {
         console.warn(`[useSyncManager] falha ao baixar ${key}:`, e);
       }
       bibleProgress.value = { ...bibleProgress.value, done: bibleProgress.value.done + 1 };
+      bgTasks.updateTask("sync-bible", {
+        progress: toDownload.length > 0 ? Math.round((bibleProgress.value.done / toDownload.length) * 100) : 0,
+        detail: key,
+      });
     }
 
     bibleProgress.value = { ...bibleProgress.value, currentFile: "" };
@@ -407,8 +417,10 @@ export function useSyncManager() {
     if (bibleCancelled.value) {
       bibleCompletedMsg.value = "";
       bibleCancelled.value = false;
+      bgTasks.updateTask("sync-bible", { status: "cancelled" });
     } else {
       $userdata.set(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, versionIds);
+      bgTasks.completeTask("sync-bible");
     }
     return bibleProgress.value.done;
   }
@@ -544,6 +556,10 @@ export function useSyncManager() {
     downloadFailedCount.value = 0;
     downloadCompletedMsg.value = "";
 
+    bgTasks.registerTask("sync-collections", "startup_check.task.collections", () => {
+      Platform.download?.cancel();
+    });
+
     const cleanupFns: CleanupFn[] = [];
     let firstProgress = true;
 
@@ -576,11 +592,13 @@ export function useSyncManager() {
     _downloadCleanup.push(
       Platform.download.onQueueDone(() => {
         downloading.value = false;
+        bgTasks.completeTask("sync-collections");
       })
     );
     _downloadCleanup.push(
       Platform.download.onQueueCancelled(() => {
         downloading.value = false;
+        bgTasks.updateTask("sync-collections", { status: "cancelled" });
       })
     );
 

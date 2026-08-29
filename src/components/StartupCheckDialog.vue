@@ -398,6 +398,14 @@
         <v-divider />
 
         <v-card-actions class="pa-4">
+          <v-btn
+            v-if="sync.downloading.value || sync.bibleDownloading.value"
+            variant="text"
+            prepend-icon="mdi-window-minimize"
+            @click="minimizeToBackground"
+          >
+            {{ $t("startup_check.minimize") }}
+          </v-btn>
           <v-spacer />
           <v-btn
             v-if="!sync.downloading.value && !sync.bibleDownloading.value"
@@ -505,6 +513,10 @@ function onClose(): void {
   if (dontShowAgain.value) {
     $userdata.set(KEYS.OPTIONS.SKIP_STARTUP_CHECK, true);
   }
+  emit("update:modelValue", false);
+}
+
+function minimizeToBackground(): void {
   emit("update:modelValue", false);
 }
 
