@@ -117,6 +117,7 @@ export const ICONS = {
   MODULES: {
     BACKGROUND_SOUND: "mdi-disc-player",
     ANIMATION: "mdi-animation-play",
+    ANNOUNCEMENTS: "mdi-bullhorn",
     BACKGROUND_PROJECTION: "mdi-monitor-screenshot",
     BASE_MODULE: "mdi-monitor-dashboard",
     BIBLE: "mdi-book-open-variant",

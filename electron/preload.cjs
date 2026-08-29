@@ -19,8 +19,18 @@
  */
 
 const { contextBridge, ipcRenderer } = require("electron");
+const { webUtils } = require("electron");
 
 contextBridge.exposeInMainWorld("louvorjaApi", {
+  /** Resolve o caminho real de um File arrastado/selecionado (Electron 32+). */
+  getPathForFile: (file) => {
+    try {
+      return webUtils.getPathForFile(file);
+    } catch {
+      return "";
+    }
+  },
+
   /** Versão do Electron em execução */
   version: process.versions.electron,
 
@@ -66,6 +76,17 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     const wrappedHandler = (_event, ...args) => handler(...args);
     ipcRenderer.on(channel, wrappedHandler);
     return () => ipcRenderer.off(channel, wrappedHandler);
+  },
+
+  /**
+   * Envia evento one-way para o main process via ipcRenderer.send().
+   * Usado para responder a solicitações do main (ex: lista de anúncios).
+   *
+   * @param {string} channel
+   * @param {*} data
+   */
+  send(channel, data) {
+    ipcRenderer.send(channel, data);
   },
 
   // -------------------------------------------------------------------------
@@ -256,6 +277,8 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     setFilesDir: (newDir, opts) => ipcRenderer.invoke("storage:setFilesDir", newDir, opts),
     /** Auto-limpeza FIFO ao ultrapassar maxBytes. */
     enforceQuota: (maxBytes) => ipcRenderer.invoke("storage:enforceQuota", maxBytes),
+    /** Lista arquivos de um diretório local (para auto-populate). */
+    readDir: (dirPath) => ipcRenderer.invoke("storage:readDir", dirPath),
     /** Verifica quais arquivos remotos já estão no disco. */
     checkLocal: (remotePaths) => ipcRenderer.invoke("storage:checkLocal", remotePaths),
     /** Remove arquivos de mídia do cache local (paths remotos relativos). */

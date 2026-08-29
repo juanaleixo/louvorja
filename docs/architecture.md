@@ -231,14 +231,17 @@ sem alteração:
 | `{locale}_bible_version` / `_bible_book` | bible_versions / bible_books | itens |
 | `bible_<v>_<livro>_<cap>` | bible_chapters | registro individual |
 | `{locale}_collections_online` | online_videos_channels/playlists/videos | composto (3 tabelas) |
+| `{locale}_doxology_albums` · `{locale}_children_albums` | doxology_albums / children_albums | itens (1 linha/álbum) |
 | demais | cache | registro único |
 
 **URLs de rede por chave** (`fetchUrlFor`): a maioria vem do json_db estático
-(`Path.db`); `_collections_online` é **rota REST** da API
-(`{origin}/{lang}/collections/online`, onde origin é `VITE_URL_DATABASE` sem o
-sufixo `/json_db`) e não existe como arquivo em `/json_db`. O mesmo vale para o
-script `npm run jsondb`. Toda resposta 200 é injetada automaticamente no IDB
-via `writeRouted`.
+(`Path.db`); `_collections_online`, `_doxology_albums` e `_children_albums`
+são **rotas REST** da API (`{origin}/{lang}/collections/online`,
+`{origin}/{lang}/albums/category/doxology` e
+`{origin}/{lang}/albums/category/children`, onde origin é `VITE_URL_DATABASE`
+sem o sufixo `/json_db`) e não existem como arquivos em `/json_db`. O mesmo
+vale para o script `npm run jsondb`. Toda resposta 200 é injetada
+automaticamente no IDB via `writeRouted`.
 
 - **Registro de item**: `{ id: "{chave}:{id}", file, dataId, seq, data, ts, v }` —
   `seq` preserva a ordem do servidor na reconstrução; `v` (versão do app,
@@ -270,7 +273,8 @@ jsondb/
 ├── lang/
 │   └── pt/ · es/               ← catálogos por idioma
 │       ├── {loc}_musics/_hymnal/_hymnal_1996/_categories/
-│       │   _bible_version/_bible_book/_collections_online
+│       │   _bible_version/_bible_book/_doxology_albums/
+│       │   _children_albums/_collections_online
 ├── albums/album_<id>.json      ← derivados, sem idioma
 ├── musics/music_<id>.json
 └── bible/bible_<v>_<livro>_<cap>.json
@@ -302,6 +306,10 @@ Remoto, Sincronizar e StartupCheck.
 - Tradução global em `src/lang/pt.json` e `src/lang/es.json`
 - Tradução por módulo em `src/modules/<id>/lang/`
 - Chave de tradução: `modules.<id>.<key>` no i18n global
+- Helper `tt(key)` prefixa `modules.<id>.` automaticamente — usar para chaves do módulo
+- Helper `t(key)` acessa chaves globais (ex.: `t("actions.save")`) — usar para chaves compartilhadas
+- Regra: `modules.<id>.*` é exclusiva do módulo; global define apenas chaves compartilhadas (`actions.*`, `components.*`, etc.)
+- Detalhes completos em `docs/i18n.md`
 
 ---
 
@@ -344,6 +352,19 @@ Helpers principais:
 | `Snackbar.ts` | Snackbar global; aceita `action?: () => void` opcional (executada no clique) |
 | `Platform.js` | Adapter web/desktop |
 
+Composables principais:
+
+| Composable | Função |
+|------------|--------|
+| `useMedia` | Player de áudio/vídeo/youtube — sincronização de slides, crossfade, broadcast |
+| `useBackgroundTasks` | Singleton — gerencia tarefas de download em segundo plano (progresso, cancel, dismiss) |
+| `useSyncManager` | Downloads de coletâneas (FTP → HttpQueue) e bíblia (HTTP sequencial) + scan de integridade |
+| `useBroadcastListener` | Listener de BroadcastChannel com cleanup automático via `onUnmounted` |
+| `useBroadcastSender` | Envio de mensagens via BroadcastChannel |
+| `useFileProjection` | Barra de controle de projeção de arquivos (mini-player no footer) |
+| `useProjectionState` | Estado reativo da projeção (slides atuais, transições) |
+| `useSlideStyle` | Estilos dinâmicos de slides (cores, fontes, fundo) |
+
 ---
 
 ## 📡 Comunicação Entre Janelas
@@ -369,6 +390,12 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 | `wallpaper_update` | RibbonWallpaper, Opções | BackgroundProjection, FileProjection |
 | `module_ribbon_action` | RibbonBar | Módulo alvo |
 | `userdata:patch` | UserData.set() | Todas as janelas |
+| `announcements_state` | announcements module | AnnouncementsProjection |
+| `announcements_control` | announcements module | AnnouncementsProjection |
+| `bible_ribbon_action` | RibbonBar | Módulo bíblia |
+| `liturgy_ribbon_action` | RibbonBar | Módulo liturgia |
+| `module_projection_close` | módulos de projeção | Janela de projeção |
+| `ribbon:select_page` | Módulos | RibbonBar |
 
 ---
 
@@ -431,9 +458,16 @@ timeout de segurança para o check não travar o boot.
 
 ### Badge da ShellTools
 
-`ShellTools.vue` mostra um ícone **amarelo pulsante** (`mdi-download-circle`) quando
-`appdata app_update_available` é verdadeiro. O clique abre a tela de Atualizações via
-evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
+`ShellTools.vue` mostra dois indicadores no header:
+
+1. **Badge de atualização** — ícone amarelo pulsante (`mdi-download-circle`) quando
+   `appdata app_update_available` é verdadeiro. O clique abre a tela de Atualizações via
+   evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
+
+2. **Badge de processos em segundo plano** — ícone `mdi-progress-download` com
+   `v-badge` (contagem de tarefas ativas) quando `useBackgroundTasks.hasActiveTasks`
+   é true. O clique abre um `v-menu` com a lista de tarefas, barras de progresso,
+   detalhe (arquivo atual) e botões de cancelamento/dismiss.
 
 ### IPC handlers principais
 
@@ -449,6 +483,38 @@ evento `louvorja:open-updates` (escutado por `AppMenu.vue`).
 | `updater:setOptions` | Aplica `{ useBeta, autoCheck, autoDownload }` em runtime |
 | `updater:install` | Fecha o app e instala a atualização baixada |
 | `updater:status` | Snapshot do estado atual |
+
+---
+
+## 📦 Processos em Segundo Plano
+
+O sistema de background tasks gerencia downloads que continuam mesmo após o
+fechamento do diálogo de origem. É composto por:
+
+- **`useBackgroundTasks.ts`** — singleton com `reactive Map<BackgroundTask>`. Estado reativo
+  (`tasks`, `hasActiveTasks`, `activeCount`) consumido pelo `ShellTools.vue`.
+  Mantém listeners IPC próprios para downloads de coletâneas que persistem
+  independentemente do lifecycle dos componentes.
+- **`ShellTools.vue`** — botão `mdi-progress-download` com `v-badge` (contagem)
+  e `v-menu` com lista de tarefas, barras de progresso e botões de cancelamento/dismiss.
+- **`useSyncManager.ts`** — registra tarefas (`sync-collections`, `sync-bible`) no singleton
+  ao iniciar downloads. Atualiza progresso via callbacks IPC e refs.
+- **`Shell.vue`** — registra tarefa `app-update` quando o updater entra em `status: "downloading"`.
+
+**Fluxo de dados:**
+```
+StartupCheckDialog / AppMenuSincronizar
+  → useSyncManager.startDownloads() / downloadBibleVersions()
+    → useBackgroundTasks.registerTask(id, label, cancelFn)
+    → useBackgroundTasks.updateTask(id, { progress, detail })
+    → useBackgroundTasks.completeTask(id) / cancelTask(id)
+Shell.vue (updater)
+  → useBackgroundTasks.registerTask("app-update")
+  → useBackgroundTasks.updateTask / completeTask
+ShellTools.vue
+  ← useBackgroundTasks.tasks (computed)
+  ← useBackgroundTasks.hasActiveTasks, activeCount
+```
 
 ---
 
@@ -564,8 +630,35 @@ preguiçoso**: HEIC já registrado sem conversão é convertido on-demand e
 cacheado por item (`heicProjectionCache`).
 
 O protocolo `louvorja://local` registra os MIME `.heic/.heif`, e a constante
-compartilhada `IMAGE_FILE_EXTS` (`src/constants/ImageFileExts.ts`) inclui
+compartilhada `IMAGE_EXT` (`src/constants/FileTypes.ts`) inclui
 `heic/heif` em todos os accepts/filtros.
+
+---
+
+## 📁 Constantes de tipos de arquivo (FileTypes.ts)
+
+Todas as listas de extensões de arquivo usadas no programa estão centralizadas
+em `src/constants/FileTypes.ts`:
+
+| Constante | Extensões |
+|---|---|
+| `IMAGE_EXT` | jpg, jpeg, png, webp, gif, bmp, svg, heic, heif |
+| `AUDIO_EXT` | mp3, wav, ogg, flac, aac, m4a, wma, opus |
+| `VIDEO_EXT` | mp4, webm, mkv, mov, avi, m4v |
+
+**Uso:**
+```ts
+import { IMAGE_EXT, AUDIO_EXT, VIDEO_EXT } from "@/constants/FileTypes";
+
+if (IMAGE_EXT.includes(ext)) kind = "image";
+else if (VIDEO_EXT.includes(ext)) kind = "video";
+else if (AUDIO_EXT.includes(ext)) kind = "audio";
+```
+
+**Regras:**
+- Nunca defina listas inline — importe de `FileTypes.ts`.
+- Para adicionar nova extensão, edite `FileTypes.ts` e todos os consumidores
+  usam automaticamente.
 
 ---
 
@@ -616,13 +709,23 @@ src/
 │   ├── CategoryManagerDialog.vue  # Diálogo de categorias (compartilhado)
 │   ├── OverlayRenderer.vue        # Overlays sobre projeção
 │   ├── Slide.vue                  # Renderizador de slides
+│   ├── StartupCheckDialog.vue     # Verificação inicial + download de coletâneas/bíblia
 │   └── format-fields/             # Campos de formatação (FieldColor, FieldFont, etc.)
 ├── composables/             # Composables Vue reativos
-│   ├── useProjectionState.ts      # Estado da projeção
-│   ├── useSlideStyle.ts           # Estilos de slides
-│   └── useBroadcastListener.ts    # Listener BroadcastChannel c/ cleanup
+│   ├── useBackgroundTasks.ts       # Singleton — tarefas em segundo plano (ShellTools)
+│   ├── useSyncManager.ts           # Downloads de coletâneas/bíblia + scan de integridade
+│   ├── useMedia.ts                 # Player de áudio/vídeo/youtube
+│   ├── useProjectionState.ts       # Estado da projeção
+│   ├── useSlideStyle.ts            # Estilos de slides
+│   ├── useBroadcastListener.ts     # Listener BroadcastChannel c/ cleanup
+│   ├── useBroadcastSender.ts       # Envio BroadcastChannel
+│   └── useFileProjection.ts        # Barra de controle de projeção
 ├── constants/
+│   ├── Bible.ts              # Constantes da Bíblia
+│   ├── Colors.ts             # Paleta de cores
 │   ├── DbTables.ts           # Nomes das tabelas do IndexedDB
+│   ├── FileTypes.ts          # Constantes de extensões (IMAGE_EXT, AUDIO_EXT, VIDEO_EXT)
+│   ├── ImageFileExts.ts      # Re-export de IMAGE_EXT (compatibilidade legada)
 │   ├── Projection.ts         # Constantes de projeção
 │   └── UserDataKeys.ts       # Chaves de user_data
 ├── helpers/                  # Utilitários
@@ -632,15 +735,25 @@ src/
 │   ├── SettingsStorage.ts
 │   ├── Snackbar.ts           # Snackbar global (suporta action opcional)
 │   └── ...
-├── modules/                  # 30+ módulos do sistema
+├── modules/                  # 37 módulos do sistema
+│   ├── announcements/        # Slides de anúncios para projeção
 │   ├── background_projection/    # Projeção de fundo
 │   ├── background_sound/         # Música de fundo
+│   ├── liturgy/                  # Planejador de culto
+│   ├── media_library/            # Biblioteca de mídia
 │   ├── overlay/                  # Overlays customizáveis
+│   ├── scheduled_items/          # Itens agendados por categoria/data
 │   └── ...
-├── views/                    # Rotas de projeção
-│   ├── Projection.vue
-│   ├── FileProjection.vue
-│   ├── BackgroundProjection.vue
+├── views/                    # Rotas de projeção / shell
+│   ├── Main.vue              # Shell principal (/)
+│   ├── Popup.vue             # Janela popup para módulos
+│   ├── Projection.vue        # Projeção fullscreen (monitor 2)
+│   ├── ProjectionReturn.vue  # Stage display
+│   ├── AnnouncementsProjection.vue  # Projeção de anúncios
+│   ├── Obs.vue               # Captura OBS (slides)
+│   ├── ObsBible.vue          # Captura OBS (versículos)
+│   ├── Operator.vue          # Grade de slides (operador)
+│   ├── Clock.vue             # Relógio fullscreen
 │   └── ...
 └── router/                   # Vue Router (hash + history)
 ```
@@ -763,20 +876,23 @@ icon: "mdi-play"
 Exceção: templates de módulos com `<v-icon icon="mdi-...">` inline são tolerados
 mas **prefira** extrair para `ICONS.*`.
 
-### `KEYS.*` — UserData nunca com string literal
+### `KEYS.*` — UserData/AppData nunca com string literal
 
-Toda leitura/escrita em `$userdata.get/set` **deve** usar as constantes de
-`src/constants/UserDataKeys.ts`:
+Toda leitura/escrita em `$userdata.get/set` e `$appdata.get/set` **deve** usar
+as constantes de `src/constants/UserDataKeys.ts`:
 
 ```ts
 import $userdata from "@/helpers/UserData";
+import $appdata from "@/helpers/AppData";
 import { KEYS } from "@/constants/UserDataKeys";
 
 // ✅ Correto
 $userdata.get(KEYS.OPTIONS.THEME);
+$appdata.get(KEYS.MODULES.MEDIA.IS_PLAYING);
 
 // ❌ Errado — string hardcoded
 $userdata.get("theme");
+$appdata.get("modules.media.is_playing");
 ```
 
 Para adicionar nova chave: edite `src/constants/UserDataKeys.ts` e referencie

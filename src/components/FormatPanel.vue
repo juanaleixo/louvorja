@@ -74,6 +74,9 @@ const FIELD_LABEL_KEYS = {
   font: "components.customization.font",
   font_color: "components.customization.color",
   font_size: "components.customization.size",
+  text_shadow: "components.customization.text_shadow",
+  text_shadow_color: "components.customization.shadow_color",
+  text_shadow_blur: "components.customization.shadow_blur",
   alert_color: "components.customization.alert_color",
   background_color: "components.customization.color",
   border_spacing: "components.customization.border",
@@ -141,7 +144,14 @@ const groupedFields = computed(() => {
       key === "horizontal_align"
     )
       groups.layout.fields.push(f);
-    else if (key === "font" || key === "font_color" || key === "font_size")
+    else if (
+      key === "font" ||
+      key === "font_color" ||
+      key === "font_size" ||
+      key === "text_shadow" ||
+      key === "text_shadow_color" ||
+      key === "text_shadow_blur"
+    )
       groups.text.fields.push(f);
     else groups.other.fields.push(f);
   }

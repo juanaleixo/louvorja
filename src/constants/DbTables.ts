@@ -18,13 +18,16 @@ export const DB_VERSION = 4;
  */
 export const DB_TABLE = {
   SETTINGS: "settings",
-  DB_CACHE: "cache",
+  CACHE: "cache",
   // ─── Catálogos normalizados (1 registro por entidade) ───
-  MUSICS: "musics",
-  HYMNAL: "hymnal",
-  HYMNAL_1996: "hymnal_1996",
+  MUSICS: ModuleEnum.MUSICS,
+  HYMNAL: ModuleEnum.HYMNAL,
+  HYMNAL_1996: ModuleEnum.HYMNAL_1996,
   ALBUMS: "albums",
   MUSIC_CATEGORIES: "music_categories",
+  ANNOUNCEMENTS: ModuleEnum.ANNOUNCEMENTS + ".library",
+  DOXOLOGY_ALBUMS: ModuleEnum.DOXOLOGY + ".albums",
+  CHILDREN_ALBUMS: ModuleEnum.CHILDREN + ".albums",
   ONLINE_VIDEOS: ModuleEnum.ONLINE_VIDEOS,
   ONLINE_VIDEOS_CHANNELS: "online_videos_channels",
   ONLINE_VIDEOS_PLAYLISTS: "online_videos_playlists",
@@ -44,10 +47,13 @@ export const DB_TABLE = {
   CUSTOM_SONGS: ModuleEnum.CUSTOM_COLLECTIONS + ".songs",
   CUSTOM_COLLECTIONS: ModuleEnum.CUSTOM_COLLECTIONS + ".collections",
   MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY + ".library",
-   AUDIO_LIBRARY: "audio_library",
-   IMAGE_LIBRARY: "image_library",
-   LITURGY_LIBRARY: ModuleEnum.LITURGY + ".library",
- } as const;
+  MEDIA_LIBRARY_CATEGORY: ModuleEnum.MEDIA_LIBRARY + ".category",
+  AUDIO_LIBRARY: "audio_library",
+  IMAGE_LIBRARY: "image_library",
+  LITURGY_LIBRARY: ModuleEnum.LITURGY + ".library",
+  SCHEDULED_CATEGORIES: ModuleEnum.LITURGY + ".scheduled_categories",
+  SCHEDULED_ITEMS: ModuleEnum.LITURGY + ".scheduled_items",
+} as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
 

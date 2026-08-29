@@ -25,6 +25,8 @@
   "remove_image": "Remover imagem",
   "fade_duration": "Duração do fade",
   "bg_position": "Ajuste do fundo",
+  "select_category": "Selecionar categoria",
+  "uncategorized": "Sem categoria",
   "alert_no_category": "Crie uma categoria primeiro.",
   "alert_type_not_supported": "Tipo de arquivo não suportado. Use imagens (jpg, png, gif, etc.) ou vídeos (mp4, webm, etc.).",
   "alert_some_ignored": "{count} de {total} arquivos são suportados. Os demais foram ignorados.",

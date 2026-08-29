@@ -235,6 +235,7 @@ import { KEYS } from "@/constants/UserDataKeys";
 import Alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
+import { AUDIO_EXT } from "@/constants/FileTypes";
 import CategoryManagerDialog, { CategoryFileData } from "@/components/CategoryManagerDialog.vue";
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
@@ -571,23 +572,16 @@ function onDragLeave(): void {
   }
 }
 
-const AUDIO_EXTS = ["mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "opus"];
-
 async function onDrop(e: DragEvent): Promise<void> {
   isDragOver.value = false;
   dragCounter = 0;
   const droppedFiles = e.dataTransfer?.files;
   if (!droppedFiles?.length) return;
 
-  if (!categories.value.length) {
-    Alert.info({ title: t("add_audio"), text: t("no_categories") });
-    return;
-  }
-
   const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
     const ext = f.name.split(".").pop()?.toLowerCase() || "";
-    if (AUDIO_EXTS.includes(ext)) {
+    if (AUDIO_EXT.includes(ext)) {
       valid.push(f);
     }
   }
@@ -874,6 +868,17 @@ watch(
   () => $appdata.get("modules.media.show"),
   (show) => {
     if (autoPause.value && show && bg.isPlaying.value) {
+      bg.fadeOut(fadeOutDuration.value, () => bg.pause());
+    }
+  }
+);
+
+// Música tocando (áudio puro ou letra) — cobre openAudio/openLyric,
+// que não abrem o módulo de Mídia.
+watch(
+  () => $appdata.get("modules.media.is_playing"),
+  (playing) => {
+    if (autoPause.value && playing && bg.isPlaying.value) {
       bg.fadeOut(fadeOutDuration.value, () => bg.pause());
     }
   }

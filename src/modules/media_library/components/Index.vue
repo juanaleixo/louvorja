@@ -44,6 +44,53 @@
             variant="plain"
             class="media-search"
           />
+          <!-- Chips de categorias (filtro) -->
+          <div v-if="categories.length || uncategorizedCount > 0" class="media-chips">
+            <span class="media-chips-title">{{ t("categories") }}</span>
+            <div
+              v-for="cat in categories"
+              :key="cat.id"
+              class="media-chip"
+              :class="{ 'media-chip--active': selectedCategoryIds.has(cat.id) }"
+              :style="{ '--chip-color': cat.color }"
+              @click="toggleCategoryChip(cat.id)"
+            >
+              <span class="media-chip-icon-wrap">
+                <Icon v-if="cat.iconType === 'icon'" :icon="cat.icon" size="14" />
+                <v-img v-else :src="cat.icon" width="14" height="14" />
+              </span>
+              <span class="media-chip-name">{{ cat.name }}</span>
+              <span class="media-chip-count">
+                {{ files.filter((f) => f.categoryId === cat.id).length }}
+              </span>
+              <button
+                class="media-chip-add"
+                :title="t('add_files')"
+                @click.stop="beginAddWithCategory(cat.id)"
+              >
+                <v-icon icon="mdi-plus" size="12" />
+              </button>
+            </div>
+            <div
+              v-if="uncategorizedCount > 0"
+              class="media-chip media-chip--uncategorized"
+              :class="{ 'media-chip--active': selectedCategoryIds.has(UNCATEGORIZED_ID) }"
+              @click="toggleCategoryChip(UNCATEGORIZED_ID)"
+            >
+              <span class="media-chip-icon-wrap">
+                <v-icon icon="mdi-file-multiple" size="14" />
+              </span>
+              <span class="media-chip-name">{{ t("uncategorized") }}</span>
+              <span class="media-chip-count">{{ uncategorizedCount }}</span>
+              <button
+                class="media-chip-add"
+                :title="t('add_files')"
+                @click.stop="beginAddWithCategory(UNCATEGORIZED_ID)"
+              >
+                <v-icon icon="mdi-plus" size="12" />
+              </button>
+            </div>
+          </div>
           <div v-if="filteredFiles.length" class="media-grid">
             <div
               v-for="file in filteredFiles"
@@ -72,6 +119,9 @@
                 />
               </div>
               <div class="media-grid-item-name">{{ file.name }}</div>
+              <div v-if="categoryName(file.categoryId)" class="media-grid-item-category">
+                {{ categoryName(file.categoryId) }}
+              </div>
               <div class="media-grid-item-actions">
                 <v-btn variant="text" size="x-small" @click.stop="startRename(file)">
                   <v-icon size="16" :icon="ICONS.ACTIONS.EDIT" />
@@ -220,14 +270,51 @@
         style="display: none"
         @change="onFilesSelected"
       />
+
+      <!-- Seleção de categoria na importação -->
+      <v-dialog v-model="showCategorySelect" max-width="360">
+        <v-card>
+          <v-card-title class="text-body-1 font-weight-medium">
+            {{ t("select_category") }}
+          </v-card-title>
+          <v-list>
+            <v-list-item
+              :title="t('uncategorized')"
+              @click="selectCategoryForImport(UNCATEGORIZED_ID)"
+            />
+            <v-list-item
+              v-for="cat in categories"
+              :key="cat.id"
+              :title="cat.name"
+              @click="selectCategoryForImport(cat.id)"
+            />
+          </v-list>
+        </v-card>
+      </v-dialog>
+
+      <!-- Gerenciar Categorias -->
+      <CategoryManagerDialog
+        v-model="showManageDialog"
+        :categories="categories"
+        :saving="saving"
+        :icon-options="iconOptions"
+        :color-presets="colorPresets"
+        module-id="media_library"
+        @save="handleSaveCategory"
+        @delete="handleDeleteCategory"
+      />
     </div>
   </ModuleContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { module as manifest } from "../manifest";
 import ModuleContainer from "@/components/ModuleContainer.vue";
+import CategoryManagerDialog, {
+  type CategoryFileData,
+} from "@/components/CategoryManagerDialog.vue";
+import Icon from "@/components/Icon.vue";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
@@ -236,12 +323,13 @@ import $media from "@/composables/useMedia";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import Platform from "@/helpers/Platform";
+import $alert from "@/helpers/Alert";
 import { ICONS } from "@/config/Icons";
 import $idb from "@/helpers/IndexedDB";
 import { ensureRenderableImage, isHeic, heicToJpeg } from "@/helpers/ImageConvert";
 import { DB_TABLE } from "@/constants/DbTables";
 import { KEYS } from "@/constants/UserDataKeys";
-import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
+import { IMAGE_EXT, VIDEO_EXT } from "@/constants/FileTypes";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -256,6 +344,7 @@ interface MediaFile {
   addedAt: number;
   data?: ArrayBuffer;
   mime?: string;
+  categoryId?: string;
 }
 
 interface PlaylistItem {
@@ -271,6 +360,10 @@ interface PlaylistItem {
 /* ------------------------------------------------------------------ */
 
 const STORE_LIBRARY = DB_TABLE.MEDIA_LIBRARY;
+const STORE_CATEGORY = DB_TABLE.MEDIA_LIBRARY_CATEGORY;
+
+/** Id virtual dos itens adicionados sem categoria. */
+const UNCATEGORIZED_ID = "";
 
 async function loadLibrary(): Promise<MediaFile[]> {
   const all = await $idb.getAll<MediaFile>(STORE_LIBRARY);
@@ -299,6 +392,98 @@ const t = (key: string): string => moduleContainer.value?.t(key) || key;
 const libraryFilter = ref<"all" | "image" | "video" | "pdf">("all");
 const searchQuery = ref("");
 const files = ref<MediaFile[]>([]);
+
+// ─── Categorias ──────────────────────────────────────────────────────
+
+const categories = ref<CategoryFileData[]>([]);
+const selectedCategoryIds = ref(new Set<string>());
+const showManageDialog = ref(false);
+const showCategorySelect = ref(false);
+const saving = ref(false);
+let pendingCategoryId: string | null = null;
+const pendingDropEntries = ref<File[]>([]);
+
+async function loadCategories(): Promise<void> {
+  categories.value = (await $idb.getAll<CategoryFileData>(STORE_CATEGORY)).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}
+
+function categoryName(categoryId?: string): string {
+  if (!categoryId) return "";
+  return categories.value.find((c) => c.id === categoryId)?.name || "";
+}
+
+const uncategorizedCount = computed(() => {
+  const ids = new Set(categories.value.map((c) => c.id));
+  return files.value.filter((f) => !f.categoryId || !ids.has(f.categoryId)).length;
+});
+
+function toggleCategoryChip(id: string): void {
+  const next = new Set(selectedCategoryIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selectedCategoryIds.value = next;
+}
+
+/** Após carregar/salvar, garante que tudo fique visível. */
+function selectAllCategoriesAndUncategorized(): void {
+  const next = new Set(categories.value.map((c) => c.id));
+  if (uncategorizedCount.value > 0) next.add(UNCATEGORIZED_ID);
+  selectedCategoryIds.value = next;
+}
+
+/** Salva cópia plana — Proxy reativo não é clonável pelo IndexedDB. */
+async function saveCategoryRecord(cat: CategoryFileData): Promise<void> {
+  const plain = {
+    id: String(cat.id),
+    name: String(cat.name),
+    icon: String(cat.icon),
+    iconType: String(cat.iconType) as "icon" | "image",
+    ...(cat.iconData && cat.iconData.byteLength > 0
+      ? { iconData: cat.iconData, iconMime: String(cat.iconMime || "image/png") }
+      : {}),
+    color: String(cat.color),
+  };
+  await $idb.put(STORE_CATEGORY, plain);
+}
+
+async function handleSaveCategory(cat: CategoryFileData): Promise<void> {
+  saving.value = true;
+  try {
+    await saveCategoryRecord(cat);
+    await loadCategories();
+    selectAllCategoriesAndUncategorized();
+  } finally {
+    saving.value = false;
+  }
+}
+
+const iconOptions = Object.values(ICONS.CATEGORY).map((value) => ({ value }));
+
+const colorPresets = [
+  "#4CAF50",
+  "#2196F3",
+  "#9C27B0",
+  "#FF9800",
+  "#F44336",
+  "#00BCD4",
+  "#3F51B5",
+  "#E91E63",
+];
+
+/** Excluir categoria apaga TAMBÉM os arquivos dela (padrão som de fundo). */
+async function handleDeleteCategory(id: string): Promise<void> {
+  const affected = files.value.filter((f) => f.categoryId === id);
+  for (const f of affected) {
+    await removeFile(f);
+  }
+  await $idb.del(STORE_CATEGORY, id);
+  categories.value = categories.value.filter((c) => c.id !== id);
+  const next = new Set(selectedCategoryIds.value);
+  next.delete(id);
+  selectedCategoryIds.value = next;
+}
 const playlist = ref<PlaylistItem[]>([]);
 const currentIndex = ref(-1);
 const isPlaying = ref(false);
@@ -423,57 +608,76 @@ async function onDrop(e: DragEvent): Promise<void> {
   const droppedFiles = e.dataTransfer?.files;
   if (!droppedFiles?.length) return;
 
+  const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
-    const filePath = (f as any).path;
-    if (filePath && !isHeic(f.name, (f as File).type)) {
-      const name = f.name;
-      const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = IMAGE_FILE_EXTS.includes(ext);
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
-      const isPdf = ext === "pdf";
-      if (!isImage && !isVideo && !isPdf) continue;
-      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
-      const file: MediaFile = {
-        id: "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
-        name,
-        path: filePath,
-        type: fileType,
-        addedAt: Date.now(),
-      };
-      if (isImage) file.thumb = buildThumbPath(filePath);
-      await saveFile(file);
-      files.value.unshift(file);
-      if (isVideo) generateAndStoreThumb(file);
-    } else {
-      // Sem caminho (web) ou HEIC/HEIF: converte e armazena autocontido.
-      const { blob, name } = await ensureRenderableImage(f.name, f);
-      const isImage =
-        IMAGE_FILE_EXTS.includes(name.split(".").pop()?.toLowerCase() || "") ||
-        blob.type.startsWith("image/");
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(
-        f.name.split(".").pop()?.toLowerCase() || ""
-      );
-      const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
-      if (!isImage && !isVideo && !isPdf) continue;
-      const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
-      const fileId = "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      const path = URL.createObjectURL(blob);
-      const { data, mime } = await readFileData(new File([blob], name, { type: blob.type }));
-      const file: MediaFile = {
-        id: fileId,
-        name,
-        path,
-        type: fileType,
-        addedAt: Date.now(),
-        data,
-        mime,
-      };
-      if (isImage) file.thumb = path;
-      createdObjectUrls.set(fileId, path);
-      await saveFile(file);
-      files.value.unshift(file);
-      if (isVideo) generateAndStoreThumb(file);
-    }
+    const ext = f.name.split(".").pop()?.toLowerCase() || "";
+    const isMedia = IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext) || ext === "pdf";
+    if (isMedia) valid.push(f);
+  }
+  if (!valid.length) {
+    $alert.error({
+      text: "Tipo de arquivo não suportado. Use imagens, vídeos ou PDF.",
+    });
+    return;
+  }
+
+  // Seleção de categoria (Sem categoria sempre disponível), depois importa.
+  pendingDropEntries.value = valid;
+  pendingCategoryId = null;
+  showCategorySelect.value = true;
+}
+
+/** Importa um arquivo arrastado (com caminho no desktop ou blob na web). */
+async function importDroppedEntry(f: File, categoryId: string): Promise<void> {
+  const filePath = (f as any).path;
+  if (filePath && !isHeic(f.name, (f as File).type)) {
+    const name = f.name;
+    const ext = name.split(".").pop()?.toLowerCase() || "";
+    const isImage = IMAGE_EXT.includes(ext);
+    const isVideo = VIDEO_EXT.includes(ext);
+    const isPdf = ext === "pdf";
+    if (!isImage && !isVideo && !isPdf) return;
+    const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
+    const file: MediaFile = {
+      id: "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+      name,
+      path: filePath,
+      type: fileType,
+      addedAt: Date.now(),
+      categoryId,
+    };
+    if (isImage) file.thumb = buildThumbPath(filePath);
+    await saveFile(file);
+    files.value.unshift(file);
+    if (isVideo) generateAndStoreThumb(file);
+  } else {
+    // Sem caminho (web) ou HEIC/HEIF: converte e armazena autocontido.
+    const { blob, name } = await ensureRenderableImage(f.name, f);
+    const isImage =
+      IMAGE_EXT.includes(name.split(".").pop()?.toLowerCase() || "") ||
+      blob.type.startsWith("image/");
+    const isVideo = VIDEO_EXT.includes(f.name.split(".").pop()?.toLowerCase() || "");
+    const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
+    if (!isImage && !isVideo && !isPdf) return;
+    const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
+    const fileId = "file_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    const path = URL.createObjectURL(blob);
+    const { data, mime } = await readFileData(new File([blob], name, { type: blob.type }));
+    const file: MediaFile = {
+      id: fileId,
+      name,
+      path,
+      type: fileType,
+      addedAt: Date.now(),
+      data,
+      mime,
+      categoryId,
+    };
+    if (isImage) file.thumb = path;
+    createdObjectUrls.set(fileId, path);
+    await saveFile(file);
+    files.value.unshift(file);
+    if (isVideo) generateAndStoreThumb(file);
   }
 }
 
@@ -519,6 +723,9 @@ async function removeFile(file: MediaFile): Promise<void> {
 
 const filteredFiles = computed(() => {
   let list = files.value;
+  if (selectedCategoryIds.value.size > 0) {
+    list = list.filter((f) => selectedCategoryIds.value.has(f.categoryId || UNCATEGORIZED_ID));
+  }
   if (libraryFilter.value !== "all") {
     list = list.filter((f) => f.type === libraryFilter.value);
   }
@@ -546,7 +753,25 @@ function buildThumbPath(filePath: string): string | undefined {
   return undefined;
 }
 
-async function addFiles(): Promise<void> {
+/** Entrada do botão Adicionar: abre seleção de categoria antes do picker. */
+function addFiles(): void {
+  pendingDropEntries.value = [];
+  pendingCategoryId = null;
+  showCategorySelect.value = true;
+}
+
+/** "+" no chip: já importa direto para a categoria, sem diálogo. */
+function beginAddWithCategory(catId: string): void {
+  pendingCategoryId = catId;
+  pendingDropEntries.value = [];
+  if (Platform.isDesktop && (Platform.api as any)?.storage?.chooseFile) {
+    void doAddFiles(catId);
+  } else {
+    fileInput.value?.click();
+  }
+}
+
+async function doAddFiles(categoryId: string): Promise<void> {
   const api = Platform.api as LouvorjaApi | null;
   if (Platform.isDesktop && api?.storage?.chooseFile) {
     const result = await api.storage.chooseFile();
@@ -555,8 +780,8 @@ async function addFiles(): Promise<void> {
     for (const rawPath of paths) {
       const name = rawPath.split("/").pop() || rawPath.split("\\").pop() || rawPath;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = IMAGE_FILE_EXTS.includes(ext);
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
+      const isImage = IMAGE_EXT.includes(ext);
+      const isVideo = VIDEO_EXT.includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -566,6 +791,7 @@ async function addFiles(): Promise<void> {
         path: rawPath,
         type: fileType,
         addedAt: Date.now(),
+        categoryId,
       };
       if (isImage) file.thumb = buildThumbPath(rawPath);
       await saveFile(file);
@@ -577,6 +803,24 @@ async function addFiles(): Promise<void> {
   }
 }
 
+/** Escolha de categoria feita no diálogo (drop ou botão Adicionar). */
+async function selectCategoryForImport(catId: string): Promise<void> {
+  pendingCategoryId = catId;
+  showCategorySelect.value = false;
+  await nextTick();
+
+  if (pendingDropEntries.value.length) {
+    const entries = [...pendingDropEntries.value];
+    pendingDropEntries.value = [];
+    for (const f of entries) {
+      await importDroppedEntry(f, catId);
+    }
+    selectAllCategoriesAndUncategorized();
+    return;
+  }
+  await doAddFiles(catId);
+}
+
 async function onFilesSelected(e: Event): Promise<void> {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
@@ -585,8 +829,8 @@ async function onFilesSelected(e: Event): Promise<void> {
     if (filePath && !isHeic(f.name, (f as File).type)) {
       const name = f.name;
       const ext = name.split(".").pop()?.toLowerCase() || "";
-      const isImage = IMAGE_FILE_EXTS.includes(ext);
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(ext);
+      const isImage = IMAGE_EXT.includes(ext);
+      const isVideo = VIDEO_EXT.includes(ext);
       const isPdf = ext === "pdf";
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -596,6 +840,7 @@ async function onFilesSelected(e: Event): Promise<void> {
         path: filePath,
         type: fileType,
         addedAt: Date.now(),
+        categoryId: pendingCategoryId ?? UNCATEGORIZED_ID,
       };
       if (isImage) file.thumb = buildThumbPath(filePath);
       await saveFile(file);
@@ -606,11 +851,9 @@ async function onFilesSelected(e: Event): Promise<void> {
       // os bytes convertidos para JPEG — o Chromium não decodifica HEIC.
       const { blob, name } = await ensureRenderableImage(f.name, f);
       const isImage =
-        IMAGE_FILE_EXTS.includes(name.split(".").pop()?.toLowerCase() || "") ||
+        IMAGE_EXT.includes(name.split(".").pop()?.toLowerCase() || "") ||
         blob.type.startsWith("image/");
-      const isVideo = ["mp4", "webm", "ogg", "avi", "mkv", "mov"].includes(
-        f.name.split(".").pop()?.toLowerCase() || ""
-      );
+      const isVideo = VIDEO_EXT.includes(f.name.split(".").pop()?.toLowerCase() || "");
       const isPdf = f.type === "application/pdf" || f.name?.toLowerCase().endsWith(".pdf");
       if (!isImage && !isVideo && !isPdf) continue;
       const fileType = isPdf ? ("pdf" as const) : isImage ? ("image" as const) : ("video" as const);
@@ -625,6 +868,7 @@ async function onFilesSelected(e: Event): Promise<void> {
         addedAt: Date.now(),
         data,
         mime,
+        categoryId: pendingCategoryId ?? UNCATEGORIZED_ID,
       };
       if (isImage) file.thumb = path;
       createdObjectUrls.set(fileId, path);
@@ -834,6 +1078,9 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_RIBBON_ACTION, (payload) => {
     case "clear":
       clearPlaylist();
       break;
+    case "manage_categories":
+      showManageDialog.value = true;
+      break;
     case "play":
       togglePlay();
       break;
@@ -866,6 +1113,8 @@ useBroadcastListener(BROADCAST_TYPE.FILE_PROJECTION_PAGE, (payload) => {
 
 onMounted(async () => {
   files.value = await loadLibrary();
+  await loadCategories();
+  selectAllCategoriesAndUncategorized();
   loadPlaylist();
   for (const f of files.value) {
     if (f.path.startsWith("blob:")) {
@@ -1003,6 +1252,94 @@ onBeforeUnmount(() => {
   -webkit-box-orient: vertical;
   word-break: break-all;
   width: 100%;
+}
+
+.media-grid-item-category {
+  font-size: 9px;
+  padding: 0 6px 2px;
+  color: rgba(var(--lj-on-surface-ch), 0.55);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* ── Chips de categorias (filtro) ── */
+.media-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 8px;
+}
+.media-chips-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(var(--lj-on-surface-ch), 0.6);
+}
+.media-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--chip-color);
+  background: transparent;
+  color: var(--chip-color);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition:
+    background 0.12s,
+    opacity 0.12s;
+  opacity: 0.55;
+  outline: none;
+  white-space: nowrap;
+}
+.media-chip:hover {
+  opacity: 0.85;
+}
+.media-chip--active {
+  background: color-mix(in srgb, var(--chip-color) 20%, transparent);
+  opacity: 1;
+}
+.media-chip--uncategorized {
+  --chip-color: #607d8b;
+}
+.media-chip-icon-wrap {
+  display: flex;
+  align-items: center;
+}
+.media-chip-count {
+  font-size: 10px;
+  background: color-mix(in srgb, var(--chip-color) 30%, transparent);
+  border-radius: 10px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+.media-chip-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  opacity: 0.6;
+  transition:
+    opacity 0.1s,
+    background 0.1s;
+}
+.media-chip-add:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--chip-color) 20%, transparent);
 }
 
 .media-playlist {

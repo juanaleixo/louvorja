@@ -12,7 +12,7 @@ const paths = require("../paths.js");
 function checkFile(localPath, expectedSize = 0) {
   const abs = path.isAbsolute(localPath)
     ? localPath
-    : path.join(paths.userData(), "files", localPath);
+    : path.join(paths.filesDir(), localPath);
 
   if (!fs.existsSync(abs)) return { exists: false, sizeOk: false, actualSize: 0 };
 

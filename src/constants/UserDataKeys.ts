@@ -13,14 +13,19 @@ const OPTIONS_DISPLAYS = `${OPTIONS}.displays`
 const OPTIONS_SLIDE = `${OPTIONS}.slide`
 const OPTIONS_FILE_PROJECTION = `${OPTIONS}.file_projection`
 const OPTIONS_ONLINE_VIDEO_PROJECTION = `${OPTIONS}.online_video_projection`
+const MODULES_LITURGY = `${MODULES}.${ModuleEnum.LITURGY}`;
+const MODULES_MEDIA = `${MODULES}.${ModuleEnum.MEDIA}`;
+const MODULES_MEDIA_CONFIG = `${MODULES}.${ModuleEnum.MEDIA}.config`;
+const MODULES_TIMER = `${MODULES}.${ModuleEnum.TIMER}`;
+const MODULES_TIMER_WORSHIP = `${MODULES}.${ModuleEnum.TIMER_WORSHIP}`;
 
 //LITURGIA
 /**
  * Keys Compartilhada com o Electron em electron/main/httpServer/routes.js
  * Caso alterar aqui alterar manualmente lá
  */
-export const KEY_LITURGY_DAYS = `${MODULES}.${ModuleEnum.LITURGY}.days`;
-export const KEY_LITURGY_ACTIVE_DAY = `${MODULES}.${ModuleEnum.LITURGY}.active_day`;
+export const KEY_LITURGY_DAYS = `${MODULES_LITURGY}.days`;
+export const KEY_LITURGY_ACTIVE_DAY = `${MODULES_LITURGY}.active_day`;
 
 /**
  * Chave dinâmica de visibilidade de um módulo no menu principal.
@@ -46,65 +51,63 @@ export const KEYS = {
       IS_PLAYING: `${MODULES}.${ModuleEnum.BACKGROUND_SOUND}.is_playing`,
     },
     LITURGY: {
-      ACTIVE_DAY: `${MODULES}.${ModuleEnum.LITURGY}.active_day`,
-      DAYS: `${MODULES}.${ModuleEnum.LITURGY}.days`,
-      DAY_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.day_notes`,
-      SCHEDULED_ITEMS: `${MODULES}.${ModuleEnum.LITURGY}.scheduled_items`,
-      SCHEDULED_CATEGORIES: `${MODULES}.${ModuleEnum.LITURGY}.scheduled_categories`,
-      LEGACY_ITEMS: `${MODULES}.${ModuleEnum.LITURGY}.items`,
-      LEGACY_WEEKS: `${MODULES}.${ModuleEnum.LITURGY}.weeks`,
-      LEGACY_ACTIVE_WEEK: `${MODULES}.${ModuleEnum.LITURGY}.active_week`,
-      LEGACY_WEEKDAY_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.weekday_notes`,
-      CURRENT_LITURGY_ID: `${MODULES}.${ModuleEnum.LITURGY}.current_liturgy_id`,
-      DAY_LITURGIES: `${MODULES}.${ModuleEnum.LITURGY}.day_liturgies`,
-      LOCKED: `${MODULES}.${ModuleEnum.LITURGY}.locked`,
-      SHOW_NOTES: `${MODULES}.${ModuleEnum.LITURGY}.show_notes`,
-      MARK_ON_ACCESS: `${MODULES}.${ModuleEnum.LITURGY}.mark_on_access`,
-      SHOW: `${MODULES}.${ModuleEnum.LITURGY}.show`,
+      ACTIVE_DAY: `${MODULES_LITURGY}.active_day`,
+      DAYS: `${MODULES_LITURGY}.days`,
+      DAY_NOTES: `${MODULES_LITURGY}.day_notes`,
+      SCHEDULED_ITEMS: `${MODULES_LITURGY}.scheduled_items`,
+      SCHEDULED_CATEGORIES: `${MODULES_LITURGY}.scheduled_categories`,
+      LEGACY_ITEMS: `${MODULES_LITURGY}.items`,
+      LEGACY_WEEKS: `${MODULES_LITURGY}.weeks`,
+      LEGACY_ACTIVE_WEEK: `${MODULES_LITURGY}.active_week`,
+      LEGACY_WEEKDAY_NOTES: `${MODULES_LITURGY}.weekday_notes`,
+      CURRENT_LITURGY_ID: `${MODULES_LITURGY}.current_liturgy_id`,
+      DAY_LITURGIES: `${MODULES_LITURGY}.day_liturgies`,
+      LOCKED: `${MODULES_LITURGY}.locked`,
+      SHOW_NOTES: `${MODULES_LITURGY}.show_notes`,
+      MARK_ON_ACCESS: `${MODULES_LITURGY}.mark_on_access`,
+      SHOW: `${MODULES_LITURGY}.show`,
     },
     MEDIA: {
-      FADE_AUDIO: `${MODULES}.${ModuleEnum.MEDIA}.fade_audio`,
-      LAZY_LOAD: `${MODULES}.${ModuleEnum.MEDIA}.lazy_load`,
-      MINIMIZED: `${MODULES}.${ModuleEnum.MEDIA}.minimized`,
+      IS_PLAYING: `${MODULES_MEDIA}.is_playing`,
+      FADE_AUDIO: `${MODULES_MEDIA}.fade_audio`,
+      LAZY_LOAD: `${MODULES_MEDIA}.lazy_load`,
+      MINIMIZED: `${MODULES_MEDIA}.minimized`,
+      LOADING: `${MODULES_MEDIA}.loading`,
+      SHOW: `${MODULES_MEDIA}.show`,
+      DATA: `${MODULES_MEDIA}.data`,
+      ID_MUSIC: `${MODULES_MEDIA}.id_music`,
+      ID_ALBUM: `${MODULES_MEDIA}.id_album`,
+      CONFIG: {
+        ROOT: MODULES_MEDIA_CONFIG,
+        AUDIO: `${MODULES_MEDIA_CONFIG}.audio`,
+        AUDIO_ONLY: `${MODULES_MEDIA_CONFIG}.audio_only`,
+        BUFFERED: `${MODULES_MEDIA_CONFIG}.buffered`,
+        CURRENT_TIME: `${MODULES_MEDIA_CONFIG}.current_time`,
+        DURATION: `${MODULES_MEDIA_CONFIG}.duration`,
+        FULLSCREEN: `${MODULES_MEDIA_CONFIG}.fullscreen`,
+        IMAGE: `${MODULES_MEDIA_CONFIG}.image`,
+        IS_FADING: `${MODULES_MEDIA_CONFIG}.is_fading`,
+        IS_PAUSED: `${MODULES_MEDIA_CONFIG}.is_paused`,
+        IS_YOUTUBE: `${MODULES_MEDIA_CONFIG}.is_youtube`,
+        LAST_SLIDE: `${MODULES_MEDIA_CONFIG}.last_slide`,
+        LAZY: `${MODULES_MEDIA_CONFIG}.lazy`,
+        MODE: `${MODULES_MEDIA_CONFIG}.mode`,
+        PROGRESS: `${MODULES_MEDIA_CONFIG}.progress`,
+        SLIDE_INDEX: `${MODULES_MEDIA_CONFIG}.slide_index`,
+        SLIDE_PROGRESS: `${MODULES_MEDIA_CONFIG}.slide_progress`,
+        SUBTITLE: `${MODULES_MEDIA_CONFIG}.subtitle`,
+        TITLE: `${MODULES_MEDIA_CONFIG}.title`,
+        TRACK: `${MODULES_MEDIA_CONFIG}.track`,
+        VIDEO_FILE: `${MODULES_MEDIA_CONFIG}.video_file`,
+        VOLUME: `${MODULES_MEDIA_CONFIG}.volume`,
+        YOUTUBE_URL: `${MODULES_MEDIA_CONFIG}.youtube_url`,
+      },
+    },
+    LYRIC: {
+      SHOW: `${MODULES}.${ModuleEnum.LYRIC}.show`,
     },
     MEDIA_LIBRARY: {
       IS_PLAYING: `${MODULES}.${ModuleEnum.MEDIA_LIBRARY}.is_playing`,
-    },
-    STOPWATCH: {
-      RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,
-    },
-    SLIDE_EDITOR: {
-      PROJECTING: `${MODULES}.${ModuleEnum.SLIDE_EDITOR}.projecting`,
-    },
-    TIMER: {
-      RUNNING: `${MODULES}.${ModuleEnum.TIMER}.running`,
-      MODE: `${MODULES}.${ModuleEnum.TIMER}.mode`,
-      TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.target_time`,
-      SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER}.show_target_time`,
-      SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER}.show_alert`,
-      ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER}.alert_seconds`,
-      END_ACTION: `${MODULES}.${ModuleEnum.TIMER}.timer_end_action`,
-      END_ACTION_AUDIO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_audio`,
-      END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_music`,
-      END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_video`,
-      END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER}.timer_end_data_online_video`,
-    },
-    TIMER_WORSHIP: {
-      RUNNING: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.running`,
-      MODE: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.mode`,
-      SHOW_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.show_target_time`,
-      SHOW_ALERT: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.show_alert`,
-      ALERT_SECONDS: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.alert_seconds`,
-      SOUND_START: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_start`,
-      SOUND_FIVE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_five_min`,
-      SOUND_ONE_MIN: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.sound_one_min`,
-      SELECTED_SOUND: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.selected_sound`,
-      END_ACTION: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_action`,
-      END_ACTION_AUDIO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_audio`,
-      END_ACTION_MUSIC: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_music`,
-      END_ACTION_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_video`,
-      END_ACTION_ONLINE_VIDEO: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.timer_end_data_online_video`,
-      LAST_TARGET_TIME: `${MODULES}.${ModuleEnum.TIMER_WORSHIP}.last_target_time`,
     },
     NAME_DRAW: {
       RUNNING: `${MODULES}.${ModuleEnum.NAME_DRAW}.running`,
@@ -116,6 +119,45 @@ export const KEYS = {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
     },
     OPEN_ORDER: `${MODULES}._openOrder`,
+    STOPWATCH: {
+      RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,
+      MODE: `${MODULES}.${ModuleEnum.STOPWATCH}.mode`,
+      TARGET_SECONDS: `${MODULES}.${ModuleEnum.STOPWATCH}.target_seconds`,
+      SHOW_SECONDS: `${MODULES}.${ModuleEnum.STOPWATCH}.show_seconds`,
+    },
+    SLIDE_EDITOR: {
+      PROJECTING: `${MODULES}.${ModuleEnum.SLIDE_EDITOR}.projecting`,
+    },
+    TIMER: {
+      RUNNING: `${MODULES_TIMER}.running`,
+      MODE: `${MODULES_TIMER}.mode`,
+      TARGET_TIME: `${MODULES_TIMER}.target_time`,
+      SHOW_TARGET_TIME: `${MODULES_TIMER}.show_target_time`,
+      SHOW_ALERT: `${MODULES_TIMER}.show_alert`,
+      ALERT_SECONDS: `${MODULES_TIMER}.alert_seconds`,
+      END_ACTION: `${MODULES_TIMER}.timer_end_action`,
+      END_ACTION_AUDIO: `${MODULES_TIMER}.timer_end_data_audio`,
+      END_ACTION_MUSIC: `${MODULES_TIMER}.timer_end_data_music`,
+      END_ACTION_VIDEO: `${MODULES_TIMER}.timer_end_data_video`,
+      END_ACTION_ONLINE_VIDEO: `${MODULES_TIMER}.timer_end_data_online_video`,
+    },
+    TIMER_WORSHIP: {
+      RUNNING: `${MODULES_TIMER_WORSHIP}.running`,
+      MODE: `${MODULES_TIMER_WORSHIP}.mode`,
+      SHOW_TARGET_TIME: `${MODULES_TIMER_WORSHIP}.show_target_time`,
+      SHOW_ALERT: `${MODULES_TIMER_WORSHIP}.show_alert`,
+      ALERT_SECONDS: `${MODULES_TIMER_WORSHIP}.alert_seconds`,
+      SOUND_START: `${MODULES_TIMER_WORSHIP}.sound_start`,
+      SOUND_FIVE_MIN: `${MODULES_TIMER_WORSHIP}.sound_five_min`,
+      SOUND_ONE_MIN: `${MODULES_TIMER_WORSHIP}.sound_one_min`,
+      SELECTED_SOUND: `${MODULES_TIMER_WORSHIP}.selected_sound`,
+      END_ACTION: `${MODULES_TIMER_WORSHIP}.timer_end_action`,
+      END_ACTION_AUDIO: `${MODULES_TIMER_WORSHIP}.timer_end_data_audio`,
+      END_ACTION_MUSIC: `${MODULES_TIMER_WORSHIP}.timer_end_data_music`,
+      END_ACTION_VIDEO: `${MODULES_TIMER_WORSHIP}.timer_end_data_video`,
+      END_ACTION_ONLINE_VIDEO: `${MODULES_TIMER_WORSHIP}.timer_end_data_online_video`,
+      LAST_TARGET_TIME: `${MODULES_TIMER_WORSHIP}.last_target_time`,
+    },
   },
   OPTIONS: {
     LANGUAGE: `${OPTIONS}.language`,
@@ -123,6 +165,7 @@ export const KEYS = {
     UI_STYLE: `${OPTIONS}.ui_style`,
     MINIMIZE_ON_START: `${OPTIONS}.minimize_on_start`,
     SLIDE: {
+      SLIDES: `${OPTIONS_SLIDE}.slides`,
       CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,
       TEXT_ALIGN: `${OPTIONS_SLIDE}.text_align`,
       SHOW_TITLE_FIRST_SLIDE: `${OPTIONS_SLIDE}.show_title_first_slide`,
@@ -200,6 +243,11 @@ export const KEYS = {
     POPUP: "popup",
     APP_UPDATE_AVAILABLE: "app_update_available",
     APP_UPDATE_VERSION: "app_update_version",
+  },
+  REMOTE: {
+    IS_CONNECTED: "remote.is_connected",
+    URL: "remote.url",
+    TOKEN: "remote.token",
   },
   PROJECTION: {
     LJ_BACKGROUND_PROJECTION: "lj_background_projection",

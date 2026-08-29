@@ -90,6 +90,9 @@
       "font": "Fonte",
       "color": "Cor",
       "size": "Tamanho da fonte",
+      "text_shadow": "Sombra no texto",
+      "shadow_color": "Cor da sombra",
+      "shadow_blur": "Desfoque da sombra",
       "image": "Imagem de fundo",
       "transparency": "Transparência",
       "adjust": "Ajuste da imagem",
@@ -467,7 +470,8 @@
   },
   "remote_control": {
     "tabs": {
-      "slides": "Slides"
+      "slides": "Slides",
+      "announcements": "Anúncios"
     },
     "bible": {
       "clear_screen": "Limpar a Tela",
@@ -479,6 +483,13 @@
       "close_projection": "Fechar Projeção",
       "projection_closed": "Projeção encerrada",
       "error_change": "Erro ao trocar slide"
+    },
+    "announcements": {
+      "empty": "Nenhum anúncio cadastrado",
+      "with_image": "Possui imagem",
+      "controls": "Controles de Anúncios",
+      "stop_projection": "Encerrar Projeção",
+      "projection_closed": "Projeção de anúncios encerrada"
     },
     "errors": {
       "generic": "Erro"
@@ -853,6 +864,16 @@
     "empty_ribbon_page": "Selecione uma aba",
     "not_implemented": "Não implementado",
     "appmenu_content_placeholder": "Selecione uma opção do menu para configurar.",
+    "background_tasks": {
+      "title": "Processos em segundo plano",
+      "empty": "Nenhum processo em andamento",
+      "running": "Em andamento",
+      "completed": "Concluído",
+      "error": "Erro",
+      "cancelled": "Cancelado",
+      "confirm_cancel": "Deseja cancelar este download?",
+      "app_update": "Atualização do app"
+    },
     "appmenu_items": {
       "about": "Sobre...",
       "settings": "Opções",
@@ -1002,7 +1023,12 @@
     "dont_show_again": "Não exibir esta verificação na inicialização",
     "select_files": "Selecionar Arquivos",
     "download_all": "Baixar Tudo",
-    "sync_hint": "Você pode baixar álbuns ou versões bíblicas específicas depois no menu Opções > Sincronizar."
+    "sync_hint": "Você pode baixar álbuns ou versões bíblicas específicas depois no menu Opções > Sincronizar.",
+    "minimize": "Minimizar",
+    "task": {
+      "collections": "Baixando coletâneas",
+      "bible": "Baixando Bíblia"
+    }
   },
   "release_notes": {
     "title": "Novidades da versão",

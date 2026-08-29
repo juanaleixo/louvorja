@@ -102,7 +102,6 @@
                   :locked="locked"
                   :default-color="defaultColor"
                   :checked="isChecked(element)"
-                  :icon-for="iconForItem"
                   :subtitle-for="subtitleFor"
                   @edit="openItemDialog"
                   @clone="cloneItem"
@@ -152,7 +151,6 @@ const props = withDefaults(
     defaultColor?: string;
     totalDuration?: number;
     isChecked: (item: LiturgyItem) => boolean;
-    iconForItem: (item: LiturgyItem) => string;
     subtitleFor: (item: LiturgyItem) => string;
     onReorder: (items: LiturgyItem[]) => void;
     onBlocoAssign?: (itemId: string) => void;

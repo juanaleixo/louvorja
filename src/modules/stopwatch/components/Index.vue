@@ -14,25 +14,6 @@
         :style="rootStyle"
       >
         <img v-if="bgImage" :src="bgImage" class="sw-bg-img" :style="imageStyle" alt="" />
-        <!-- Seletor de modo -->
-        <v-btn-toggle v-model="mode" mandatory density="compact" divided>
-          <v-btn value="up" size="small">{{ t("mode.up") }}</v-btn>
-          <v-btn value="down" size="small">{{ t("mode.down") }}</v-btn>
-        </v-btn-toggle>
-
-        <!-- Tempo regressivo: input -->
-        <div v-if="mode === 'down' && !running" class="d-flex align-center">
-          <v-number-input
-            v-model="targetMinutes"
-            type="number"
-            min="0"
-            density="compact"
-            hide-details
-            suffix="min"
-            :label="t('actions.set')"
-            @change="setTarget"
-          />
-        </div>
 
         <!-- Display -->
         <div
@@ -47,12 +28,6 @@
           ]"
         >
           {{ display }}
-        </div>
-
-        <!-- Controles -->
-        <div class="d-flex" style="gap: 8px">
-          <v-btn :icon="running ? 'mdi-pause' : 'mdi-play'" :color="primaryColor" @click="toggle" />
-          <v-btn icon="mdi-restart" variant="tonal" @click="reset" />
         </div>
 
         <!-- Mensagem de alarme -->
@@ -82,9 +57,10 @@ const { rootStyle, textStyle, alertStyle, bgImage, imageStyle, container } =
   useModuleBodyStyle("stopwatch");
 
 const projection = useModuleProjection("stopwatch", {
-  onAction(action) {
+  onAction(action, payload) {
     if (action === "toggle") toggle();
     else if (action === "reset") reset();
+    else if (action === "set_time") setTimeFromPayload(payload);
     else if (action === "toggle_format") show_format.value = !show_format.value;
   },
 });
@@ -99,16 +75,41 @@ function playAlarm() {
   }
 }
 
+function setTimeFromPayload(payload) {
+  const value = payload?.url;
+  if (!value) return;
+  const parts = value.split(":").map(Number);
+  if (parts.length !== 3 || parts.some((p) => isNaN(p))) return;
+  const [h, m, s] = parts;
+  if (h < 0 || h > 99 || m < 0 || m > 59 || s < 0 || s > 59) return;
+  const total = h * 3600 + m * 60 + s;
+  targetSeconds.value = total;
+  reset();
+}
+
 const moduleContainer = ref(null);
-const mode = ref("up");
+
+const mode = computed({
+  get: () => $userdata.get(KEYS.MODULES.STOPWATCH.MODE, "up"),
+  set: (v) => {
+    $userdata.set(KEYS.MODULES.STOPWATCH.MODE, v);
+    reset();
+  },
+});
+
+const targetSeconds = computed({
+  get: () => $userdata.get(KEYS.MODULES.STOPWATCH.TARGET_SECONDS, 600),
+  set: (v) => $userdata.set(KEYS.MODULES.STOPWATCH.TARGET_SECONDS, v),
+});
+
 const running = ref(false);
 const seconds = ref(0);
-const targetSeconds = ref(600);
-const targetMinutes = ref(10);
 const alarmed = ref(false);
 let timer = null;
 
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
+
+const showSeconds = computed(() => $userdata.get(KEYS.MODULES.STOPWATCH.SHOW_SECONDS, true));
 
 const display = computed(() => {
   const abs = Math.abs(seconds.value);
@@ -116,13 +117,17 @@ const display = computed(() => {
   const m = Math.floor((abs % 3600) / 60);
   const s = abs % 60;
   const sign = seconds.value < 0 ? "-" : "";
-  if (h > 0) return `${sign}${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${sign}${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (h > 0) {
+    return showSeconds.value
+      ? `${sign}${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+      : `${sign}${h}:${String(m).padStart(2, "0")}`;
+  }
+  return showSeconds.value
+    ? `${sign}${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${sign}${String(m).padStart(2, "0")}`;
 });
 
 const t = (key) => moduleContainer.value?.t(key) || key;
-
-watch(mode, () => reset());
 
 watch(
   display,
@@ -169,11 +174,6 @@ function reset() {
   pause();
   alarmed.value = false;
   seconds.value = mode.value === "down" ? targetSeconds.value : 0;
-}
-
-function setTarget() {
-  targetSeconds.value = Math.max(0, parseInt(targetMinutes.value, 10) || 0) * 60;
-  seconds.value = targetSeconds.value;
 }
 
 function close() {

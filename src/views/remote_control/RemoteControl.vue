@@ -26,6 +26,10 @@
           <v-icon icon="mdi-view-grid" class="mr-1" />
           {{ t("remote_control.tabs.slides") }}
         </v-tab>
+        <v-tab value="announcements">
+          <v-icon icon="mdi-bullhorn" class="mr-1" />
+          {{ t("remote_control.tabs.announcements") }}
+        </v-tab>
       </v-tabs>
 
       <v-window v-model="tab" class="remote-content">
@@ -69,6 +73,16 @@
             :slides="slides"
             :current-title="currentTitle"
             @show-snackbar="showSnackbar"
+          />
+        </v-window-item>
+
+        <!-- Tab Anúncios -->
+        <v-window-item value="announcements">
+          <remote-announcements
+            ref="announcementsRef"
+            :token="token"
+            @show-snackbar="showSnackbar"
+            @update:ann-projecting="annProjecting = $event"
           />
         </v-window-item>
       </v-window>
@@ -121,6 +135,23 @@
       </div>
     </v-footer>
 
+    <v-footer v-if="tab === 'announcements'" app border class="d-block pa-0">
+      <div class="pa-4 d-flex justify-space-between align-center">
+        <v-btn icon="mdi-chevron-left" variant="tonal" @click="annPrev" />
+        <div class="text-caption">{{ t("remote_control.announcements.controls") }}</div>
+        <v-btn icon="mdi-chevron-right" variant="tonal" @click="annNext" />
+      </div>
+      <v-divider />
+      <v-list density="compact">
+        <v-list-item
+          prepend-icon="mdi-close-circle"
+          :title="t('remote_control.announcements.stop_projection')"
+          color="error"
+          @click="annStop"
+        />
+      </v-list>
+    </v-footer>
+
     <!-- Diálogo de token inválido -->
     <v-dialog v-model="isTokenInvalid" persistent max-width="420">
       <v-card>
@@ -158,6 +189,7 @@ import RemoteMusic from "./RemoteMusic.vue";
 import RemoteBible from "./RemoteBible.vue";
 import RemoteLiturgy from "./RemoteLiturgy.vue";
 import RemoteSlides from "./RemoteSlides.vue";
+import RemoteAnnouncements from "./RemoteAnnouncements.vue";
 
 /** @typedef {import('@/types/Bible').ActiveBibleState} ActiveBibleState */
 
@@ -172,6 +204,10 @@ isTokenInvalid.value = false;
 
 const bibleRef = ref(null);
 const liturgyRef = ref(null);
+const announcementsRef = ref(null);
+
+// --- Anúncios ---
+const annProjecting = ref(false);
 
 /** @type {import('vue').Ref<ActiveBibleState>} */
 const activeBible = ref({
@@ -204,6 +240,7 @@ const getToken = () => {
 function openChooseLater(item) {
   chooseLaterItem.value = item;
   chooseLaterMode.value = true;
+  tab.value = "music";
 }
 
 // --- Liturgia ---
@@ -378,8 +415,37 @@ function showSnackbar(text, color = "success") {
   snackbar.value = { show: true, text, color };
 }
 
+function annNext() {
+  apiFetch(`/api/announcements?action=next&token=${token.value}`).catch(() =>
+    showSnackbar(t("remote_control.errors.generic"), "error")
+  );
+}
+
+function annPrev() {
+  apiFetch(`/api/announcements?action=prev&token=${token.value}`).catch(() =>
+    showSnackbar(t("remote_control.errors.generic"), "error")
+  );
+}
+
+async function annStop() {
+  try {
+    await apiFetch(`/api/announcements?action=stop&token=${token.value}`);
+    annProjecting.value = false;
+    showSnackbar(t("remote_control.announcements.projection_closed"));
+  } catch (e) {
+    console.error("Erro ao parar anúncios:", e);
+  }
+}
+
 function refreshState() {
   showSnackbar(t("remote_control.sync.syncing"));
+  if (tab.value === "liturgy" && liturgyRef.value) {
+    liturgyRef.value.refresh();
+  } else if (tab.value === "bible" && bibleRef.value) {
+    bibleRef.value.refresh();
+  } else if (tab.value === "announcements" && announcementsRef.value) {
+    announcementsRef.value.refresh();
+  }
 }
 
 onMounted(() => {

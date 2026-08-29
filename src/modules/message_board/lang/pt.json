@@ -13,10 +13,12 @@
     "remove": "Remover"
   },
   "data": {
-    "empty": "Nenhum recado. Use o campo acima para adicionar.",
+    "empty": "Nenhum recado. Abra a lista para adicionar.",
+    "list": "Recados",
     "showing": "Exibindo na projeção"
   },
   "ribbon": {
-    "title_ctx": "Configurar Recados"
+    "title_ctx": "Configurar Recados",
+    "toggle_list": "Recados"
   }
 }

@@ -6,6 +6,7 @@ import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 import { KEYS } from "@/constants/UserDataKeys";
+import TimeDurationInput from "@/components/inputs/TimeDurationInput.vue";
 
 const moduleId = ModuleEnum.STOPWATCH;
 const modulePath = $modules.getPath(moduleId);
@@ -26,6 +27,9 @@ export const module: Module = {
     font: { type: "font", default: "Arial, sans-serif" },
     font_color: { type: "color", default: "#FFFFFF" },
     font_size: { type: "font-size", default: 50 },
+    text_shadow: { type: "boolean", default: false },
+    text_shadow_color: { type: "color", default: "#000000" },
+    text_shadow_blur: { type: "font-size", default: 4 },
     alert_color: { type: "color", default: "#E74C3C" },
     background_color: { type: "color", default: "#000000" },
     border_spacing: { type: "border-spacing", default: 10 },
@@ -75,19 +79,6 @@ export const contextualPages: RibbonPage[] = [
         ],
       },
       {
-        id: "ctx_stopwatch_format",
-        title: "ribbon.groups.format",
-        buttons: [
-          {
-            id: `${moduleId}_toggle_format`,
-            icon: ICONS.ACTIONS.FORMAT,
-            label: "ribbon.btn.format",
-            action: `${moduleId}_toggle_format`,
-            color: "#1b4f8a",
-          },
-        ],
-      },
-      {
         id: "ctx_stopwatch_screen",
         title: "ribbon.groups.projection",
         buttons: [
@@ -98,6 +89,50 @@ export const contextualPages: RibbonPage[] = [
             route: `/projection/module?module=${moduleId}`,
             icon: "mdi-projector-screen-outline",
             label: "ribbon.btn.project",
+            color: "#1b4f8a",
+          },
+        ],
+      },
+      {
+        id: "ctx_stopwatch_time",
+        title: "ribbon.groups.time",
+        buttons: [
+          {
+            id: `${moduleId}_mode`,
+            type: "select",
+            optionKey: KEYS.MODULES.STOPWATCH.MODE,
+            label: `${modulePath}.ribbon.mode`,
+            defaultValue: "up",
+            options: [
+              { value: "up", label: `${modulePath}.mode.up` },
+              { value: "down", label: `${modulePath}.mode.down` },
+            ],
+          },
+          {
+            id: `${moduleId}_set_time`,
+            customButton: TimeDurationInput,
+            optionKey: KEYS.MODULES.STOPWATCH.TARGET_SECONDS,
+            label: `${modulePath}.ribbon.set_time`,
+            defaultValue: 600,
+          },
+          {
+            id: `${moduleId}_show_seconds`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.STOPWATCH.SHOW_SECONDS,
+            label: `${modulePath}.ribbon.show_seconds`,
+            defaultValue: true,
+          },
+        ],
+      },
+      {
+        id: "ctx_stopwatch_format",
+        title: "ribbon.groups.format",
+        buttons: [
+          {
+            id: `${moduleId}_toggle_format`,
+            icon: ICONS.ACTIONS.FORMAT,
+            label: "ribbon.btn.format",
+            action: `${moduleId}_toggle_format`,
             color: "#1b4f8a",
           },
         ],

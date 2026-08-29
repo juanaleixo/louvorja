@@ -107,9 +107,28 @@ export default class extends BaseModule {
 
 ---
 
-## 📄 Ribbon contextual
+## 🌎 Internacionalização no módulo
 
-No `manifest.ts`, exporte `contextualPages`:
+Chaves do módulo ficam em `src/modules/<id>/lang/{pt,es}.json` e são mergeadas no
+i18n global sob `modules.<id>.*` no boot (`ModuleManager`).
+
+**Duas formas de acessar tradução dentro do módulo:**
+
+| Helper | Quando usar | Exemplo |
+|--------|------------|---------|
+| `tt("key")` | Chaves **do módulo** (prefixo automático `modules.<id>.`) | `tt("entry_title")` |
+| `t("namespace.key")` | Chaves **globais** compartilhadas | `t("actions.save")`, `t("alert.yes")` |
+
+> ⚠️ Nunca use `t("save")` para uma chave do módulo — isso procura na raiz global
+> e não encontra. Use `tt("save")` para chaves do módulo.
+
+Detalhes completos em `docs/i18n.md`.
+
+---
+
+## 📄 Ribbon contextual (opcional)
+
+No `manifest.ts`, exporte `contextualPages` (opcional — módulos sem ribbon contextual não precisam exportar):
 
 ```ts
 export const contextualPages: RibbonPage[] = [

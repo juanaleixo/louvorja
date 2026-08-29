@@ -5,36 +5,23 @@
     :style="{ minWidth: '360px' }"
     @close="close()"
   >
-    <template #right>
-      <v-btn
-        v-if="showing"
-        icon="mdi-stop"
-        variant="text"
-        density="compact"
-        color="error"
-        :title="t('actions.clear_board')"
-        @click="clearPresentation"
-      />
-      <v-btn
-        icon="mdi-fullscreen"
-        variant="text"
-        density="compact"
-        :title="t('actions.fullscreen')"
-        @click="fullscreen = true"
-      />
-    </template>
-
     <div class="d-flex h-100">
       <ModuleFormatDrawer v-model="show_format" :module-id="'message_board'" :manifest="manifest" />
-      <div
-        ref="container"
-        class="d-flex flex-column flex-grow-1"
-        style="min-width: 0; position: relative"
-        :style="rootStyle"
+
+      <!-- Drawer direito — edição dos recados -->
+      <v-navigation-drawer
+        v-model="showList"
+        temporary
+        absolute
+        :scrim="false"
+        location="end"
+        width="300"
+        class="mb-list-drawer"
       >
-        <img v-if="bgImage" :src="bgImage" class="mb-bg-img" :style="imageStyle" alt="" />
-        <!-- Input de novo recado -->
-        <div class="pa-3 d-flex flex-column border-b" style="gap: 8px">
+        <div class="mb-list-drawer__header">
+          <span class="mb-list-drawer__title">{{ t("data.list") }}</span>
+        </div>
+        <div class="mb-list-drawer__body">
           <v-textarea
             v-model="draft"
             :placeholder="t('inputs.message')"
@@ -45,7 +32,7 @@
             variant="outlined"
             @keydown.ctrl.enter.prevent="addMessage"
           />
-          <div class="d-flex" style="gap: 8px">
+          <div class="d-flex mt-2" style="gap: 8px">
             <v-btn
               :color="primaryColor"
               size="small"
@@ -61,12 +48,13 @@
           </div>
         </div>
 
-        <!-- Lista de recados -->
-        <div v-if="messages.length === 0" class="pa-6 text-center text-disabled">
+        <v-divider />
+
+        <div v-if="messages.length === 0" class="pa-6 text-center text-disabled text-body-2">
           {{ t("data.empty") }}
         </div>
 
-        <v-list v-else density="compact">
+        <v-list v-else density="compact" class="mb-list-drawer__list">
           <v-list-item
             v-for="(msg, i) in messages"
             :key="msg.id"
@@ -97,8 +85,44 @@
             </template>
           </v-list-item>
         </v-list>
+      </v-navigation-drawer>
+
+      <!-- Preview do recado selecionado -->
+      <div
+        ref="container"
+        class="flex-grow-1"
+        style="min-width: 0; position: relative"
+        :style="rootStyle"
+      >
+        <img v-if="bgImage" :src="bgImage" class="mb-bg-img" :style="imageStyle" alt="" />
+        <div v-if="showing" class="mb-preview" :style="textStyle">
+          {{ messages[activeIndex]?.text || "" }}
+        </div>
+        <div v-else class="mb-preview-hint">
+          {{ t("data.empty") }}
+        </div>
       </div>
     </div>
+
+    <!-- Toolbar do preview (clear + fullscreen) -->
+    <template #right>
+      <v-btn
+        v-if="showing"
+        icon="mdi-stop"
+        variant="text"
+        density="compact"
+        color="error"
+        :title="t('actions.clear_board')"
+        @click="clearPresentation"
+      />
+      <v-btn
+        icon="mdi-fullscreen"
+        variant="text"
+        density="compact"
+        :title="t('actions.fullscreen')"
+        @click="fullscreen = true"
+      />
+    </template>
   </ModuleContainer>
 
   <!-- Fullscreen overlay -->
@@ -140,6 +164,7 @@ const { rootStyle, textStyle, bgImage, imageStyle, container } =
 const projection = useModuleProjection("message_board", {
   onAction(action) {
     if (action === "clear") clearPresentation();
+    else if (action === "toggle_list") showList.value = !showList.value;
     else if (action === "toggle_format") show_format.value = !show_format.value;
   },
 });
@@ -150,6 +175,7 @@ function uid() {
 
 const moduleContainer = ref(null);
 const fsRoot = ref(null);
+const showList = ref(false);
 const draft = ref("");
 const messages = ref([]);
 const activeIndex = ref(-1);
@@ -213,6 +239,70 @@ function close() {
   border-left: 3px solid #6366f1;
 }
 
+/* Preview centralizado */
+.mb-preview {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.mb-preview-hint {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.875rem;
+  opacity: 0.4;
+}
+
+/* Drawer direito */
+.mb-list-drawer {
+  border-left: 1px solid var(--lj-surface-border);
+  background: var(--lj-surface-bg);
+  overflow: clip;
+}
+.mb-list-drawer__header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid var(--lj-surface-border);
+  background: var(--lj-surface-bg-soft, #eee);
+}
+.mb-list-drawer__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--lj-text-muted, #666);
+}
+.mb-list-drawer__body {
+  padding: 12px;
+}
+.mb-list-drawer__list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Background image */
+.mb-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Fullscreen */
 .mb-fs-root {
   width: 100vw;
@@ -237,14 +327,6 @@ function close() {
   line-height: 1.4;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
   max-width: 90vw;
-}
-.mb-bg-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
 }
 .mb-fs-hint {
   position: absolute;

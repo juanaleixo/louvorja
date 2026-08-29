@@ -307,6 +307,115 @@ function setupRoutes(app, { getMainWindow, getUserData, jsonCache: _cache, getDa
   });
 
   // ---------------------------------------------------------------
+  // /api/bible-downloaded — versões da Bíblia baixadas no host
+  // ---------------------------------------------------------------
+  app.get("/api/bible-downloaded", (req, res) => {
+    const lang = req.query.lang || "pt";
+    try {
+      const versionsPath = jsonCache.safeLocalPath(`${lang}_bible_version`);
+      const booksPath = jsonCache.safeLocalPath(`${lang}_bible_book`);
+      if (!fs.existsSync(versionsPath) || !fs.existsSync(booksPath)) {
+        return res.json({ status: "ok", downloaded: [] });
+      }
+      const versions = JSON.parse(fs.readFileSync(versionsPath, "utf8"));
+      const books = JSON.parse(fs.readFileSync(booksPath, "utf8"));
+      if (!Array.isArray(versions) || !Array.isArray(books)) {
+        return res.json({ status: "ok", downloaded: [] });
+      }
+
+      // Flag de versões baixadas (persistida pelo AppMenuSincronizar).
+      const userData = typeof getUserData === "function" ? getUserData() : {};
+      const flaggedVersions = new Set(
+        Array.isArray(userData?.storage?.bible_downloaded_versions)
+          ? userData.storage.bible_downloaded_versions
+          : []
+      );
+
+      const downloaded = [];
+      for (const v of versions) {
+        // Se a versão está na flag, já foi baixada — sem verificar disco.
+        if (flaggedVersions.has(v.id_bible_version)) {
+          downloaded.push(v.id_bible_version);
+          continue;
+        }
+        let allPresent = true;
+        for (const b of books) {
+          const chCount = b.chapters || 1;
+          for (let c = 1; c <= chCount; c++) {
+            const chapterPath = jsonCache.safeLocalPath(
+              `bible_${v.id_bible_version}_${b.id_bible_book}_${c}`
+            );
+            if (!fs.existsSync(chapterPath)) {
+              allPresent = false;
+              break;
+            }
+          }
+          if (!allPresent) break;
+        }
+        if (allPresent) downloaded.push(v.id_bible_version);
+      }
+      res.json({ status: "ok", downloaded });
+    } catch (e) {
+      console.error("[httpServer] /api/bible-downloaded error:", e.message);
+      res.json({ status: "ok", downloaded: [] });
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // /api/announcements?action=list|project|next|prev|stop
+  // Controle remoto de anúncios
+  // ---------------------------------------------------------------
+  app.get("/api/announcements", (req, res) => {
+    const mainWindow = getMainWindow();
+    const action = req.query.action || "list";
+
+    if (action === "list") {
+      if (!mainWindow) {
+        return res.status(503).json({ error: "Janela principal não disponível" });
+      }
+      const { ipcMain } = require("electron");
+      const channel = "_announcements_list_reply_" + Date.now();
+      const timeout = setTimeout(() => {
+        ipcMain.removeAllListeners(channel);
+        res.status(504).json({ error: "Timeout ao buscar anúncios" });
+      }, 5000);
+      ipcMain.once(channel, (_event, data) => {
+        clearTimeout(timeout);
+        res.json(data);
+      });
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-list", replyChannel: channel });
+      return;
+    }
+
+    if (!mainWindow) {
+      return res.status(503).json({ error: "Janela principal não disponível" });
+    }
+
+    if (action === "project") {
+      const ids = req.query.ids ? req.query.ids.split(",").filter(Boolean) : [];
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-project", ids });
+      return res.json({ status: "ok", action: "announcements-project" });
+    }
+
+    if (action === "next") {
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-next" });
+      return res.json({ status: "ok", action: "announcements-next" });
+    }
+
+    if (action === "prev") {
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-prev" });
+      return res.json({ status: "ok", action: "announcements-prev" });
+    }
+
+    if (action === "stop") {
+      mainWindow.webContents.send("http:song-slides", { action: "announcements-stop" });
+      return res.json({ status: "ok", action: "announcements-stop" });
+    }
+
+    res.status(400).json({ error: "action inválida", valid: ["list", "project", "next", "prev", "stop"] });
+  });
+
+  // ---------------------------------------------------------------
   // /api/liturgy — itens da liturgia do dia
   // ---------------------------------------------------------------
   app.get("/api/liturgy", (req, res) => {

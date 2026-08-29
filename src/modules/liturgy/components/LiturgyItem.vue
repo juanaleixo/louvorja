@@ -27,7 +27,7 @@
         {{ props.element.duration }} min
       </v-chip>
       <Icon
-        :icon="iconFor(element)"
+        :icon="$liturgy.iconForItem(element)"
         size="40"
         :color="element.cor || defaultColor"
         class="lit-card-icon"
@@ -40,7 +40,10 @@
           {{ element.item || t("placeholders.untitled") }}
         </span>
         <span v-if="subtitleFor(element)" class="lit-card-subtitle">
-          {{ subtitleFor(element) }}
+          <template v-if="parsedSubtitle(element).icon">
+            <v-icon :icon="parsedSubtitle(element).icon" size="14" class="mr-1" />
+          </template>
+          {{ parsedSubtitle(element).text }}
           <v-chip v-if="chip" class="ml-2" size="small" :color="chip.color">
             <v-icon :icon="chip.icon" class="mr-2" />
             {{ t(`inputs.music_version_${chip.action}`) }}
@@ -137,6 +140,7 @@ import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { MUSIC_ACTION, MusicAction } from "@/config/MusicAction";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import $liturgy from "@/helpers/Liturgy";
 
 interface ActionOption {
   action: string;
@@ -257,12 +261,21 @@ const props = withDefaults(
     defaultColor?: string;
     hideCheckbox?: boolean;
     checked?: boolean;
-    iconFor: (item: LiturgyItem) => string;
     subtitleFor: (item: LiturgyItem) => string;
   }>(),
   { locked: false, defaultColor: "#00004F", hideCheckbox: false }
 );
 const element = toRef(props, "element");
+
+/** Parse o subitem: se contém "|||", separa icon path do texto. */
+function parsedSubtitle(item: LiturgyItem): { icon: string; text: string } {
+  const sub = props.subtitleFor(item) || "";
+  const idx = sub.indexOf("|||");
+  if (idx >= 0) {
+    return { icon: sub.slice(0, idx), text: sub.slice(idx + 3) };
+  }
+  return { icon: "", text: sub };
+}
 
 const emit = defineEmits<{
   edit: [index: number];

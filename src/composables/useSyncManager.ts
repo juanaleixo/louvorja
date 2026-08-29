@@ -2,11 +2,13 @@ import { ref, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import Database from "@/helpers/Database";
+import $idb from "@/helpers/IndexedDB";
 import $userdata from "@/helpers/UserData";
 import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { DB_TABLE } from "@/constants/DbTables";
 import { BOOKS } from "@/constants/Bible";
 import type { BibleVersion } from "@/types/Bible";
+import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
 
 interface FileEntry {
   remote: string;
@@ -55,6 +57,7 @@ export interface ScanResult {
 
 export function useSyncManager() {
   const { t, locale } = useI18n();
+  const bgTasks = useBackgroundTasks();
 
   // FTP
   const ftpOk = ref(false);
@@ -67,7 +70,7 @@ export function useSyncManager() {
 
   // Download (collections)
   const downloading = ref(false);
-  const downloadProgress = ref({ done: 0, total: 0, currentFile: "" });
+  const downloadProgress = ref({ done: 0, failed: 0, total: 0, currentFile: "" });
   const downloadFailedCount = ref(0);
   const downloadCompletedMsg = ref("");
 
@@ -130,6 +133,26 @@ export function useSyncManager() {
       hymnal1996Ids = (hym1996Res.value as Array<{ id_music: number | string }>)
         .map((m) => Number(m.id_music))
         .filter((n) => Number.isFinite(n));
+    }
+
+    // Doxologia — categoria virtual com os álbuns da rota por slug
+    // ({lang}_doxology_albums). Injetada aqui, flui automaticamente para
+    // Sincronizar, check inicial, scan de cache, download e uso em disco.
+    try {
+      const dox = await Database.get<Array<{ id_album: number | string; name: string }>>(
+        `${lang}_doxology_albums`,
+        { silent: true }
+      );
+      if (Array.isArray(dox) && dox.length > 0) {
+        categories.push({
+          id_category: -1,
+          name: "Doxologia",
+          order: 9999,
+          albums: dox.map((a) => ({ id_album: Number(a.id_album), name: a.name })),
+        });
+      }
+    } catch {
+      /* doxologia indisponível — segue sem a seção */
     }
 
     return { categories, hymnalIds, hymnal1996Ids };
@@ -319,6 +342,10 @@ export function useSyncManager() {
     bibleProgress.value = { done: 0, total: 0, currentFile: "" };
     bibleCompletedMsg.value = "";
 
+    bgTasks.registerTask("sync-bible", "startup_check.task.bible", () => {
+      bibleCancelled.value = true;
+    });
+
     const books = await Database.get<Array<{ id_bible_book: number; chapters?: number }>>(
       `${lang}_bible_book`
     );
@@ -379,6 +406,10 @@ export function useSyncManager() {
         console.warn(`[useSyncManager] falha ao baixar ${key}:`, e);
       }
       bibleProgress.value = { ...bibleProgress.value, done: bibleProgress.value.done + 1 };
+      bgTasks.updateTask("sync-bible", {
+        progress: toDownload.length > 0 ? Math.round((bibleProgress.value.done / toDownload.length) * 100) : 0,
+        detail: key,
+      });
     }
 
     bibleProgress.value = { ...bibleProgress.value, currentFile: "" };
@@ -386,8 +417,10 @@ export function useSyncManager() {
     if (bibleCancelled.value) {
       bibleCompletedMsg.value = "";
       bibleCancelled.value = false;
+      bgTasks.updateTask("sync-bible", { status: "cancelled" });
     } else {
       $userdata.set(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, versionIds);
+      bgTasks.completeTask("sync-bible");
     }
     return bibleProgress.value.done;
   }
@@ -395,8 +428,14 @@ export function useSyncManager() {
   async function saveBibleSelectionToDisk(toRemove: number[]): Promise<void> {
     for (const versionId of toRemove) {
       const prefix = `bible_${versionId}_`;
+      // Remove do disco legado (userData/json_db/*.json).
       if ((Platform.storage as any)?.removeJsonByPrefix) {
         await (Platform.storage as any).removeJsonByPrefix(prefix);
+      }
+      // Remove do IndexedDB (tabela bible_chapters).
+      const ids = await Database.getStoredIdsForPrefix(DB_TABLE.BIBLE_CHAPTERS, prefix);
+      for (const id of ids) {
+        await $idb.del(DB_TABLE.BIBLE_CHAPTERS, id);
       }
     }
   }
@@ -513,19 +552,26 @@ export function useSyncManager() {
     if (!Platform.download || files.length === 0) return;
 
     downloading.value = true;
-    downloadProgress.value = { done: 0, total: files.length, currentFile: "" };
+    downloadProgress.value = { done: 0, failed: 0, total: files.length, currentFile: "" };
     downloadFailedCount.value = 0;
     downloadCompletedMsg.value = "";
 
+    bgTasks.registerTask("sync-collections", "startup_check.task.collections", () => {
+      Platform.download?.cancel();
+    });
+
     const cleanupFns: CleanupFn[] = [];
+    let firstProgress = true;
 
     cleanupFns.push(
       Platform.download.onProgress((d: any) => {
         downloadProgress.value = {
           done: downloadProgress.value.done,
-          total: d.total,
+          failed: downloadProgress.value.failed,
+          total: firstProgress ? d.total : downloadProgress.value.total,
           currentFile: d.file ? (d.file.split("/").pop() ?? "") : "",
         };
+        firstProgress = false;
       })
     );
     cleanupFns.push(
@@ -536,6 +582,7 @@ export function useSyncManager() {
     cleanupFns.push(
       Platform.download.onFileError(() => {
         downloadFailedCount.value += 1;
+        downloadProgress.value = { ...downloadProgress.value, failed: downloadProgress.value.failed + 1 };
       })
     );
 
@@ -545,11 +592,13 @@ export function useSyncManager() {
     _downloadCleanup.push(
       Platform.download.onQueueDone(() => {
         downloading.value = false;
+        bgTasks.completeTask("sync-collections");
       })
     );
     _downloadCleanup.push(
       Platform.download.onQueueCancelled(() => {
         downloading.value = false;
+        bgTasks.updateTask("sync-collections", { status: "cancelled" });
       })
     );
 

@@ -26,6 +26,9 @@ export const module: Module = {
     font: { type: "font", default: "Arial, sans-serif" },
     font_color: { type: "color", default: "#FFFFFF" },
     font_size: { type: "font-size", default: 50 },
+    text_shadow: { type: "boolean", default: false },
+    text_shadow_color: { type: "color", default: "#000000" },
+    text_shadow_blur: { type: "font-size", default: 4 },
     alert_color: { type: "color", default: "#E74C3C" },
     background_color: { type: "color", default: "#000000" },
     border_spacing: { type: "border-spacing", default: 10 },
@@ -49,6 +52,7 @@ export const contextualPages: RibbonPage[] = [
         id: "ctx_message_board_actions",
         title: "ribbon.groups.actions",
         buttons: [
+          { id: `${moduleId}_toggle_list`, icon: "mdi-format-list-bulleted", label: "ribbon.btn.message_board_list", action: `${moduleId}_toggle_list`, color: "#27ae60" },
           { id: `${moduleId}_clear`, icon: "mdi-stop-circle", label: "ribbon.btn.message_board_clear", action: `${moduleId}_clear`, color: "#e74c3c" },
         ],
       },

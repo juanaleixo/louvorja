@@ -3,11 +3,18 @@ import { useI18n } from "vue-i18n";
 import $liturgy from "@/helpers/Liturgy";
 import $media from "@/composables/useMedia";
 import $database from "@/helpers/Database";
+import { ICONS } from "@/config/Icons";
+import { isHeic, heicToJpeg } from "@/helpers/ImageConvert";
+import { KEYS } from "@/constants/UserDataKeys";
 import $alert from "@/helpers/Alert";
 import $path from "@/helpers/Path";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { openFileProjectionWindows } from "@/helpers/ProjectionWindows";
+import { useFileProjection } from "@/composables/useFileProjection";
+import {
+  openFileProjectionWindows,
+  openAnnouncementsWindow,
+} from "@/helpers/ProjectionWindows";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $idb from "@/helpers/IndexedDB";
@@ -17,8 +24,9 @@ import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
-import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
+import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import type { LiturgyItem, ScheduledCategory, LiturgyMusicItem } from "@/types/Liturgy";
+import { AUDIO_EXT, IMAGE_EXT, VIDEO_EXT } from "@constants/FileTypes";
 
 interface VideoItem {
   id: string;
@@ -267,20 +275,6 @@ export function useLiturgyItems(
     }
   }
 
-  function iconForItem(item: LiturgyItem): string {
-    const map: Record<string, string> = {
-      [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
-      [LiturgyItemTypeEnum.ARQUIVO]:
-        item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
-      [LiturgyItemTypeEnum.SITE]: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
-      [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
-      [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
-      [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
-      [LiturgyItemTypeEnum.BLOCO]: "mdi-view-dashboard",
-    };
-    return map[item.tipo] || "mdi-circle-medium";
-  }
-
   function isYoutube(url: string | undefined | null): boolean {
     if (!url) return false;
     return /youtu\.?be/i.test(url);
@@ -357,6 +351,10 @@ export function useLiturgyItems(
       form.value.url = "";
       form.value.subitem = "";
     }
+    // Arquivo selecionado pertence ao tipo anterior — limpa ao trocar.
+    form.value.dir = "";
+    form.value.ref_id = undefined;
+    form.value.subtipo = "";
     if (form.value.tipo === LiturgyItemTypeEnum.MUSICA && form.value.musica === -1) {
       form.value.escolha = true;
     }
@@ -381,6 +379,18 @@ export function useLiturgyItems(
   function onScheduledCategoryChange(): void {
     const c = scheduledCategories.value.find((x) => x.id === form.value.id);
     if (c) form.value.item = c.nome;
+    // Atualiza a duração com base no item agendado do dia ativo.
+    const activeDate = $liturgy.getActiveDate();
+    const sched = $liturgy.findScheduledForToday(form.value.id, activeDate);
+    const arquivo = sched ? String((sched as Record<string, unknown>).arquivo || "") : "";
+    const ext = arquivo.split(".").pop()?.toLowerCase() || "";
+    const isMedia = [...VIDEO_EXT, ...AUDIO_EXT].includes(ext);
+    if (isMedia) {
+      const dur = (sched as Record<string, unknown>).duracao;
+      form.value.duration = typeof dur === "number" && dur > 0 ? Math.round(dur / 60) : 0;
+    } else {
+      form.value.duration = 0;
+    }
   }
 
   function saveItem(): void {
@@ -432,7 +442,29 @@ export function useLiturgyItems(
       case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
         const c = scheduledCategories.value.find((x) => x.id === f.id);
         built.item = c?.nome || "";
-        built.subitem = "";
+        // Resolve o item agendado do dia ativo para extrair ícone + nome do arquivo.
+        const activeDate = $liturgy.getActiveDate();
+        const sched = $liturgy.findScheduledForToday(f.id, activeDate);
+        const arquivo = sched ? String((sched as Record<string, unknown>).arquivo || "") : "";
+        if (arquivo) {
+          const ext = arquivo.split(".").pop()?.toLowerCase() || "";
+          const ICON_MAP: Record<string, string> = {
+            mp4: ICONS.MEDIA.VIDEO, webm: ICONS.MEDIA.VIDEO, mkv: ICONS.MEDIA.VIDEO,
+            mov: ICONS.MEDIA.VIDEO, avi: ICONS.MEDIA.VIDEO, m4v: ICONS.MEDIA.VIDEO,
+            mp3: ICONS.MEDIA.AUDIO, wav: ICONS.MEDIA.AUDIO, ogg: ICONS.MEDIA.AUDIO,
+            flac: ICONS.MEDIA.AUDIO, aac: ICONS.MEDIA.AUDIO, m4a: ICONS.MEDIA.AUDIO,
+            opus: ICONS.MEDIA.AUDIO, wma: ICONS.MEDIA.AUDIO,
+            jpg: ICONS.MEDIA.IMAGE, jpeg: ICONS.MEDIA.IMAGE, png: ICONS.MEDIA.IMAGE,
+            webp: ICONS.MEDIA.IMAGE, gif: ICONS.MEDIA.IMAGE, bmp: ICONS.MEDIA.IMAGE,
+            heic: ICONS.MEDIA.IMAGE, heif: ICONS.MEDIA.IMAGE,
+            pdf: ICONS.UI.FILE,
+          };
+          const icon = ICON_MAP[ext] || ICONS.UI.FILE;
+          const filename = arquivo.split(/[\\/]/).pop() || arquivo;
+          built.subitem = `${icon}|||${filename}`;
+        } else {
+          built.subitem = "";
+        }
         break;
       }
       case LiturgyItemTypeEnum.VIDEO_ONLINE:
@@ -440,6 +472,29 @@ export function useLiturgyItems(
         built.url = f.url || "";
         built.subitem = "URL: " + built.url;
         break;
+      case LiturgyItemTypeEnum.MEDIA_LIBRARY:
+        built.ref_id = f.ref_id;
+        built.dir = f.dir || "";
+        built.subtipo = f.subtipo || "";
+        built.item = f.item || f.subitem || "";
+        built.subitem = f.subitem || "";
+        break;
+      case LiturgyItemTypeEnum.BG_SOUND:
+        built.ref_id = f.ref_id;
+        built.dir = f.dir || "";
+        built.subtipo = "audio";
+        built.item = f.item || f.subitem || "";
+        built.subitem = f.subitem || "";
+        break;
+      case LiturgyItemTypeEnum.ANUNCIOS: {
+        const ids = Array.isArray(f.anuncios_ids) ? f.anuncios_ids : [];
+        built.anuncios_ids = ids;
+        built.item = f.item || t("types.anuncios");
+        built.subitem = ids.length
+          ? `${ids.length} ${ids.length === 1 ? "anúncio" : "anúncios"}`
+          : "";
+        break;
+      }
       case LiturgyItemTypeEnum.BLOCO:
         built.subitem = "";
         built.blocoId = undefined;
@@ -509,13 +564,33 @@ export function useLiturgyItems(
         openFile(item);
         break;
       case LiturgyItemTypeEnum.ITENS_AGENDADOS: {
-        const sched = $liturgy.findScheduledForToday(item.id);
-        if (sched && (sched as Record<string, unknown>).arquivo) openUrl((sched as Record<string, string>).arquivo);
-        else alert(t("dialog.scheduled_not_found"));
+        const activeDate = $liturgy.getActiveDate();
+        const sched = $liturgy.findScheduledForToday(item.id, activeDate);
+        const arquivo = sched ? String((sched as Record<string, unknown>).arquivo || "") : "";
+        if (arquivo) {
+          // Segue o fluxo de projeção de arquivos:
+          // vídeo → projeção; áudio → reprodutor principal do programa.
+          void openFile({
+            ...item,
+            tipo: LiturgyItemTypeEnum.ARQUIVO,
+            dir: arquivo,
+          } as LiturgyItem);
+        } else {
+          alert(t("dialog.scheduled_not_found"));
+        }
         break;
       }
       case LiturgyItemTypeEnum.VIDEO_ONLINE:
         executeOnlineVideo(item);
+        break;
+      case LiturgyItemTypeEnum.MEDIA_LIBRARY:
+        void executeMediaLibraryItem(item);
+        break;
+      case LiturgyItemTypeEnum.BG_SOUND:
+        void executeBgSoundItem(item);
+        break;
+      case LiturgyItemTypeEnum.ANUNCIOS:
+        void executeAnnouncements(item);
         break;
       case LiturgyItemTypeEnum.ANOTACAO:
         alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
@@ -581,7 +656,7 @@ export function useLiturgyItems(
     const url = item.url || "";
     if (!url) return;
 
-    if (isYoutube(url) && $userdata.get("options.youtube_action", "video") === "video") {
+    if (isYoutube(url) && $userdata.get(KEYS.OPTIONS.YOUTUBE_ACTION, "video") === "video") {
       const embedUrl = buildEmbedUrl(url);
       if (embedUrl) {
         $media.openYouTube(embedUrl, item.item || "");
@@ -604,9 +679,149 @@ export function useLiturgyItems(
     $media.openYouTube(embedUrl, item.item || item.subitem || url);
   }
 
-  const IMAGE_EXTS = IMAGE_FILE_EXTS;
-  const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
-  const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
+  /**
+   * Item da Biblioteca de Mídia: re-resolve o registro por ref_id (o path
+   * pode ser blob e morrer entre sessões) e reaproveita a execução de
+   * ARQUIVO (imagem/vídeo/pdf → projeção; pdf paginado).
+   */
+  async function executeMediaLibraryItem(item: LiturgyItem): Promise<void> {
+    let target = item.dir;
+    let typeHint = item.subtipo || undefined;
+    if (item.ref_id) {
+      const rec = await $idb.get<{ path?: string; type?: string }>(
+        DB_TABLE.MEDIA_LIBRARY,
+        item.ref_id
+      );
+      if (rec?.path) target = rec.path;
+      if (rec?.type) typeHint = rec.type;
+    }
+    if (!target) {
+      $alert.error({ text: t("alerts.media_not_found") });
+      return;
+    }
+    // Blob URLs só valem no documento de origem — a projeção re-resolve
+    // via IDB usando a referência da biblioteca.
+    const extraPayload =
+      target.startsWith("blob:") && item.ref_id
+        ? { libRef: { table: DB_TABLE.MEDIA_LIBRARY, id: item.ref_id } }
+        : undefined;
+    await openFile({ ...item, dir: target }, typeHint, extraPayload);
+  }
+
+  /** Anúncios: envia os slides selecionados (na ordem) para a projeção. */
+  async function executeAnnouncements(item: LiturgyItem): Promise<void> {
+    const all = (
+      await $idb.getAll<{
+        id: string;
+        nome: string;
+        ordem: number;
+        texto?: string;
+        imageData?: ArrayBuffer;
+        imageMime?: string;
+        videoData?: ArrayBuffer;
+        videoMime?: string;
+        style?: Record<string, unknown>;
+      }>(DB_TABLE.ANNOUNCEMENTS)
+    ).sort((a, b) => a.ordem - b.ordem);
+
+    const ids = item.anuncios_ids || [];
+    const selected = ids.length ? all.filter((a) => ids.includes(String(a.id))) : all;
+    if (!selected.length) {
+      $alert.error({ text: t("alerts.media_not_found") });
+      return;
+    }
+
+    const payload = {
+      slides: selected.map((a) => ({
+        id: String(a.id),
+        nome: a.nome,
+        ordem: a.ordem,
+        texto: a.texto,
+        imageData: a.imageData,
+        imageMime: a.imageMime,
+        videoData: a.videoData,
+        videoMime: a.videoMime,
+        style: a.style,
+      })),
+      index: 0,
+    };
+    // Salva no IDB (cache) — padrão do módulo announcements para fallback da projection.
+    // ArrayBuffer é preservado nativamente pelo IDB (diferente de localStorage/JSON).
+    await $idb.put(DB_TABLE.CACHE, {
+      id: "announcements_projection_state",
+      data: payload,
+      ts: Date.now(),
+    });
+    $appdata.set(KEYS.MODULES.MEDIA.IS_PLAYING, true);
+    // Ativa a barra de controles global.
+    const fp = useFileProjection();
+    fp.start("announcements", selected[0]?.nome || "", selected.length, 0);
+    await openAnnouncementsWindow();
+    // Espera a janela de projeção montar antes de enviar o broadcast.
+    await new Promise((r) => setTimeout(r, 300));
+    $broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_STATE, payload);
+  }
+
+
+  let lastLiturgicalSoundUrl: string | null = null;
+
+  /** Converte o registro em uma URL tocável na janela atual. */
+  function resolvePlayableSoundUrl(rec: {
+    path: string;
+    data?: ArrayBuffer;
+    mime?: string;
+  }): string {
+    const p = rec.path || "";
+    // Blob morto de sessão anterior + bytes no IDB → recria localmente.
+    if (rec.data && rec.mime && (!p || p.startsWith("blob:") || !/^(https?|louvorja):/i.test(p))) {
+      if (lastLiturgicalSoundUrl) URL.revokeObjectURL(lastLiturgicalSoundUrl);
+      lastLiturgicalSoundUrl = URL.createObjectURL(
+        new Blob([rec.data], { type: rec.mime })
+      );
+      return lastLiturgicalSoundUrl;
+    }
+    // URLs completas passam direto.
+    if (/^(https?|blob|data|louvorja):/i.test(p)) return p;
+    // Caminho absoluto no desktop → protocolo local.
+    if (Platform.isDesktop && p.startsWith("/")) return "louvorja://local" + p;
+    if (Platform.isDesktop && /^[A-Za-z]:\\/.test(p))
+      return "louvorja://local/" + p.replace(/\\/g, "/");
+    return p;
+  }
+
+  /** Som de fundo: reproduz no PLAYER do módulo Som de Fundo (fade/volume). */
+  async function executeBgSoundItem(item: LiturgyItem): Promise<void> {
+    if (!item.ref_id) {
+      $alert.error({ text: t("alerts.media_not_found") });
+      return;
+    }
+    // Mesmo arquivo tocando? Alterna stop/play.
+    if ($bgSound.currentFile.value?.id === item.ref_id) {
+      $bgSound.togglePlay();
+      return;
+    }
+    const rec = await $idb.get<{
+      id: string;
+      name: string;
+      fileName?: string;
+      path: string;
+      data?: ArrayBuffer;
+      mime?: string;
+    }>(DB_TABLE.BACKGROUND_SOUND_LIBRARY, item.ref_id);
+    if (!rec) {
+      $alert.error({ text: t("alerts.media_not_found") });
+      return;
+    }
+    const displayName = rec.fileName || rec.name;
+    $bgSound.playFile({
+      id: rec.id,
+      name: displayName,
+      fileName: displayName,
+      path: resolvePlayableSoundUrl(rec),
+      data: rec.data,
+      mime: rec.mime,
+    });
+  }
 
   function _persistFileProjection(payload: Record<string, unknown>): void {
     try {
@@ -618,6 +833,8 @@ export function useLiturgyItems(
 
   function _resolveFileUrl(dir: string): string {
     if (!dir) return "";
+    // blob:/data: usam UM único barra após o esquema — passam direto.
+    if (/^(blob|data):/i.test(dir)) return dir;
     if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) return dir;
     if (Platform.isDesktop) {
       if (dir.startsWith("/")) return "louvorja://local" + dir;
@@ -626,10 +843,36 @@ export function useLiturgyItems(
     return $path.file(dir);
   }
 
-  async function openFile(item: LiturgyItem): Promise<void> {
+  /** Cache de objectURLs para HEIC→JPEG (evita reconverter a cada projeção). */
+  const _heicProjectionCache = new Map<string, string>();
+
+  /** Se o arquivo for HEIC/HEIF, converte para JPEG e devolve um objectURL. */
+  async function _resolveRenderableUrl(dir: string): Promise<string> {
+    const ext = dir.split(".").pop()?.toLowerCase() || "";
+    if (ext !== "heic" && ext !== "heif") return _resolveFileUrl(dir);
+    const raw = _resolveFileUrl(dir);
+    const cached = _heicProjectionCache.get(dir);
+    if (cached) return cached;
+    try {
+      const blob = await fetch(raw).then((r) => r.blob());
+      const jpeg = await heicToJpeg(blob);
+      const url = URL.createObjectURL(jpeg);
+      _heicProjectionCache.set(dir, url);
+      return url;
+    } catch {
+      return raw;
+    }
+  }
+
+  async function openFile(
+    item: LiturgyItem,
+    typeHint?: string,
+    extraPayload?: Record<string, unknown>
+  ): Promise<void> {
     const dir = item.dir || "";
     const ext = dir.split(".").pop()?.toLowerCase() || "";
-    const url = _resolveFileUrl(dir);
+    // HEIC/HEIF: converte para JPEG antes de enviar à projeção.
+    const url = await _resolveRenderableUrl(dir);
 
     if (
       !url ||
@@ -642,12 +885,27 @@ export function useLiturgyItems(
       return;
     }
 
-    if (IMAGE_EXTS.includes(ext)) {
+    // Tipo efetivo: extensão do caminho; sem extensão (ex.: blob URLs),
+    // usa o hint informado pelo chamador (subtipo do item).
+    let kind = "";
+    if (IMAGE_EXT.includes(ext)) kind = "image";
+    else if (VIDEO_EXT.includes(ext)) kind = "video";
+    else if (AUDIO_EXT.includes(ext)) kind = "audio";
+    else if (ext === "pdf") kind = "pdf";
+    else if (typeHint) kind = typeHint;
+
+    if (kind === "image" || kind === "pdf") {
       const fadeDur =
-        ($userdata.get("options.file_projection.fade", true) as boolean) !== false
-          ? ($userdata.get("options.file_projection.fade_duration", 500) as number) || 500
+        ($userdata.get(KEYS.OPTIONS.FILE_PROJECTION.FADE, true) as boolean) !== false
+          ? ($userdata.get(KEYS.OPTIONS.FILE_PROJECTION.FADE_DURATION, 500) as number) || 500
           : 0;
-      const payload = { url, type: "image", title: item.item || "", fadeDuration: fadeDur };
+      const payload = {
+        url,
+        type: kind,
+        title: item.item || "",
+        fadeDuration: fadeDur,
+        ...extraPayload,
+      };
       _persistFileProjection(payload);
 
       await openFileProjectionWindows().catch((e: unknown) => {
@@ -655,12 +913,18 @@ export function useLiturgyItems(
         console.error(e);
       });
       $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
-    } else if (VIDEO_EXTS.includes(ext)) {
+    } else if (kind === "video") {
       const fadeDur =
-        ($userdata.get("options.file_projection.fade", true) as boolean) !== false
-          ? ($userdata.get("options.file_projection.fade_duration", 500) as number) || 500
+        ($userdata.get(KEYS.OPTIONS.FILE_PROJECTION.FADE, true) as boolean) !== false
+          ? ($userdata.get(KEYS.OPTIONS.FILE_PROJECTION.FADE_DURATION, 500) as number) || 500
           : 0;
-      const payload = { url, type: "video", title: item.item || "", fadeDuration: fadeDur };
+      const payload = {
+        url,
+        type: "video",
+        title: item.item || "",
+        fadeDuration: fadeDur,
+        ...extraPayload,
+      };
       _persistFileProjection(payload);
       await openFileProjectionWindows().catch((e: unknown) => {
         $alert.error(e as string);
@@ -668,15 +932,18 @@ export function useLiturgyItems(
       });
       $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
       $media.openAudio({ url, title: item.item || "" });
-      $appdata.set("modules.media.config.video_file", true);
-    } else if (AUDIO_EXTS.includes(ext)) {
+      $appdata.set(KEYS.MODULES.MEDIA.CONFIG.VIDEO_FILE, true);
+    } else if (kind === "audio") {
       $media.openAudio({ url, title: item.item || "" });
-    } else {
+    } else if (!kind && !typeHint) {
+      // Tipo desconhecido sem hint: comportamento legado (abrir com SO).
       if (Platform.isDesktop && (Platform.api as unknown as Record<string, unknown>)?.openPath) {
         ((Platform.api as unknown as Record<string, unknown>).openPath as (path: string) => void)(dir);
       } else {
         openUrl(dir);
       }
+    } else {
+      $alert.error({ text: url, title: "modules.media.alerts.file_not_found" });
     }
   }
 
@@ -810,6 +1077,33 @@ export function useLiturgyItems(
 
   const videosCache = ref<VideoItem[]>([]);
 
+  // ─── Biblioteca de Mídia / Som de fundo (itens por ref_id) ───
+
+  interface MediaLibraryEntry {
+    id: string;
+    name: string;
+    path: string;
+    type: "image" | "video" | "pdf";
+  }
+
+  interface BgSoundEntry {
+    id: string;
+    name: string;
+    path: string;
+    mime?: string;
+  }
+
+  /** Instância compartilhada com o módulo Som de Fundo (mesmo player). */
+  const $bgSound = useBackgroundSound();
+
+  async function loadMediaLibraryEntries(): Promise<MediaLibraryEntry[]> {
+    return $idb.getAll<MediaLibraryEntry>(DB_TABLE.MEDIA_LIBRARY);
+  }
+
+  async function loadBgSoundEntries(): Promise<BgSoundEntry[]> {
+    return $idb.getAll<BgSoundEntry>(DB_TABLE.BACKGROUND_SOUND_LIBRARY);
+  }
+
   const ONLINE_VIDEO_DEFAULTS: OnlineVideoDefaultItem[] = [
     {
       title: "Vitória (Adoradores 5) [Ao Vivo]",
@@ -902,7 +1196,6 @@ export function useLiturgyItems(
     toggleChecked,
     onReorder,
     adjustBlocoAssignment,
-    iconForItem,
     isYoutube,
     subtitleFor,
     changeColor,
@@ -931,6 +1224,8 @@ export function useLiturgyItems(
     onDrop,
     loadMusicsList,
     loadVideosList,
+    loadMediaLibraryEntries,
+    loadBgSoundEntries,
     setFormField,
     toggleMenuOpen,
     closeMenu,

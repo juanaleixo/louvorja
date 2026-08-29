@@ -4,7 +4,7 @@
  * As views Projection / ProjectionReturn / Operator e o overlay do Player
  * (media/Index.vue) lêem styles deste composable em vez de hardcode.
  *
- * Persistência: `userdata.options.slides.*` (configurável via Formatação).
+ * Persistência: `KEYS.OPTIONS.SLIDE.SLIDES.*` (configurável via Formatação).
  *
  * Cada `slide.*` individual ainda pode sobrescrever via campos próprios
  * (ex.: `slide.color`, `slide.font_size_pct`) — fiel ao Delphi onde o
@@ -14,34 +14,7 @@
 import { computed, type ComputedRef, type CSSProperties } from "vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-
-/**
- * Defaults que replicam o visual original do Delphi/Projection atual.
- * Aplicados quando o usuário ainda não configurou em "Formatação".
- */
-export const SLIDE_DEFAULTS = Object.freeze({
-  font: "Arial, sans-serif",
-  font_size_cover: 18,         // % da viewport height (vh)
-  font_size_lyric: 14,
-  font_size_aux: 8,
-  font_size_next: 5,           // ProjectionReturn — próximo slide
-  color_cover: "#EFB400",      // gold (cor da capa Delphi)
-  color_lyric: "#FFFFFF",
-  color_repeat: "#EFB400",     // refrão/repetição (gold por default)
-  color_next: "#FFFFFF",
-  color_aux: "#EFB400",
-  background_color: "#000000",
-  background_image: "",
-  background_position: "center center",
-  progress_color: "#EFB400",
-  show_progress_bar: true,
-  show_title_first_slide: true,
-  text_align: "center" as "top" | "center" | "bottom",
-  transition_speed_ms: 120,    // fade-in da tela inteira (rápido — antes 256ms)
-  text_bg_transparent: false,  // caixa de texto atrás da letra (translúcida quando false)
-  affect_external_slides: true, // formatação personalizada vence formatação do slide externo
-  custom_background_active: false, // toggle "Fundo personalizado" ligado pelo usuário
-});
+import { SLIDE_STYLE_DEFAULT } from "@/config/SlideStyle";
 
 export type SlideOption = Record<string, unknown> | null;
 
@@ -93,8 +66,8 @@ interface SlideCfg {
  *      gated por `custom_text_format` e `custom_background` (toggles do Delphi).
  */
 const _readSlideOpts = (): SlideCfg => {
-  const legacy = ($userdata.get("options.slides", {}) as Partial<typeof SLIDE_DEFAULTS>) ?? {};
-  const merged: SlideCfg = { ...SLIDE_DEFAULTS, ...legacy };
+  const legacy = ($userdata.get(KEYS.OPTIONS.SLIDE.SLIDES, {}) as Partial<typeof SLIDE_STYLE_DEFAULT>) ?? {};
+  const merged: SlideCfg = { ...SLIDE_STYLE_DEFAULT, ...legacy };
 
   // text_align e show_title_first_slide são chaves planas globais (sempre aplicam)
   const textAlign = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_ALIGN, null);

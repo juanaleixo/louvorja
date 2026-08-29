@@ -26,7 +26,6 @@
         :default-color="defaultColor"
         :total-duration="totalDuration"
         :is-checked="isChecked"
-        :icon-for-item="iconForItem"
         :subtitle-for="subtitleFor"
         :on-reorder="onReorder"
         :on-bloco-assign="adjustBlocoAssignment"
@@ -83,6 +82,7 @@
       :add-scheduled-item="addScheduledItem"
       :update-scheduled="updateScheduled"
       :remove-scheduled="removeScheduled"
+      :update-category-color="updateCategoryColor"
     />
 
     <v-dialog v-model="copyDialog" max-width="400">
@@ -201,6 +201,7 @@ const {
   openSchedulesDialog,
   addCategory,
   saveCategoryName,
+  updateCategoryColor,
   removeCategory,
   addScheduledItem,
   updateScheduled,
@@ -219,7 +220,6 @@ const {
   toggleChecked,
   onReorder,
   adjustBlocoAssignment,
-  iconForItem,
   subtitleFor,
   changeColor,
   markAll,

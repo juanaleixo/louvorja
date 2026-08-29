@@ -29,6 +29,7 @@
           color: font_color,
           fontSize: `${fontSizePc(font_size)}px`,
           fontFamily: font,
+          ...textShadowStyle,
         }"
       >
         {{ text }}
@@ -103,6 +104,9 @@ const background_color = computed(() => ud("background_color", "#000000"));
 const font = computed(() => ud("font", "Arial, sans-serif"));
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 50));
+const text_shadow = computed(() => ud("text_shadow", false));
+const text_shadow_color = computed(() => ud("text_shadow_color", "#000000"));
+const text_shadow_blur = computed(() => ud("text_shadow_blur", 4));
 const chip_font_size = computed(() => ud("chip_font_size", 12));
 const border_spacing = computed(() => ud("border_spacing", 10));
 const vertical_align = computed<CSSProperties["alignItems"]>(
@@ -120,6 +124,14 @@ const image_fit = computed<CSSProperties["objectFit"]>(
 const chips = computed(() => {
   const r = props.reference;
   return Array.isArray(r) ? r.map((c) => String(c)) : [];
+});
+
+const textShadowStyle = computed<CSSProperties>(() => {
+  if (!text_shadow.value) return {};
+  const color = text_shadow_color.value || "#000000";
+  const blur = text_shadow_blur.value || 4;
+  const css = `0 0 ${blur}px ${color}, 0 0 ${blur}px ${color}`;
+  return { textShadow: css };
 });
 
 const containerStyle = computed<CSSProperties>(() => ({
@@ -160,7 +172,6 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_FORMAT_CHANGED, (payload) => {
   font-weight: 200;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
 }
 

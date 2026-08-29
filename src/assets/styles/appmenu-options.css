@@ -6,6 +6,11 @@
 .opt-section {
   margin-bottom: var(--lj-space-8);
 }
+.opt-download-scroll {
+  overflow-y: auto;
+  max-height: calc(100vh - 340px);
+  margin: var(--lj-space-2) 0;
+}
 
 .opt-section-title {
   font-size: var(--lj-text-lg);

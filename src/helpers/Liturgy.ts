@@ -1,6 +1,7 @@
 /** @category deve-virar-composable — Usa UserData + AppData (Pinia); requer renderer. */
 import $userdata from "@/helpers/UserData";
 import $dev from "@/helpers/Dev";
+import ScheduledStore from "@/helpers/ScheduledStore";
 import { KEYS } from "@/constants/UserDataKeys";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 import type { LiturgyItem, ScheduledCategory, ScheduledItem } from "@/types/Liturgy";
@@ -41,11 +42,52 @@ function _dayKey(day: number): string {
   return `${KEYS.MODULES.LITURGY.DAYS}.${clampDay(day)}`;
 }
 
+function _isYoutube(url: string | undefined | null): boolean {
+  if (!url) return false;
+  return /youtu\.?be/i.test(url);
+}
+
+function iconForItem(item: LiturgyItem): string {
+  const map: Record<string, string> = {
+    [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
+    [LiturgyItemTypeEnum.ARQUIVO]:
+      item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
+    [LiturgyItemTypeEnum.SITE]: _isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
+    [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
+    [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
+    [LiturgyItemTypeEnum.MEDIA_LIBRARY]:
+      item.subtipo === "image"
+        ? "mdi-image"
+        : item.subtipo === "video"
+          ? "mdi-video"
+          : item.subtipo === "pdf"
+            ? "mdi-file-pdf-box"
+            : "mdi-library-outline",
+    [LiturgyItemTypeEnum.BG_SOUND]: "mdi-music-box-outline",
+    [LiturgyItemTypeEnum.ANUNCIOS]: "mdi-bullhorn",
+    [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
+    [LiturgyItemTypeEnum.BLOCO]: "mdi-view-dashboard",
+  };
+  return map[item.tipo] || "mdi-circle-medium";
+}
+
 export default {
   getActiveDay(): number {
     const stored = $userdata.get<number>(KEYS.MODULES.LITURGY.ACTIVE_DAY, null);
     if (stored == null) return todayDayIndex();
     return clampDay(stored);
+  },
+
+  /** Data (Date) do dia ativo na semana vigente. Ex.: se hoje é dom e o dia
+   *  ativo é sáb, retorna a data do sábado desta semana. */
+  getActiveDate(): Date {
+    const today = new Date();
+    const todayDow = today.getDay();
+    const activeDow = this.getActiveDay();
+    const diff = activeDow - todayDow;
+    const target = new Date(today);
+    target.setDate(today.getDate() + diff);
+    return target;
   },
 
   setActiveDay(day: number): void {
@@ -332,39 +374,52 @@ export default {
     return url;
   },
 
+  // ── Itens agendados: persistidos no IndexedDB via ScheduledStore ──
+
   scheduledCategories(): ScheduledCategory[] {
-    return $userdata.get<ScheduledCategory[]>(KEYS.MODULES.LITURGY.SCHEDULED_CATEGORIES, []) as ScheduledCategory[];
+    return ScheduledStore.categories();
   },
 
   setScheduledCategories(list: ScheduledCategory[]): void {
-    $userdata.set(KEYS.MODULES.LITURGY.SCHEDULED_CATEGORIES, list);
+    // Substituição completa (usada pela importação/exportação).
+    void Promise.all([
+      ...ScheduledStore.items().map((i) => ScheduledStore.deleteItem(i.id as string)),
+    ]).then(async () => {
+      for (const c of list) await ScheduledStore.saveCategory(c);
+      const cur = new Set(list.map((c) => String(c.id)));
+      for (const i of this.scheduledItems()) {
+        if (!cur.has(String(i.categoria))) continue;
+      }
+    });
   },
 
   addScheduledCategory(nome: string): string {
-    const list = this.scheduledCategories();
     const id = uid("cat_");
-    list.push({ id, nome });
-    this.setScheduledCategories(list);
+    void ScheduledStore.saveCategory({ id, nome } as ScheduledCategory);
     return id;
   },
 
   updateScheduledCategory(id: string | number, patch: Partial<ScheduledCategory>): void {
-    this.setScheduledCategories(
-      this.scheduledCategories().map((c) => (c.id === id ? { ...c, ...patch } : c))
+    const cat = this.scheduledCategories().find(
+      (c) => String(c.id) === String(id)
     );
+    if (cat) void ScheduledStore.saveCategory({ ...cat, ...patch });
   },
 
   removeScheduledCategory(id: string | number): void {
-    this.setScheduledCategories(this.scheduledCategories().filter((c) => c.id !== id));
-    this.setScheduledItems(this.scheduledItems().filter((i) => i.categoria !== id));
+    void ScheduledStore.deleteCategory(id);
   },
 
   scheduledItems(): ScheduledItem[] {
-    return $userdata.get<ScheduledItem[]>(KEYS.MODULES.LITURGY.SCHEDULED_ITEMS, []) as ScheduledItem[];
+    return ScheduledStore.items();
   },
 
   setScheduledItems(list: ScheduledItem[]): void {
-    $userdata.set(KEYS.MODULES.LITURGY.SCHEDULED_ITEMS, list);
+    void Promise.all([
+      ...this.scheduledItems().map((i) => ScheduledStore.deleteItem(i.id as string)),
+    ]).then(async () => {
+      for (const i of list) await ScheduledStore.saveItem(i);
+    });
   },
 
   addScheduledItemEntry(
@@ -372,11 +427,11 @@ export default {
     data: string,
     nome: string,
     arquivo: string,
-    arquivoInfo = "E"
+    arquivoInfo = "E",
+    duracao?: number
   ): string {
-    const list = this.scheduledItems();
     const id = uid("sch_");
-    list.push({
+    const entry: ScheduledItem = {
       id,
       categoria,
       data,
@@ -390,24 +445,26 @@ export default {
           : ""),
       arquivo: arquivo || "",
       arquivo_info: arquivoInfo,
-    });
-    this.setScheduledItems(list);
+      ...(duracao != null ? { duracao } : {}),
+    };
+    void ScheduledStore.saveItem(entry);
     return id;
   },
 
   updateScheduledItemEntry(id: string | number, patch: Partial<ScheduledItem>): void {
-    this.setScheduledItems(
-      this.scheduledItems().map((i) => (i.id === id ? { ...i, ...patch } : i))
-    );
+    const cur = this.scheduledItems().find((i) => String(i.id) === String(id));
+    if (cur) void ScheduledStore.saveItem({ ...cur, ...patch });
   },
 
   removeScheduledItemEntry(id: string | number): void {
-    this.setScheduledItems(this.scheduledItems().filter((i) => i.id !== id));
+    void ScheduledStore.deleteItem(id);
   },
 
   findScheduledForToday(categoriaId: string | number, date = new Date()): ScheduledItem | undefined {
     const iso = date.toISOString().slice(0, 10);
-    return this.scheduledItems().find((i) => i.categoria === categoriaId && i.data === iso);
+    const catStr = String(categoriaId);
+    const all = this.scheduledItems().filter((i) => String(i.categoria) === catStr);
+    return all.find((i) => i.data === iso);
   },
 
   getCurrentLiturgyId(): string | null {
@@ -451,4 +508,6 @@ export default {
       date.getDate() === lastDay.getDate()
     );
   },
+
+  iconForItem,
 }

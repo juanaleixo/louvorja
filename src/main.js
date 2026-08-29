@@ -23,11 +23,16 @@ import Modules from "@/helpers/Modules";
 import Dev from "@/helpers/Dev";
 import UserData from "@/helpers/UserData";
 import AppData from "@/helpers/AppData";
+import { useFileProjection } from "@/composables/useFileProjection";
+import { useBackgroundSound } from "@/composables/useBackgroundSound";
 import Path from "@/helpers/Path";
 import Media from "@/composables/useMedia";
 import Broadcast from "@/helpers/Broadcast";
 import Liturgy from "@/helpers/Liturgy";
+import { IMAGE_EXT, AUDIO_EXT, VIDEO_EXT } from "@/constants/FileTypes";
+import { DB_TABLE } from "@/constants/DbTables";
 import $idb from "@/helpers/IndexedDB";
+import ScheduledStore from "@/helpers/ScheduledStore";
 import Seed from "@/helpers/Seed";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Projection from "@/helpers/Projection";
@@ -198,7 +203,7 @@ $storage.hydrate().then(async () => {
 
   // D5 — Conectar eventos do servidor HTTP às ações do app.
   if (Platform.isDesktop) {
-    Platform.onHttpEvent((eventType, data) => {
+    Platform.onHttpEvent(async (eventType, data) => {
       const action = data.action;
       switch (eventType) {
         case "http:song-slides":
@@ -216,76 +221,201 @@ $storage.hydrate().then(async () => {
               Media.goToSlide(data.index);
               break;
             case "liturgy-execute": {
-              const item = Liturgy.get(data.id);
-              if (item) {
-                Liturgy.toggleChecked(item.id);
-                switch (item.tipo) {
+              const litItem = Liturgy.get(data.id);
+              if (!litItem) {
+                console.warn("[http] liturgy-execute: item não encontrado", data.id);
+                break;
+              }
+              Liturgy.toggleChecked(litItem.id);
+
+              /** Resolve um path de arquivo para URL reproduzível. */
+              function resolveFileUrl(p) {
+                if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(p)) return p;
+                if (Platform.isDesktop) {
+                  if (p.startsWith("/")) return "louvorja://local" + p;
+                  if (/^[A-Za-z]:\\/.test(p)) return "louvorja://local/" + p.replace(/\\/g, "/");
+                }
+                return Path.file(p);
+              }
+
+              /** Abre projeção de arquivo por extensão (imagem/vídeo/áudio/pdf). */
+              function projectByExt(url, ext, title, libRef) {
+                if (IMAGE_EXT.includes(ext)) {
+                  const p = { url, type: "image", title };
+                  try {
+                    localStorage.setItem("lj_file_projection", JSON.stringify(p));
+                  } catch (_) {
+                    /* ignore */
+                  }
+                  ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                  Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, p);
+                } else if (VIDEO_EXT.includes(ext)) {
+                  const p = { url, type: "video", title };
+                  try {
+                    localStorage.setItem("lj_file_projection", JSON.stringify(p));
+                  } catch (_) {
+                    /* ignore */
+                  }
+                  ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                  Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, p);
+                  Media.openAudio({ url, title });
+                  AppData.set("modules.media.config.video_file", true);
+                } else if (AUDIO_EXT.includes(ext)) {
+                  Media.openAudio({ url, title });
+                } else {
+                  const p = { url, type: "pdf", title };
+                  if (libRef) p.libRef = libRef;
+                  try {
+                    localStorage.setItem("lj_file_projection", JSON.stringify(p));
+                  } catch (_) {
+                    /* ignore */
+                  }
+                  ProjectionWindows.openFileProjectionWindows().catch(() => {});
+                  Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, p);
+                }
+              }
+
+              try {
+                switch (litItem.tipo) {
                   case "musica":
-                    Media.open({ id_music: item.id_music, mode: data.tag });
+                    Media.open({ id_music: litItem.id_music, mode: data.tag });
                     break;
                   case "site": {
-                    const url = Liturgy.validateUrl(item.url);
+                    const url = Liturgy.validateUrl(litItem.url);
                     window.open(url, "_blank", "noopener,noreferrer");
                     break;
                   }
                   case "itens-agendados": {
-                    const sched = Liturgy.findScheduledForToday(item.id);
-                    if (sched && sched.arquivo) {
-                      const valid = Liturgy.validateUrl(sched.arquivo);
-                      window.open(valid, "_blank", "noopener,noreferrer");
+                    const sched = Liturgy.findScheduledForToday(litItem.id);
+                    const arquivo = sched ? String((sched && sched.arquivo) || "") : "";
+                    if (arquivo) {
+                      const url = resolveFileUrl(arquivo);
+                      if (url) {
+                        const ext = arquivo.split(".").pop().toLowerCase();
+                        projectByExt(url, ext, litItem.item || "");
+                      }
                     }
                     break;
                   }
                   case "arquivo": {
-                    const dir = item.dir || "";
-                    const ext = dir.split(".").pop().toLowerCase();
-                    const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
-                    const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
-                    const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac", "m4a"];
-
-                    let url;
-                    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(dir)) {
-                      url = dir;
-                    } else if (Platform.isDesktop) {
-                      if (dir.startsWith("/")) url = "louvorja://local" + dir;
-                      else if (/^[A-Za-z]:\\/.test(dir))
-                        url = "louvorja://local/" + dir.replace(/\\/g, "/");
-                      else url = Path.file(dir);
-                    } else {
-                      url = Path.file(dir);
-                    }
-
-                    if (!url) break;
-
-                    if (IMAGE_EXTS.includes(ext)) {
-                      const payload = { url, type: "image", title: item.item || "" };
-                      try {
-                        localStorage.setItem("lj_file_projection", JSON.stringify(payload));
-                      } catch (e) {
-                        /* ignore */
-                      }
-                      ProjectionWindows.openFileProjectionWindows().catch(() => {});
-                      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
-                    } else if (VIDEO_EXTS.includes(ext)) {
-                      const payload = { url, type: "video", title: item.item || "" };
-                      try {
-                        localStorage.setItem("lj_file_projection", JSON.stringify(payload));
-                      } catch (e) {
-                        /* ignore */
-                      }
-                      ProjectionWindows.openFileProjectionWindows().catch(() => {});
-                      Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
-                      Media.openAudio({ url, title: item.item || "" });
-                      AppData.set("modules.media.config.video_file", true);
-                    } else if (AUDIO_EXTS.includes(ext)) {
-                      Media.openAudio({ url, title: item.item || "" });
-                    } else {
-                      const valid = Liturgy.validateUrl(dir);
-                      window.open(valid, "_blank", "noopener,noreferrer");
+                    const dir = litItem.dir || "";
+                    const url = resolveFileUrl(dir);
+                    if (url) {
+                      const ext = dir.split(".").pop().toLowerCase();
+                      projectByExt(url, ext, litItem.item || "");
                     }
                     break;
                   }
+                  case "video-online": {
+                    const videoUrl = litItem.url || "";
+                    const ytMatch = videoUrl.match(
+                      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
+                    );
+                    if (ytMatch) {
+                      const embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&controls=0`;
+                      Media.openYouTube(embedUrl, litItem.item || litItem.subitem || videoUrl);
+                    } else {
+                      window.open(videoUrl, "_blank", "noopener,noreferrer");
+                    }
+                    break;
+                  }
+                  case "biblioteca-midia": {
+                    const refId = litItem.ref_id || "";
+                    if (!refId) break;
+                    const rec = await $idb.get(DB_TABLE.MEDIA_LIBRARY, refId);
+                    if (!rec?.path) break;
+                    let recUrl = rec.path;
+                    if (recUrl.startsWith("blob:")) {
+                      if (rec.data && rec.mime) {
+                        recUrl = URL.createObjectURL(new Blob([rec.data], { type: rec.mime }));
+                      } else {
+                        console.warn("[http] biblioteca-midia: blob URL sem dados IDB", rec.path);
+                        break;
+                      }
+                    } else {
+                      recUrl = resolveFileUrl(recUrl);
+                    }
+                    const recExt = (rec.name || rec.path).split(".").pop().toLowerCase();
+                    const libRef = { table: DB_TABLE.MEDIA_LIBRARY, id: refId };
+                    projectByExt(recUrl, recExt, litItem.item || "", libRef);
+                    break;
+                  }
+                  case "som-de-fundo": {
+                    const bgRefId = litItem.ref_id || "";
+                    if (bgRefId) {
+                      const bgRec = await $idb.get(DB_TABLE.BACKGROUND_SOUND_LIBRARY, bgRefId);
+                      if (bgRec && bgRec.path) {
+                        // Resolve URL reproduzível (replicado de useLiturgyItems).
+                        let bgUrl = bgRec.path;
+                        if (
+                          bgRec.data &&
+                          bgRec.mime &&
+                          (!bgUrl ||
+                            bgUrl.startsWith("blob:") ||
+                            !/^(https?|louvorja):/i.test(bgUrl))
+                        ) {
+                          bgUrl = URL.createObjectURL(new Blob([bgRec.data], { type: bgRec.mime }));
+                        } else if (/^(https?|blob|data|louvorja):/i.test(bgUrl)) {
+                          // passa direto
+                        } else if (Platform.isDesktop && bgUrl.startsWith("/")) {
+                          bgUrl = "louvorja://local" + bgUrl;
+                        } else if (Platform.isDesktop && /^[A-Za-z]:\\/.test(bgUrl)) {
+                          bgUrl = "louvorja://local/" + bgUrl.replace(/\\/g, "/");
+                        }
+                        const bg = useBackgroundSound();
+                        bg.playFile({
+                          id: bgRec.id,
+                          name: bgRec.fileName || bgRec.name,
+                          fileName: bgRec.fileName || bgRec.name,
+                          path: bgUrl,
+                          data: bgRec.data,
+                          mime: bgRec.mime,
+                        });
+                      }
+                    }
+                    break;
+                  }
+                  case "anuncios": {
+                    const ids = litItem.anuncios_ids || [];
+                    const allAnn = await $idb.getAll(DB_TABLE.ANNOUNCEMENTS);
+                    const sorted = allAnn.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+                    const selected = ids.length
+                      ? sorted.filter((a) => ids.includes(String(a.id)))
+                      : sorted;
+                    if (selected.length) {
+                      const payload = {
+                        slides: selected.map((a) => ({
+                          id: String(a.id),
+                          nome: a.nome,
+                          ordem: a.ordem,
+                          texto: a.texto,
+                          imageData: a.imageData,
+                          imageMime: a.imageMime,
+                          videoData: a.videoData,
+                          videoMime: a.videoMime,
+                          style: a.style,
+                        })),
+                        index: 0,
+                      };
+                      await $idb.put(DB_TABLE.CACHE, {
+                        id: "announcements_projection_state",
+                        data: payload,
+                        ts: Date.now(),
+                      });
+                      AppData.set("modules.media.is_playing", true);
+                      const fp = useFileProjection();
+                      fp.start("announcements", selected[0]?.nome || "", selected.length, 0);
+                      ProjectionWindows.openAnnouncementsWindow().catch(() => {});
+                      await new Promise((r) => setTimeout(r, 300));
+                      Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_STATE, payload);
+                    }
+                    break;
+                  }
+                  default:
+                    console.warn("[http] liturgy-execute: tipo desconhecido", litItem.tipo);
                 }
+              } catch (e) {
+                console.error("[http] liturgy-execute falhou:", litItem.tipo, e);
               }
               break;
             }
@@ -310,6 +440,73 @@ $storage.hydrate().then(async () => {
               break;
             case "bible-close":
               Broadcast.send(BROADCAST_TYPE.BIBLE_RIBBON_ACTION, { action: "clear" });
+              break;
+            case "announcements-list": {
+              const allAnn = await $idb.getAll(DB_TABLE.ANNOUNCEMENTS);
+              const sorted = allAnn.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+              const simplified = sorted.map((a) => ({
+                id: String(a.id),
+                nome: a.nome,
+                ordem: a.ordem,
+                hasImage: !!a.imageData,
+                hasVideo: !!a.videoData,
+              }));
+              const replyChannel = data?.replyChannel;
+              if (replyChannel && Platform.api?.send) {
+                Platform.api.send(replyChannel, { status: "ok", announcements: simplified });
+              }
+              break;
+            }
+            case "announcements-project": {
+              const ids = data.ids || [];
+              const allAnn = await $idb.getAll(DB_TABLE.ANNOUNCEMENTS);
+              const sorted = allAnn.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+              const clickedId = ids.length ? ids[0] : null;
+              const startIdx = clickedId
+                ? Math.max(
+                    0,
+                    sorted.findIndex((a) => String(a.id) === clickedId)
+                  )
+                : 0;
+              if (sorted.length) {
+                const payload = {
+                  slides: sorted.map((a) => ({
+                    id: String(a.id),
+                    nome: a.nome,
+                    ordem: a.ordem,
+                    texto: a.texto,
+                    imageData: a.imageData,
+                    imageMime: a.imageMime,
+                    videoData: a.videoData,
+                    videoMime: a.videoMime,
+                    style: a.style,
+                  })),
+                  index: startIdx,
+                };
+                await $idb.put(DB_TABLE.CACHE, {
+                  id: "announcements_projection_state",
+                  data: payload,
+                  ts: Date.now(),
+                });
+                AppData.set("modules.media.is_playing", true);
+                const fp = useFileProjection();
+                fp.start("announcements", sorted[startIdx]?.nome || "", sorted.length, startIdx);
+                ProjectionWindows.openAnnouncementsWindow().catch(() => {});
+                await new Promise((r) => setTimeout(r, 300));
+                Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_STATE, payload);
+              }
+              break;
+            }
+            case "announcements-next":
+              Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_CONTROL, { action: "next" });
+              break;
+            case "announcements-prev":
+              Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_CONTROL, { action: "prev" });
+              break;
+            case "announcements-stop":
+              Broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_CONTROL, { action: "stop" });
+              ProjectionWindows.closeAnnouncementsWindow().catch(() => {});
+              AppData.set("modules.media.is_playing", false);
               break;
             default:
               console.warn("Ação desconhecida:", action);
@@ -404,6 +601,13 @@ $storage.hydrate().then(async () => {
 
     // Inicializa IndexedDB unificado (cria tabelas se necessário)
     await $idb.init();
+
+    // Hidrata o cache de Itens Agendados (migra UserData → IDB se preciso).
+    try {
+      await ScheduledStore.hydrate();
+    } catch (e) {
+      console.warn("[main] ScheduledStore.hydrate falhou:", e);
+    }
 
     // Seed do pacote jsondb (desktop): no primeiro start injeta os catálogos
     // críticos ANTES da UI montar — start inicial funcional sem internet.
@@ -579,8 +783,14 @@ $storage.hydrate().then(async () => {
           }
         };
 
+        // Projeção de anúncios
+        const fp = useFileProjection();
+        if (fp.isProjecting.value && fp.currentType.value === "announcements") {
+          fp.stopProjection();
+          Projection.close("announcements");
+        }
         // Projeção de arquivos de imagem e vídeo
-        if (Broadcast.getLastPayload(BROADCAST_TYPE.FILE_PROJECTION)) {
+        else if (Broadcast.getLastPayload(BROADCAST_TYPE.FILE_PROJECTION)) {
           $alert.yesno("modules.media.alerts.close_projection", (btn) => {
             if (btn === "yes") {
               Broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, { action: "clear" });

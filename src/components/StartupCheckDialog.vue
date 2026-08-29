@@ -398,6 +398,14 @@
         <v-divider />
 
         <v-card-actions class="pa-4">
+          <v-btn
+            v-if="sync.downloading.value || sync.bibleDownloading.value"
+            variant="text"
+            prepend-icon="mdi-window-minimize"
+            @click="minimizeToBackground"
+          >
+            {{ $t("startup_check.minimize") }}
+          </v-btn>
           <v-spacer />
           <v-btn
             v-if="!sync.downloading.value && !sync.bibleDownloading.value"
@@ -479,7 +487,8 @@ const sync = useSyncManager();
 const downloadPercent = computed(() => {
   const total = sync.downloadProgress.value.total;
   if (total <= 0) return 0;
-  return Math.round((sync.downloadProgress.value.done / total) * 100);
+  const processed = sync.downloadProgress.value.done + sync.downloadProgress.value.failed;
+  return Math.round((processed / total) * 100);
 });
 
 const biblePercent = computed(() => {
@@ -504,6 +513,10 @@ function onClose(): void {
   if (dontShowAgain.value) {
     $userdata.set(KEYS.OPTIONS.SKIP_STARTUP_CHECK, true);
   }
+  emit("update:modelValue", false);
+}
+
+function minimizeToBackground(): void {
   emit("update:modelValue", false);
 }
 

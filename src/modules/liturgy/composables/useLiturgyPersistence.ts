@@ -150,6 +150,11 @@ export function useLiturgyPersistence() {
     if (activeCatId.value === id) activeCatId.value = null;
   }
 
+  function updateCategoryColor(id: string | number, color: string): void {
+    $liturgy.updateScheduledCategory(id, { cor: color });
+    _refreshScheduled();
+  }
+
   function addScheduledItem(): void {
     if (!activeCatId.value) return;
     const today = new Date().toISOString().slice(0, 10);
@@ -198,6 +203,7 @@ export function useLiturgyPersistence() {
     addCategory,
     startEditingCategory,
     saveCategoryName,
+    updateCategoryColor,
     removeCategory,
     addScheduledItem,
     updateScheduled,

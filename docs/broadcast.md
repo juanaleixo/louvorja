@@ -73,6 +73,11 @@ $broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, { slide_index: 0 });
 | `YOUTUBE_CONTROL` | `"youtube_control"` | useMedia | FileProjection (play/pause/seek) |
 | `USERDATA_PATCH` | `"userdata:patch"` | UserData.set() | Todas as janelas (sync) |
 | `REQUEST_SLIDE_STATE` | `"request_slide_state"` | Popup/janelas secundárias | useSlides |
+| `ANNOUNCEMENTS_STATE` | `"announcements_state"` | announcements module | AnnouncementsProjection |
+| `ANNOUNCEMENTS_CONTROL` | `"announcements_control"` | announcements module | AnnouncementsProjection |
+| `BIBLE_RIBBON_ACTION` | `"bible_ribbon_action"` | RibbonBar | Módulo bíblia |
+| `LITURGY_RIBBON_ACTION` | `"liturgy:ribbon_action"` | RibbonBar | Módulo liturgia |
+| `RIBBON_SELECT_PAGE` | `"ribbon:select_page"` | Módulos | RibbonBar |
 
 ### Module Projection
 

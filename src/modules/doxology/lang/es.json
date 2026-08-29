@@ -1,0 +1,11 @@
+{
+  "title": "Doxología",
+  "description": "Álbumes de doxología para adoración.",
+  "albums": "Álbumes",
+  "musics": "Músicas",
+  "search": "Buscar…",
+  "empty_albums": "Ningún álbum disponible.",
+  "empty_musics": "Ninguna música en este álbum.",
+  "load_error": "Error al cargar la doxología.",
+  "play": "Reproducir"
+}

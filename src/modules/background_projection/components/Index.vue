@@ -236,7 +236,7 @@ import { DB_TABLE } from "@/constants/DbTables";
 import CategoryManagerDialog from "@/components/CategoryManagerDialog.vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-import { IMAGE_FILE_EXTS } from "@/constants/ImageFileExts";
+import { IMAGE_EXT, VIDEO_EXT } from "@/constants/FileTypes";
 import { ensureRenderableImage, isHeic } from "@/helpers/ImageConvert";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
@@ -519,12 +519,9 @@ async function handleDeleteCategory(id: string): Promise<void> {
   selectedCategoryIds.value = new Set([...selectedCategoryIds.value].filter((cid) => cid !== id));
 }
 
-const IMAGE_EXTS = IMAGE_FILE_EXTS;
-const VIDEO_EXTS = ["mp4", "webm", "ogg", "avi", "mkv", "mov"];
-
 function getFileType(ext: string): "image" | "video" | null {
-  if (IMAGE_EXTS.includes(ext)) return "image";
-  if (VIDEO_EXTS.includes(ext)) return "video";
+  if (IMAGE_EXT.includes(ext)) return "image";
+  if (VIDEO_EXT.includes(ext)) return "video";
   return null;
 }
 
@@ -648,10 +645,12 @@ async function importFileBlob(f: File): Promise<void> {
       : null;
   if (!fileType) return;
   const path = URL.createObjectURL(workFile);
-  const { data, mime } = await readFileData(f);
+  // Persiste os bytes do arquivo CONVERTIDO — gravar o HEIC cru quebraria
+  // thumb e projeção após reiniciar (Chromium não decodifica HEIC).
+  const { data, mime } = await readFileData(workFile);
   const file: BgFile = {
     id: crypto.randomUUID(),
-    name: f.name,
+    name: workFile.name,
     path,
     type: fileType,
     categoryId: pendingCategoryId.value,
@@ -721,7 +720,7 @@ async function onDrop(e: DragEvent): Promise<void> {
   const valid: File[] = [];
   for (const f of Array.from(droppedFiles)) {
     const ext = f.name.split(".").pop()?.toLowerCase() || "";
-    if (IMAGE_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
+    if (IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext)) {
       valid.push(f);
     }
   }
@@ -826,6 +825,22 @@ onMounted(async () => {
   for (const f of files.value) {
     if (f.path.startsWith("blob:")) {
       if (f.data && f.mime) {
+        // Auto-cura: registros antigos podem ter HEIC cru persistido —
+        // converte para JPEG, atualiza o registro e regrava.
+        if (f.type === "image" && isHeic(f.name, f.mime)) {
+          try {
+            const converted = await ensureRenderableImage(
+              f.name,
+              new Blob([f.data], { type: f.mime })
+            );
+            f.data = await converted.blob.arrayBuffer();
+            f.mime = converted.blob.type || "image/jpeg";
+            f.name = converted.name;
+            await saveFile(f);
+          } catch (e) {
+            console.warn("[background_projection] auto-cura HEIC falhou:", e);
+          }
+        }
         const url = createObjectUrl(f.id, f.data, f.mime);
         f.path = url;
         if (f.type === "image") f.thumb = url;
