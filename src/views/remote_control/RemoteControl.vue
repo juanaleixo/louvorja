@@ -204,6 +204,7 @@ const getToken = () => {
 function openChooseLater(item) {
   chooseLaterItem.value = item;
   chooseLaterMode.value = true;
+  tab.value = "music";
 }
 
 // --- Liturgia ---
@@ -380,6 +381,11 @@ function showSnackbar(text, color = "success") {
 
 function refreshState() {
   showSnackbar(t("remote_control.sync.syncing"));
+  if (tab.value === "liturgy" && liturgyRef.value) {
+    liturgyRef.value.refresh();
+  } else if (tab.value === "bible" && bibleRef.value) {
+    bibleRef.value.refresh();
+  }
 }
 
 onMounted(() => {

@@ -1,5 +1,4 @@
 <template>
-  <!-- eslint-disable-next-line vue/valid-v-on -->
   <div class="fpb-footer" @keydown.window="onKeydown">
     <div class="fpb-row">
       <div class="fpb-info">

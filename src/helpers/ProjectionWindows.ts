@@ -380,4 +380,4 @@ export async function closeBibleWindows(): Promise<void> {
   ]);
 }
 
-export default { openProjectionWindows, closeProjectionWindows, closeBibleWindows, openBibleWindow, openFileProjectionWindows, openVideoProjectionWindows, openBackgroundProjectionWindows, closeBackgroundProjectionWindows };
+export default { openProjectionWindows, closeProjectionWindows, closeBibleWindows, openBibleWindow, openFileProjectionWindows, openAnnouncementsWindow, closeAnnouncementsWindow, openVideoProjectionWindows, openBackgroundProjectionWindows, closeBackgroundProjectionWindows };

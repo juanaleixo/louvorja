@@ -413,10 +413,10 @@
                   {{ $t("options.bible_download.download") }}
                 </button>
                 <button
-                  v-if="!bibleDownloading && bibleHasPendingRemovals"
+                  v-if="!bibleDownloading && bibleDownloadedBaseline.size > 0"
                   type="button"
                   class="opt-btn"
-                  :disabled="bibleSaving"
+                  :disabled="bibleSaving || !bibleHasPendingRemovals"
                   @click="saveBibleSelection"
                 >
                   {{
@@ -910,7 +910,7 @@ async function loadBibleVersions(): Promise<void> {
     const downloadedOnDisk = await sync.scanBibleVersionsDisk(result.versions, locale.value);
     const downloadedSet = new Set(downloadedOnDisk);
     selectedBibles.value = downloadedSet;
-    bibleDownloadedBaseline.value = downloadedSet;
+    bibleDownloadedBaseline.value = new Set(downloadedSet);
   } catch (e) {
     console.error("[Sincronizar] loadBibleVersions:", e);
   } finally {
@@ -927,7 +927,7 @@ async function refreshBibleVersions(): Promise<void> {
     const downloadedOnDisk = await sync.scanBibleVersionsDisk(result.versions, locale.value);
     const downloadedSet = new Set(downloadedOnDisk);
     selectedBibles.value = downloadedSet;
-    bibleDownloadedBaseline.value = downloadedSet;
+    bibleDownloadedBaseline.value = new Set(downloadedSet);
   } catch (e) {
     console.error("[Sincronizar] refreshBibleVersions:", e);
   } finally {

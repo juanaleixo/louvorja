@@ -275,30 +275,6 @@ export function useLiturgyItems(
     }
   }
 
-  function iconForItem(item: LiturgyItem): string {
-    const map: Record<string, string> = {
-      [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
-      [LiturgyItemTypeEnum.ARQUIVO]:
-        item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
-      [LiturgyItemTypeEnum.SITE]: isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
-      [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
-      [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
-      [LiturgyItemTypeEnum.MEDIA_LIBRARY]:
-        item.subtipo === "image"
-          ? "mdi-image"
-          : item.subtipo === "video"
-            ? "mdi-video"
-            : item.subtipo === "pdf"
-              ? "mdi-file-pdf-box"
-              : "mdi-library-outline",
-      [LiturgyItemTypeEnum.BG_SOUND]: "mdi-music-box-outline",
-      [LiturgyItemTypeEnum.ANUNCIOS]: "mdi-bullhorn",
-      [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
-      [LiturgyItemTypeEnum.BLOCO]: "mdi-view-dashboard",
-    };
-    return map[item.tipo] || "mdi-circle-medium";
-  }
-
   function isYoutube(url: string | undefined | null): boolean {
     if (!url) return false;
     return /youtu\.?be/i.test(url);
@@ -776,7 +752,7 @@ export function useLiturgyItems(
       data: payload,
       ts: Date.now(),
     });
-    $appdata.set("modules.media.is_playing", true);
+    $appdata.set(KEYS.MODULES.MEDIA.IS_PLAYING, true);
     // Ativa a barra de controles global.
     const fp = useFileProjection();
     fp.start("announcements", selected[0]?.nome || "", selected.length, 0);
@@ -956,7 +932,7 @@ export function useLiturgyItems(
       });
       $broadcast.send(BROADCAST_TYPE.FILE_PROJECTION, payload);
       $media.openAudio({ url, title: item.item || "" });
-      $appdata.set("modules.media.config.video_file", true);
+      $appdata.set(KEYS.MODULES.MEDIA.CONFIG.VIDEO_FILE, true);
     } else if (kind === "audio") {
       $media.openAudio({ url, title: item.item || "" });
     } else if (!kind && !typeHint) {
@@ -1220,7 +1196,6 @@ export function useLiturgyItems(
     toggleChecked,
     onReorder,
     adjustBlocoAssignment,
-    iconForItem,
     isYoutube,
     subtitleFor,
     changeColor,

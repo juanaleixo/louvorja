@@ -117,7 +117,6 @@ import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import BibleSpotlight from "@/components/BibleSpotlight.vue";
 import { apiFetch } from "@/helpers/ApiClient";
-import { resolveDownloadedBibleVersions } from "@/helpers/BibleDownloads";
 import type {
   ActiveBibleState,
   Bible,
@@ -162,8 +161,12 @@ const downloadedVersions = ref<Set<number>>(new Set());
 
 async function loadDownloadedVersions(): Promise<void> {
   try {
-    // IDB ∪ disco ∪ flag manual — mesma detecção do módulo Bíblia.
-    downloadedVersions.value = await resolveDownloadedBibleVersions(locale.value || "pt");
+    const lang = locale.value || "pt";
+    const res = await apiFetch(`/api/bible-downloaded?lang=${lang}&token=${props.token}`);
+    if (res.ok) {
+      const data = (await res.json()) as { downloaded?: number[] };
+      downloadedVersions.value = new Set(data.downloaded || []);
+    }
   } catch (e) {
     console.error("[RemoteBible] loadDownloadedVersions:", e);
   }
@@ -455,6 +458,10 @@ defineExpose({
       bibleSelection.value.chapter = payload.chapter;
       await loadChapterVerses(payload.chapter);
     }
+  },
+  refresh: async (): Promise<void> => {
+    await loadBible();
+    await loadDownloadedVersions();
   },
 });
 </script>

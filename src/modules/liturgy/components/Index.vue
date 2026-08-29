@@ -26,7 +26,6 @@
         :default-color="defaultColor"
         :total-duration="totalDuration"
         :is-checked="isChecked"
-        :icon-for-item="iconForItem"
         :subtitle-for="subtitleFor"
         :on-reorder="onReorder"
         :on-bloco-assign="adjustBlocoAssignment"
@@ -221,7 +220,6 @@ const {
   toggleChecked,
   onReorder,
   adjustBlocoAssignment,
-  iconForItem,
   subtitleFor,
   changeColor,
   markAll,

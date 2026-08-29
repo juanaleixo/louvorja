@@ -130,7 +130,7 @@
           </button>
           <button type="button" class="opt-btn" @click="clearCollectionsCache">
             <v-icon icon="mdi-broom" size="14" class="mr-1" />
-            {{ $t("options.updates.clear_cache_collections") }}
+            {{ $t("options.storage.clear_cache_collections") }}
           </button>
         </div>
       </div>
@@ -380,6 +380,7 @@ async function checkDbUpdate(): Promise<void> {
 
 async function applyDbUpdate(): Promise<void> {
   sessionStorage.clear();
+  $database.invalidate("config");
   dbCacheCleared.value = true;
   dbStatus.value = "ok";
   dbCurrentConfig.value = dbLatestConfig.value;

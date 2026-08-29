@@ -27,7 +27,7 @@
         {{ props.element.duration }} min
       </v-chip>
       <Icon
-        :icon="iconFor(element)"
+        :icon="$liturgy.iconForItem(element)"
         size="40"
         :color="element.cor || defaultColor"
         class="lit-card-icon"
@@ -140,6 +140,7 @@ import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { MUSIC_ACTION, MusicAction } from "@/config/MusicAction";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import $liturgy from "@/helpers/Liturgy";
 
 interface ActionOption {
   action: string;
@@ -260,7 +261,6 @@ const props = withDefaults(
     defaultColor?: string;
     hideCheckbox?: boolean;
     checked?: boolean;
-    iconFor: (item: LiturgyItem) => string;
     subtitleFor: (item: LiturgyItem) => string;
   }>(),
   { locked: false, defaultColor: "#00004F", hideCheckbox: false }

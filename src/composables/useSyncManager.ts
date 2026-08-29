@@ -2,6 +2,7 @@ import { ref, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import Database from "@/helpers/Database";
+import $idb from "@/helpers/IndexedDB";
 import $userdata from "@/helpers/UserData";
 import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { DB_TABLE } from "@/constants/DbTables";
@@ -415,8 +416,14 @@ export function useSyncManager() {
   async function saveBibleSelectionToDisk(toRemove: number[]): Promise<void> {
     for (const versionId of toRemove) {
       const prefix = `bible_${versionId}_`;
+      // Remove do disco legado (userData/json_db/*.json).
       if ((Platform.storage as any)?.removeJsonByPrefix) {
         await (Platform.storage as any).removeJsonByPrefix(prefix);
+      }
+      // Remove do IndexedDB (tabela bible_chapters).
+      const ids = await Database.getStoredIdsForPrefix(DB_TABLE.BIBLE_CHAPTERS, prefix);
+      for (const id of ids) {
+        await $idb.del(DB_TABLE.BIBLE_CHAPTERS, id);
       }
     }
   }

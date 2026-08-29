@@ -42,6 +42,35 @@ function _dayKey(day: number): string {
   return `${KEYS.MODULES.LITURGY.DAYS}.${clampDay(day)}`;
 }
 
+function _isYoutube(url: string | undefined | null): boolean {
+  if (!url) return false;
+  return /youtu\.?be/i.test(url);
+}
+
+function iconForItem(item: LiturgyItem): string {
+  const map: Record<string, string> = {
+    [LiturgyItemTypeEnum.ANOTACAO]: "mdi-note-text-outline",
+    [LiturgyItemTypeEnum.ARQUIVO]:
+      item.subtipo === "dir" ? "mdi-folder-outline" : "mdi-file-outline",
+    [LiturgyItemTypeEnum.SITE]: _isYoutube(item.url || item.subitem) ? "mdi-youtube" : "mdi-web",
+    [LiturgyItemTypeEnum.MUSICA]: "mdi-music",
+    [LiturgyItemTypeEnum.VIDEO_ONLINE]: "mdi-youtube",
+    [LiturgyItemTypeEnum.MEDIA_LIBRARY]:
+      item.subtipo === "image"
+        ? "mdi-image"
+        : item.subtipo === "video"
+          ? "mdi-video"
+          : item.subtipo === "pdf"
+            ? "mdi-file-pdf-box"
+            : "mdi-library-outline",
+    [LiturgyItemTypeEnum.BG_SOUND]: "mdi-music-box-outline",
+    [LiturgyItemTypeEnum.ANUNCIOS]: "mdi-bullhorn",
+    [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
+    [LiturgyItemTypeEnum.BLOCO]: "mdi-view-dashboard",
+  };
+  return map[item.tipo] || "mdi-circle-medium";
+}
+
 export default {
   getActiveDay(): number {
     const stored = $userdata.get<number>(KEYS.MODULES.LITURGY.ACTIVE_DAY, null);
@@ -479,4 +508,6 @@ export default {
       date.getDate() === lastDay.getDate()
     );
   },
+
+  iconForItem,
 }

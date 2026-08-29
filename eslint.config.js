@@ -43,6 +43,7 @@ export default [
         "warn",
         { html: { void: "always", normal: "always", component: "always" } },
       ],
+      "vue/valid-v-on": ["error", { modifiers: ["window"] }],
       "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "no-console": "off",
       radix: "error",

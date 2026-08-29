@@ -73,5 +73,9 @@ export async function resolveDownloadedBibleVersions(lang: string): Promise<Set<
       out.add(v.id_bible_version);
     }
   }
+
+  // Sincroniza a flag para que o main process (endpoint /api/bible-downloaded) saiba.
+  UserData.set(KEYS.STORAGE.BIBLE_DOWNLOADED_VERSIONS, Array.from(out));
+
   return out;
 }
