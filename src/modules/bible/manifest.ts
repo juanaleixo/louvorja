@@ -5,6 +5,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import { KEYS } from "@/constants/UserDataKeys"
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes"
 import $modules from "@/helpers/Modules"
 
 const moduleId = ModuleEnum.BIBLE;
@@ -94,6 +95,36 @@ export const contextualPages: RibbonPage[] = [
             label: "ribbon.btn.bible_format",
             action: `${moduleId}_format`,
             color: "#1b4f8a",
+          },
+        ],
+      },
+      {
+        id: "ctx_bible_display",
+        title: "ribbon.groups.display",
+        buttons: [
+          {
+            id: `${moduleId}_show_reference`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.BIBLE.SHOW_REFERENCE,
+            label: `${modulePath}.ribbon.show_reference`,
+            defaultValue: true,
+            broadcastOnToggle: BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
+          },
+          {
+            id: `${moduleId}_show_version`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.BIBLE.SHOW_VERSION,
+            label: `${modulePath}.ribbon.show_version`,
+            defaultValue: true,
+            broadcastOnToggle: BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
+          },
+          {
+            id: `${moduleId}_reference_only`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.BIBLE.REFERENCE_ONLY,
+            label: `${modulePath}.ribbon.reference_only`,
+            defaultValue: false,
+            broadcastOnToggle: BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
           },
         ],
       },

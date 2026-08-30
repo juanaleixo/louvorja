@@ -46,6 +46,9 @@ export const KEYS = {
       SHOW_RETURN: `${MODULES}.${ModuleEnum.BIBLE}.show_return`,
       IS_PLAYING: `${MODULES}.${ModuleEnum.BIBLE}.is_playing`,
       ESC_CLOSES_PROJECTION: `${MODULES}.${ModuleEnum.BIBLE}.esc_closes_projection`,
+      SHOW_REFERENCE: `${MODULES}.${ModuleEnum.BIBLE}.show_reference`,
+      SHOW_VERSION: `${MODULES}.${ModuleEnum.BIBLE}.show_version`,
+      REFERENCE_ONLY: `${MODULES}.${ModuleEnum.BIBLE}.reference_only`,
     },
     BACKGROUND_SOUND: {
       IS_PLAYING: `${MODULES}.${ModuleEnum.BACKGROUND_SOUND}.is_playing`,

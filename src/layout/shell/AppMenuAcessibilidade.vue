@@ -20,6 +20,10 @@
     </section>
 
     <v-tabs v-model="activeTab" density="compact" color="primary" class="mt-2">
+      <v-tab value="avatar">
+        <v-icon icon="mdi-human-greeting" class="mr-2" size="16" />
+        {{ $t("accessibility.tabs.avatar") }}
+      </v-tab>
       <v-tab value="musics">
         <Icon :icon="ICONS.MUSIC.MUSIC" class="mr-2" size="16" />
         {{ $t("accessibility.tabs.musics") }}
@@ -27,10 +31,6 @@
       <v-tab value="bible">
         <v-icon :icon="ICONS.BIBLE.BIBLE" class="mr-2" size="16" />
         {{ $t("accessibility.tabs.bible") }}
-      </v-tab>
-      <v-tab value="avatar">
-        <v-icon icon="mdi-account" class="mr-2" size="16" />
-        {{ $t("accessibility.tabs.avatar") }}
       </v-tab>
       <v-tab value="storage">
         <v-icon icon="mdi-harddisk" class="mr-2" size="16" />
@@ -41,6 +41,210 @@
     <v-divider />
 
     <v-window v-model="activeTab">
+      <!-- ═══ Aba Avatar ═══ -->
+      <v-window-item value="avatar">
+        <section class="opt-section">
+          <p class="opt-hint">{{ $t("accessibility.avatar.hint") }}</p>
+
+          <div class="opt-download-scroll">
+            <div class="opt-download-list">
+              <label
+                v-for="option in avatarOptions"
+                :key="option.value"
+                class="opt-checkbox opt-album"
+              >
+                <input
+                  type="radio"
+                  :value="option.value"
+                  :checked="selectedAvatar === option.value"
+                  @change="selectAvatar(option.value)"
+                />
+                <span>{{ option.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="opt-divider" />
+
+          <div class="opt-row">
+            <span class="opt-label">{{ $t("accessibility.avatar.enable_projection") }}</span>
+            <v-switch
+              v-model="librasEnabled"
+              density="compact"
+              color="primary"
+              hide-details
+              @update:model-value="toggleLibrasEnabled"
+            />
+          </div>
+
+          <div class="opt-row">
+            <span class="opt-label">{{ $t("accessibility.avatar.show_on_obs") }}</span>
+            <v-switch
+              v-model="showOnObs"
+              density="compact"
+              color="primary"
+              hide-details
+              @update:model-value="toggleShowOnObs"
+            />
+          </div>
+
+          <div class="opt-divider" />
+          <v-row class="align-start">
+            <v-col cols="12" sm="4">
+              <!-- Posição -->
+              <div class="opt-label mb-1">{{ $t("accessibility.avatar.position") }}</div>
+              <div class="position-options">
+                <button
+                  v-for="a in anchorOptions"
+                  :key="a.value"
+                  type="button"
+                  class="position-btn"
+                  :class="{ 'position-btn--active': currentAnchor === a.value }"
+                  @click="setAnchor(a.value)"
+                >
+                  <v-icon :icon="a.icon" size="18" class="mr-1" />
+                  {{ a.label }}
+                </button>
+              </div>
+
+              <div class="opt-row">
+                <span class="opt-label">{{ $t("accessibility.avatar.show_border") }}</span>
+                <v-switch
+                  v-model="showBorder"
+                  density="compact"
+                  color="primary"
+                  class="ml-2 mt-5"
+                  hide-details
+                  @update:model-value="toggleShowBorder"
+                />
+              </div>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <!-- Deslocamento -->
+              <div class="opt-label mb-1">{{ $t("accessibility.avatar.align_hint") }}</div>
+              <v-row dense class="mt-2">
+                <v-col cols="6">
+                  <v-text-field
+                    :model-value="currentOffsetX"
+                    :label="$t('accessibility.avatar.offset_x')"
+                    type="number"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    suffix="px"
+                    @update:model-value="setOffsetX(Number($event))"
+                  />
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field
+                    :model-value="currentOffsetY"
+                    :label="$t('accessibility.avatar.offset_y')"
+                    type="number"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    suffix="px"
+                    @update:model-value="setOffsetY(Number($event))"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- Tamanho -->
+              <div class="opt-label mt-5 mb-1">{{ $t("accessibility.avatar.size_hint") }}</div>
+              <v-row dense>
+                <v-col cols="6">
+                  <v-text-field
+                    :model-value="currentWidth"
+                    :label="$t('accessibility.avatar.width')"
+                    type="number"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    suffix="px"
+                    :min="100"
+                    @update:model-value="setWidth(Number($event))"
+                  />
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field
+                    :model-value="currentHeight"
+                    :label="$t('accessibility.avatar.height')"
+                    type="number"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    suffix="px"
+                    :min="150"
+                    @update:model-value="setHeight(Number($event))"
+                  />
+                </v-col>
+              </v-row>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <!-- Animação de entrada -->
+              <span class="opt-label">{{ $t("accessibility.avatar.animation") }}</span>
+              <v-select
+                v-model="currentAnimation"
+                :items="animationOptions"
+                density="compact"
+                hide-details
+                variant="outlined"
+                style="max-width: 160px"
+                @update:model-value="setAnimation"
+              />
+            </v-col>
+          </v-row>
+
+          <div class="opt-divider" />
+
+          <v-row class="align-start">
+            <v-col cols="12" sm="3">
+              <!-- Velocidade dos gestos -->
+              <span class="opt-label">{{ $t("accessibility.avatar.speed") }}</span>
+              <v-select
+                v-model="currentSpeed"
+                :items="speedOptions"
+                density="compact"
+                hide-details
+                variant="outlined"
+                style="max-width: 160px"
+                @update:model-value="setSpeed"
+              />
+            </v-col>
+
+            <v-col cols="12" sm="3">
+              <!-- Emoção -->
+              <span class="opt-label">{{ $t("accessibility.avatar.emotion") }}</span>
+              <v-select
+                v-model="currentEmotion"
+                :items="emotionOptions"
+                density="compact"
+                hide-details
+                variant="outlined"
+                style="max-width: 160px"
+                @update:model-value="setEmotion"
+              />
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <!-- Sotaque -->
+              <span class="opt-label">{{ $t("accessibility.avatar.region") }}</span>
+              <v-select
+                v-model="currentRegion"
+                :items="regionOptions"
+                density="compact"
+                hide-details
+                variant="outlined"
+                style="max-width: 300px"
+                @update:model-value="setRegion"
+              />
+            </v-col>
+          </v-row>
+        </section>
+      </v-window-item>
+
       <!-- ═══ Aba Músicas ═══ -->
       <v-window-item value="musics">
         <section class="opt-section">
@@ -259,210 +463,6 @@
         </section>
       </v-window-item>
 
-      <!-- ═══ Aba Avatar ═══ -->
-      <v-window-item value="avatar">
-        <section class="opt-section">
-          <p class="opt-hint">{{ $t("accessibility.avatar.hint") }}</p>
-
-          <div class="opt-download-scroll">
-            <div class="opt-download-list">
-              <label
-                v-for="option in avatarOptions"
-                :key="option.value"
-                class="opt-checkbox opt-album"
-              >
-                <input
-                  type="radio"
-                  :value="option.value"
-                  :checked="selectedAvatar === option.value"
-                  @change="selectAvatar(option.value)"
-                />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="opt-divider" />
-
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.enable_projection") }}</span>
-            <v-switch
-              v-model="librasEnabled"
-              density="compact"
-              color="primary"
-              hide-details
-              @update:model-value="toggleLibrasEnabled"
-            />
-          </div>
-
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.show_on_obs") }}</span>
-            <v-switch
-              v-model="showOnObs"
-              density="compact"
-              color="primary"
-              hide-details
-              @update:model-value="toggleShowOnObs"
-            />
-          </div>
-
-          <div class="opt-divider" />
-          <v-row class="align-start">
-            <v-col cols="12" sm="4">
-              <!-- Posição -->
-              <div class="opt-label mb-1">{{ $t("accessibility.avatar.position") }}</div>
-              <div class="position-options">
-                <button
-                  v-for="a in anchorOptions"
-                  :key="a.value"
-                  type="button"
-                  class="position-btn"
-                  :class="{ 'position-btn--active': currentAnchor === a.value }"
-                  @click="setAnchor(a.value)"
-                >
-                  <v-icon :icon="a.icon" size="18" class="mr-1" />
-                  {{ a.label }}
-                </button>
-              </div>
-
-              <div class="opt-row">
-                <span class="opt-label">{{ $t("accessibility.avatar.show_border") }}</span>
-                <v-switch
-                  v-model="showBorder"
-                  density="compact"
-                  color="primary"
-                  class="ml-2 mt-5"
-                  hide-details
-                  @update:model-value="toggleShowBorder"
-                />
-              </div>
-            </v-col>
-
-            <v-col cols="12" sm="4">
-              <!-- Deslocamento -->
-              <div class="opt-label mb-1">{{ $t("accessibility.avatar.align_hint") }}</div>
-              <v-row dense class="mt-2">
-                <v-col cols="6">
-                  <v-text-field
-                    :model-value="currentOffsetX"
-                    :label="$t('accessibility.avatar.offset_x')"
-                    type="number"
-                    density="compact"
-                    hide-details
-                    variant="outlined"
-                    suffix="px"
-                    @update:model-value="setOffsetX(Number($event))"
-                  />
-                </v-col>
-                <v-col cols="6">
-                  <v-text-field
-                    :model-value="currentOffsetY"
-                    :label="$t('accessibility.avatar.offset_y')"
-                    type="number"
-                    density="compact"
-                    hide-details
-                    variant="outlined"
-                    suffix="px"
-                    @update:model-value="setOffsetY(Number($event))"
-                  />
-                </v-col>
-              </v-row>
-
-              <!-- Tamanho -->
-              <div class="opt-label mt-5 mb-1">{{ $t("accessibility.avatar.size_hint") }}</div>
-              <v-row dense>
-                <v-col cols="6">
-                  <v-text-field
-                    :model-value="currentWidth"
-                    :label="$t('accessibility.avatar.width')"
-                    type="number"
-                    density="compact"
-                    hide-details
-                    variant="outlined"
-                    suffix="px"
-                    :min="100"
-                    @update:model-value="setWidth(Number($event))"
-                  />
-                </v-col>
-                <v-col cols="6">
-                  <v-text-field
-                    :model-value="currentHeight"
-                    :label="$t('accessibility.avatar.height')"
-                    type="number"
-                    density="compact"
-                    hide-details
-                    variant="outlined"
-                    suffix="px"
-                    :min="150"
-                    @update:model-value="setHeight(Number($event))"
-                  />
-                </v-col>
-              </v-row>
-            </v-col>
-
-            <v-col cols="12" sm="4">
-              <!-- Animação de entrada -->
-              <span class="opt-label">{{ $t("accessibility.avatar.animation") }}</span>
-              <v-select
-                v-model="currentAnimation"
-                :items="animationOptions"
-                density="compact"
-                hide-details
-                variant="outlined"
-                style="max-width: 160px"
-                @update:model-value="setAnimation"
-              />
-            </v-col>
-          </v-row>
-
-          <div class="opt-divider" />
-
-          <v-row class="align-start">
-            <v-col cols="12" sm="3">
-              <!-- Velocidade dos gestos -->
-              <span class="opt-label">{{ $t("accessibility.avatar.speed") }}</span>
-              <v-select
-                v-model="currentSpeed"
-                :items="speedOptions"
-                density="compact"
-                hide-details
-                variant="outlined"
-                style="max-width: 160px"
-                @update:model-value="setSpeed"
-              />
-            </v-col>
-
-            <v-col cols="12" sm="3">
-              <!-- Emoção -->
-              <span class="opt-label">{{ $t("accessibility.avatar.emotion") }}</span>
-              <v-select
-                v-model="currentEmotion"
-                :items="emotionOptions"
-                density="compact"
-                hide-details
-                variant="outlined"
-                style="max-width: 160px"
-                @update:model-value="setEmotion"
-              />
-            </v-col>
-
-            <v-col cols="12" sm="4">
-              <!-- Sotaque -->
-              <span class="opt-label">{{ $t("accessibility.avatar.region") }}</span>
-              <v-select
-                v-model="currentRegion"
-                :items="regionOptions"
-                density="compact"
-                hide-details
-                variant="outlined"
-                style="max-width: 300px"
-                @update:model-value="setRegion"
-              />
-            </v-col>
-          </v-row>
-        </section>
-      </v-window-item>
-
       <!-- ═══ Aba Armazenamento ═══ -->
       <v-window-item value="storage">
         <section class="opt-section">
@@ -529,7 +529,7 @@ interface Category {
 
 const { t, locale } = useI18n();
 const sync = useSyncManager();
-const activeTab = ref("musics");
+const activeTab = ref("avatar");
 
 // Stats
 const stats = ref<LibrasCacheStats>({

@@ -314,6 +314,9 @@ function getCheckValue(btn: RibbonButton): boolean {
 function setCheckValue(btn: RibbonButton, checked: boolean | null): void {
   if (!btn.optionKey) return;
   $userdata.set(btn.optionKey, checked ?? false);
+  if (btn.broadcastOnToggle) {
+    Broadcast.send(btn.broadcastOnToggle, {});
+  }
 }
 
 function isDependencyMet(btn: RibbonButton): boolean {

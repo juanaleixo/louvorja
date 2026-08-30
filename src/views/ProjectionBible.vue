@@ -26,12 +26,12 @@
 
     <Transition name="fade-verse" mode="out-in">
       <div
-        v-if="active && (text || reference)"
-        :key="text + reference"
+        v-if="active && (displayText || displayReference)"
+        :key="displayText + displayReference"
         class="projection-bible-content"
       >
         <span
-          v-if="text"
+          v-if="displayText"
           class="projection-bible-text"
           :style="{
             color: font_color || '#FFFFFF',
@@ -46,11 +46,11 @@
             ...textShadowStyle,
           }"
         >
-          {{ text }}
+          {{ displayText }}
         </span>
 
         <span
-          v-if="reference"
+          v-if="displayReference"
           class="projection-bible-reference"
           :style="{
             color: reference_font_color || '#FB8C00',
@@ -59,7 +59,7 @@
             textAlign: horizontal_align === 'start' ? 'left' : 'right',
           }"
         >
-          {{ reference }}
+          {{ displayReference }}
         </span>
       </div>
 
@@ -81,6 +81,10 @@ const MID = "modules.bible";
 
 const text = ref("");
 const reference = ref("");
+const book = ref("");
+const chapter = ref("");
+const verses = ref([]);
+const version = ref("");
 const active = ref(false);
 
 const { container, fontSizePc, measure } = useContainerSize();
@@ -124,6 +128,47 @@ const textShadowStyle = computed(() => {
   return { textShadow: css };
 });
 
+const showReference = computed(() => ud("show_reference", true));
+const showVersion = computed(() => ud("show_version", true));
+const referenceOnly = computed(() => ud("reference_only", false));
+
+function numbersInterval(numbers) {
+  if (!numbers || numbers.length === 0) return "";
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const result = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      result.push(start === end ? `${start}` : `${start}-${end}`);
+      start = sorted[i];
+      end = sorted[i];
+    }
+  }
+  result.push(start === end ? `${start}` : `${start}-${end}`);
+  return result.join(", ");
+}
+
+const referenceOnlyText = computed(() => {
+  if (!book.value || !chapter.value) return "";
+  const interval = numbersInterval(verses.value);
+  return `${book.value} ${chapter.value}${interval ? `:${interval}` : ""}`;
+});
+
+const displayText = computed(() => {
+  if (referenceOnly.value) return referenceOnlyText.value;
+  return text.value;
+});
+
+const displayReference = computed(() => {
+  if (referenceOnly.value) return "";
+  if (!showReference.value) return "";
+  if (!showVersion.value) return referenceOnlyText.value;
+  return reference.value;
+});
+
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   console.log("[ProjectionBible] Recebido BIBLE_VERSE:", payload);
   if (payload === null || payload.active === false) {
@@ -132,6 +177,10 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   }
   text.value = payload?.text || "";
   reference.value = payload?.reference || "";
+  book.value = payload?.book || "";
+  chapter.value = payload?.chapter || "";
+  verses.value = payload?.verses || [];
+  version.value = payload?.version || "";
   active.value = payload?.active ?? !!payload?.text;
 });
 
@@ -157,6 +206,15 @@ onMounted(() => {
   document.body.style.height = "100vh";
   window.addEventListener("keydown", onKey);
 
+  console.log(
+    "[ProjectionBible] Montou. active=",
+    active.value,
+    "text=",
+    text.value,
+    "book=",
+    book.value
+  );
+
   // Pede o versículo atual à janela principal — necessário porque o
   // broadcast BIBLE_VERSE é fire-and-forget: se a projeção abre depois
   // do usuário ter selecionado, não recebe nada e fica vazia.
@@ -164,6 +222,7 @@ onMounted(() => {
   // está ativo após o roteamento.
   const requestState = () => {
     if (active.value) return; // Já recebeu estado
+    console.log("[ProjectionBible] Enviando REQUEST_BIBLE_STATE...");
     Broadcast.send(BROADCAST_TYPE.REQUEST_BIBLE_STATE, {});
   };
 

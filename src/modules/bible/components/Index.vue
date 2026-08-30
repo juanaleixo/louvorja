@@ -250,7 +250,7 @@
         variant="text"
         size="small"
         :prepend-icon="'mdi-eraser'"
-        @click="clean()"
+        @click="clearText()"
       >
         {{ t("clear_text") }}
       </v-btn>
@@ -485,6 +485,10 @@ watch(
   () => {
     send("scriptural_reference", select_bible.scriptural_reference);
     send("text", select_bible.text);
+    send("book", select_bible.book);
+    send("chapter", select_bible.chapter);
+    send("verses", select_bible.verses);
+    send("version", select_bible.version);
   }
 );
 
@@ -701,6 +705,10 @@ async function selVerse(event: MouseEvent | null, num: number | string): Promise
   Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
     text: select_bible.text,
     reference: select_bible.scriptural_reference,
+    book: select_bible.book,
+    chapter: select_bible.chapter,
+    verses: [...(select_bible.verses || [])],
+    version: select_bible.version,
     next_text,
     next_reference,
     active: true,
@@ -1009,6 +1017,12 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, async (payload: any) => {
 
 // Quando uma janela de projeção pede o estado, reemitir o versículo atual apenas se houver um.
 useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
+  console.log(
+    "[Bible/Index] REQUEST_BIBLE_STATE recebido. text=",
+    select_bible.text,
+    "verses=",
+    select_bible.verses?.length
+  );
   if (select_bible.text && select_bible.verses?.length) {
     const num = select_bible.verses[select_bible.verses.length - 1];
     let next_text = "";
@@ -1026,6 +1040,10 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
     Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
       text: select_bible.text || "",
       reference: select_bible.scriptural_reference || "",
+      book: select_bible.book || "",
+      chapter: select_bible.chapter || "",
+      verses: [...(select_bible.verses || [])],
+      version: select_bible.version || "",
       next_text,
       next_reference,
       active: !!(select_bible.text && select_bible.verses?.length),

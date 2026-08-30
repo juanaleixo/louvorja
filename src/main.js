@@ -558,6 +558,7 @@ $storage.hydrate().then(async () => {
     Broadcast.listen((msg) => {
       if (msg.type === BROADCAST_TYPE.REQUEST_BIBLE_STATE) {
         const last = Broadcast.getLastPayload(BROADCAST_TYPE.BIBLE_VERSE);
+        console.log("[main] REQUEST_BIBLE_STATE recebido. Cache:", last);
         if (last) {
           Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, last);
         }

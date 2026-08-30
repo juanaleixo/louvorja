@@ -2,7 +2,10 @@
   "title": "Biblia",
   "description": "Biblia",
   "ribbon": {
-    "title_ctx": "Configurar Biblia"
+    "title_ctx": "Configurar Biblia",
+    "show_reference": "Mostrar Referencia",
+    "show_version": "Mostrar Versión",
+    "reference_only": "Mostrar Solo Referencia"
   },
   "project_start": "Iniciar Proyección",
   "project_stop": "Detener Proyección",

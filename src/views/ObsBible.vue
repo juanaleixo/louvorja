@@ -2,27 +2,86 @@
   <OverlayRenderer />
   <div class="obs-bible-root">
     <Transition name="fade-verse" mode="out-in">
-      <div v-if="active && text" :key="text" class="obs-bible-content">
-        <div class="obs-bible-text">{{ text }}</div>
-        <div class="obs-bible-reference">{{ reference }}</div>
+      <div v-if="active && displayText" :key="displayText" class="obs-bible-content">
+        <div class="obs-bible-text">{{ displayText }}</div>
+        <div v-if="displayReference" class="obs-bible-reference">{{ displayReference }}</div>
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+
+const MID = "modules.bible";
 
 const text = ref("");
 const reference = ref("");
+const book = ref("");
+const chapter = ref("");
+const verses = ref([]);
+const version = ref("");
 const active = ref(false);
+
+const _tick = ref(0);
+function ud(key, fallback = null) {
+  void _tick.value;
+  const v = UserData.get(`${MID}.${key}`, fallback);
+  return v == null ? fallback : v;
+}
+
+const showReference = computed(() => ud("show_reference", true));
+const showVersion = computed(() => ud("show_version", true));
+const referenceOnly = computed(() => ud("reference_only", false));
+
+function numbersInterval(numbers) {
+  if (!numbers || numbers.length === 0) return "";
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const result = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      result.push(start === end ? `${start}` : `${start}-${end}`);
+      start = sorted[i];
+      end = sorted[i];
+    }
+  }
+  result.push(start === end ? `${start}` : `${start}-${end}`);
+  return result.join(", ");
+}
+
+const referenceOnlyText = computed(() => {
+  if (!book.value || !chapter.value) return "";
+  const interval = numbersInterval(verses.value);
+  return `${book.value} ${chapter.value}${interval ? `:${interval}` : ""}`;
+});
+
+const displayText = computed(() => {
+  if (referenceOnly.value) return referenceOnlyText.value;
+  return text.value;
+});
+
+const displayReference = computed(() => {
+  if (referenceOnly.value) return "";
+  if (!showReference.value) return "";
+  if (!showVersion.value) return referenceOnlyText.value;
+  return reference.value;
+});
 
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   text.value = payload.text || "";
   reference.value = payload.reference || "";
+  book.value = payload.book || "";
+  chapter.value = payload.chapter || "";
+  verses.value = payload.verses || [];
+  version.value = payload.version || "";
   active.value = payload.active ?? true;
 });
 
