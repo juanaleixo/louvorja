@@ -525,6 +525,24 @@ $storage.hydrate().then(async () => {
         case "http:drawing-number":
           Broadcast.send(BROADCAST_TYPE.DRAWING_NUMBER, { number: data.number });
           break;
+        case "http:libras-bundle": {
+          // Handler para bundles de animação VLibras.
+          // O renderer busca o bundle no IndexedDB e envia de volta via replyChannel.
+          const { token, replyChannel } = data;
+          if (token && replyChannel && Platform.api?.send) {
+            // Buscar no IndexedDB (tabela libras_bundles)
+            const bundleKey = `bundle_${token}`;
+            $idb
+              .get("libras_bundles", bundleKey)
+              .then((entry) => {
+                Platform.api.send(replyChannel, entry || null);
+              })
+              .catch(() => {
+                Platform.api.send(replyChannel, null);
+              });
+          }
+          break;
+        }
         case "http:drawing-name":
           Broadcast.send(BROADCAST_TYPE.DRAWING_NAME, { name: data.name });
           break;
@@ -549,6 +567,12 @@ $storage.hydrate().then(async () => {
         const last = Broadcast.getLastPayload(BROADCAST_TYPE.SLIDE_CHANGE);
         if (last) {
           Broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, last);
+          if (msg.type === BROADCAST_TYPE.REQUEST_LIBRAS_STATE) {
+            const last = Broadcast.getLastPayload(BROADCAST_TYPE.LIBRAS_TOGGLE);
+            if (last) {
+              Broadcast.send(BROADCAST_TYPE.LIBRAS_TOGGLE, last);
+            }
+          }
         }
       }
 

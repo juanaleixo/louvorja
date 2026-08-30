@@ -456,6 +456,7 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
       "http:open-song",
       "http:drawing-number",
       "http:drawing-name",
+      "http:libras-bundle",
     ];
     const handlers = events.map((evt) => {
       const handler = (_e, data) => cb(evt, data);

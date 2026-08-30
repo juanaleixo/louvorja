@@ -52,6 +52,22 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: bible/Index.vue (re-emite BIBLE_VERSE). */
   REQUEST_BIBLE_STATE: "request_bible_state",
 
+  // ─── Libras ────────────────────────────────────────────────────────────────
+
+  /** Ativa/desativa a tradução Libras na projeção.
+   *  Payload: { enabled: boolean }
+   *  Emitido por: ShellTools ou ribbon. Recebido por: Projection. */
+  LIBRAS_TOGGLE: "libras_toggle",
+
+  /** Texto traduzido para Libras (gloss) para exibição.
+   *  Payload: { gloss: string, original: string }
+   *  Emitido por: useLibras composable. Recebido por: Projection, Obs. */
+  LIBRAS_TRANSLATE: "libras_translate",
+
+  /** Solicita reemissão do estado atual do Libras. Emitido por
+   *  LibrasOverlay ao montar. Recebido por: main.js — que reemite LIBRAS_TOGGLE. */
+  REQUEST_LIBRAS_STATE: "request_libras_state",
+
   // ─── Pattern genérico de projeção de módulo ──────────────────────────────
 
   /** Valor a ser projetado por um módulo qualquer (texto, número, etc.).

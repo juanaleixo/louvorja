@@ -140,7 +140,7 @@ import Platform from "@/helpers/Platform";
 import $database from "@/helpers/Database";
 import LjLogo from "@/components/LjLogo.vue";
 import ContributorCard from "@/components/ContributorCard.vue";
-import { CONTRIBUTORS } from "@/config/contributors";
+import { CONTRIBUTORS } from "@/config/Contributors";
 
 const dbVersion = ref(0);
 

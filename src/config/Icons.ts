@@ -233,6 +233,8 @@ export const ICONS = {
     IP_NETWORK: "mdi-ip-network",
     INSTALL: "mdi-monitor-arrow-down-variant",
     KEYBOARD: "mdi-keyboard",
+    LIBRAS_ON: "mdi-sign-language",
+    LIBRAS_OFF: "mdi-sign-language-outline",
     LINK: "mdi-link",
     LINK_VARIANT: "mdi-link-variant",
     MENU: "mdi-menu",

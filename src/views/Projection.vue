@@ -1,6 +1,7 @@
 <template>
   <Slide :slide="slide" :title="title" :progress="progress" show-progress class="projection-fill" />
   <OverlayRenderer />
+  <LibrasOverlay :slide-lyric="slide?.lyric" />
 </template>
 
 <script setup>
@@ -10,6 +11,7 @@ import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Slide from "@/components/Slide.vue";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
 const { slide, progress, title, slideIndex, totalSlides } = useProjectionState();
 

@@ -31,6 +31,17 @@
           <span>{{ $t("options.dev.logs_terminal") }}</span>
         </label>
       </div>
+
+      <div class="opt-row">
+        <label class="opt-checkbox">
+          <input
+            type="checkbox"
+            :checked="showLibrasText"
+            @change="toggleShowLibrasText($c($event))"
+          />
+          <span>{{ $t("options.dev.show_libras_text") }}</span>
+        </label>
+      </div>
     </section>
 
     <section class="opt-section">
@@ -111,6 +122,7 @@ function getUserData<T = unknown>(key: string, defaultValue?: T): T {
 const devtoolsMainWindow = ref(getUserData<boolean>(KEYS.OPTIONS.DEV.DEVTOOLS_MAIN_WINDOW, true));
 const devtoolsProjections = ref(getUserData<boolean>(KEYS.OPTIONS.DEV.DEVTOOLS_PROJECTIONS, true));
 const logsTerminal = ref(getUserData<boolean>(KEYS.OPTIONS.DEV.LOGS_TERMINAL, true));
+const showLibrasText = ref(getUserData<boolean>(KEYS.MODULES.LIBRAS.SHOW_TEXT, false));
 
 function $c(e: Event): boolean {
   return (e.target as HTMLInputElement).checked;
@@ -136,6 +148,11 @@ function setLogsTerminal(v: boolean): void {
   } catch {
     /* noop */
   }
+}
+
+function toggleShowLibrasText(v: boolean): void {
+  showLibrasText.value = v;
+  $userdata.set(KEYS.MODULES.LIBRAS.SHOW_TEXT, v);
 }
 
 function reloadAllWindows(): void {

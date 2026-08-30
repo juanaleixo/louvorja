@@ -198,13 +198,13 @@ app.whenReady().then(async () => {
   if (isDev) {
     const DEV_CSP =
       "default-src 'self' http://localhost:* ws://localhost:*; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* https://www.youtube.com https://*.doubleclick.net https://www.google.com; " +
+      "script-src 'self' blob: 'unsafe-inline' 'unsafe-eval' http://localhost:* https://www.youtube.com https://*.doubleclick.net https://www.google.com https://vlibras.gov.br https://cdn.jsdelivr.net 'wasm-unsafe-eval'; " +
       "style-src 'self' 'unsafe-inline' http://localhost:* https://fonts.googleapis.com; " +
-      "font-src 'self' data: http://localhost:* https://fonts.gstatic.com; " +
+      "font-src 'self' data: http://localhost:* https://fonts.gstatic.com https://vlibras.gov.br https://cdn.jsdelivr.net; " +
       "img-src 'self' blob: data: https: http://localhost:* https://*.ytimg.com https://*.youtube.com; " +
       "media-src 'self' blob: https: http://localhost:* https://*.googlevideo.com; " +
-      "connect-src 'self' blob: http://localhost:* ws://localhost:* https://api.louvorja.com.br https://*.louvorja.com.br https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com; " +
-      "frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
+      "connect-src 'self' blob: http://localhost:* ws://localhost:* https://api.louvorja.com.br https://*.louvorja.com.br https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com https://traducao2.vlibras.gov.br https://dicionario2.vlibras.gov.br https://repositorio.vlibras.gov.br https://cdn.jsdelivr.net; " +
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://vlibras.gov.br; " +
       "worker-src 'self' blob:;";
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
       callback({

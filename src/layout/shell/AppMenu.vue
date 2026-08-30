@@ -56,6 +56,7 @@
               <AppMenuSobre v-else-if="activeItem?.id === 'about'" />
               <AppMenuTransmitir v-else-if="activeItem?.id === 'transmission'" />
               <AppMenuSincronizar v-else-if="activeItem?.id === 'sync'" />
+              <AppMenuAcessibilidade v-else-if="activeItem?.id === 'accessibility'" />
               <AppMenuAtualizacoes v-else-if="activeItem?.id === 'updates'" />
               <AppMenuImportExport v-else-if="activeItem?.id === 'import_export'" />
               <AppMenuAlbums v-else-if="activeItem?.id === 'albums'" />
@@ -78,6 +79,7 @@ import AppMenuOpcoes from "./AppMenuOpcoes.vue";
 import AppMenuSobre from "./AppMenuSobre.vue";
 import AppMenuTransmitir from "./AppMenuTransmitir.vue";
 import AppMenuSincronizar from "./AppMenuSincronizar.vue";
+import AppMenuAcessibilidade from "./AppMenuAcessibilidade.vue";
 import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
 import AppMenuAlbums from "./AppMenuAlbums.vue";
@@ -124,6 +126,7 @@ const items = computed(() => [
     inline: true,
   },
   { id: "sync", label: "shell.appmenu_items.sync", inline: true },
+  { id: "accessibility", label: "shell.appmenu_items.accessibility", inline: true },
   { id: "feedback", label: "shell.appmenu_items.feedback", action: openFeedback },
   { id: "updates", label: "shell.appmenu_items.check_update", inline: true },
   {

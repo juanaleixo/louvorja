@@ -1,22 +1,25 @@
 <template>
   <div class="mmt">
     <template v-if="!compact">
-      <button
+      <v-btn
         v-for="(btn, key) in buttons"
         :key="key"
         type="button"
         class="mmt-btn"
+        variant="text"
         :class="{
           'mmt-btn--disabled': btn.disabled,
           'mmt-btn--star': btn.icon === 'mdi-star',
         }"
-        :disabled="!!btn.disabled"
+        max-idth="5"
+        :color="color ?? 'var(--lj-text-muted)'"
+        :disabled="btn.disabled"
         :title="btn.title"
         :data-testid="'mmt-btn-' + btn.testid"
         @click="btn.click"
       >
         <v-icon :icon="btn.icon" size="16" />
-      </button>
+      </v-btn>
     </template>
 
     <v-menu location="start">
@@ -289,7 +292,6 @@ const menu = computed<MenuItem[]>(() => [
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--lj-radius-sm);
-  color: var(--lj-text-muted);
   cursor: pointer;
   transition:
     background var(--lj-transition-fast),

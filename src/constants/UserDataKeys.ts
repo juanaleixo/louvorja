@@ -118,6 +118,19 @@ export const KEYS = {
     OVERLAY: {
       ENABLED: `${MODULES}.${ModuleEnum.OVERLAY}.enabled`,
     },
+    LIBRAS: {
+      ANCHOR: `${MODULES}.${ModuleEnum.LIBRAS}.anchor`,
+      OFFSET_X: `${MODULES}.${ModuleEnum.LIBRAS}.offset_x`,
+      OFFSET_Y: `${MODULES}.${ModuleEnum.LIBRAS}.offset_y`,
+      WIDTH: `${MODULES}.${ModuleEnum.LIBRAS}.width`,
+      HEIGHT: `${MODULES}.${ModuleEnum.LIBRAS}.height`,
+      SHOW_TEXT: `${MODULES}.${ModuleEnum.LIBRAS}.show_text`,
+      SHOW_BORDER: `${MODULES}.${ModuleEnum.LIBRAS}.show_border`,
+      SPEED: `${MODULES}.${ModuleEnum.LIBRAS}.speed`,
+      EMOTION: `${MODULES}.${ModuleEnum.LIBRAS}.emotion`,
+      REGION: `${MODULES}.${ModuleEnum.LIBRAS}.region`,
+      ANIMATION: `${MODULES}.${ModuleEnum.LIBRAS}.animation`,
+    },
     OPEN_ORDER: `${MODULES}._openOrder`,
     STOPWATCH: {
       RUNNING: `${MODULES}.${ModuleEnum.STOPWATCH}.running`,

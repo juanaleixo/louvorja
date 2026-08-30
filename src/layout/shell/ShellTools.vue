@@ -96,6 +96,26 @@
       </template>
       {{ $t("shell.quick_search") }}
     </v-tooltip>
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button
+          v-bind="props"
+          type="button"
+          class="shell-tool"
+          :class="{ 'shell-tool--active': isLibrasEnabled }"
+          @click="toggleLibras"
+        >
+          <v-icon
+            v-if="isLibrasEnabled"
+            :icon="ICONS.UI.LIBRAS_ON"
+            :size="sizeIcon"
+            :color="COLORS.WARNING"
+          />
+          <v-icon v-else :icon="ICONS.UI.LIBRAS_OFF" :size="sizeIcon" />
+        </button>
+      </template>
+      {{ isLibrasEnabled ? $t("accessibility.musics.cached") + " Libras" : "Libras" }}
+    </v-tooltip>
 
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
@@ -145,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTheme } from "vuetify";
 import $appdata from "@/helpers/AppData";
@@ -174,6 +194,7 @@ const hasUpdate = computed(() => $appdata.get(KEYS.SHELL.APP_UPDATE_AVAILABLE, f
 const isBgPlaying = computed(() =>
   $userdata.get<boolean>(KEYS.MODULES.BACKGROUND_PROJECTION.IS_PLAYING, false)
 );
+const isLibrasEnabled = ref(localStorage.getItem("libras_enabled") === "true");
 
 const sizeIcon = 16;
 
@@ -252,6 +273,21 @@ function confirmCancel(task: BackgroundTask): void {
     }
   );
 }
+
+function toggleLibras() {
+  const next = !isLibrasEnabled.value;
+  isLibrasEnabled.value = next;
+  localStorage.setItem("libras_enabled", String(next));
+  Broadcast.send(BROADCAST_TYPE.LIBRAS_TOGGLE, { enabled: next });
+}
+
+// Sincronizar estado quando outro componente altera o toggle
+Broadcast.listen((msg: { type: string; payload: unknown }) => {
+  if (msg.type === BROADCAST_TYPE.LIBRAS_TOGGLE) {
+    const p = msg.payload as Record<string, unknown>;
+    isLibrasEnabled.value = p?.enabled === true;
+  }
+});
 </script>
 
 <style scoped>

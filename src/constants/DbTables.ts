@@ -53,6 +53,9 @@ export const DB_TABLE = {
   LITURGY_LIBRARY: ModuleEnum.LITURGY + ".library",
   SCHEDULED_CATEGORIES: ModuleEnum.LITURGY + ".scheduled_categories",
   SCHEDULED_ITEMS: ModuleEnum.LITURGY + ".scheduled_items",
+  // ─── Cache de tradução Libras ───
+  LIBRAS_CACHE: "libras_cache",
+  LIBRAS_BUNDLES: "libras_bundles",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];
