@@ -242,7 +242,7 @@ function selectItem(item) {
 
 function openFeedback() {
   if (typeof window !== "undefined") {
-    window.open("https://github.com/juanaleixo/louvorja/issues", "_blank", "noopener,noreferrer");
+    window.open("https://github.com/louvorja/violin-app/issues", "_blank", "noopener,noreferrer");
   }
 }
 

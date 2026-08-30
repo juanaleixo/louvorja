@@ -99,7 +99,7 @@
         </a>
         <a
           class="about-link"
-          href="https://github.com/juanaleixo/louvorja/issues"
+          href="https://github.com/louvorja/violin-app/issues"
           target="_blank"
           rel="noopener noreferrer"
         >

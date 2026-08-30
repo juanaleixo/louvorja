@@ -9,8 +9,8 @@ Sistema de apresentação de letras de músicas e conteúdo bíblico para uso em
 **Pré-requisitos:** Node.js 18+, npm 9+
 
 ```bash
-git clone https://github.com/louvorja/app
-cd app
+git clone https://github.com/louvorja/violin-app
+cd violin-app
 npm install
 cp env .env              # configure VITE_URL_DATABASE, VITE_URL_FILES, VITE_API_TOKEN
 npm run dev              # → http://localhost:5002
@@ -24,7 +24,7 @@ Para desktop (Electron): `npm run electron:dev`.
 
 ## Atualizações (desktop)
 
-O app verifica versões novas no [GitHub Releases](https://github.com/juanaleixo/louvorja/releases).
+O app verifica versões novas no [GitHub Releases](https://github.com/louvorja/violin-app/releases).
 Em **Windows/macOS/AppImage** usa `electron-updater`; em **Linux deb/rpm** faz o check
 via GitHub API e baixa o `.deb`/`.rpm` para instalação manual.
 

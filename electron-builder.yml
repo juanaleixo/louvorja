@@ -56,8 +56,8 @@ asar: true
 # GH_TOKEN precisa estar definido no ambiente de build para publicar.
 publish:
   - provider: github
-    owner: juanaleixo
-    repo: louvorja
+    owner: louvorja
+    repo: violin-app
     private: false
     releaseType: release
 

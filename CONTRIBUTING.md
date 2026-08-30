@@ -24,7 +24,7 @@ npm -v    # deve ser >= 9
 ### 1. Fork & Clone
 
 ```bash
-git clone https://github.com/louvorja/app
+git clone https://github.com/louvorja/violin-app
 ```
 
 ### 2. Instalação
@@ -339,7 +339,7 @@ Abra uma **Issue** com label `enhancement` descrevendo:
 
 ## Como abrir uma issue
 
-Use o [GitHub Issues](https://github.com/louvorja/app/issues). Inclua:
+Use o [GitHub Issues](https://github.com/louvorja/violin-app/issues). Inclua:
 
 - **Versão** (`npm run build` exibe a versão no output, ou veja `package.json`).
 - **Passos para reproduzir** (se for bug).
