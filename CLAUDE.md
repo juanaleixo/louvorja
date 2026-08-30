@@ -59,6 +59,7 @@ src/
 │   ├── Favorites.js     # Lista de favoritos persistida → this.$favorites
 │   ├── History.js       # Histórico de músicas (MAX=50) → this.$history
 │   ├── Liturgy.js       # Helper de liturgia (addMusic, clear) → this.$liturgy
+│   ├── Libras.ts        # Tradução PT-BR → Libras (API VLibras, cache IndexedDB)
 │   ├── DateTime.js      # Formatação de tempo HH:MM:SS
 │   ├── String.js        # Limpeza e ordenação de strings UTF-8
 │   ├── Path.js          # Constrói URLs para banco e arquivos
@@ -88,7 +89,8 @@ src/
 │   └── shell/
 │       ├── ShellTools.vue       # Botões do header: busca, favoritos, tema, projeção fundo, background tasks
 │       ├── AppMenuSincronizar.vue  # Download de coletâneas/bíblia + gerenciamento de storage
-│       └── AppMenuAtualizacoes.vue # Verificação e download de atualizações do app
+│       ├── AppMenuAtualizacoes.vue # Verificação e download de atualizações do app
+│       └── AppMenuAcessibilidade.vue # Configurações de Libras (avatar, velocidade, sotaque)
 ├── modules/             # Módulos do sistema (ver ADR 0003)
 │   ├── album/
 │   ├── background_projection/  # Projeção de fundo (imagens/vídeos)
@@ -101,6 +103,7 @@ src/
 │   ├── favorites/       # Lista de músicas favoritas (drag/drop)
 │   ├── history/         # Histórico de músicas abertas
 │   ├── hymnal/
+│   ├── libras/          # Tradução Libras — widget VLibras + avatar Unity WebGL
 │   ├── liturgy/         # Planejador de culto (drag/drop, timer regressivo)
 │   ├── lyric/
 │   ├── media/
@@ -125,6 +128,7 @@ src/
     ├── ObsBible.vue         # /obs/bible — captura OBS de versículos da Bíblia
     ├── Operator.vue         # /operator — grade de slides com navegação por teclado
     ├── Clock.vue            # /clock — relógio digital em tela cheia
+    ├── LibrasOverlay.vue    # Overlay de tradução Libras (widget VLibras + gloss)
     └── Shell.vue            # Shell principal — boot, updater, startup check, layout
 ```
 
@@ -217,6 +221,7 @@ $userdata.set("theme", "dark");
 | `helpers/Shortcuts.js` | helper-puro | Atalhos globais OS-level (Electron) |
 | `helpers/SljaConverter.js` | helper-puro | Conversão de slides `.slja` |
 | `helpers/ModuleTypes.js` | helper-puro | Factory e validação de `manifest.json` |
+| `helpers/Libras.ts` | helper-puro | Tradução PT-BR → Libras (API VLibras, cache IndexedDB) |
 | `helpers/AppData.ts` | deve-virar-composable | Camada de acesso ao Pinia (dot-notation); candidato a `useAppState` |
 | `helpers/UserData.ts` | deve-virar-composable | Preferências persistidas via AppData |
 | `helpers/Modules.js` | deve-virar-composable | Runtime open/close de módulos |
@@ -328,6 +333,9 @@ const song   = await $database.get(`music_${id}`);
 | `go_to_slide` | `Operator.vue` | `Media.js` (via listener em getElement) |
 | `bible_verse` | `bible/Index.vue` selVerse | ObsBible |
 | `message_board` | `message_board/index.vue` | (recepção futura) |
+| `libras_toggle` | ShellTools / ribbon | Projection |
+| `libras_translate` | useLibras composable | Projection, Obs |
+| `request_libras_state` | LibrasOverlay | main.js (re-emite LIBRAS_TOGGLE) |
 
 ---
 

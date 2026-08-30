@@ -52,11 +52,12 @@ interface SlideCfg {
   transition_speed_ms: number;
   text_bg_transparent: boolean;
   affect_external_slides: boolean;
-  /** O usuário marcou "Fundo personalizado" nas Opções. Necessário porque
-   *  background_color/background_image também têm valor mesmo sem o toggle —
-   *  sem essa flag não dá pra saber se a config custom deve substituir o
-   *  background do slide externo. */
   custom_background_active: boolean;
+  shadow_enabled: boolean;
+  shadow_color: string;
+  shadow_blur: number;
+  shadow_offset_x: number;
+  shadow_offset_y: number;
 }
 
 /**
@@ -100,6 +101,13 @@ const _readSlideOpts = (): SlideCfg => {
   // Flag global de "afetar slides externos"
   const affectExternal = $userdata.get(KEYS.OPTIONS.SLIDE.AFFECT_EXTERNAL_SLIDES, null);
   if (typeof affectExternal === "boolean") merged.affect_external_slides = affectExternal;
+
+  // Sombra no texto
+  merged.shadow_enabled = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, false) === true;
+  merged.shadow_color = $userdata.get<string>(KEYS.OPTIONS.SLIDE.SHADOW_COLOR, "#000000") || "#000000";
+  merged.shadow_blur = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, 12)) || 12;
+  merged.shadow_offset_x = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_X, 0)) || 0;
+  merged.shadow_offset_y = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, 2)) || 2;
 
   // Fundo personalizado
   if ($userdata.get(KEYS.OPTIONS.SLIDE.CUSTOM_BACKGROUND, false) as boolean) {
@@ -151,6 +159,12 @@ export function useSlideStyle(): SlideStyleAPI {
     return fromSlide || fromCfg;
   }
 
+  function _buildTextShadow(): string | undefined {
+    if (!cfg.value.shadow_enabled) return undefined;
+    const { shadow_color, shadow_blur, shadow_offset_x, shadow_offset_y } = cfg.value;
+    return `${shadow_offset_x}px ${shadow_offset_y}px ${shadow_blur}px ${shadow_color}`;
+  }
+
   function coverStyle(slide?: SlideOption): CSSProperties {
     const sizePct = _pickSize(
       (slide as { font_size_pct?: number })?.font_size_pct,
@@ -167,7 +181,7 @@ export function useSlideStyle(): SlideStyleAPI {
       fontWeight: 700,
       textAlign: "center",
       letterSpacing: "0.02em",
-      textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)",
+      textShadow: _buildTextShadow() ?? "none",
       lineHeight: 1.3,
       maxWidth: "92vw",
     };
@@ -189,7 +203,7 @@ export function useSlideStyle(): SlideStyleAPI {
       fontWeight: 600,
       textAlign: "center",
       letterSpacing: "0.01em",
-      textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)",
+      textShadow: _buildTextShadow() ?? "none",
       lineHeight: 1.3,
       maxWidth: "92vw",
     };
@@ -210,7 +224,7 @@ export function useSlideStyle(): SlideStyleAPI {
       color,
       fontWeight: 600,
       textAlign: "center",
-      textShadow: "0 2px 12px rgba(0,0,0,0.9)",
+      textShadow: _buildTextShadow() ?? "none",
       lineHeight: 1.3,
       maxWidth: "92vw",
     };
@@ -225,7 +239,7 @@ export function useSlideStyle(): SlideStyleAPI {
       opacity: 0.85,
       fontWeight: 600,
       lineHeight: 1.2,
-      textShadow: "0 1px 4px rgba(0,0,0,0.6)",
+      textShadow: _buildTextShadow() ?? "0 1px 4px rgba(0,0,0,0.6)",
     };
   }
 

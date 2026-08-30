@@ -396,6 +396,9 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 | `liturgy_ribbon_action` | RibbonBar | Módulo liturgia |
 | `module_projection_close` | módulos de projeção | Janela de projeção |
 | `ribbon:select_page` | Módulos | RibbonBar |
+| `libras_toggle` | ShellTools | Projection |
+| `libras_translate` | useLibras | Projection, Obs |
+| `request_libras_state` | LibrasOverlay | main.js |
 
 ---
 
@@ -635,6 +638,103 @@ compartilhada `IMAGE_EXT` (`src/constants/FileTypes.ts`) inclui
 
 ---
 
+## ♿ Acessibilidade — Libras
+
+O módulo `libras` integra o **VLibras** (API pública do governo federal) para
+tradução de texto para Língua Brasileira de Sinais, exibindo um avatar 3D na
+janela de projeção.
+
+### Arquitetura
+
+| Componente | Caminho | Função |
+|---|---|---|
+| `Libras.ts` | `src/helpers/Libras.ts` | Helper puro — tradução, cache, extração de texto |
+| `LibrasOverlay.vue` | `src/views/LibrasOverlay.vue` | Overlay de tradução (widget VLibras + texto gloss) |
+| `useLibras.ts` | `src/modules/libras/composables/useLibras.ts` | Composable do módulo |
+| `AppMenuAcessibilidade.vue` | `src/layout/shell/AppMenuAcessibilidade.vue` | Tela de configuração completa |
+| `config/Libras.ts` | `src/config/Libras.ts` | URLs da API, timeouts |
+
+### Fluxo
+
+```
+ShellTools (toggle) → Broadcast.LIBRAS_TOGGLE → Projection
+  → LibrasOverlay monta widget VLibras (CDN)
+  → slideLyric muda → Libras.stripHtml() → Libras.translateText()
+    → POST traducao2.vlibras.gov.br/translate → gloss
+    → Cache IndexedDB (libras_cache)
+    → window.vlibras.translateAndPlay(gloss) → avatar Unity WebGL anima
+```
+
+### IndexedDB
+
+| Tabela | Conteúdo |
+|---|---|
+| `libras_cache` | Gloss traduzido (texto → gloss) |
+| `libras_bundles` | Bundles de animação VLibras (~30 KB cada) |
+
+### Configurações do usuário
+
+Salvas via `$userdata` com chaves `KEYS.MODULES.LIBRAS.*`:
+
+| Chave | Default | Descrição |
+|---|---|---|
+| `anchor` | `bottom-right` | Posição do overlay na tela |
+| `offset_x` / `offset_y` | 20 | Deslocamento da âncora |
+| `width` / `height` | — | Dimensões do overlay |
+| `show_text` | — | Mostrar texto gloss abaixo do avatar |
+| `show_border` | — | Mostrar borda no overlay |
+| `speed` | 1 | Velocidade do avatar (0.5, 1, 1.5, 2) |
+| `emotion` | `default` | Emoção (default, happy, sad, surprise) |
+| `region` | `BR` | Sotaque regional (BR, PE, RJ, SC) |
+| `animation` | — | Tipo de animação |
+
+Toggle de ativação: `localStorage("libras_enabled")`.
+
+### CSP (Content Security Policy)
+
+Domínios adicionados ao CSP para o VLibras:
+
+```
+script-src   ... vlibras.gov.br cdn.jsdelivr.net
+connect-src  ... vlibras.gov.br traducao2.vlibras.gov.br dicionario2.vlibras.gov.br
+frame-src    ... vlibras.gov.br
+font-src     ... vlibras.gov.br
+```
+
+### Broadcast
+
+| Tipo | Payload | Emissor | Receptor |
+|---|---|---|---|
+| `libras_toggle` | `{ enabled: boolean }` | ShellTools | Projection |
+| `libras_translate` | `{ gloss, original }` | useLibras | Projection, Obs |
+| `request_libras_state` | — | LibrasOverlay | main.js |
+
+---
+
+## 🎨 Formatação de texto dos slides
+
+Além das cores e tamanhos de fonte (formatação personalizada), os slides de
+música suportam **sombra personalizada** no texto.
+
+### Configurações (Opções → Slides → Formatação de texto)
+
+| Opção | Chave (`KEYS.OPTIONS.SLIDE`) | Default | Descrição |
+|---|---|---|---|
+| Sombra no Texto | `SHADOW_ENABLED` | `false` | Ativa/desativa a sombra custom |
+| Cor Sombra | `SHADOW_COLOR` | `#000000` | Cor da sombra (color picker) |
+| Desfoque | `SHADOW_BLUR` | 12 | Raio de desfoque (0–30 px) |
+| Desloc. X | `SHADOW_OFFSET_X` | 0 | Deslocamento horizontal (-20 a 20 px) |
+| Desloc. Y | `SHADOW_OFFSET_Y` | 2 | Deslocamento vertical (-20 a 20 px) |
+
+### Implementação
+
+- `useSlideStyle.ts` — lê as chaves e constrói `text-shadow` via `_buildTextShadow()`
+- Aplica-se a `coverStyle()`, `lyricStyle()`, `auxStyle()` e `nextStyle()`
+- Quando desativada, usa a sombra padrão hardcoded (preta, desfocada)
+- Botão "Restaurar" reseta todas as formatações inclusive sombra
+
+---
+
 ## 📁 Constantes de tipos de arquivo (FileTypes.ts)
 
 Todas as listas de extensões de arquivo usadas no programa estão centralizadas
@@ -739,6 +839,7 @@ src/
 │   ├── announcements/        # Slides de anúncios para projeção
 │   ├── background_projection/    # Projeção de fundo
 │   ├── background_sound/         # Música de fundo
+│   ├── libras/                   # Tradução Libras (VLibras)
 │   ├── liturgy/                  # Planejador de culto
 │   ├── media_library/            # Biblioteca de mídia
 │   ├── overlay/                  # Overlays customizáveis

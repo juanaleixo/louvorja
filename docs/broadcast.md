@@ -78,6 +78,9 @@ $broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, { slide_index: 0 });
 | `BIBLE_RIBBON_ACTION` | `"bible_ribbon_action"` | RibbonBar | Módulo bíblia |
 | `LITURGY_RIBBON_ACTION` | `"liturgy:ribbon_action"` | RibbonBar | Módulo liturgia |
 | `RIBBON_SELECT_PAGE` | `"ribbon:select_page"` | Módulos | RibbonBar |
+| `LIBRAS_TOGGLE` | `"libras_toggle"` | ShellTools | Projection |
+| `LIBRAS_TRANSLATE` | `"libras_translate"` | useLibras | Projection, Obs |
+| `REQUEST_LIBRAS_STATE` | `"request_libras_state"` | LibrasOverlay | main.js |
 
 ### Module Projection
 

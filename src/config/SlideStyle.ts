@@ -24,4 +24,9 @@ export const SLIDE_STYLE_DEFAULT = Object.freeze({
   text_bg_transparent: false, // caixa de texto atrás da letra (translúcida quando false)
   affect_external_slides: true, // formatação personalizada vence formatação do slide externo
   custom_background_active: false, // toggle "Fundo personalizado" ligado pelo usuário
+  shadow_enabled: false,
+  shadow_color: "#000000",
+  shadow_blur: 12,
+  shadow_offset_x: 0,
+  shadow_offset_y: 2,
 });

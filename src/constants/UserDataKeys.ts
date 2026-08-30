@@ -196,6 +196,12 @@ export const KEYS = {
       BG_IMAGE: `${OPTIONS_SLIDE}.bg_image`,
       BG_POSITION: `${OPTIONS_SLIDE}.bg_position`,
 
+      SHADOW_ENABLED: `${OPTIONS_SLIDE}.shadow_enabled`,
+      SHADOW_COLOR: `${OPTIONS_SLIDE}.shadow_color`,
+      SHADOW_BLUR: `${OPTIONS_SLIDE}.shadow_blur`,
+      SHADOW_OFFSET_X: `${OPTIONS_SLIDE}.shadow_offset_x`,
+      SHADOW_OFFSET_Y: `${OPTIONS_SLIDE}.shadow_offset_y`,
+
       CUSTOM_RETURN_TEXT_FORMAT: `${OPTIONS_SLIDE}.custom_return_text_format`,
       RETURN_TEXT_CASE: `${OPTIONS_SLIDE}.return_text_case`,
       FONT_SIZE_NEXT: `${OPTIONS_SLIDE}.font_size_next`,

@@ -65,6 +65,51 @@ Detalhes em [docs/architecture.md](docs/architecture.md#cache-do-banco-em-camada
 
 ---
 
+## Tradução Libras (Língua Brasileira de Sinais)
+
+O app possui integração com o **VLibras** (API pública do governo federal) para
+tradução automática de letras de músicas e versículos bíblicos para Libras,
+exibindo um avatar 3D na janela de projeção.
+
+**Funcionalidades:**
+
+- **Toggle rápido** — botão de Libras na barra de ferramentas (ShellTools)
+- **Tela de Acessibilidade** (AppMenu → Acessibilidade) com configurações:
+  - **Músicas** —âncora, posição, tamanho do overlay
+  - **Bíblia** — tradução de versículos
+  - **Avatar** — seleção de personagem (`icaro`, `hosana`, `guga`, `random`),
+    velocidade (0.5× a 2×), emoção (padrão/feliz/triste/surpreso),
+    sotaque regional (BR, PE, RJ, SC), animação
+  - **Armazenamento** — cache de gloss e bundles de animação (IndexedDB)
+- **Cache offline** — gloss traduzido e bundles de animação (~30 KB cada)
+  armazenados no IndexedDB para uso sem internet
+- **Projeção + OBS** — overlay aparece tanto na projeção fullscreen quanto
+  na captura OBS (configurável)
+
+**Fluxo técnico:**
+
+1. Texto (PT-BR) → `POST traducao2.vlibras.gov.br/translate` → gloss Libras
+2. Gloss → widget VLibras (`vlibras-plugin.js`) → avatar Unity WebGL
+3. Bundles de animação → cache IndexedDB → HTTP local (porta 7070)
+
+**Detalhes:** [docs/architecture.md](docs/architecture.md#-acessibilidade---libras)
+
+---
+
+## Formatação de Texto dos Slides
+
+Além das cores e tamanhos de fonte, os slides de música suportam **sombra
+personalizada** no texto:
+
+- **Ativar/desativar** sombra via Opções → Slides → Formatação de texto personalizada
+- **Configurações:** cor, desfoque (blur), deslocamento horizontal (X) e vertical (Y)
+- Aplica-se a todos os estilos de texto: título, letra, auxiliar e próximo slide
+- A sombra padrão (hardcoded) é usada quando a formatação personalizada está desativada
+
+**Detalhes:** [docs/architecture.md](docs/architecture.md#-formatação-de-texto-dos-slides)
+
+---
+
 ## Stack
 
 | Tecnologia | Versão | Nota |

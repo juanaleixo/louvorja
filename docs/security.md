@@ -14,12 +14,14 @@ No servidor, defina o header HTTP para que a política também cubra recursos n�
 ```
 Content-Security-Policy:
   default-src 'self';
-  script-src 'self';
+  script-src 'self' vlibras.gov.br cdn.jsdelivr.net;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src 'self' data: https://fonts.gstatic.com;
+  font-src 'self' data: https://fonts.gstatic.com vlibras.gov.br;
   img-src 'self' data: https:;
   media-src 'self' blob: https:;
-  connect-src 'self' blob: https://api.louvorja.com.br https://*.louvorja.com.br;
+  connect-src 'self' blob: https://api.louvorja.com.br https://*.louvorja.com.br
+             vlibras.gov.br traducao2.vlibras.gov.br dicionario2.vlibras.gov.br;
+  frame-src 'self' vlibras.gov.br;
   worker-src 'self';
 ```
 

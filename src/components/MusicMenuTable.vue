@@ -303,7 +303,6 @@ const menu = computed<MenuItem[]>(() => [
 
 .mmt-btn:hover:not(:disabled) {
   background: var(--lj-active-bg);
-  color: var(--lj-navy);
   border-color: var(--lj-navy);
 }
 
