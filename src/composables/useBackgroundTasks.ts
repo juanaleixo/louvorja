@@ -134,8 +134,10 @@ export function useBackgroundTasks() {
     if (task._cancelFn) {
       try { task._cancelFn(); } catch { /* noop */ }
     }
-    task.status = "cancelled";
-    task.completedAt = Date.now();
+    _tasks.delete(id);
+    if (_tasks.size === 0) {
+      _cleanupDownloadListeners();
+    }
   }
 
   function dismissTask(id: string): void {

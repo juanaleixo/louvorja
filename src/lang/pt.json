@@ -1026,7 +1026,7 @@
     "select_files": "Selecionar Arquivos",
     "download_all": "Baixar Tudo",
     "sync_hint": "Você pode baixar álbuns ou versões bíblicas específicas depois no menu Opções > Sincronizar.",
-    "minimize": "Minimizar",
+    "minimize": "Minimizar para segundo plano",
     "task": {
       "collections": "Baixando coletâneas",
       "bible": "Baixando Bíblia"
