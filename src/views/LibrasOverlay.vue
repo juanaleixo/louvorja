@@ -47,13 +47,21 @@ import $broadcast from "@/helpers/Broadcast";
 import $userdata from "@/helpers/UserData";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { KEYS } from "@/constants/UserDataKeys";
+import { KEYS_LS } from "@/constants/LocalStorageKeys";
 import { buildAnchorStyle } from "@/types/Overlay";
 import type { OverlayAnchor } from "@/types/Overlay";
 import Libras from "@/helpers/Libras";
 
-const props = defineProps<{
-  slideLyric?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    slideLyric?: string;
+    verseText?: string;
+    type?: "music" | "bible";
+  }>(),
+  {
+    type: "music",
+  }
+);
 
 const unitySrc = "https://vlibras.gov.br/app/unity/index.html";
 
@@ -75,6 +83,12 @@ const showBorder = computed(
 );
 const currentAnimation = computed(
   () => $userdata.get<string>(KEYS.MODULES.LIBRAS.ANIMATION, "fade") || "fade"
+);
+const backgroundColor = computed(
+  () => $userdata.get<string>(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent") || "transparent"
+);
+const currentRegion = computed(
+  () => $userdata.get<string>(KEYS.MODULES.LIBRAS.REGION, "BR") || "BR"
 );
 
 // ─── Posição e Tamanho ──────────────────────────────────────────────────────
@@ -99,6 +113,7 @@ const iframeStyle = computed(() => {
     ...pos,
     width: `${avatarWidth.value}px`,
     height: `${avatarHeight.value}px`,
+    backgroundColor: backgroundColor.value,
   };
 });
 
@@ -127,6 +142,27 @@ const overlayStyle = computed(() => {
   return { ...overlayPos, maxWidth: `${avatarWidth.value + 220}px` };
 });
 
+// ─── Checagem de permissão por tipo ────────────────────────────────────────
+
+function isTypeEnabled(): boolean {
+  if (!enabled.value) return false;
+  if (props.type === "music") {
+    return localStorage.getItem(KEYS_LS.LIBRAS.MUSICS_ENABLED) !== "false";
+  }
+  if (props.type === "bible") {
+    return localStorage.getItem(KEYS_LS.LIBRAS.BIBLE_ENABLED) !== "false";
+  }
+  return true;
+}
+
+const shouldShow = computed(() => isTypeEnabled());
+
+const hasContent = computed(() => {
+  if (props.type === "music") return !!props.slideLyric;
+  if (props.type === "bible") return !!props.verseText;
+  return false;
+});
+
 // ─── Unity Iframe ───────────────────────────────────────────────────────────
 
 let unityReady = false;
@@ -147,7 +183,13 @@ function onUnityMessage(event: MessageEvent) {
     console.log("[LibrasOverlay] on_load_player → avatar:", avatar);
     sendToUnity("PlayerManager", "Change", avatar);
     hideSubtitles();
-    avatarVisible.value = true;
+    if (hasContent.value && shouldShow.value) {
+      setTimeout(() => {
+        if (hasContent.value && shouldShow.value) {
+          avatarVisible.value = true;
+        }
+      }, 2500);
+    }
     if (pendingGloss) {
       sendToUnity("PlayerManager", "playNow", pendingGloss);
       pendingGloss = "";
@@ -166,7 +208,7 @@ function onUnityMessage(event: MessageEvent) {
       settingsApplied = true;
       const speed = $userdata.get<number>(KEYS.MODULES.LIBRAS.SPEED, 1) || 1;
       const emotion = $userdata.get<string>(KEYS.MODULES.LIBRAS.EMOTION, "default") || "default";
-      const region = $userdata.get<string>(KEYS.MODULES.LIBRAS.REGION, "BR") || "BR";
+      const region = currentRegion.value;
       console.log(
         "[LibrasOverlay] aplicando configurações → speed:",
         speed,
@@ -238,14 +280,16 @@ function disable() {
 
 // ─── Tradução ───────────────────────────────────────────────────────────────
 
-async function translateAndShow(lyric: string): Promise<void> {
-  const plainText = Libras.stripHtml(lyric);
+async function translateAndShow(text: string): Promise<void> {
+  const plainText = Libras.stripHtml(text);
   if (!plainText) {
     rawGloss.value = "";
     return;
   }
 
-  const cached = glossCache.get(plainText);
+  const region = currentRegion.value;
+  const cacheKey = `${region}:${plainText}`;
+  const cached = glossCache.get(cacheKey);
   if (cached) {
     rawGloss.value = cached;
     playGloss(cached);
@@ -257,7 +301,7 @@ async function translateAndShow(lyric: string): Promise<void> {
     const result = await Libras.translateText(plainText);
     if (result) {
       rawGloss.value = result;
-      glossCache.set(plainText, result);
+      glossCache.set(cacheKey, result);
       playGloss(result);
     }
   } catch (e) {
@@ -269,30 +313,65 @@ async function translateAndShow(lyric: string): Promise<void> {
 
 // ─── Watch ──────────────────────────────────────────────────────────────────
 
+watch(hasContent, (has) => {
+  if (has && unityReady && shouldShow.value) {
+    avatarVisible.value = true;
+  } else {
+    avatarVisible.value = false;
+  }
+});
+
 watch(
   () => props.slideLyric,
   (lyric) => {
-    if (!enabled.value || !lyric) return;
+    if (!shouldShow.value || !lyric) return;
     translateAndShow(lyric);
+  }
+);
+
+watch(
+  () => props.verseText,
+  (text) => {
+    if (!shouldShow.value || !text) return;
+    translateAndShow(text);
   }
 );
 
 // ─── Init ───────────────────────────────────────────────────────────────────
 
 let unlistenMediaClose: (() => void) | null = null;
+let unlistenLibrasToggle: (() => void) | null = null;
 
 onMounted(() => {
-  enabled.value = localStorage.getItem("libras_enabled") === "true";
+  enabled.value = localStorage.getItem(KEYS_LS.LIBRAS.ENABLED) === "true";
 
   unlistenMediaClose = $broadcast.listen((msg: { type: string }) => {
     if (msg.type === BROADCAST_TYPE.MEDIA_CLOSE) {
-      disable();
+      sendToUnity("PlayerManager", "stopAll", "");
+      avatarVisible.value = false;
+      rawGloss.value = "";
+      isTranslating.value = false;
+      settingsApplied = false;
+    }
+  });
+
+  // Reagir em tempo real ao toggle do Libras
+  unlistenLibrasToggle = $broadcast.listen((msg: { type: string; payload?: unknown }) => {
+    if (msg.type === BROADCAST_TYPE.LIBRAS_TOGGLE) {
+      const p = msg.payload as Record<string, unknown> | undefined;
+      enabled.value = p?.enabled === true;
+      if (!enabled.value) {
+        disable();
+      } else {
+        settingsApplied = false;
+      }
     }
   });
 });
 
 onBeforeUnmount(() => {
   unlistenMediaClose?.();
+  unlistenLibrasToggle?.();
   window.removeEventListener("message", onUnityMessage);
   stopUnity();
 });

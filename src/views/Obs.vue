@@ -1,6 +1,6 @@
 <template>
   <OverlayRenderer />
-  <LibrasOverlay v-if="showLibrasObs" :slide-lyric="slide?.lyric" />
+  <LibrasOverlay v-if="showLibrasObs" :slide-lyric="slide?.lyric" type="music" />
   <div class="obs-root">
     <!--
       Fade-in só ao APARECER (música começa) e fade-out ao SUMIR (música

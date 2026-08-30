@@ -80,6 +80,7 @@ import type { BibleSearchResult } from "@/types/Bible";
 import { registerShell } from "@/composables/useShell";
 import { useFileProjection } from "@/composables/useFileProjection";
 import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
+import { COLOR_THEMES } from "@/config/Theme";
 
 const { locale, t } = useI18n();
 const vuetifyTheme = useTheme();
@@ -366,10 +367,14 @@ onMounted(() => {
   window.addEventListener("louvorja:open-music-search", onOpenMusicSearch);
   window.addEventListener("louvorja:open-bible-search", onOpenBibleSearch);
 
+  // Reseta estado da projeção background — garante que restarts
+  // (normais ou por crash) não deixam a chave "presada" como true
+  $userdata.set(KEYS.MODULES.BACKGROUND_PROJECTION.IS_PLAYING, false);
+
   $userdata.load();
 
   // Tema
-  const savedTheme = $userdata.get<string>(KEYS.OPTIONS.THEME) || "darkblue";
+  const savedTheme = $userdata.get<string>(KEYS.OPTIONS.THEME) || COLOR_THEMES.DEFAULT;
   try {
     vuetifyTheme.change(savedTheme);
   } catch {

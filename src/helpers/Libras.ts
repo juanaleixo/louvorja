@@ -3,7 +3,7 @@
  *
  * Fluxo:
  *   1. Traduz texto português → gloss Libras (POST /translate)
- *   2. Cacheia o gloss no IndexedDB (tabela libras_cache)
+ *   2. Cacheia o gloss no IndexedDB (tabela libras.musics ou libras.bible)
  *   3. Baixa bundles de animação por token gloss (~30 KB cada)
  *   4. Serve bundles via HTTP local (localhost:7070) para o player Unity
  *
@@ -23,8 +23,10 @@ import type { BibleBook } from "@/types/Bible";
 import { DICTIONARY_BASE_URL, REQUEST_TIMEOUT, TRANSLATE_URL } from "@/config/Libras";
 import { LibrasCacheEntry, LibrasCacheStats } from "@/types/Libras";
 
-
-
+/** Tabela de cache conforme tipo de conteúdo. */
+function cacheTable(type: "music" | "bible"): string {
+  return type === "music" ? DB_TABLE.LIBRAS_MUSICS : DB_TABLE.LIBRAS_BIBLE;
+}
 
 // ─── API de Tradução ────────────────────────────────────────────────────────
 
@@ -64,39 +66,54 @@ export async function translateText(text: string): Promise<string | null> {
 // ─── Cache IndexedDB ────────────────────────────────────────────────────────
 
 /** Chave de cache para músicas. */
-export function musicCacheId(idMusic: number): string {
-  return `music_${idMusic}`;
+export function musicCacheId(idMusic: number, region?: string): string {
+  return `music_${idMusic}_${region || "default"}`;
 }
 
 /** Chave de cache para capítulos bíblicos. */
-export function bibleCacheId(versionAbbrev: string, bookId: number, chapter: number): string {
-  return `bible_${versionAbbrev}_${bookId}_${chapter}`;
+export function bibleCacheId(
+  versionAbbrev: string,
+  bookId: number,
+  chapter: number,
+  region?: string
+): string {
+  return `bible_${versionAbbrev}_${bookId}_${chapter}_${region || "default"}`;
 }
 
 /** Busca entrada no cache. */
-export async function getCached(id: string): Promise<LibrasCacheEntry | null> {
-  const entry = await $idb.get<LibrasCacheEntry>(DB_TABLE.LIBRAS_CACHE, id);
+export async function getCached(id: string, type: "music" | "bible"): Promise<LibrasCacheEntry | null> {
+  const entry = await $idb.get<LibrasCacheEntry>(cacheTable(type), id);
   return entry ?? null;
 }
 
 /** Salva entrada no cache. */
 export async function setCached(entry: LibrasCacheEntry): Promise<void> {
-  await $idb.put(DB_TABLE.LIBRAS_CACHE, entry);
+  await $idb.put(cacheTable(entry.type), entry);
 }
 
 /** Remove entrada do cache. */
-export async function removeCached(id: string): Promise<void> {
-  await $idb.del(DB_TABLE.LIBRAS_CACHE, id);
+export async function removeCached(id: string, type: "music" | "bible"): Promise<void> {
+  await $idb.del(cacheTable(type), id);
 }
 
-/** Lista todas as entradas do cache. */
-export async function listCached(): Promise<LibrasCacheEntry[]> {
-  return $idb.getAll<LibrasCacheEntry>(DB_TABLE.LIBRAS_CACHE);
+/** Lista todas as entradas de uma tabela (ou de ambas se type não informado). */
+export async function listCached(type?: "music" | "bible"): Promise<LibrasCacheEntry[]> {
+  if (type) {
+    return $idb.getAll<LibrasCacheEntry>(cacheTable(type));
+  }
+  const musics = await $idb.getAll<LibrasCacheEntry>(DB_TABLE.LIBRAS_MUSICS);
+  const bible = await $idb.getAll<LibrasCacheEntry>(DB_TABLE.LIBRAS_BIBLE);
+  return [...musics, ...bible];
 }
 
-/** Limpa todo o cache de tradução. */
-export async function clearCache(): Promise<void> {
-  await $idb.clear(DB_TABLE.LIBRAS_CACHE);
+/** Limpa cache de uma tabela (ou ambas se type não informado). */
+export async function clearCache(type?: "music" | "bible"): Promise<void> {
+  if (type) {
+    await $idb.clear(cacheTable(type));
+  } else {
+    await $idb.clear(DB_TABLE.LIBRAS_MUSICS);
+    await $idb.clear(DB_TABLE.LIBRAS_BIBLE);
+  }
 }
 
 // ─── Extração de Texto ──────────────────────────────────────────────────────
@@ -215,12 +232,17 @@ export function uniqueTokens(gloss: string): string[] {
 
 // ─── Download de Bundles ────────────────────────────────────────────────────
 
+/** Chave de bundle no IndexedDB com sotaque. */
+function bundleKey(token: string, region?: string): string {
+  return `bundle_${token}_${region || "default"}`;
+}
+
 /**
  * Verifica se um bundle de animação está cacheado no IndexedDB.
  */
-export async function isBundleCached(token: string): Promise<boolean> {
+export async function isBundleCached(token: string, region?: string): Promise<boolean> {
   try {
-    const key = `bundle_${token}`;
+    const key = bundleKey(token, region);
     const entry = await $idb.get(DB_TABLE.LIBRAS_BUNDLES, key);
     return entry != null;
   } catch {
@@ -252,7 +274,7 @@ async function downloadBundleRaw(token: string): Promise<ArrayBuffer | null> {
  * Baixa e salva um bundle de animação no IndexedDB.
  * Converte ArrayBuffer para array de bytes para armazenamento.
  */
-export async function downloadBundle(token: string): Promise<number> {
+export async function downloadBundle(token: string, region?: string): Promise<number> {
   if (!token || token.startsWith("&") || token.endsWith("&")) return 0;
 
   const data = await downloadBundleRaw(token);
@@ -260,10 +282,12 @@ export async function downloadBundle(token: string): Promise<number> {
 
   const size = data.byteLength;
   const bytes = Array.from(new Uint8Array(data));
+  const key = bundleKey(token, region);
 
   await $idb.put(DB_TABLE.LIBRAS_BUNDLES, {
-    id: `bundle_${token}`,
+    id: key,
     token,
+    region: region || "default",
     data: bytes,
     size,
     created_at: new Date().toISOString(),
@@ -278,19 +302,22 @@ export async function downloadBundle(token: string): Promise<number> {
  */
 export async function downloadAllBundles(
   gloss: string,
-  onProgress?: (done: number, total: number, currentToken: string) => void
+  onProgress?: (done: number, total: number, currentToken: string) => void,
+  region?: string,
+  signal?: AbortSignal
 ): Promise<number> {
   const tokens = uniqueTokens(gloss);
   let totalBytes = 0;
 
   for (let i = 0; i < tokens.length; i++) {
+    if (signal?.aborted) break;
     const token = tokens[i];
     onProgress?.(i + 1, tokens.length, token);
 
     // Pular tokens especiais (números, pontuação)
     if (/^[\d\s.,;:!?]+$/.test(token)) continue;
 
-    const bytes = await downloadBundle(token);
+    const bytes = await downloadBundle(token, region);
     totalBytes += bytes;
 
     // Pequena pausa entre requests para não sobrecarregar o servidor
@@ -312,27 +339,38 @@ export async function translateMusic(
   idMusic: number,
   music: Music,
   lang: string = "pt",
-  onProgress?: (stage: "translate" | "download", done: number, total: number) => void
+  onProgress?: (stage: "translate" | "download", done: number, total: number) => void,
+  region?: string,
+  signal?: AbortSignal
 ): Promise<LibrasCacheEntry | null> {
-  const id = musicCacheId(idMusic);
-  const existing = await getCached(id);
+  const id = musicCacheId(idMusic, region);
+  const existing = await getCached(id, "music");
   if (existing?.bundles_cached) return existing;
 
   const text = extractMusicText(music);
   if (!text.trim()) return null;
+  if (signal?.aborted) return null;
 
   onProgress?.("translate", 0, 1);
   const gloss = await translateText(text);
   if (!gloss) return null;
 
+  if (signal?.aborted) return null;
   onProgress?.("translate", 1, 1);
   const tokens = uniqueTokens(gloss);
 
   // Download dos bundles
   onProgress?.("download", 0, tokens.length);
-  const bundlesSize = await downloadAllBundles(gloss, (done, total) => {
-    onProgress?.("download", done, total);
-  });
+  const bundlesSize = await downloadAllBundles(
+    gloss,
+    (done, total) => {
+      onProgress?.("download", done, total);
+    },
+    region,
+    signal
+  );
+
+  if (signal?.aborted) return null;
 
   const entry: LibrasCacheEntry = {
     id,
@@ -361,26 +399,37 @@ export async function translateBibleChapter(
   chapter: number,
   verses: Record<string, string>,
   lang: string = "pt",
-  onProgress?: (stage: "translate" | "download", done: number, total: number) => void
+  onProgress?: (stage: "translate" | "download", done: number, total: number) => void,
+  region?: string,
+  signal?: AbortSignal
 ): Promise<LibrasCacheEntry | null> {
-  const id = bibleCacheId(versionAbbrev, book.id_bible_book, chapter);
-  const existing = await getCached(id);
+  const id = bibleCacheId(versionAbbrev, book.id_bible_book, chapter, region);
+  const existing = await getCached(id, "bible");
   if (existing?.bundles_cached) return existing;
 
   const text = extractBibleText(verses);
   if (!text.trim()) return null;
+  if (signal?.aborted) return null;
 
   onProgress?.("translate", 0, 1);
   const gloss = await translateText(text);
   if (!gloss) return null;
 
+  if (signal?.aborted) return null;
   onProgress?.("translate", 1, 1);
   const tokens = uniqueTokens(gloss);
 
   onProgress?.("download", 0, tokens.length);
-  const bundlesSize = await downloadAllBundles(gloss, (done, total) => {
-    onProgress?.("download", done, total);
-  });
+  const bundlesSize = await downloadAllBundles(
+    gloss,
+    (done, total) => {
+      onProgress?.("download", done, total);
+    },
+    region,
+    signal
+  );
+
+  if (signal?.aborted) return null;
 
   const entry: LibrasCacheEntry = {
     id,
@@ -452,6 +501,7 @@ export default {
   formatGloss,
   parseGlossTokens,
   uniqueTokens,
+  isBundleCached,
   downloadBundle,
   downloadAllBundles,
   translateMusic,

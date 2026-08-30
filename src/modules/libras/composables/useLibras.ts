@@ -42,7 +42,7 @@ export function useLibras() {
 
     // Tentar cache primeiro (hash simples do texto)
     const cacheId = `slide_${Libras.uniqueTokens(plainText).join("_").slice(0, 50)}`;
-    const cached = await Libras.getCached(cacheId);
+    const cached = await Libras.getCached(cacheId, "music");
     if (cached?.gloss) {
       gloss.value = cached.gloss;
       $dev.write(`[libras] cache hit para slide`);

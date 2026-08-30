@@ -58,8 +58,52 @@
       ></div>
     </Transition>
     <div v-if="projActive" class="layer-projection">
+      <!-- Bíblia: renderização com formatação própria -->
+      <div
+        v-if="projType === 'bible'"
+        ref="container"
+        class="bible-root"
+        :class="[`align-${bibleVerticalAlign}`, `justify-${bibleHorizontalAlign}`]"
+      >
+        <Transition name="fade-verse" mode="out-in">
+          <div
+            v-if="bibleActive && (bibleDisplayText || bibleDisplayReference)"
+            :key="bibleDisplayText + bibleDisplayReference"
+            class="bible-content"
+          >
+            <span
+              v-if="bibleDisplayText"
+              class="bible-text"
+              :style="{
+                color: bibleFontColor,
+                fontSize: bibleFontSizePx + 'px',
+                fontFamily: bibleFont,
+                textAlign: bibleTextAlign,
+                ...bibleTextShadowStyle,
+              }"
+            >
+              {{ bibleDisplayText }}
+            </span>
+            <span
+              v-if="bibleDisplayReference"
+              class="bible-reference"
+              :style="{
+                color: bibleRefFontColor,
+                fontSize: bibleRefFontSizePx + 'px',
+                fontFamily: bibleRefFont,
+                textAlign: bibleTextAlign,
+              }"
+            >
+              {{ bibleDisplayReference }}
+            </span>
+          </div>
+          <div v-else class="bible-empty"></div>
+        </Transition>
+      </div>
+
+      <!-- Música: renderização via Slide -->
       <Slide
-        v-if="projType === 'music' || projType === 'bible'"
+        v-else
         :slide="slide!!"
         :title="title"
         :progress="progress"
@@ -71,12 +115,18 @@
 
   <!-- Layer 2: Overlays -->
   <OverlayRenderer />
+  <LibrasOverlay
+    :slide-lyric="projType === 'music' ? (slide?.lyric as string) : undefined"
+    :verse-text="projType === 'bible' ? bibleText : undefined"
+    :type="projType"
+  />
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useProjectionState } from "@/composables/useProjectionState";
+import { useContainerSize } from "@/composables/useContainerSize";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $userdata from "@/helpers/UserData";
@@ -84,6 +134,7 @@ import $modules from "@/helpers/Modules";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import { getSetting } from "@/helpers/SettingsStorage";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import LibrasOverlay from "@/views/LibrasOverlay.vue";
 import Slide from "@/components/Slide.vue";
 import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
 import { KEYS } from "@/constants/UserDataKeys";
@@ -173,6 +224,115 @@ const projActive = computed(() => !!slide.value);
 const projType = computed(() => {
   if (slide.value && (slide.value as any).is_bible) return "bible";
   return "music";
+});
+
+/* ── Bible state ── */
+
+const { container, fontSizePc } = useContainerSize();
+
+const bibleText = ref("");
+const bibleReference = ref("");
+const bibleBook = ref("");
+const bibleChapter = ref("");
+const bibleVerses = ref<number[]>([]);
+const bibleVersion = ref("");
+const bibleActive = ref(false);
+
+const _bibleTick = ref(0);
+
+function bud(key: string, fallback: unknown = null): unknown {
+  void _bibleTick.value;
+  const v = $userdata.get(`modules.bible.${key}`, fallback);
+  return v == null ? fallback : v;
+}
+
+const bibleFont = computed(() => bud("font", "Arial, sans-serif") as string);
+const bibleFontColor = computed(() => bud("font_color", "#FFFFFF") as string);
+const bibleFontSize = computed(() => bud("font_size", 15) as number);
+const bibleTextShadow = computed(() => bud("text_shadow", false) as boolean);
+const bibleTextShadowColor = computed(() => bud("text_shadow_color", "#000000") as string);
+const bibleTextShadowBlur = computed(() => bud("text_shadow_blur", 4) as number);
+const bibleRefFont = computed(() => bud("reference_font", "Arial, sans-serif") as string);
+const bibleRefFontColor = computed(() => bud("reference_font_color", "#FB8C00") as string);
+const bibleRefFontSize = computed(() => bud("reference_font_size", 10) as number);
+const bibleVerticalAlign = computed(() => bud("vertical_align", "center") as string);
+const bibleHorizontalAlign = computed(() => bud("horizontal_align", "center") as string);
+const bibleShowReference = computed(() => bud("show_reference", true) as boolean);
+const bibleShowVersion = computed(() => bud("show_version", true) as boolean);
+const bibleReferenceOnly = computed(() => bud("reference_only", false) as boolean);
+
+const bibleFontSizePx = computed(() => fontSizePc(bibleFontSize.value));
+const bibleRefFontSizePx = computed(() => fontSizePc(bibleRefFontSize.value));
+
+const bibleTextShadowStyle = computed(() => {
+  if (!bibleTextShadow.value) return {};
+  const color = bibleTextShadowColor.value || "#000000";
+  const blur = bibleTextShadowBlur.value || 4;
+  return { textShadow: `0 0 ${blur}px ${color}, 0 0 ${blur}px ${color}` };
+});
+
+const bibleTextAlign = computed(() =>
+  bibleHorizontalAlign.value === "start"
+    ? "left"
+    : bibleHorizontalAlign.value === "end"
+      ? "right"
+      : "center"
+);
+
+function numbersInterval(numbers: number[]): string {
+  if (!numbers || numbers.length === 0) return "";
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const result: string[] = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      result.push(start === end ? `${start}` : `${start}-${end}`);
+      start = sorted[i];
+      end = sorted[i];
+    }
+  }
+  result.push(start === end ? `${start}` : `${start}-${end}`);
+  return result.join(", ");
+}
+
+const bibleReferenceOnlyText = computed(() => {
+  if (!bibleBook.value || !bibleChapter.value) return "";
+  const interval = numbersInterval(bibleVerses.value);
+  return `${bibleBook.value} ${bibleChapter.value}${interval ? `:${interval}` : ""}`;
+});
+
+const bibleDisplayText = computed(() => {
+  if (bibleReferenceOnly.value) return bibleReferenceOnlyText.value;
+  return bibleText.value;
+});
+
+const bibleDisplayReference = computed(() => {
+  if (bibleReferenceOnly.value) return "";
+  if (!bibleShowReference.value) return "";
+  if (!bibleShowVersion.value) return bibleReferenceOnlyText.value;
+  return bibleReference.value;
+});
+
+useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload: unknown) => {
+  const p = payload as Record<string, unknown>;
+  if (p?.active) {
+    bibleText.value = (p.text as string) || "";
+    bibleReference.value = (p.reference as string) || "";
+    bibleBook.value = (p.book as string) || "";
+    bibleChapter.value = (p.chapter as string) || "";
+    bibleVerses.value = (p.verses as number[]) || [];
+    bibleVersion.value = (p.version as string) || "";
+    bibleActive.value = true;
+  } else {
+    bibleActive.value = false;
+  }
+});
+
+useBroadcastListener(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, () => {
+  _bibleTick.value += 1;
 });
 
 /* ── Broadcast listeners ── */
@@ -540,5 +700,69 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 1;
+}
+
+/* Bible rendering inside background projection */
+.bible-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.align-start {
+  align-items: flex-start;
+}
+.align-center {
+  align-items: center;
+}
+.align-end {
+  align-items: flex-end;
+}
+.justify-start {
+  justify-content: flex-start;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-end {
+  justify-content: flex-end;
+}
+.bible-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  width: 100%;
+  padding: 24px;
+}
+.bible-text {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+.bible-reference {
+  margin-top: 0.4em;
+  letter-spacing: 0.02em;
+}
+.bible-empty {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  user-select: none;
+}
+.fade-verse-enter-active,
+.fade-verse-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.fade-verse-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.fade-verse-leave-to {
+  opacity: 0;
 }
 </style>

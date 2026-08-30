@@ -9,6 +9,9 @@ import { DB_TABLE } from "@/constants/DbTables";
 import { BOOKS } from "@/constants/Bible";
 import type { BibleVersion } from "@/types/Bible";
 import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
+import Libras from "@/helpers/Libras";
+import type { Music } from "@/types/Music";
+import type { BibleBook } from "@/types/Bible";
 
 interface FileEntry {
   remote: string;
@@ -709,6 +712,172 @@ export function useSyncManager() {
     return { bytes: bytes ?? 0, fileCount: count ?? 0, albumCount, hymnalCached };
   }
 
+  // ─── Libras Downloads ──────────────────────────────────────────
+
+  const librasMusicCancelled = ref(false);
+  const librasBibleCancelled = ref(false);
+
+  let _librasMusicAbort: AbortController | null = null;
+  let _librasBibleAbort: AbortController | null = null;
+
+  async function startLibrasMusicDownloads(
+    hymnalIds: number[],
+    hymnal1996Ids: number[],
+    selectedAlbums: Set<number>,
+    region?: string
+  ): Promise<number> {
+    const allIds: number[] = [];
+
+    if (hymnalIds.length) allIds.push(...hymnalIds);
+    if (hymnal1996Ids.length) allIds.push(...hymnal1996Ids);
+
+    for (const albumId of selectedAlbums) {
+      const albumData = await Database.get<{ musics?: { id_music: number; name: string }[] }>(
+        `album_${albumId}`
+      );
+      if (albumData?.musics) {
+        allIds.push(...albumData.musics.map((m) => m.id_music));
+      }
+    }
+
+    if (allIds.length === 0) return 0;
+
+    librasMusicCancelled.value = false;
+    _librasMusicAbort = new AbortController();
+    const signal = _librasMusicAbort.signal;
+
+    let translated = 0;
+
+    bgTasks.registerTask("libras-music", t("shell.background_tasks.libras_music"), () => {
+      librasMusicCancelled.value = true;
+      _librasMusicAbort?.abort();
+    });
+
+    for (let i = 0; i < allIds.length; i++) {
+      if (librasMusicCancelled.value || signal.aborted) break;
+
+      const id = allIds[i];
+      try {
+        const music = await Database.get<Music>(`music_${id}`);
+        if (!music) continue;
+        const result = await Libras.translateMusic(
+          id,
+          music,
+          "pt",
+          (stage, done, total) => {
+            const songProgress = ((i + done / total) / allIds.length) * 100;
+            bgTasks.updateTask("libras-music", {
+              progress: Math.round(songProgress),
+              detail: `${i + 1}/${allIds.length} — ${stage === "download" ? "bundles" : "gloss"}`,
+            });
+          },
+          region,
+          signal
+        );
+        if (result) translated++;
+      } catch (e) {
+        if (signal.aborted) break;
+        console.error(`[useSyncManager] Erro ao traduzir música ${id}:`, e);
+      }
+    }
+
+    if (librasMusicCancelled.value || signal.aborted) {
+      bgTasks.updateTask("libras-music", { status: "cancelled" });
+    } else {
+      bgTasks.completeTask("libras-music");
+    }
+
+    librasMusicCancelled.value = false;
+    _librasMusicAbort = null;
+    return translated;
+  }
+
+  async function startLibrasBibleDownloads(
+    versionIds: number[],
+    bibleVersions: BibleVersion[],
+    books: BibleBook[],
+    lang: string,
+    region?: string
+  ): Promise<number> {
+    const chapters: { versionId: number; abbreviation: string; book: BibleBook; ch: number }[] = [];
+
+    for (const versionId of versionIds) {
+      const version = bibleVersions.find((v) => v.id_bible_version === versionId);
+      if (!version) continue;
+      for (const book of books) {
+        for (let ch = 1; ch <= (book.chapters ?? 1); ch++) {
+          const cacheId = Libras.bibleCacheId(version.abbreviation, book.id_bible_book, ch, region);
+          const existing = await Libras.getCached(cacheId, "bible");
+          if (!existing?.bundles_cached) {
+            chapters.push({ versionId, abbreviation: version.abbreviation, book, ch });
+          }
+        }
+      }
+    }
+
+    if (chapters.length === 0) return 0;
+
+    librasBibleCancelled.value = false;
+    _librasBibleAbort = new AbortController();
+    const signal = _librasBibleAbort.signal;
+
+    let translated = 0;
+
+    bgTasks.registerTask("sync-bible-libras", t("shell.background_tasks.libras_bible"), () => {
+      librasBibleCancelled.value = true;
+      _librasBibleAbort?.abort();
+    });
+
+    for (let i = 0; i < chapters.length; i++) {
+      if (librasBibleCancelled.value || signal.aborted) break;
+
+      const { versionId, abbreviation, book, ch } = chapters[i];
+      try {
+        const verses = await Database.get<Record<string, string>>(
+          `bible_${versionId}_${book.id_bible_book}_${ch}`
+        );
+        if (!verses) continue;
+        const result = await Libras.translateBibleChapter(
+          abbreviation,
+          book,
+          ch,
+          verses,
+          lang,
+          (_stage, done, total) => {
+            const chProgress = ((i + done / total) / chapters.length) * 100;
+            bgTasks.updateTask("sync-bible-libras", {
+              progress: Math.round(chProgress),
+              detail: `${i + 1}/${chapters.length} — ${book.name ?? abbreviation} ${ch}`,
+            });
+          },
+          region,
+          signal
+        );
+        if (result) translated++;
+      } catch (e) {
+        if (signal.aborted) break;
+        console.error(`[useSyncManager] Erro ao traduzir bíblia:`, e);
+      }
+    }
+
+    if (librasBibleCancelled.value || signal.aborted) {
+      bgTasks.updateTask("sync-bible-libras", { status: "cancelled" });
+    } else {
+      bgTasks.completeTask("sync-bible-libras");
+    }
+
+    librasBibleCancelled.value = false;
+    _librasBibleAbort = null;
+    return translated;
+  }
+
+  function cancelLibrasDownloads(): void {
+    librasMusicCancelled.value = true;
+    librasBibleCancelled.value = true;
+    _librasMusicAbort?.abort();
+    _librasBibleAbort?.abort();
+  }
+
   // ─── Lifecycle ──────────────────────────────────────────────────
 
   onBeforeUnmount(cleanup);
@@ -737,6 +906,9 @@ export function useSyncManager() {
     startDownloads,
     cancelDownloads,
     waitForDownloadQueue,
+    startLibrasMusicDownloads,
+    startLibrasBibleDownloads,
+    cancelLibrasDownloads,
     bibleDownloading,
     bibleProgress,
     bibleCompletedMsg,

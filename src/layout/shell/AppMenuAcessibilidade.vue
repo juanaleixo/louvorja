@@ -78,6 +78,30 @@
           </div>
 
           <div class="opt-row">
+            <span class="opt-label">{{ $t("accessibility.avatar.translate_musics") }}</span>
+            <v-switch
+              v-model="librasMusicsEnabled"
+              density="compact"
+              color="primary"
+              hide-details
+              :disabled="!librasEnabled"
+              @update:model-value="toggleMusicsEnabled"
+            />
+          </div>
+
+          <div class="opt-row">
+            <span class="opt-label">{{ $t("accessibility.avatar.translate_bible") }}</span>
+            <v-switch
+              v-model="librasBibleEnabled"
+              density="compact"
+              color="primary"
+              hide-details
+              :disabled="!librasEnabled"
+              @update:model-value="toggleBibleEnabled"
+            />
+          </div>
+
+          <div class="opt-row">
             <span class="opt-label">{{ $t("accessibility.avatar.show_on_obs") }}</span>
             <v-switch
               v-model="showOnObs"
@@ -196,6 +220,36 @@
               />
             </v-col>
           </v-row>
+
+          <div class="opt-divider" />
+
+          <!-- Cor de fundo do avatar -->
+          <div class="opt-row">
+            <span class="opt-label">{{ $t("accessibility.avatar.background_color") }}</span>
+            <v-switch
+              v-model="transparentBg"
+              density="compact"
+              color="primary"
+              hide-details
+              :label="transparentBg ? $t('accessibility.avatar.bg_transparent') : ''"
+              @update:model-value="toggleTransparentBg"
+            />
+          </div>
+
+          <div v-if="!transparentBg" class="mt-2">
+            <v-color-picker
+              v-model="bgColor"
+              mode="rgba"
+              show-swatches
+              :swatches="bgSwatches"
+              density="compact"
+              hide-canvas
+              hide-sliders
+              width="100%"
+              max-width="340"
+              @update:model-value="setBgColor"
+            />
+          </div>
 
           <div class="opt-divider" />
 
@@ -361,16 +415,9 @@
 
           <!-- Progresso -->
           <div v-if="translating" class="libras-progress">
-            <v-progress-linear :model-value="translatePercent" color="primary" class="mb-1" />
+            <v-progress-linear indeterminate color="primary" class="mb-1" />
             <p class="opt-hint">
-              {{
-                translateStage === "download"
-                  ? $t("accessibility.musics.downloading", {
-                      done: translateProgress.done,
-                      total: translateProgress.total,
-                    })
-                  : $t("accessibility.musics.translating")
-              }}
+              {{ $t("accessibility.musics.translating") }}
             </p>
           </div>
 
@@ -387,6 +434,15 @@
             >
               <v-icon icon="mdi-translate" size="14" class="mr-1" />
               {{ $t("accessibility.musics.translate") }}
+            </button>
+            <button
+              v-if="translating"
+              type="button"
+              class="opt-btn opt-btn--danger"
+              @click="sync.cancelLibrasDownloads()"
+            >
+              <v-icon icon="mdi-close-circle" size="14" class="mr-1" />
+              {{ $t("accessibility.musics.cancel") }}
             </button>
           </div>
         </section>
@@ -432,16 +488,9 @@
           </div>
 
           <div v-if="translatingBible" class="libras-progress">
-            <v-progress-linear :model-value="bibleTranslatePercent" color="primary" class="mb-1" />
+            <v-progress-linear indeterminate color="primary" class="mb-1" />
             <p class="opt-hint">
-              {{
-                bibleTranslateStage === "download"
-                  ? $t("accessibility.bible.downloading", {
-                      done: bibleTranslateProgress.done,
-                      total: bibleTranslateProgress.total,
-                    })
-                  : $t("accessibility.bible.translating")
-              }}
+              {{ $t("accessibility.bible.translating") }}
             </p>
           </div>
 
@@ -458,6 +507,15 @@
             >
               <v-icon icon="mdi-translate" size="14" class="mr-1" />
               {{ $t("accessibility.bible.translate") }}
+            </button>
+            <button
+              v-if="translatingBible"
+              type="button"
+              class="opt-btn opt-btn--danger"
+              @click="sync.cancelLibrasDownloads()"
+            >
+              <v-icon icon="mdi-close-circle" size="14" class="mr-1" />
+              {{ $t("accessibility.bible.cancel") }}
             </button>
           </div>
         </section>
@@ -555,8 +613,6 @@ const isHymnalCached = ref(false);
 const isHymnal1996Cached = ref(false);
 const loadingCatalog = ref(false);
 const translating = ref(false);
-const translateStage = ref<"translate" | "download">("translate");
-const translateProgress = ref({ done: 0, total: 0 });
 const completedMsg = ref("");
 
 // Bíblia
@@ -565,13 +621,13 @@ const selectedBibleVersions = ref<Set<number>>(new Set());
 const cachedBibleVersionIds = ref<Set<number>>(new Set());
 const loadingBible = ref(false);
 const translatingBible = ref(false);
-const bibleTranslateStage = ref<"translate" | "download">("translate");
-const bibleTranslateProgress = ref({ done: 0, total: 0 });
 const bibleCompletedMsg = ref("");
 
 // Avatar
 const selectedAvatar = ref("icaro");
 const librasEnabled = ref(false);
+const librasMusicsEnabled = ref(true);
+const librasBibleEnabled = ref(true);
 const showOnObs = ref(false);
 const showBorder = ref(false);
 const avatarOptions = computed(() => [
@@ -595,6 +651,16 @@ function toggleLibrasEnabled(value: boolean | null) {
 function toggleShowOnObs(value: boolean | null) {
   showOnObs.value = value === true;
   localStorage.setItem(KEYS_LS.LIBRAS.SHOW_ON_OBS, String(value === true));
+}
+
+function toggleMusicsEnabled(value: boolean | null) {
+  librasMusicsEnabled.value = value === true;
+  localStorage.setItem(KEYS_LS.LIBRAS.MUSICS_ENABLED, String(value === true));
+}
+
+function toggleBibleEnabled(value: boolean | null) {
+  librasBibleEnabled.value = value === true;
+  localStorage.setItem(KEYS_LS.LIBRAS.BIBLE_ENABLED, String(value === true));
 }
 
 function toggleShowBorder(value: boolean | null) {
@@ -682,6 +748,42 @@ function setAnimation(value: string) {
   $userdata.set(KEYS.MODULES.LIBRAS.ANIMATION, value);
 }
 
+// Cor de fundo
+const transparentBg = ref(true);
+const bgColor = ref({ r: 0, g: 0, b: 0, a: 1 });
+const bgSwatches = [
+  [
+    { r: 0, g: 0, b: 0, a: 1 },
+    { r: 255, g: 255, b: 255, a: 1 },
+  ],
+  [
+    { r: 33, g: 150, b: 243, a: 1 },
+    { r: 76, g: 175, b: 80, a: 1 },
+  ],
+  [
+    { r: 255, g: 152, b: 0, a: 1 },
+    { r: 244, g: 67, b: 54, a: 1 },
+  ],
+];
+
+function rgbaToString(c: { r: number; g: number; b: number; a: number }): string {
+  return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
+}
+
+function toggleTransparentBg(value: boolean | null) {
+  transparentBg.value = value === true;
+  if (value === true) {
+    $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent");
+  } else {
+    $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, rgbaToString(bgColor.value));
+  }
+}
+
+function setBgColor(c: { r: number; g: number; b: number; a: number }) {
+  bgColor.value = c;
+  $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, rgbaToString(c));
+}
+
 // Posição
 const currentAnchor = ref("bottom-right");
 const currentOffsetX = ref(20);
@@ -726,22 +828,13 @@ const hasAnySelection = computed(
   () => selectedAlbums.value.size > 0 || selectedHymnal.value || selectedHymnal1996.value
 );
 
-const translatePercent = computed(() =>
-  translateProgress.value.total === 0
-    ? 0
-    : Math.round((translateProgress.value.done / translateProgress.value.total) * 100)
-);
-const bibleTranslatePercent = computed(() =>
-  bibleTranslateProgress.value.total === 0
-    ? 0
-    : Math.round((bibleTranslateProgress.value.done / bibleTranslateProgress.value.total) * 100)
-);
-
 // ─── Init ───────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
   selectedAvatar.value = localStorage.getItem("libras_avatar") || "icaro";
   librasEnabled.value = localStorage.getItem("libras_enabled") === "true";
+  librasMusicsEnabled.value = localStorage.getItem("libras_musics_enabled") !== "false";
+  librasBibleEnabled.value = localStorage.getItem("libras_bible_enabled") !== "false";
   showOnObs.value = localStorage.getItem("libras_show_on_obs") === "true";
   currentAnchor.value =
     $userdata.get<string>(KEYS.MODULES.LIBRAS.ANCHOR, "bottom-right") || "bottom-right";
@@ -754,6 +847,15 @@ onMounted(async () => {
   currentEmotion.value = $userdata.get<string>(KEYS.MODULES.LIBRAS.EMOTION, "default") || "default";
   currentRegion.value = $userdata.get<string>(KEYS.MODULES.LIBRAS.REGION, "BR") || "BR";
   currentAnimation.value = $userdata.get<string>(KEYS.MODULES.LIBRAS.ANIMATION, "fade") || "fade";
+  const savedBg =
+    $userdata.get<string>(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent") || "transparent";
+  transparentBg.value = savedBg === "transparent";
+  if (!transparentBg.value) {
+    const match = savedBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]+)\)/);
+    if (match) {
+      bgColor.value = { r: +match[1], g: +match[2], b: +match[3], a: +match[4] };
+    }
+  }
   await Promise.all([refreshStats(), loadCatalog(), loadBibleVersions()]);
 });
 
@@ -861,86 +963,23 @@ async function translateSelected(): Promise<void> {
 
   translating.value = true;
   completedMsg.value = "";
-  let translated = 0;
-
-  // Traduzir hinário
-  if (selectedHymnal.value && hymnalIds.value.length) {
-    for (let i = 0; i < hymnalIds.value.length; i++) {
-      const id = hymnalIds.value[i];
-      translateProgress.value = { done: i, total: hymnalIds.value.length };
-      translateStage.value = "translate";
-      try {
-        const music = await $database.get<Music>(`music_${id}`);
-        if (!music) continue;
-        const result = await Libras.translateMusic(id, music, "pt", (stage, done, total) => {
-          translateStage.value = stage;
-          translateProgress.value = { done, total };
-        });
-        if (result) translated++;
-      } catch (e) {
-        console.error(`[Acessibilidade] Erro ao traduzir hino ${id}:`, e);
-      }
-    }
+  try {
+    const count = await sync.startLibrasMusicDownloads(
+      selectedHymnal.value ? hymnalIds.value : [],
+      selectedHymnal1996.value ? hymnal1996Ids.value : [],
+      selectedAlbums.value,
+      currentRegion.value
+    );
+    completedMsg.value = t("accessibility.musics.completed", { count });
+    selectedAlbums.value = new Set();
+    selectedHymnal.value = false;
+    selectedHymnal1996.value = false;
+  } catch (e) {
+    console.error("[Acessibilidade] Erro ao traduzir músicas:", e);
+  } finally {
+    translating.value = false;
+    await refreshStats();
   }
-
-  if (selectedHymnal1996.value && hymnal1996Ids.value.length) {
-    for (let i = 0; i < hymnal1996Ids.value.length; i++) {
-      const id = hymnal1996Ids.value[i];
-      translateProgress.value = { done: i, total: hymnal1996Ids.value.length };
-      translateStage.value = "translate";
-      try {
-        const music = await $database.get<Music>(`music_${id}`);
-        if (!music) continue;
-        const result = await Libras.translateMusic(id, music, "pt", (stage, done, total) => {
-          translateStage.value = stage;
-          translateProgress.value = { done, total };
-        });
-        if (result) translated++;
-      } catch (e) {
-        console.error(`[Acessibilidade] Erro ao traduzir hino 1996 ${id}:`, e);
-      }
-    }
-  }
-
-  // Traduzir álbuns selecionados
-  for (const albumId of selectedAlbums.value) {
-    try {
-      const albumData = await $database.get<{ musics?: { id_music: number; name: string }[] }>(
-        `album_${albumId}`
-      );
-      if (!albumData?.musics) continue;
-      for (let i = 0; i < albumData.musics.length; i++) {
-        const m = albumData.musics[i];
-        translateProgress.value = { done: translated, total: translated + albumData.musics.length };
-        translateStage.value = "translate";
-        try {
-          const music = await $database.get<Music>(`music_${m.id_music}`);
-          if (!music) continue;
-          const result = await Libras.translateMusic(
-            m.id_music,
-            music,
-            "pt",
-            (stage, done, total) => {
-              translateStage.value = stage;
-              translateProgress.value = { done, total };
-            }
-          );
-          if (result) translated++;
-        } catch (e) {
-          console.error(`[Acessibilidade] Erro ao traduzir música ${m.id_music}:`, e);
-        }
-      }
-    } catch (e) {
-      console.error(`[Acessibilidade] Erro ao carregar álbum ${albumId}:`, e);
-    }
-  }
-
-  translating.value = false;
-  completedMsg.value = t("accessibility.musics.completed", { count: translated });
-  selectedAlbums.value = new Set();
-  selectedHymnal.value = false;
-  selectedHymnal1996.value = false;
-  await refreshStats();
 }
 
 // ─── Bíblia ─────────────────────────────────────────────────────────────────
@@ -970,58 +1009,25 @@ async function translateSelectedBibles(): Promise<void> {
 
   translatingBible.value = true;
   bibleCompletedMsg.value = "";
-  let translated = 0;
+  try {
+    const books = await $database.get<BibleBook[]>("pt_bible_book");
+    if (!books) return;
 
-  const books = await $database.get<BibleBook[]>("pt_bible_book");
-  if (!books) {
+    const count = await sync.startLibrasBibleDownloads(
+      Array.from(selectedBibleVersions.value),
+      bibleVersions.value,
+      books,
+      locale.value,
+      currentRegion.value
+    );
+    bibleCompletedMsg.value = t("accessibility.bible.completed", { count });
+    selectedBibleVersions.value = new Set();
+  } catch (e) {
+    console.error("[Acessibilidade] Erro ao traduzir bíblia:", e);
+  } finally {
     translatingBible.value = false;
-    return;
+    await refreshStats();
   }
-
-  for (const versionId of selectedBibleVersions.value) {
-    const version = bibleVersions.value.find((v) => v.id_bible_version === versionId);
-    if (!version) continue;
-    for (const book of books) {
-      for (let ch = 1; ch <= book.chapters; ch++) {
-        bibleTranslateProgress.value = {
-          done: translated,
-          total: selectedBibleVersions.value.size * books.length,
-        };
-        bibleTranslateStage.value = "translate";
-        try {
-          const cacheId = Libras.bibleCacheId(version.abbreviation, book.id_bible_book, ch);
-          const existing = await Libras.getCached(cacheId);
-          if (existing?.bundles_cached) {
-            translated++;
-            continue;
-          }
-          const verses = await $database.get<Record<string, string>>(
-            `bible_${versionId}_${book.id_bible_book}_${ch}`
-          );
-          if (!verses) continue;
-          const result = await Libras.translateBibleChapter(
-            version.abbreviation,
-            book,
-            ch,
-            verses,
-            "pt",
-            (stage, done, total) => {
-              bibleTranslateStage.value = stage;
-              bibleTranslateProgress.value = { done, total };
-            }
-          );
-          if (result) translated++;
-        } catch (e) {
-          console.error(`[Acessibilidade] Erro ao traduzir bíblia:`, e);
-        }
-      }
-    }
-  }
-
-  translatingBible.value = false;
-  bibleCompletedMsg.value = t("accessibility.bible.completed", { count: translated });
-  selectedBibleVersions.value = new Set();
-  await refreshStats();
 }
 
 // ─── Cache ──────────────────────────────────────────────────────────────────

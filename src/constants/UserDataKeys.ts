@@ -133,6 +133,7 @@ export const KEYS = {
       EMOTION: `${MODULES}.${ModuleEnum.LIBRAS}.emotion`,
       REGION: `${MODULES}.${ModuleEnum.LIBRAS}.region`,
       ANIMATION: `${MODULES}.${ModuleEnum.LIBRAS}.animation`,
+      BACKGROUND_COLOR: `${MODULES}.${ModuleEnum.LIBRAS}.background_color`,
     },
     OPEN_ORDER: `${MODULES}._openOrder`,
     STOPWATCH: {

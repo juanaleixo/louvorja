@@ -1,5 +1,6 @@
 <template>
   <OverlayRenderer />
+  <LibrasOverlay :verse-text="text" type="bible" />
   <div
     ref="container"
     class="projection-bible-root"
@@ -76,6 +77,7 @@ import { useContainerSize } from "@/composables/useContainerSize";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
 const MID = "modules.bible";
 

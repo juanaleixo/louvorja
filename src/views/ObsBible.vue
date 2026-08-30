@@ -1,5 +1,6 @@
 <template>
   <OverlayRenderer />
+  <LibrasOverlay :verse-text="text" type="bible" />
   <div class="obs-bible-root">
     <Transition name="fade-verse" mode="out-in">
       <div v-if="active && displayText" :key="displayText" class="obs-bible-content">
@@ -16,6 +17,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import UserData from "@/helpers/UserData";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
 const MID = "modules.bible";
 
