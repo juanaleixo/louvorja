@@ -148,7 +148,6 @@ function onAfterLeave(): void {
 
 .overlay-slot__text {
   white-space: pre-wrap;
-  text-transform: uppercase;
   user-select: none;
 }
 

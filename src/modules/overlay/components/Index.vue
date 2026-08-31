@@ -411,7 +411,6 @@ onMounted(() => {
 }
 
 .overlay-preview-text {
-  text-transform: uppercase;
 }
 
 .overlay-preview-img {
