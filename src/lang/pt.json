@@ -93,6 +93,8 @@
       "text_shadow": "Sombra no texto",
       "shadow_color": "Cor da sombra",
       "shadow_blur": "Desfoque da sombra",
+      "text_bg_color": "Cor de fundo do texto",
+      "text_bg_toggle": "Fundo no texto",
       "image": "Imagem de fundo",
       "transparency": "Transparência",
       "adjust": "Ajuste da imagem",

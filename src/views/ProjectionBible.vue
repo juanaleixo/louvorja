@@ -30,6 +30,11 @@
         v-if="active && (displayText || displayReference)"
         :key="displayText + displayReference"
         class="projection-bible-content"
+        :style="{
+          backgroundColor: text_background_enabled
+            ? text_background_color || 'transparent'
+            : 'transparent',
+        }"
       >
         <span
           v-if="displayText"
@@ -111,6 +116,8 @@ const reference_font = computed(() => ud("reference_font", "Arial, sans-serif"))
 const reference_font_color = computed(() => ud("reference_font_color", "#FB8C00"));
 const reference_font_size = computed(() => ud("reference_font_size", 10));
 const background_color = computed(() => ud("background_color", "#000000"));
+const text_background_color = computed(() => ud("text_background_color", "transparent"));
+const text_background_enabled = computed(() => ud("text_background_enabled", false));
 const border_spacing = computed(() => ud("border_spacing", 10));
 const vertical_align = computed(() => ud("vertical_align", "center"));
 const horizontal_align = computed(() => ud("horizontal_align", "center"));

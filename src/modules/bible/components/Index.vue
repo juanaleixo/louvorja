@@ -334,10 +334,7 @@ const show_history = computed({
   set: (v: boolean) => UserData.set(`modules.${moduleId}.show_history`, v),
 });
 
-const show_format = computed({
-  get: () => UserData.get(`modules.${moduleId}.show_format`, false) as boolean,
-  set: (v: boolean) => UserData.set(`modules.${moduleId}.show_format`, v),
-});
+const show_format = ref(false);
 
 const FONT_OPTIONS = [
   "Arial, sans-serif",

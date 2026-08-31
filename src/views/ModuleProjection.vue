@@ -28,7 +28,16 @@
     />
 
     <Transition :name="isLive ? 'no-transition' : 'fade-content'" mode="out-in">
-      <div v-if="active && (text || extra)" :key="transitionKey" class="module-projection__content">
+      <div
+        v-if="active && (text || extra)"
+        :key="transitionKey"
+        class="module-projection__content"
+        :style="{
+          backgroundColor: text_background_enabled
+            ? text_background_color || 'transparent'
+            : 'transparent',
+        }"
+      >
         <span
           v-if="text"
           class="module-projection__text"
@@ -117,6 +126,8 @@ const reference_font = computed(() => ud("reference_font", null));
 const reference_font_color = computed(() => ud("reference_font_color", "#FB8C00"));
 const reference_font_size = computed(() => ud("reference_font_size", 10));
 const background_color = computed(() => ud("background_color", "#000000"));
+const text_background_color = computed(() => ud("text_background_color", "transparent"));
+const text_background_enabled = computed(() => ud("text_background_enabled", false));
 const border_spacing = computed(() => ud("border_spacing", 10));
 const vertical_align = computed(() => ud("vertical_align", "center"));
 const horizontal_align = computed(() => ud("horizontal_align", "center"));

@@ -26,6 +26,8 @@ export const module: Module = {
   customization: {
     font: { type: "font", default: "Arial, sans-serif" },
     font_color: { type: "color", default: "#FFFFFF" },
+    text_background_enabled: { type: "boolean", default: false },
+    text_background_color: { type: "color", default: "transparent" },
     font_size: { type: "font-size", default: 50 },
     text_shadow: { type: "boolean", default: false },
     text_shadow_color: { type: "color", default: "#000000" },
