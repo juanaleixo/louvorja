@@ -750,39 +750,54 @@ src/assets/fonts/           ← Arquivos .ttf / .otf
   ↓
 src/assets/styles/fonts.css ← Declarações @font-face
   ↓
-src/config/Fonts.ts         ← Listas UI_FONTS / PROJECTION_FONTS + resolveFont()
+src/config/fonts.ts         ← Lista Fonts + FONT_DEFAULT_UI + FONT_DEFAULT_PROJECTION + resolveFont()
   ↓
-src/components/inputs/SelectFont.vue  ← Componente reutilizável
+src/components/inputs/SelectFont.vue  ← Componente reutilizável (v-menu com preview)
   ↓
-UserData                     ← options.font / options.slide.font / modules.*.font
+UserData                     ← options.font / options.projection_font / modules.*.font
   ↓
-Projection views             ← fontFamily via inline style
+Projection views             ← fontFamily via resolveFont() + inline style
 ```
 
 ### Arquivos principais
 
-| Arquivo                                | Função                                                                                    |
-|----------------------------------------|-------------------------------------------------------------------------------------------|
-| `../src/config/Fonts.ts`               | Config de fontes: `FontOption` interface, `UI_FONTS`, `PROJECTION_FONTS`, `resolveFont()` |
-| `src/assets/styles/fonts.css`          | Declarações `@font-face` para fontes customizadas                                         |
-| `src/assets/fonts/`                    | Arquivos de fonte (.ttf, .otf)                                                            |
-| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte                                               |
-| `src/constants/UserDataKeys.ts`        | Chaves: `OPTIONS.FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT`                    |
+| Arquivo | Função |
+|---------|--------|
+| `src/config/fonts.ts` | Config de fontes: `FontOption` interface, `Fonts` array, `FONT_DEFAULT_UI`, `FONT_DEFAULT_PROJECTION`, `resolveFont()` |
+| `src/assets/styles/fonts.css` | Declarações `@font-face` para fontes customizadas |
+| `src/assets/fonts/` | Arquivos de fonte (.ttf, .otf) |
+| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte (v-menu com preview visual) |
+| `src/components/format-fields/FieldFont.vue` | Campo de fonte no FormatPanel (usado por módulos) |
+| `src/constants/UserDataKeys.ts` | Chaves: `OPTIONS.FONT`, `OPTIONS.PROJECTION_FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT` |
 
 ### Chaves UserData
 
-| Chave                    | Escopo      | Onde é salva                             |
-|--------------------------|-------------|------------------------------------------|
-| `options.font`           | Global (UI) | Opções → Geral → Fonte da Interface      |
-| `options.slide.font`     | Slides      | Opções → Slides → Fonte de projeção      |
+| Chave | Escopo | Onde é salva |
+|-------|--------|-------------|
+| `options.font` | Global (UI) | Opções → Geral → Fonte da Interface |
+| `options.projection_font` | Global (Projeção) | Opções → Geral → Fonte de Projeção |
+| `options.slide.font` | Slides | Opções → Slides → Fonte de projeção |
 | `options.utilities_font` | Utilitários | Opções → Utilitários → Fonte de projeção |
-| `modules.bible.font`     | Bíblia      | Opções → Bíblia → Fonte de projeção      |
-| `modules.<id>.font`      | Por módulo  | FormatPanel do módulo                    |
+| `modules.bible.font` | Bíblia | Opções → Bíblia → Fonte de projeção |
+| `modules.<id>.font` | Por módulo | FormatPanel do módulo |
 
-### Especial: "Interface do Programa"
+### Opções especiais de family
 
-Opção `"__UI_FONT__"` nos selects de projeção resolve para a fonte definida em `options.font`.
-Resolvida via `resolveFont(saved, fallback, uiFont)` em `../src/config/Fonts.ts`.
+| Family key | Nome | Resolve para |
+|------------|------|-------------|
+| `"__FONT_DEFAULT_UI__"` | Padrão da Interface | `FONT_DEFAULT_UI` (constante) |
+| `"__FONT_DEFAULT_PROJECTION__"` | Padrão da Projecão | `FONT_DEFAULT_PROJECTION` (constante) |
+| `"__DEFAULT__"` | Padrão | `defaultFont` prop do SelectFont |
+
+### SelectFont.vue — Props
+
+| Prop | Tipo | Default | Descrição |
+|------|------|---------|-----------|
+| `modelValue` | `string \| null` | `""` | Valor salvo (family key) |
+| `disabled` | `boolean` | `false` | Desabilita o select |
+| `showInterfaceDefault` | `boolean` | `true` | Mostra "Padrão da Interface" |
+| `showProjectionDefault` | `boolean` | `true` | Mostra "Padrão da Projecão" |
+| `defaultFont` | `string` | `""` | CSS font-family para a opção "Padrão" |
 
 ### Como adicionar uma nova fonte
 
@@ -796,11 +811,37 @@ Resolvida via `resolveFont(saved, fallback, uiFont)` em `../src/config/Fonts.ts`
      font-style: normal;
    }
    ```
-3. **Adicionar ao array** em `../src/config/Fonts.ts`:
+3. **Adicionar ao array** em `src/config/fonts.ts`:
    ```ts
    { name: "Nome Exibido", family: "NomeDaFamilia", file: "arquivo.otf" }
    ```
 4. A fonte aparece automaticamente nos selects (SelectFont) e pode ser usada em projeções.
+
+### Fontes disponíveis
+
+| Nome | Family | Arquivo |
+|------|--------|---------|
+| Padrão da Interface | `__FONT_DEFAULT_UI__` | (constante) |
+| Padrão da Projecão | `__FONT_DEFAULT_PROJECTION__` | (constante) |
+| Advent Sans | `AdventSansLogo` | AdventSans-Logo.otf |
+| Arial | `Arial, sans-serif` | (nativa) |
+| Aventureiros | `InterVariable` | Inter-VariableFont_opsz,wght.ttf |
+| Betânia Patmos | `BetaniaPatmos` | BetaniaPatmos-Regular.ttf |
+| Calibri Bold | `CalibriBold` | calibri-bold.ttf |
+| Desbravadores | `ImpactRegular` | impact-regular-6_ufonts.com.ttf |
+| DIN Condensed Bold | `DINCondensedBold` | din-condensed-bold.ttf |
+| Fjalla One | `FjallaOne` | FjallaOne-Regular.ttf |
+| Georgia | `Georgia, serif` | (nativa) |
+| Helvetica | `Helvetica, sans-serif` | (nativa) |
+| Ministério Jovem | `FjallaOne` | FjallaOne-Regular.ttf |
+| Open Sans | `OpenSans` | OpenSans-Regular.ttf |
+| Open Sans Extra Bold | `OpenSansExtraBold` | OpenSans-ExtraBold.ttf |
+| Open Sans Light | `OpenSansLight` | OpenSans-Light.ttf |
+| Open Sans Semi Bold | `OpenSansSemiBold` | OpenSans-Semibold.ttf |
+| Roboto | `RobotoVariable` | Roboto-VariableFont_wdth,wght.ttf |
+| Tahoma | `Tahoma, sans-serif` | (nativa) |
+| Times New Roman | `'Times New Roman', serif` | (nativa) |
+| Verdana | `Verdana, sans-serif` | (nativa) |
 
 ### Broadcasts de atualização
 
@@ -810,9 +851,10 @@ janelas de projeção em tempo real:
 | Chave alterada           | Broadcast enviado      | Recebido por                           |
 |--------------------------|------------------------|----------------------------------------|
 | `options.font`           | `SLIDE_FONT_CHANGED`   | useSlideStyle, ModuleProjection        |
+| `options.projection_font` | `SLIDE_FONT_CHANGED`  | useSlideStyle                          |
 | `options.slide.font`     | `SLIDE_FONT_CHANGED`   | useSlideStyle                          |
 | `modules.bible.font`     | `BIBLE_FORMAT_CHANGED` | ProjectionBible, ProjectionBibleReturn |
-| `options.utilities_font` | `USERDATA_PATCH`       | ModuleProjection                       |
+| `options.utilities_font` | `SLIDE_FONT_CHANGED`   | ModuleProjection                       |
 
 ---
 

@@ -377,11 +377,11 @@ ShellTools.vue
 
 | Arquivo | Função |
 |---------|--------|
-| `src/config/Fonts.ts` | Config de fontes: `FontOption` interface, `UI_FONTS`, `PROJECTION_FONTS`, `resolveFont()` |
+| `src/config/fonts.ts` | Config de fontes: `FontOption` interface, `Fonts` array, `FONT_DEFAULT_UI`, `FONT_DEFAULT_PROJECTION`, `resolveFont()` |
 | `src/assets/styles/fonts.css` | Declarações `@font-face` para fontes customizadas |
 | `src/assets/fonts/` | Arquivos de fonte (.ttf, .otf) |
-| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte |
-| `src/constants/UserDataKeys.ts` | Chaves: `OPTIONS.FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT` |
+| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte (v-menu com preview) |
+| `src/constants/UserDataKeys.ts` | Chaves: `OPTIONS.FONT`, `OPTIONS.PROJECTION_FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT` |
 
 ### Como adicionar uma nova fonte
 
@@ -398,7 +398,7 @@ ShellTools.vue
    ```
    - Formatos suportados: `format("truetype")` para .ttf, `format("opentype")` para .otf
 
-3. **Adicionar ao array** em `src/config/Fonts.ts`:
+3. **Adicionar ao array** em `src/config/fonts.ts`:
    ```ts
    { name: "Nome Exibido", family: "NomeDaFamilia", file: "arquivo.otf" }
    ```
@@ -417,13 +417,13 @@ src/assets/fonts/arquivo.otf
   ↓
 src/assets/styles/fonts.css (@font-face)
   ↓
-src/config/Fonts.ts (PROJECTION_FONTS / UI_FONTS)
+src/config/fonts.ts (Fonts array)
   ↓
-SelectFont.vue (UI de seleção)
+SelectFont.vue (UI de seleção com preview visual)
   ↓
-UserData (opcoes.font / options.slide.font / modules.*.font)
+UserData (options.font / options.projection_font / modules.*.font)
   ↓
-Projection views (inline style fontFamily)
+resolveFont() em projection views (inline style fontFamily)
 ```
 
 ### Chaves UserData
@@ -431,16 +431,29 @@ Projection views (inline style fontFamily)
 | Chave | Escopo | Uso |
 |-------|--------|-----|
 | `options.font` | Global | Fonte da interface (UI) |
+| `options.projection_font` | Global | Fonte padrão de projeção |
 | `options.slide.font` | Slides | Fonte de projeção de slides |
 | `options.utilities_font` | Utilitários | Fonte de projeção de utilitários |
 | `modules.bible.font` | Bíblia | Fonte de projeção da bíblia |
 | `modules.<id>.font` | Por módulo | Fonte de projeção específica do módulo |
 
-### Especial: "Interface do Programa"
+### Opções especiais de family
 
-Opção especial `"__UI_FONT__"` que resolve para a fonte definida em `options.font`.
-Disponível nos selects de fonte de projeção (Bíblia, Slides, Utilitários).
-Resolvida via `resolveFont(saved, fallback, uiFont)` em `src/config/Fonts.ts`.
+| Family key | Nome | Resolve para |
+|------------|------|-------------|
+| `"__FONT_DEFAULT_UI__"` | Padrão da Interface | `FONT_DEFAULT_UI` (constante) |
+| `"__FONT_DEFAULT_PROJECTION__"` | Padrão da Projecão | `FONT_DEFAULT_PROJECTION` (constante) |
+| `"__DEFAULT__"` | Padrão | `defaultFont` prop do SelectFont |
+
+### SelectFont — Props
+
+| Prop | Tipo | Default | Descrição |
+|------|------|---------|-----------|
+| `modelValue` | `string \| null` | `""` | Valor salvo (family key) |
+| `disabled` | `boolean` | `false` | Desabilita o select |
+| `showInterfaceDefault` | `boolean` | `true` | Mostra "Padrão da Interface" |
+| `showProjectionDefault` | `boolean` | `true` | Mostra "Padrão da Projecão" |
+| `defaultFont` | `string` | `""` | CSS font-family para a opção "Padrão" |
 
 ---
 
