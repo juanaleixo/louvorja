@@ -267,7 +267,7 @@ onUnmounted(() => {
   text-shadow:
     0 2px 12px rgba(0, 0, 0, 0.9),
     0 0 40px rgba(0, 0, 0, 0.6);
-  padding: 0 0.4em;
+  padding: 0.2em 0.4em;
   max-width: 92cqw;
 }
 

@@ -23,18 +23,18 @@ A aplicação é composta por:
 
 ## 🧠 Stack
 
-| Tecnologia | Versão | Uso |
-|---|---|---|
-| Vue | 3.5 | Framework |
-| Vuetify | 4.0.6 | UI + temas |
-| Pinia | 3 | Estado global |
-| Vue Router | 5.0.6 | Rotas |
-| Vue I18n | 11 | Traduções PT/ES |
-| TypeScript | 6 | Tipagem |
-| Vite | 7 | Build |
-| Electron | 41 | Desktop nativo |
-| idb | — | IndexedDB wrapper |
-| pdfjs-dist | 6 | Renderização de PDF |
+| Tecnologia   | Versão   | Uso                 |
+|--------------|----------|---------------------|
+| Vue          | 3.5      | Framework           |
+| Vuetify      | 4.0.6    | UI + temas          |
+| Pinia        | 3        | Estado global       |
+| Vue Router   | 5.0.6    | Rotas               |
+| Vue I18n     | 11       | Traduções PT/ES     |
+| TypeScript   | 6        | Tipagem             |
+| Vite         | 7        | Build               |
+| Electron     | 41       | Desktop nativo      |
+| idb          | —        | IndexedDB wrapper   |
+| pdfjs-dist   | 6        | Renderização de PDF |
 
 ---
 
@@ -107,15 +107,15 @@ export const contextualPages: RibbonPage[] = [
 
 ### Tipos de botão na ribbon
 
-| Tipo | Descrição |
-|------|-----------|
-| `action` | Botão padrão que dispara `MODULE_RIBBON_ACTION` |
-| `checkbox` | Checkbox ligado a `optionKey` no UserData |
-| `switch` | Vuetify v-switch |
-| `select` | `<select>` com opções de `optionKey` |
-| `slider` | Vuetify v-slider com `min`/`max`/`step` |
-| `screen` | Botão de projeção com seletor de monitores |
-| `customCategory` | Grupo inteiro substituído por componente Vue |
+| Tipo             | Descrição                                       |
+|------------------|-------------------------------------------------|
+| `action`         | Botão padrão que dispara `MODULE_RIBBON_ACTION` |
+| `checkbox`       | Checkbox ligado a `optionKey` no UserData       |
+| `switch`         | Vuetify v-switch                                |
+| `select`         | `<select>` com opções de `optionKey`            |
+| `slider`         | Vuetify v-slider com `min`/`max`/`step`         |
+| `screen`         | Botão de projeção com seletor de monitores      |
+| `customCategory` | Grupo inteiro substituído por componente Vue    |
 
 ---
 
@@ -222,17 +222,17 @@ const wp = await getSetting("main");
 formas antigas, então consumidores continuam usando `$database.get("pt_musics")`
 sem alteração:
 
-| Chave | Tabela | Estratégia |
-|---|---|---|
-| `{locale}_musics` · `_hymnal` · `_hymnal_1996` | respectiva | itens (1 linha/música) |
-| `music_<id>` | musics | registro individual (`m:<id>`) |
-| `album_<id>` | albums | registro individual |
-| `{locale}_categories` | music_categories | itens |
-| `{locale}_bible_version` / `_bible_book` | bible_versions / bible_books | itens |
-| `bible_<v>_<livro>_<cap>` | bible_chapters | registro individual |
-| `{locale}_collections_online` | online_videos_channels/playlists/videos | composto (3 tabelas) |
-| `{locale}_doxology_albums` · `{locale}_children_albums` | doxology_albums / children_albums | itens (1 linha/álbum) |
-| demais | cache | registro único |
+| Chave                                                   | Tabela                                  | Estratégia                     |
+|---------------------------------------------------------|-----------------------------------------|--------------------------------|
+| `{locale}_musics` · `_hymnal` · `_hymnal_1996`          | respectiva                              | itens (1 linha/música)         |
+| `music_<id>`                                            | musics                                  | registro individual (`m:<id>`) |
+| `album_<id>`                                            | albums                                  | registro individual            |
+| `{locale}_categories`                                   | music_categories                        | itens                          |
+| `{locale}_bible_version` / `_bible_book`                | bible_versions / bible_books            | itens                          |
+| `bible_<v>_<livro>_<cap>`                               | bible_chapters                          | registro individual            |
+| `{locale}_collections_online`                           | online_videos_channels/playlists/videos | composto (3 tabelas)           |
+| `{locale}_doxology_albums` · `{locale}_children_albums` | doxology_albums / children_albums       | itens (1 linha/álbum)          |
+| demais                                                  | cache                                   | registro único                 |
 
 **URLs de rede por chave** (`fetchUrlFor`): a maioria vem do json_db estático
 (`Path.db`); `_collections_online`, `_doxology_albums` e `_children_albums`
@@ -315,10 +315,10 @@ Remoto, Sincronizar e StartupCheck.
 
 ## ⌨️ Atalhos de Teclado
 
-| Tipo | Implementação | Quando funciona |
-|------|--------------|----------------|
-| **In-window** | `src/helpers/Hotkeys.js` | Apenas com janela do app em foco |
-| **Global (OS-level)** | `electron/main/shortcuts.js` | System-wide |
+| Tipo                  | Implementação                | Quando funciona                  |
+|-----------------------|------------------------------|----------------------------------|
+| **In-window**         | `src/helpers/Hotkeys.js`     | Apenas com janela do app em foco |
+| **Global (OS-level)** | `electron/main/shortcuts.js` | System-wide                      |
 
 Atalhos in-window registrados em `src/main.js` via `Hotkeys.register()`.
 
@@ -334,36 +334,36 @@ Atalhos in-window registrados em `src/main.js` via `Hotkeys.register()`.
 
 Helpers principais:
 
-| Helper | Função |
-|--------|--------|
-| `Path.ts` | Constrói URLs (`db`, `file`, `local` — `louvorja://`) |
-| `Broadcast.ts` | BroadcastChannel("louvorja") — multi-listener |
-| `BroadcastTypes.ts` | Constantes de broadcast (50+ tipos) |
-| `Projection.ts` | Abertura unificada de janelas de projeção |
-| `ProjectionWindows.ts` | Abre/fecha janelas por feature (monitor-aware) |
-| `IndexedDB.ts` | CRUD unificado no IndexedDB |
-| `Database.ts` | JSONs do banco com cache em camadas (memória → IDB → rede) e stale-if-error |
-| `ImageConvert.ts` | HEIC/HEIF → JPEG (`heic2any`) na importação |
-| `SljaConverter.js` | Import/export `.slja` do editor legado Delphi (JSZip + INI) |
-| `SettingsStorage.ts` | CRUD na tabela `settings` do IDB |
-| `FilePicker.ts` | `pickImage()` e `pickImageData()` — seletor de imagens |
-| `UserData.ts` | Preferências do usuário (Pinia + persistência) |
-| `Hotkeys.js` | Atalhos de teclado in-window |
-| `Snackbar.ts` | Snackbar global; aceita `action?: () => void` opcional (executada no clique) |
-| `Platform.js` | Adapter web/desktop |
+| Helper                 | Função                                                                       |
+|------------------------|------------------------------------------------------------------------------|
+| `Path.ts`              | Constrói URLs (`db`, `file`, `local` — `louvorja://`)                        |
+| `Broadcast.ts`         | BroadcastChannel("louvorja") — multi-listener                                |
+| `BroadcastTypes.ts`    | Constantes de broadcast (50+ tipos)                                          |
+| `Projection.ts`        | Abertura unificada de janelas de projeção                                    |
+| `ProjectionWindows.ts` | Abre/fecha janelas por feature (monitor-aware)                               |
+| `IndexedDB.ts`         | CRUD unificado no IndexedDB                                                  |
+| `Database.ts`          | JSONs do banco com cache em camadas (memória → IDB → rede) e stale-if-error  |
+| `ImageConvert.ts`      | HEIC/HEIF → JPEG (`heic2any`) na importação                                  |
+| `SljaConverter.js`     | Import/export `.slja` do editor legado Delphi (JSZip + INI)                  |
+| `SettingsStorage.ts`   | CRUD na tabela `settings` do IDB                                             |
+| `FilePicker.ts`        | `pickImage()` e `pickImageData()` — seletor de imagens                       |
+| `UserData.ts`          | Preferências do usuário (Pinia + persistência)                               |
+| `Hotkeys.js`           | Atalhos de teclado in-window                                                 |
+| `Snackbar.ts`          | Snackbar global; aceita `action?: () => void` opcional (executada no clique) |
+| `Platform.js`          | Adapter web/desktop                                                          |
 
 Composables principais:
 
-| Composable | Função |
-|------------|--------|
-| `useMedia` | Player de áudio/vídeo/youtube — sincronização de slides, crossfade, broadcast |
-| `useBackgroundTasks` | Singleton — gerencia tarefas de download em segundo plano (progresso, cancel, dismiss) |
-| `useSyncManager` | Downloads de coletâneas (FTP → HttpQueue) e bíblia (HTTP sequencial) + scan de integridade |
-| `useBroadcastListener` | Listener de BroadcastChannel com cleanup automático via `onUnmounted` |
-| `useBroadcastSender` | Envio de mensagens via BroadcastChannel |
-| `useFileProjection` | Barra de controle de projeção de arquivos (mini-player no footer) |
-| `useProjectionState` | Estado reativo da projeção (slides atuais, transições) |
-| `useSlideStyle` | Estilos dinâmicos de slides (cores, fontes, fundo) |
+| Composable             | Função                                                                                     |
+|------------------------|--------------------------------------------------------------------------------------------|
+| `useMedia`             | Player de áudio/vídeo/youtube — sincronização de slides, crossfade, broadcast              |
+| `useBackgroundTasks`   | Singleton — gerencia tarefas de download em segundo plano (progresso, cancel, dismiss)     |
+| `useSyncManager`       | Downloads de coletâneas (FTP → HttpQueue) e bíblia (HTTP sequencial) + scan de integridade |
+| `useBroadcastListener` | Listener de BroadcastChannel com cleanup automático via `onUnmounted`                      |
+| `useBroadcastSender`   | Envio de mensagens via BroadcastChannel                                                    |
+| `useFileProjection`    | Barra de controle de projeção de arquivos (mini-player no footer)                          |
+| `useProjectionState`   | Estado reativo da projeção (slides atuais, transições)                                     |
+| `useSlideStyle`        | Estilos dinâmicos de slides (cores, fontes, fundo)                                         |
 
 ---
 
@@ -380,25 +380,25 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 
 ### Principais tipos cross-window
 
-| Tipo | Emissor | Receptor |
-|---|---|---|
-| `slide_change` | useSlides | Projection, ProjectionReturn, Obs, Operator |
-| `bible_verse` | bible/Index.vue | ObsBible, ProjectionBible |
-| `media_close` | useMedia.close() | Projection, Obs, FileProjection |
-| `file_projection` | liturgy / media_library | FileProjection, FileProjectionReturn |
-| `background_projection` | background_projection | BackgroundProjection |
-| `wallpaper_update` | RibbonWallpaper, Opções | BackgroundProjection, FileProjection |
-| `module_ribbon_action` | RibbonBar | Módulo alvo |
-| `userdata:patch` | UserData.set() | Todas as janelas |
-| `announcements_state` | announcements module | AnnouncementsProjection |
-| `announcements_control` | announcements module | AnnouncementsProjection |
-| `bible_ribbon_action` | RibbonBar | Módulo bíblia |
-| `liturgy_ribbon_action` | RibbonBar | Módulo liturgia |
-| `module_projection_close` | módulos de projeção | Janela de projeção |
-| `ribbon:select_page` | Módulos | RibbonBar |
-| `libras_toggle` | ShellTools | Projection |
-| `libras_translate` | useLibras | Projection, Obs |
-| `request_libras_state` | LibrasOverlay | main.js |
+| Tipo                      | Emissor                 | Receptor                                    |
+|---------------------------|-------------------------|---------------------------------------------|
+| `slide_change`            | useSlides               | Projection, ProjectionReturn, Obs, Operator |
+| `bible_verse`             | bible/Index.vue         | ObsBible, ProjectionBible                   |
+| `media_close`             | useMedia.close()        | Projection, Obs, FileProjection             |
+| `file_projection`         | liturgy / media_library | FileProjection, FileProjectionReturn        |
+| `background_projection`   | background_projection   | BackgroundProjection                        |
+| `wallpaper_update`        | RibbonWallpaper, Opções | BackgroundProjection, FileProjection        |
+| `module_ribbon_action`    | RibbonBar               | Módulo alvo                                 |
+| `userdata:patch`          | UserData.set()          | Todas as janelas                            |
+| `announcements_state`     | announcements module    | AnnouncementsProjection                     |
+| `announcements_control`   | announcements module    | AnnouncementsProjection                     |
+| `bible_ribbon_action`     | RibbonBar               | Módulo bíblia                               |
+| `liturgy_ribbon_action`   | RibbonBar               | Módulo liturgia                             |
+| `module_projection_close` | módulos de projeção     | Janela de projeção                          |
+| `ribbon:select_page`      | Módulos                 | RibbonBar                                   |
+| `libras_toggle`           | ShellTools              | Projection                                  |
+| `libras_translate`        | useLibras               | Projection, Obs                             |
+| `request_libras_state`    | LibrasOverlay           | main.js                                     |
 
 ---
 
@@ -407,12 +407,12 @@ Canal único `BroadcastChannel("louvorja")`. Duas finalidades:
 O auto-update é gerenciado por `electron/main/updater.js` e exposto ao renderer
 via `Platform.updater`. O comportamento varia conforme a plataforma:
 
-| Instalação | Check | Download / Instalação |
-|---|---|---|
-| **Windows (NSIS)** | electron-updater (provider GitHub) | electron-updater — `.exe` + blockmap (diferencial) + instalação silenciosa |
-| **macOS (DMG/zip)** | electron-updater | electron-updater — `.zip` (substitui o `.app`) |
-| **Linux AppImage** | electron-updater | electron-updater — substitui o AppImage |
-| **Linux deb/rpm** | electron-updater | electron-updater — via `dpkg`/`apt`/`rpm` (exige sudo) |
+| Instalação          | Check                              | Download / Instalação                                                      |
+|---------------------|------------------------------------|----------------------------------------------------------------------------|
+| **Windows (NSIS)**  | electron-updater (provider GitHub) | electron-updater — `.exe` + blockmap (diferencial) + instalação silenciosa |
+| **macOS (DMG/zip)** | electron-updater                   | electron-updater — `.zip` (substitui o `.app`)                             |
+| **Linux AppImage**  | electron-updater                   | electron-updater — substitui o AppImage                                    |
+| **Linux deb/rpm**   | electron-updater                   | electron-updater — via `dpkg`/`apt`/`rpm` (exige sudo)                     |
 
 O **fallback para GitHub API** (`checkGithubAndSetState`) é usado apenas quando o
 electron-updater está inativo (ex: dev, app não empacotado) ou falha. O flag
@@ -426,12 +426,12 @@ O `_state` do updater também carrega métricas de download (`bytesPerSecond`,
 
 Persistidas em `user_data.options` e aplicadas em runtime via `Platform.updater.setOptions()`:
 
-| Opção | Chave (`KEYS.OPTIONS`) | Efeito |
-|---|---|---|
-| Usar versões beta | `USE_BETA_UPDATES` | `autoUpdater.allowPrerelease` (GitHub provider). Default `true` durante preview — **TODO: remover default ao publicar versão estável** |
-| Verificar novas versões ao iniciar | `CHECK_UPDATES_ON_START` | Check no boot (disparado pelo renderer em `Shell.vue`) |
-| Baixar atualizações automaticamente | `AUTO_DOWNLOAD_UPDATES` | Baixa em background quando encontra versão nova |
-| Última verificação | `LAST_APP_CHECK` | Timestamp do último check bem-sucedido (não grava em erro) |
+| Opção                               | Chave (`KEYS.OPTIONS`)   | Efeito                                                                                                                                 |
+|-------------------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| Usar versões beta                   | `USE_BETA_UPDATES`       | `autoUpdater.allowPrerelease` (GitHub provider). Default `true` durante preview — **TODO: remover default ao publicar versão estável** |
+| Verificar novas versões ao iniciar  | `CHECK_UPDATES_ON_START` | Check no boot (disparado pelo renderer em `Shell.vue`)                                                                                 |
+| Baixar atualizações automaticamente | `AUTO_DOWNLOAD_UPDATES`  | Baixa em background quando encontra versão nova                                                                                        |
+| Última verificação                  | `LAST_APP_CHECK`         | Timestamp do último check bem-sucedido (não grava em erro)                                                                             |
 
 ### Fluxo no boot
 
@@ -452,12 +452,12 @@ timeout de segurança para o check não travar o boot.
 
 ### Diálogos e dispensa
 
-| Item | Comportamento |
-|---|---|
-| `UpdateAvailableDialog` | Mostra release notes da **versão nova** (via `getReleaseNotes(version)`); download em background com progresso; erro → botão "Baixar manualmente" (abre a release no GitHub) |
-| `ReleaseNotesDialog` | Changelog da **versão instalada** (novidades do app atual) |
-| `SKIP_UPDATE_NOTIFICATION_VERSION` | "Não mostrar novamente" do diálogo de atualização |
-| `SKIP_RELEASE_NOTES_VERSION` | "Não mostrar novamente" das release notes |
+| Item                               | Comportamento                                                                                                                                                                |
+|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `UpdateAvailableDialog`            | Mostra release notes da **versão nova** (via `getReleaseNotes(version)`); download em background com progresso; erro → botão "Baixar manualmente" (abre a release no GitHub) |
+| `ReleaseNotesDialog`               | Changelog da **versão instalada** (novidades do app atual)                                                                                                                   |
+| `SKIP_UPDATE_NOTIFICATION_VERSION` | "Não mostrar novamente" do diálogo de atualização                                                                                                                            |
+| `SKIP_RELEASE_NOTES_VERSION`       | "Não mostrar novamente" das release notes                                                                                                                                    |
 
 ### Badge da ShellTools
 
@@ -474,18 +474,18 @@ timeout de segurança para o check não travar o boot.
 
 ### IPC handlers principais
 
-| Canal | Função |
-|---|---|
-| `updater:check` | Check (electron-updater com fallback GitHub API) |
-| `updater:download` | Download (electron-updater ou manual conforme `_checkedViaGithub`) |
-| `updater:downloadPackage` | Download manual do asset com progresso (fallback) |
-| `updater:openPackage` | Abre o pacote baixado e fecha o app após lançá-lo |
-| `updater:openReleasePage` | Abre a release no browser (fallback) |
+| Canal                     | Função                                                                       |
+|---------------------------|------------------------------------------------------------------------------|
+| `updater:check`           | Check (electron-updater com fallback GitHub API)                             |
+| `updater:download`        | Download (electron-updater ou manual conforme `_checkedViaGithub`)           |
+| `updater:downloadPackage` | Download manual do asset com progresso (fallback)                            |
+| `updater:openPackage`     | Abre o pacote baixado e fecha o app após lançá-lo                            |
+| `updater:openReleasePage` | Abre a release no browser (fallback)                                         |
 | `updater:getReleaseNotes` | Release notes de uma versão (`version` opcional — default: versão instalada) |
-| `updater:getInstallType` | Retorna `"appimage"` \| `"deb"` \| `"rpm"` |
-| `updater:setOptions` | Aplica `{ useBeta, autoCheck, autoDownload }` em runtime |
-| `updater:install` | Fecha o app e instala a atualização baixada |
-| `updater:status` | Snapshot do estado atual |
+| `updater:getInstallType`  | Retorna `"appimage"` \| `"deb"` \| `"rpm"`                                   |
+| `updater:setOptions`      | Aplica `{ useBeta, autoCheck, autoDownload }` em runtime                     |
+| `updater:install`         | Fecha o app e instala a atualização baixada                                  |
+| `updater:status`          | Snapshot do estado atual                                                     |
 
 ---
 
@@ -619,10 +619,10 @@ Fotos de iPhone (`.heic/.heif`) não são decodificadas pelo Chromium. O helper
 `src/helpers/ImageConvert.ts` resolve com `heic2any` (libheif WASM, import
 estático — funciona offline):
 
-| Função | Uso |
-|---|---|
-| `isHeic(name?, mime?)` | Detecção por extensão ou MIME |
-| `heicToJpeg(blob)` | Conversão para JPEG quality 0.92 |
+| Função                              | Uso                                               |
+|-------------------------------------|---------------------------------------------------|
+| `isHeic(name?, mime?)`              | Detecção por extensão ou MIME                     |
+| `heicToJpeg(blob)`                  | Conversão para JPEG quality 0.92                  |
 | `ensureRenderableImage(name, blob)` | Converte se preciso e ajusta extensão para `.jpg` |
 
 Pontos de conversão **na entrada** (antes de gravar no IDB): Biblioteca de
@@ -646,13 +646,13 @@ janela de projeção.
 
 ### Arquitetura
 
-| Componente | Caminho | Função |
-|---|---|---|
-| `Libras.ts` | `src/helpers/Libras.ts` | Helper puro — tradução, cache, extração de texto |
-| `LibrasOverlay.vue` | `src/views/LibrasOverlay.vue` | Overlay de tradução (widget VLibras + texto gloss) |
-| `useLibras.ts` | `src/modules/libras/composables/useLibras.ts` | Composable do módulo |
-| `AppMenuAcessibilidade.vue` | `src/layout/shell/AppMenuAcessibilidade.vue` | Tela de configuração completa |
-| `config/Libras.ts` | `src/config/Libras.ts` | URLs da API, timeouts |
+| Componente                  | Caminho                                       | Função                                             |
+|-----------------------------|-----------------------------------------------|----------------------------------------------------|
+| `Libras.ts`                 | `src/helpers/Libras.ts`                       | Helper puro — tradução, cache, extração de texto   |
+| `LibrasOverlay.vue`         | `src/views/LibrasOverlay.vue`                 | Overlay de tradução (widget VLibras + texto gloss) |
+| `useLibras.ts`              | `src/modules/libras/composables/useLibras.ts` | Composable do módulo                               |
+| `AppMenuAcessibilidade.vue` | `src/layout/shell/AppMenuAcessibilidade.vue`  | Tela de configuração completa                      |
+| `config/Libras.ts`          | `src/config/Libras.ts`                        | URLs da API, timeouts                              |
 
 ### Fluxo
 
@@ -667,26 +667,26 @@ ShellTools (toggle) → Broadcast.LIBRAS_TOGGLE → Projection
 
 ### IndexedDB
 
-| Tabela | Conteúdo |
-|---|---|
-| `libras_cache` | Gloss traduzido (texto → gloss) |
+| Tabela           | Conteúdo                                  |
+|------------------|-------------------------------------------|
+| `libras_cache`   | Gloss traduzido (texto → gloss)           |
 | `libras_bundles` | Bundles de animação VLibras (~30 KB cada) |
 
 ### Configurações do usuário
 
 Salvas via `$userdata` com chaves `KEYS.MODULES.LIBRAS.*`:
 
-| Chave | Default | Descrição |
-|---|---|---|
-| `anchor` | `bottom-right` | Posição do overlay na tela |
-| `offset_x` / `offset_y` | 20 | Deslocamento da âncora |
-| `width` / `height` | — | Dimensões do overlay |
-| `show_text` | — | Mostrar texto gloss abaixo do avatar |
-| `show_border` | — | Mostrar borda no overlay |
-| `speed` | 1 | Velocidade do avatar (0.5, 1, 1.5, 2) |
-| `emotion` | `default` | Emoção (default, happy, sad, surprise) |
-| `region` | `BR` | Sotaque regional (BR, PE, RJ, SC) |
-| `animation` | — | Tipo de animação |
+| Chave                   | Default        | Descrição                              |
+|-------------------------|----------------|----------------------------------------|
+| `anchor`                | `bottom-right` | Posição do overlay na tela             |
+| `offset_x` / `offset_y` | 20             | Deslocamento da âncora                 |
+| `width` / `height`      | —              | Dimensões do overlay                   |
+| `show_text`             | —              | Mostrar texto gloss abaixo do avatar   |
+| `show_border`           | —              | Mostrar borda no overlay               |
+| `speed`                 | 1              | Velocidade do avatar (0.5, 1, 1.5, 2)  |
+| `emotion`               | `default`      | Emoção (default, happy, sad, surprise) |
+| `region`                | `BR`           | Sotaque regional (BR, PE, RJ, SC)      |
+| `animation`             | —              | Tipo de animação                       |
 
 Toggle de ativação: `localStorage("libras_enabled")`.
 
@@ -703,11 +703,11 @@ font-src     ... vlibras.gov.br
 
 ### Broadcast
 
-| Tipo | Payload | Emissor | Receptor |
-|---|---|---|---|
-| `libras_toggle` | `{ enabled: boolean }` | ShellTools | Projection |
-| `libras_translate` | `{ gloss, original }` | useLibras | Projection, Obs |
-| `request_libras_state` | — | LibrasOverlay | main.js |
+| Tipo                   | Payload                | Emissor       | Receptor        |
+|------------------------|------------------------|---------------|-----------------|
+| `libras_toggle`        | `{ enabled: boolean }` | ShellTools    | Projection      |
+| `libras_translate`     | `{ gloss, original }`  | useLibras     | Projection, Obs |
+| `request_libras_state` | —                      | LibrasOverlay | main.js         |
 
 ---
 
@@ -718,13 +718,13 @@ música suportam **sombra personalizada** no texto.
 
 ### Configurações (Opções → Slides → Formatação de texto)
 
-| Opção | Chave (`KEYS.OPTIONS.SLIDE`) | Default | Descrição |
-|---|---|---|---|
-| Sombra no Texto | `SHADOW_ENABLED` | `false` | Ativa/desativa a sombra custom |
-| Cor Sombra | `SHADOW_COLOR` | `#000000` | Cor da sombra (color picker) |
-| Desfoque | `SHADOW_BLUR` | 12 | Raio de desfoque (0–30 px) |
-| Desloc. X | `SHADOW_OFFSET_X` | 0 | Deslocamento horizontal (-20 a 20 px) |
-| Desloc. Y | `SHADOW_OFFSET_Y` | 2 | Deslocamento vertical (-20 a 20 px) |
+| Opção           | Chave (`KEYS.OPTIONS.SLIDE`)   | Default   | Descrição                             |
+|-----------------|--------------------------------|-----------|---------------------------------------|
+| Sombra no Texto | `SHADOW_ENABLED`               | `false`   | Ativa/desativa a sombra custom        |
+| Cor Sombra      | `SHADOW_COLOR`                 | `#000000` | Cor da sombra (color picker)          |
+| Desfoque        | `SHADOW_BLUR`                  | 12        | Raio de desfoque (0–30 px)            |
+| Desloc. X       | `SHADOW_OFFSET_X`              | 0         | Deslocamento horizontal (-20 a 20 px) |
+| Desloc. Y       | `SHADOW_OFFSET_Y`              | 2         | Deslocamento vertical (-20 a 20 px)   |
 
 ### Implementação
 
@@ -735,16 +735,97 @@ música suportam **sombra personalizada** no texto.
 
 ---
 
+## 🔤 Sistema de Fontes
+
+### Visão Geral
+
+O programa suporta seleção de fontes para a interface (UI) e para projeções
+(slides, bíblia, utilitários). Fontes customizadas (não-nativas) são armazenadas
+em `src/assets/fonts/` e carregadas via `@font-face`.
+
+### Arquitetura
+
+```
+src/assets/fonts/           ← Arquivos .ttf / .otf
+  ↓
+src/assets/styles/fonts.css ← Declarações @font-face
+  ↓
+src/config/Fonts.ts         ← Listas UI_FONTS / PROJECTION_FONTS + resolveFont()
+  ↓
+src/components/inputs/SelectFont.vue  ← Componente reutilizável
+  ↓
+UserData                     ← options.font / options.slide.font / modules.*.font
+  ↓
+Projection views             ← fontFamily via inline style
+```
+
+### Arquivos principais
+
+| Arquivo                                | Função                                                                                    |
+|----------------------------------------|-------------------------------------------------------------------------------------------|
+| `../src/config/Fonts.ts`               | Config de fontes: `FontOption` interface, `UI_FONTS`, `PROJECTION_FONTS`, `resolveFont()` |
+| `src/assets/styles/fonts.css`          | Declarações `@font-face` para fontes customizadas                                         |
+| `src/assets/fonts/`                    | Arquivos de fonte (.ttf, .otf)                                                            |
+| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte                                               |
+| `src/constants/UserDataKeys.ts`        | Chaves: `OPTIONS.FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT`                    |
+
+### Chaves UserData
+
+| Chave                    | Escopo      | Onde é salva                             |
+|--------------------------|-------------|------------------------------------------|
+| `options.font`           | Global (UI) | Opções → Geral → Fonte da Interface      |
+| `options.slide.font`     | Slides      | Opções → Slides → Fonte de projeção      |
+| `options.utilities_font` | Utilitários | Opções → Utilitários → Fonte de projeção |
+| `modules.bible.font`     | Bíblia      | Opções → Bíblia → Fonte de projeção      |
+| `modules.<id>.font`      | Por módulo  | FormatPanel do módulo                    |
+
+### Especial: "Interface do Programa"
+
+Opção `"__UI_FONT__"` nos selects de projeção resolve para a fonte definida em `options.font`.
+Resolvida via `resolveFont(saved, fallback, uiFont)` em `../src/config/Fonts.ts`.
+
+### Como adicionar uma nova fonte
+
+1. **Copiar o arquivo** para `src/assets/fonts/` (ex: `AdventSans-Logo.otf`)
+2. **Adicionar `@font-face`** em `src/assets/styles/fonts.css`:
+   ```css
+   @font-face {
+     font-family: "NomeDaFamilia";
+     src: url("../fonts/arquivo.otf") format("opentype");
+     font-weight: normal;
+     font-style: normal;
+   }
+   ```
+3. **Adicionar ao array** em `../src/config/Fonts.ts`:
+   ```ts
+   { name: "Nome Exibido", family: "NomeDaFamilia", file: "arquivo.otf" }
+   ```
+4. A fonte aparece automaticamente nos selects (SelectFont) e pode ser usada em projeções.
+
+### Broadcasts de atualização
+
+Quando a fonte é alterada nas Opções, broadcasts são enviados para atualizar
+janelas de projeção em tempo real:
+
+| Chave alterada           | Broadcast enviado      | Recebido por                           |
+|--------------------------|------------------------|----------------------------------------|
+| `options.font`           | `SLIDE_FONT_CHANGED`   | useSlideStyle, ModuleProjection        |
+| `options.slide.font`     | `SLIDE_FONT_CHANGED`   | useSlideStyle                          |
+| `modules.bible.font`     | `BIBLE_FORMAT_CHANGED` | ProjectionBible, ProjectionBibleReturn |
+| `options.utilities_font` | `USERDATA_PATCH`       | ModuleProjection                       |
+
+---
+
 ## 📁 Constantes de tipos de arquivo (FileTypes.ts)
 
 Todas as listas de extensões de arquivo usadas no programa estão centralizadas
 em `src/constants/FileTypes.ts`:
 
-| Constante | Extensões |
-|---|---|
+| Constante   | Extensões                                       |
+|-------------|-------------------------------------------------|
 | `IMAGE_EXT` | jpg, jpeg, png, webp, gif, bmp, svg, heic, heif |
-| `AUDIO_EXT` | mp3, wav, ogg, flac, aac, m4a, wma, opus |
-| `VIDEO_EXT` | mp4, webm, mkv, mov, avi, m4v |
+| `AUDIO_EXT` | mp3, wav, ogg, flac, aac, m4a, wma, opus        |
+| `VIDEO_EXT` | mp4, webm, mkv, mov, avi, m4v                   |
 
 **Uso:**
 ```ts

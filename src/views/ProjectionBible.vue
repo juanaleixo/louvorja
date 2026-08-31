@@ -48,7 +48,7 @@
           :style="{
             color: font_color || '#FFFFFF',
             fontSize: font_size_px + 'px',
-            fontFamily: font || 'Arial, sans-serif',
+            fontFamily: font || FONT_DEFAULT_PROJECTION,
             textAlign:
               horizontal_align === 'start'
                 ? 'left'
@@ -67,7 +67,7 @@
           :style="{
             color: reference_font_color || '#FB8C00',
             fontSize: ref_font_size_px + 'px',
-            fontFamily: reference_font || 'Arial, sans-serif',
+            fontFamily: reference_font || FONT_DEFAULT_PROJECTION,
             textAlign: horizontal_align === 'start' ? 'left' : 'right',
           }"
         >
@@ -87,6 +87,8 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useContainerSize } from "@/composables/useContainerSize";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+import { resolveFont, FONT_DEFAULT_PROJECTION } from "@/config/fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
@@ -114,13 +116,16 @@ function ud(key, fallback = null) {
   return v == null ? fallback : v;
 }
 
-const font = computed(() => ud("font", "Arial, sans-serif"));
+const font = computed(() => {
+  const saved = ud("font", null);
+  return resolveFont(saved, FONT_DEFAULT_PROJECTION);
+});
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 15));
 const text_shadow = computed(() => ud("text_shadow", false));
 const text_shadow_color = computed(() => ud("text_shadow_color", "#000000"));
 const text_shadow_blur = computed(() => ud("text_shadow_blur", 4));
-const reference_font = computed(() => ud("reference_font", "Arial, sans-serif"));
+const reference_font = computed(() => ud("reference_font", FONT_DEFAULT_PROJECTION));
 const reference_font_color = computed(() => ud("reference_font_color", "#FB8C00"));
 const reference_font_size = computed(() => ud("reference_font_size", 10));
 const background_color = computed(() => ud("background_color", "#000000"));

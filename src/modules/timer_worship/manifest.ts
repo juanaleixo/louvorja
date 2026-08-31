@@ -3,6 +3,7 @@ import type { RibbonPage } from "@/types/Ribbon"
 import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
+import { FONT_DEFAULT_PROJECTION } from "@/config/fonts"
 import { SABBATH_SCHOOL_SOUNDS } from "@/config/SabbathSchool"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
@@ -25,7 +26,7 @@ export const module: Module = {
   group: ModuleGroupEnum.CHURCH,
   order: 2,
   customization: {
-    font: { type: "font", default: "Arial, sans-serif" },
+    font: { type: "font", default: FONT_DEFAULT_PROJECTION },
     font_color: { type: "color", default: "#FFFFFF" },
     text_background_enabled: { type: "boolean", default: false },
     text_background_color: { type: "color", default: "transparent" },

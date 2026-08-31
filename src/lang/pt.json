@@ -142,6 +142,8 @@
       "theme": "Aparência do programa:",
       "language": "Idioma:",
       "ui_style": "Estilo da Interface:",
+      "font": "Fonte da Interface:",
+      "projection_font": "Fonte de Projeção:",
       "start_with_os": "Iniciar com o sistema operacional",
       "themes": {
         "light": "Claro",
@@ -162,7 +164,8 @@
       "version": "Versão",
       "show_return": "Exibir na tela de retorno",
       "open_return_at": "Tela de retorno em:",
-      "esc_closes_projection": "Tecla ESC encerra a projeção"
+      "esc_closes_projection": "Tecla ESC encerra a projeção",
+      "font": "Fonte de projeção:"
     },
     "monitors": {
       "title": "Monitores",
@@ -176,6 +179,7 @@
     "slides": {
       "title": "Slides de Músicas",
       "open_at": "Abrir no monitor:",
+      "font": "Fonte de projeção:",
       "alignment": "Alinhamento da letra:",
       "align_top": "Topo",
       "align_center": "Centro",
@@ -447,6 +451,12 @@
       "fade": "Usar fade ao abrir/fechar projeção",
       "fade_duration": "Duração do fade",
       "custom_background": "Personalizar fundo da projeção"
+    },
+    "utilities": {
+      "title": "Utilitários",
+      "open_at": "Projetar utilitários em:",
+      "show_return": "Exibir tela de retorno",
+      "font": "Fonte de projeção:"
     },
     "dev": {
       "title": "Desenvolvedor",

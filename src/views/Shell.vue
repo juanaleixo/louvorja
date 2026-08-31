@@ -410,6 +410,12 @@ onMounted(() => {
     $appdata.set(KEYS.SHELL.IS_DARK, false);
   }
 
+  // Fonte da interface
+  const savedFont = $userdata.get<string>(KEYS.OPTIONS.FONT);
+  if (savedFont) {
+    document.documentElement.style.setProperty("--lj-font-shell", savedFont);
+  }
+
   // Idioma
   const lang = $userdata.get<string>(KEYS.OPTIONS.LANGUAGE);
   if (lang && lang !== "") {

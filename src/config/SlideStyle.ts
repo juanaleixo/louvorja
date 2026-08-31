@@ -1,9 +1,11 @@
+import { FONT_DEFAULT_PROJECTION } from "@/config/fonts";
+
 /**
  * Defaults que replicam o visual original do Delphi/Projection atual.
  * Aplicados quando o usuário ainda não configurou em "Formatação".
  */
 export const SLIDE_STYLE_DEFAULT = Object.freeze({
-  font: "Arial, sans-serif",
+  font: FONT_DEFAULT_PROJECTION,
   font_size_cover: 18, // % da viewport height (vh)
   font_size_lyric: 10,
   font_size_aux: 8,

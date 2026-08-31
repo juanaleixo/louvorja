@@ -29,6 +29,10 @@
         <v-icon :icon="ICONS.UI.FILE"></v-icon>
         {{ $t("options.file_projection.title") }}
       </v-tab>
+      <v-tab value="utilities">
+        <v-icon icon="mdi-tools"></v-icon>
+        {{ $t("options.utilities.title") }}
+      </v-tab>
     </v-tabs>
 
     <v-tabs-window v-model="tab" class="pt-5">
@@ -72,6 +76,32 @@
               {{ t.toString().toUpperCase() }}
             </option>
           </select>
+        </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-font">{{ $t("options.general.font") }}</label>
+          <SelectFont
+            id="opt-font"
+            :model-value="getUserData(KEYS.OPTIONS.FONT, '')"
+            :show-interface-default="false"
+            :show-projection-default="false"
+            :default-font="FONT_DEFAULT_UI"
+            @update:model-value="saveUserData(KEYS.OPTIONS.FONT, $event)"
+          />
+        </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-projection-font">
+            {{ $t("options.general.projection_font") }}
+          </label>
+          <SelectFont
+            id="opt-projection-font"
+            :model-value="getUserData(KEYS.OPTIONS.PROJECTION_FONT, '')"
+            :show-projection-default="false"
+            :show-interface-default="false"
+            :default-font="FONT_DEFAULT_PROJECTION"
+            @update:model-value="saveUserData(KEYS.OPTIONS.PROJECTION_FONT, $event)"
+          />
         </div>
 
         <div v-if="isDesktop" class="opt-row">
@@ -254,6 +284,15 @@
             @update:model-value="setPref('bible_return', $event)"
           />
         </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-bible-font">{{ $t("options.bible.font") }}</label>
+          <SelectFont
+            id="opt-bible-font"
+            :model-value="$userdata.get(KEYS.MODULES.BIBLE.FONT, '')"
+            @update:model-value="saveUserData(KEYS.MODULES.BIBLE.FONT, $event)"
+          />
+        </div>
       </v-tabs-window-item>
 
       <v-tabs-window-item value="slides">
@@ -284,6 +323,14 @@
             <option value="center">{{ $t("options.slides.align_center") }}</option>
             <option value="bottom">{{ $t("options.slides.align_bottom") }}</option>
           </select>
+        </div>
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-slides-font">{{ $t("options.slides.font") }}</label>
+          <SelectFont
+            id="opt-slides-font"
+            :model-value="getUserData(KEYS.OPTIONS.SLIDE.FONT, '')"
+            @update:model-value="saveUserData(KEYS.OPTIONS.SLIDE.FONT, $event)"
+          />
         </div>
         <div class="opt-row">
           <label class="opt-checkbox">
@@ -906,6 +953,43 @@
           </div>
         </template>
       </v-tabs-window-item>
+
+      <v-tabs-window-item value="utilities">
+        <!-- Utilitários -->
+
+        <div class="opt-row">
+          <label class="opt-label" for="opt-utilities-monitor">
+            {{ $t("options.utilities.open_at") }}
+          </label>
+          <MonitorSelect
+            id="opt-utilities-monitor"
+            :model-value="getUserData(KEYS.OPTIONS.UTILITIES_MONITOR, '') ?? ''"
+            @update:model-value="saveUserData(KEYS.OPTIONS.UTILITIES_MONITOR, $event || null)"
+          />
+        </div>
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="getUserData(KEYS.OPTIONS.UTILITIES_SHOW_RETURN, false)"
+              @change="saveUserData(KEYS.OPTIONS.UTILITIES_SHOW_RETURN, $c($event))"
+            />
+            <span>{{ $t("options.utilities.show_return") }}</span>
+          </label>
+        </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-utilities-font">
+            {{ $t("options.utilities.font") }}
+          </label>
+          <SelectFont
+            id="opt-utilities-font"
+            :model-value="getUserData(KEYS.OPTIONS.UTILITIES_FONT, '')"
+            @update:model-value="saveUserData(KEYS.OPTIONS.UTILITIES_FONT, $event)"
+          />
+        </div>
+      </v-tabs-window-item>
     </v-tabs-window>
   </div>
 </template>
@@ -920,6 +1004,7 @@ import { useI18n } from "vue-i18n";
 import { useTheme } from "vuetify";
 import { useDisplays } from "@/composables/useDisplays";
 import MonitorSelect from "@/components/inputs/MonitorSelect.vue";
+import SelectFont from "@/components/inputs/SelectFont.vue";
 import MonitorShape from "@/components/MonitorShape.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
@@ -928,6 +1013,7 @@ import { ICONS } from "@/config/Icons";
 import { KEYS } from "@/constants/UserDataKeys";
 import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
 import { THEMES } from "@/config/Theme";
+import { FONT_DEFAULT_PROJECTION, FONT_DEFAULT_UI, resolveFont } from "@/config/fonts";
 
 interface ThemeOption {
   id: string;
@@ -996,6 +1082,17 @@ const previewMonitorH: ComputedRef<number> = computed(() => previewMonitor.value
 
 function saveUserData(key: string, value: unknown): void {
   $userdata.set(key, value);
+  if (key === KEYS.OPTIONS.FONT) {
+    const font = resolveFont(value as string, FONT_DEFAULT_UI);
+    document.documentElement.style.setProperty("--lj-font-shell", font);
+    Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
+  } else if (key === KEYS.MODULES.BIBLE.FONT) {
+    Broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, {});
+  } else if (key === KEYS.OPTIONS.SLIDE.FONT) {
+    Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
+  } else if (key === KEYS.OPTIONS.UTILITIES_FONT) {
+    Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
+  }
 }
 
 /* ── Wallpaper via IndexedDB ── */

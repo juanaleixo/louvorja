@@ -55,6 +55,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { t } = useI18n();
@@ -79,7 +80,7 @@ function ud(key, fallback = null) {
   return v == null ? fallback : v;
 }
 
-const font = computed(() => ud("font", "Arial, sans-serif"));
+const font = computed(() => resolveFont(ud("font", null), FONT_DEFAULT_PROJECTION));
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const vertical_align = computed(() => ud("vertical_align", "center"));
 const horizontal_align = computed(() => ud("horizontal_align", "center"));
@@ -90,7 +91,7 @@ const image_fit = computed(() => ud("image_fit", "cover"));
 const textStyle = computed(() => {
   return {
     color: font_color.value || "#FFFFFF",
-    fontFamily: font.value || "Arial, sans-serif",
+    fontFamily: font.value || FONT_DEFAULT_PROJECTION,
     fontSize: `clamp(24px, 11vh, 70px)`,
     textAlign:
       horizontal_align.value === "start"

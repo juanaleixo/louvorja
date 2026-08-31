@@ -11,10 +11,12 @@
  * editor de slides definia formatação por slide.
  */
 
-import { computed, type ComputedRef, type CSSProperties } from "vue";
+import { computed, ref, type ComputedRef, type CSSProperties } from "vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 import { SLIDE_STYLE_DEFAULT } from "@/config/SlideStyle";
+import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 
 export type SlideOption = Record<string, unknown> | null;
 
@@ -77,6 +79,17 @@ const _readSlideOpts = (): SlideCfg => {
   }
   const showTitle = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.SHOW_TITLE_FIRST_SLIDE, null);
   if (typeof showTitle === "boolean") merged.show_title_first_slide = showTitle;
+
+  // Fonte (chave plana salva pelo select de fonte nas Opções)
+  const slideFont = $userdata.get<string>(KEYS.OPTIONS.SLIDE.FONT, null);
+  if (typeof slideFont === "string" && slideFont.trim()) {
+    if (slideFont === "__UI_FONT__") {
+      const uiFont = $userdata.get<string>(KEYS.OPTIONS.FONT, "");
+      if (uiFont) merged.font = uiFont;
+    } else {
+      merged.font = slideFont;
+    }
+  }
 
   // Formatação de texto personalizada
   if ($userdata.get<boolean>(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false) === true) {
@@ -142,7 +155,13 @@ const _readSlideOpts = (): SlideCfg => {
 };
 
 export function useSlideStyle(): SlideStyleAPI {
-  const cfg = computed(() => _readSlideOpts());
+  const _tick = ref(0);
+
+  useBroadcastListener(BROADCAST_TYPE.SLIDE_FONT_CHANGED, () => {
+    _tick.value += 1;
+  });
+
+  const cfg = computed(() => { void _tick.value; return _readSlideOpts(); });
 
   function _baseFont(slide: SlideOption): string {
     const fromSlide = slide && typeof slide.font === "string" ? slide.font : null;

@@ -42,6 +42,10 @@ export const BROADCAST_TYPE = Object.freeze({
    *  bible/Index.vue ao alterar fmt.*. Recebido por: ProjectionBible. */
   BIBLE_FORMAT_CHANGED: "bible_format_changed",
 
+  /** Fonte dos slides de música alterada nas Opções. Emitido por: AppMenuOpcoes.
+   *  Recebido por: useSlideStyle (re-le options.slide.font). */
+  SLIDE_FONT_CHANGED: "slide_font_changed",
+
   /** Ação da ribbon contextual da Bíblia (Limpar Texto, Verso Anterior, etc).
    *  Emitido por: RibbonBar. Recebido por: bible/Index.vue. */
   BIBLE_RIBBON_ACTION: "bible_ribbon_action",

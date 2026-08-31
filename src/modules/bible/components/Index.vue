@@ -346,16 +346,6 @@ const show_history = computed({
 
 const show_format = ref(false);
 
-const FONT_OPTIONS = [
-  "Arial, sans-serif",
-  "Helvetica, sans-serif",
-  "Verdana, sans-serif",
-  "Tahoma, sans-serif",
-  "Georgia, serif",
-  "Times New Roman, serif",
-  "Courier New, monospace",
-];
-
 // Proxy reativo para campos de customization (lê/escreve em UserData
 // e dispara broadcast para a janela de projeção atualizar em tempo real).
 const fmt = new Proxy<Record<string, any>>(

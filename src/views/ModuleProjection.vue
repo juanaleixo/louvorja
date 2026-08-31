@@ -44,7 +44,7 @@
           :style="{
             color: color || font_color || '#FFFFFF',
             fontSize: font_size_px + 'px',
-            fontFamily: font || 'Arial, sans-serif',
+            fontFamily: font || FONT_DEFAULT_PROJECTION,
             textAlign: textAlign,
             ...textShadowStyle,
           }"
@@ -58,7 +58,7 @@
           :style="{
             color: reference_font_color || font_color || '#FB8C00',
             fontSize: ref_font_size_px + 'px',
-            fontFamily: reference_font || font || 'Arial, sans-serif',
+            fontFamily: reference_font || font || FONT_DEFAULT_PROJECTION,
             textAlign: extraAlign,
           }"
         >
@@ -81,6 +81,8 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+import { resolveFont, FONT_DEFAULT_PROJECTION } from "@/config/fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import DrawProjection from "@/modules/draw/components/DrawProjection.vue";
@@ -116,7 +118,10 @@ function ud(key, fallback = null) {
   return v == null ? fallback : v;
 }
 
-const font = computed(() => ud("font", "Arial, sans-serif"));
+const font = computed(() => {
+  const saved = ud("font", null) || UserData.get(KEYS.OPTIONS.UTILITIES_FONT, "");
+  return resolveFont(saved, FONT_DEFAULT_PROJECTION);
+});
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 15));
 const text_shadow = computed(() => ud("text_shadow", false));
@@ -208,8 +213,13 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_CLOSE, (payload) => {
 
 useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
   if (!payload || typeof payload.path !== "string") return;
-  if (!payload.path.startsWith(`modules.${moduleId.value}.`)) return;
-  _tick.value += 1;
+  if (
+    payload.path.startsWith(`modules.${moduleId.value}.`) ||
+    payload.path === "options.utilities_font" ||
+    payload.path === "options.font"
+  ) {
+    _tick.value += 1;
+  }
 });
 
 function onKey(e) {
@@ -294,7 +304,7 @@ onBeforeUnmount(() => {
 
 .module-projection__empty-hint {
   font-size: 1.5vw;
-  font-family: Arial, sans-serif;
+  font-family: DINCondensedBold;
   letter-spacing: 0.04em;
 }
 

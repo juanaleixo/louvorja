@@ -59,7 +59,8 @@ $broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, { slide_index: 0 });
 | `SLIDES_DATA` | `"slides_data"` | `useMedia.open()` | Operator |
 | `GO_TO_SLIDE` | `"go_to_slide"` | Operator | useSlides |
 | `BIBLE_VERSE` | `"bible_verse"` | bible/Index | ObsBible, ProjectionBible |
-| `BIBLE_FORMAT_CHANGED` | `"bible_format_changed"` | bible/Index | ProjectionBible |
+| `BIBLE_FORMAT_CHANGED` | `"bible_format_changed"` | bible/Index, AppMenuOpcoes | ProjectionBible, ProjectionBibleReturn |
+| `SLIDE_FONT_CHANGED` | `"slide_font_changed"` | AppMenuOpcoes | useSlideStyle |
 | `REQUEST_BIBLE_STATE` | `"request_bible_state"` | ProjectionBible | bible/Index (re-emite) |
 | `MESSAGE_BOARD` | `"message_board"` | message_board/Index | (futuro) |
 | `MEDIA_CLOSE` | `"media_close"` | useMedia.close() | Projection, Obs, FileProjection |

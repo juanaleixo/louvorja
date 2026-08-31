@@ -28,6 +28,7 @@ import { module as manifest } from "../manifest";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 import { useContainerSize } from "@/composables/useContainerSize";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
 
 const { container, fontSizePc } = useContainerSize();
 let timer = null;
@@ -50,7 +51,7 @@ const userdata = computed(
 );
 
 const backgroundColor = computed(() => userdata.value.background_color || "#000000");
-const font = computed(() => userdata.value.font || "Arial, sans-serif");
+const font = computed(() => resolveFont(userdata.value.font || null, FONT_DEFAULT_PROJECTION));
 const fontColor = computed(() => userdata.value.font_color || "#FFFFFF");
 const fontSize = computed(() => userdata.value.font_size || 30);
 const borderSpacing = computed(() => userdata.value.border_spacing || 10);

@@ -10,6 +10,7 @@ import {
   type OverlaySlot,
 } from "@/types/Overlay";
 import { KEYS } from "@/constants/UserDataKeys";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
 
 interface OverlayStateReturn {
   enabled: Ref<boolean>;
@@ -164,7 +165,7 @@ export function useOverlayState(): OverlayStateReturn {
   function textStyle(slot: OverlaySlot): Record<string, string> {
     const s = slot.style;
     return {
-      fontFamily: s.font || "Arial, sans-serif",
+      fontFamily: resolveFont(s.font, FONT_DEFAULT_PROJECTION),
       fontSize: `clamp(14px, ${s.font_size || 5}vh, 80px)`,
       color: s.color || "#FFFFFF",
       textAlign: s.text_align || "center",

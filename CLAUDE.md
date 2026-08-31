@@ -371,6 +371,79 @@ ShellTools.vue
 
 ---
 
+## Sistema de Fontes
+
+### Estrutura
+
+| Arquivo | Função |
+|---------|--------|
+| `src/config/Fonts.ts` | Config de fontes: `FontOption` interface, `UI_FONTS`, `PROJECTION_FONTS`, `resolveFont()` |
+| `src/assets/styles/fonts.css` | Declarações `@font-face` para fontes customizadas |
+| `src/assets/fonts/` | Arquivos de fonte (.ttf, .otf) |
+| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte |
+| `src/constants/UserDataKeys.ts` | Chaves: `OPTIONS.FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT` |
+
+### Como adicionar uma nova fonte
+
+1. **Copiar o arquivo** para `src/assets/fonts/` (ex: `AdventSans-Logo.otf`)
+
+2. **Adicionar `@font-face`** em `src/assets/styles/fonts.css`:
+   ```css
+   @font-face {
+     font-family: "NomeDaFamilia";
+     src: url("../fonts/arquivo.otf") format("opentype");
+     font-weight: normal;
+     font-style: normal;
+   }
+   ```
+   - Formatos suportados: `format("truetype")` para .ttf, `format("opentype")` para .otf
+
+3. **Adicionar ao array** em `src/config/Fonts.ts`:
+   ```ts
+   { name: "Nome Exibido", family: "NomeDaFamilia", file: "arquivo.otf" }
+   ```
+   - `family` deve ser o mesmo valor usado no `font-family` do `@font-face`
+   - `file` é opcional (usado para referência/documentação)
+
+4. **Pronto!** A fonte aparece automaticamente:
+   - No SelectFont (Opções > Geral/Bíblia/Slides/Utilitários)
+   - No FormatPanel (formatação de módulos)
+   - Em projeções de slides, bíblia e utilitários
+
+### Fluxo de dados
+
+```
+src/assets/fonts/arquivo.otf
+  ↓
+src/assets/styles/fonts.css (@font-face)
+  ↓
+src/config/Fonts.ts (PROJECTION_FONTS / UI_FONTS)
+  ↓
+SelectFont.vue (UI de seleção)
+  ↓
+UserData (opcoes.font / options.slide.font / modules.*.font)
+  ↓
+Projection views (inline style fontFamily)
+```
+
+### Chaves UserData
+
+| Chave | Escopo | Uso |
+|-------|--------|-----|
+| `options.font` | Global | Fonte da interface (UI) |
+| `options.slide.font` | Slides | Fonte de projeção de slides |
+| `options.utilities_font` | Utilitários | Fonte de projeção de utilitários |
+| `modules.bible.font` | Bíblia | Fonte de projeção da bíblia |
+| `modules.<id>.font` | Por módulo | Fonte de projeção específica do módulo |
+
+### Especial: "Interface do Programa"
+
+Opção especial `"__UI_FONT__"` que resolve para a fonte definida em `options.font`.
+Disponível nos selects de fonte de projeção (Bíblia, Slides, Utilitários).
+Resolvida via `resolveFont(saved, fallback, uiFont)` em `src/config/Fonts.ts`.
+
+---
+
 ## Plano de Migração (Delphi → Vue)
 
 O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLite com 74+ queries, servidor HTTP embarcado, sincronismo de áudio BASS24 e suporte a múltiplos monitores. A migração está organizada em 7 fases.

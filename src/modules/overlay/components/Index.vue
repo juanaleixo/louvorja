@@ -121,6 +121,7 @@ import OverlaySlotEditor from "./OverlaySlotEditor.vue";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $userdata from "@/helpers/UserData";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import {
   getImage,
@@ -292,7 +293,7 @@ function previewImageStyle(slot: OverlaySlot): Record<string, string | number> {
 function previewTextStyle(slot: OverlaySlot): Record<string, string> {
   const s = slot.style;
   return {
-    fontFamily: s.font || "Arial, sans-serif",
+    fontFamily: resolveFont(s.font, FONT_DEFAULT_PROJECTION),
     fontSize: `clamp(5px, ${s.font_size || 5}vh, 80px)`,
     color: s.color || "#FFFFFF",
     textAlign: s.text_align || "center",

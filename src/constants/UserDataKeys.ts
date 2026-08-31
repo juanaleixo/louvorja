@@ -45,6 +45,7 @@ export const KEYS = {
     BIBLE: {
       SHOW_RETURN: `${MODULES}.${ModuleEnum.BIBLE}.show_return`,
       IS_PLAYING: `${MODULES}.${ModuleEnum.BIBLE}.is_playing`,
+      FONT: `${MODULES}.${ModuleEnum.BIBLE}.font`,
       ESC_CLOSES_PROJECTION: `${MODULES}.${ModuleEnum.BIBLE}.esc_closes_projection`,
       SHOW_REFERENCE: `${MODULES}.${ModuleEnum.BIBLE}.show_reference`,
       SHOW_VERSION: `${MODULES}.${ModuleEnum.BIBLE}.show_version`,
@@ -184,8 +185,14 @@ export const KEYS = {
     THEME: `${OPTIONS}.theme`,
     UI_STYLE: `${OPTIONS}.ui_style`,
     MINIMIZE_ON_START: `${OPTIONS}.minimize_on_start`,
+    FONT: `${OPTIONS}.font`,
+    PROJECTION_FONT: `${OPTIONS}.projection_font`,
+    UTILITIES_FONT: `${OPTIONS}.utilities_font`,
+    UTILITIES_MONITOR: `${OPTIONS}.utilities_monitor`,
+    UTILITIES_SHOW_RETURN: `${OPTIONS}.utilities_show_return`,
     SLIDE: {
       SLIDES: `${OPTIONS_SLIDE}.slides`,
+      FONT: `${OPTIONS_SLIDE}.font`,
       CUSTOM_BACKGROUND: `${OPTIONS_SLIDE}.custom_background`,
       TEXT_ALIGN: `${OPTIONS_SLIDE}.text_align`,
       SHOW_TITLE_FIRST_SLIDE: `${OPTIONS_SLIDE}.show_title_first_slide`,
