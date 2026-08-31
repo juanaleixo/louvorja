@@ -161,6 +161,19 @@ function createWindow() {
 // Permite autoplay de vídeos (YouTube embarcado) sem gesto do usuário
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
+// ---------------------------------------------------------------------------
+// Linux — Forçar X11 e desabilitar sandbox
+// ---------------------------------------------------------------------------
+// Ubuntu 22.04+ usa Wayland por padrão, mas screen.getAllDisplays() retorna
+// bounds incorretos no Wayland (todos os displays com mesmas coordenadas).
+// Isso quebra detecção de monitores e posicionamento de janelas de projeção.
+// Forçar X11 resolve: display bounds corretos + window positioning funciona.
+// O --no-sandbox é necessário para AppImage (ambiente isolado sem capabilities).
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("ozone-platform-hint", "x11");
+  app.commandLine.appendSwitch("no-sandbox");
+}
+
 app.whenReady().then(async () => {
   // Limpa Service Workers herdados de execuções anteriores em modo PWA/dev.
   // Em prod desktop o app é file:// e não usa SW, mas se o usuário já abriu

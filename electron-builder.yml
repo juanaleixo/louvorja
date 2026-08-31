@@ -135,3 +135,4 @@ linux:
     - rpm
   icon: build/icon-512.png
   category: AudioVideo
+  sandbox: false
