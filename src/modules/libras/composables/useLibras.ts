@@ -11,6 +11,8 @@ import { ref, onUnmounted } from "vue";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Libras from "@/helpers/Libras";
+import $userdata from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
 import $dev from "@/helpers/Dev";
 
 export function useLibras() {
@@ -21,16 +23,16 @@ export function useLibras() {
 
   /**
    * Traduz o texto de um slide e armazena o gloss.
-   * Tenta cache primeiro; se não encontrar, chama a API.
+   * Tenta cache IndexedDB primeiro (chave correta: music_{id}_{region});
+   * se não encontrar, chama a API.
    */
-  async function translateSlide(text: string): Promise<void> {
+  async function translateSlide(text: string, musicId?: number): Promise<void> {
     if (!text?.trim()) {
       gloss.value = "";
       originalText.value = "";
       return;
     }
 
-    // Limpar HTML tags para envio à API
     const plainText = Libras.stripHtml(text);
     if (!plainText) {
       gloss.value = "";
@@ -40,28 +42,28 @@ export function useLibras() {
 
     originalText.value = plainText;
 
-    // Tentar cache primeiro (hash simples do texto)
-    const cacheId = `slide_${Libras.uniqueTokens(plainText).join("_").slice(0, 50)}`;
-    const cached = await Libras.getCached(cacheId, "music");
+    // 1. Tentar cache IndexedDB por texto original
+    const cached = await Libras.findCachedByText(plainText, "music");
     if (cached?.gloss) {
       gloss.value = cached.gloss;
-      $dev.write(`[libras] cache hit para slide`);
+      $dev.write(`[libras] cache hit (text-based)`);
       return;
     }
 
-    // Chamar API de tradução
+    // 2. Chamar API de tradução
     isTranslating.value = true;
     try {
       const result = await Libras.translateText(plainText);
       if (result) {
         gloss.value = result;
 
-        // Salvar no cache
         const tokens = Libras.uniqueTokens(result);
+        const region = $userdata.get<string>(KEYS.MODULES.LIBRAS.REGION, "BR") || "BR";
+        const slideId = `music_slide_${musicId || "unknown"}_${tokens.join("_").slice(0, 40)}_${region}`;
         await Libras.setCached({
-          id: cacheId,
+          id: slideId,
           type: "music",
-          ref_id: cacheId,
+          ref_id: String(musicId || ""),
           lang: "pt",
           original_text: plainText,
           gloss: result,
@@ -81,13 +83,13 @@ export function useLibras() {
 
   // Escutar mudanças de slide via BroadcastChannel
   useBroadcastListener(BROADCAST_TYPE.SLIDE_CHANGE, (payload: unknown) => {
-    const data = payload as { slide_index: number; slide?: { lyric?: string } };
+    const data = payload as { slide_index: number; slide?: { lyric?: string; id_music?: number } };
     if (data.slide_index === lastSlideIndex.value) return;
     lastSlideIndex.value = data.slide_index;
 
     const lyric = data.slide?.lyric || "";
     if (lyric) {
-      translateSlide(lyric);
+      translateSlide(lyric, data.slide?.id_music ? Number(data.slide.id_music) : undefined);
     } else {
       gloss.value = "";
       originalText.value = "";

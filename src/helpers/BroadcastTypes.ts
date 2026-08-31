@@ -245,6 +245,12 @@ export interface GoToSlidePayload {
 export interface BibleVersePayload {
   text: string;
   reference: string;
+  book?: string;
+  book_id?: number;
+  chapter?: number | string;
+  verses?: number[];
+  version?: string;
+  version_id?: number;
   active: boolean;
 }
 

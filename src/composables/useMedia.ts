@@ -177,6 +177,7 @@ function _buildSlidesFrom(data: Music): Slide[] {
       instrumental_time:    "00:00:00",
       url_image:            data?.url_image as string | undefined,
       image_position:       data?.image_position,
+      id_music:             data?.id_music,
     },
     ...(data?.lyric || [])
       .filter((lyric) => lyric.show_slide === 1)
@@ -192,6 +193,7 @@ function _buildSlidesFrom(data: Music): Slide[] {
           lyric:          lyric.lyric ? lyric.lyric.replace(/[\r\n]+/g, "<br>") : "",
           url_image:      prev_image,
           image_position: prev_image_position,
+          id_music:       data?.id_music,
         };
       }),
   ];

@@ -1,6 +1,12 @@
 <template>
   <OverlayRenderer />
-  <LibrasOverlay :verse-text="text" type="bible" />
+  <LibrasOverlay
+    :verse-text="text"
+    :bible-version="version"
+    :bible-book-id="bookId"
+    :bible-chapter="Number(chapter) || undefined"
+    type="bible"
+  />
   <div class="obs-bible-root">
     <Transition name="fade-verse" mode="out-in">
       <div v-if="active && displayText" :key="displayText" class="obs-bible-content">
@@ -24,9 +30,11 @@ const MID = "modules.bible";
 const text = ref("");
 const reference = ref("");
 const book = ref("");
+const bookId = ref(undefined);
 const chapter = ref("");
 const verses = ref([]);
 const version = ref("");
+const versionId = ref(undefined);
 const active = ref(false);
 
 const _tick = ref(0);
@@ -81,9 +89,11 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   text.value = payload.text || "";
   reference.value = payload.reference || "";
   book.value = payload.book || "";
+  bookId.value = payload.book_id;
   chapter.value = payload.chapter || "";
   verses.value = payload.verses || [];
   version.value = payload.version || "";
+  versionId.value = payload.version_id;
   active.value = payload.active ?? true;
 });
 

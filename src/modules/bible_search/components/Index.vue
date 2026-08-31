@@ -416,7 +416,7 @@ async function projectCurrent(): Promise<void> {
   $broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
     text: v.text,
     reference: v.reference,
-    bookId: v.id_bible_book,
+    book_id: v.id_bible_book,
     chapter: v.chapter,
     verses: [v.verse],
     active: true,
@@ -429,7 +429,7 @@ function openInBible(): void {
   $broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
     text: v.text,
     reference: v.reference,
-    bookId: v.id_bible_book,
+    book_id: v.id_bible_book,
     chapter: v.chapter,
     verses: [v.verse],
     active: true,

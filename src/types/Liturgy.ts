@@ -22,6 +22,12 @@ export interface LiturgyItem {
   ref_id?: string
   /** Ids dos anúncios selecionados (tipo anuncios), na ordem de projeção. */
   anuncios_ids?: string[]
+  /** Slot do overlay a ativar/desativar (tipo overlay). */
+  overlay_id?: string
+  /** Ação do overlay: ativar ou desativar (tipo overlay). */
+  overlay_action?: "activate" | "deactivate"
+  /** Overlay vinculado — ativado automaticamente ao executar o item. */
+  linked_overlay_id?: string
 }
 
 export interface LiturgyMusicItem {

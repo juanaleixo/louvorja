@@ -48,6 +48,10 @@
             <v-icon :icon="chip.icon" class="mr-2" />
             {{ t(`inputs.music_version_${chip.action}`) }}
           </v-chip>
+          <v-chip v-if="linkedOverlay" class="ml-2" size="x-small" variant="tonal" color="primary">
+            <v-icon :icon="ICONS.MODULES.OVERLAY" size="14" class="mr-1" />
+            {{ linkedOverlay.name }}
+          </v-chip>
         </span>
       </button>
 
@@ -136,6 +140,7 @@ import { useI18n } from "vue-i18n";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";
+import type { OverlaySlot } from "@/types/Overlay";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { MUSIC_ACTION, MusicAction } from "@/config/MusicAction";
@@ -166,6 +171,11 @@ const chip = computed((): MusicAction | null => {
   if (!sub) return null;
   const key = LITURGY_TO_ACTION_KEY[sub] || sub;
   return MUSIC_ACTION[key] || null;
+});
+
+const linkedOverlay = computed((): OverlaySlot | null => {
+  if (!props.element?.linked_overlay_id) return null;
+  return props.overlaySlots.find((s) => s.id === props.element.linked_overlay_id) || null;
 });
 
 const availableActions = computed((): ActionOption[] => {
@@ -262,8 +272,9 @@ const props = withDefaults(
     hideCheckbox?: boolean;
     checked?: boolean;
     subtitleFor: (item: LiturgyItem) => string;
+    overlaySlots?: OverlaySlot[];
   }>(),
-  { locked: false, defaultColor: "#00004F", hideCheckbox: false }
+  { locked: false, defaultColor: "#00004F", hideCheckbox: false, overlaySlots: () => [] }
 );
 const element = toRef(props, "element");
 

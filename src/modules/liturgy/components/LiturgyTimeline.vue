@@ -103,6 +103,7 @@
                   :default-color="defaultColor"
                   :checked="isChecked(element)"
                   :subtitle-for="subtitleFor"
+                  :overlay-slots="overlaySlots"
                   @edit="openItemDialog"
                   @clone="cloneItem"
                   @confirm-remove="confirmRemove"
@@ -129,6 +130,7 @@ import LiturgyItemComponent from "./LiturgyItem.vue";
 import pt from "../lang/pt.json";
 import es from "../lang/es.json";
 import type { LiturgyItem } from "@/types/Liturgy";
+import type { OverlaySlot } from "@/types/Overlay";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
@@ -152,6 +154,7 @@ const props = withDefaults(
     totalDuration?: number;
     isChecked: (item: LiturgyItem) => boolean;
     subtitleFor: (item: LiturgyItem) => string;
+    overlaySlots?: OverlaySlot[];
     onReorder: (items: LiturgyItem[]) => void;
     onBlocoAssign?: (itemId: string) => void;
     openItemDialog: (index?: number) => void;
@@ -167,6 +170,7 @@ const props = withDefaults(
     locked: false,
     defaultColor: "#00004F",
     totalDuration: 0,
+    overlaySlots: () => [],
   }
 );
 

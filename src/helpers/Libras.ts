@@ -101,6 +101,13 @@ export async function removeCached(id: string, type: "music" | "bible"): Promise
   await $idb.del(cacheTable(type), id);
 }
 
+/** Busca entrada no cache pelo texto original. */
+export async function findCachedByText(originalText: string, type: "music" | "bible"): Promise<LibrasCacheEntry | null> {
+  const entries = await $idb.getAll<LibrasCacheEntry>(cacheTable(type));
+  const clean = stripHtml(originalText).trim();
+  return entries.find((e) => stripHtml(e.original_text).trim() === clean) ?? null;
+}
+
 /** Lista todas as entradas de uma tabela (ou de ambas se type não informado). */
 export async function listCached(type?: "music" | "bible"): Promise<LibrasCacheEntry[]> {
   if (type) {
@@ -412,6 +419,42 @@ export async function translateMusic(
   onProgress?.("translate", 1, 1);
   const tokens = uniqueTokens(gloss);
 
+  // Traduz e cacheia cada slide individualmente para uso offline
+  const slideEntries: Lyric[] = Array.isArray(music.lyric)
+    ? music.lyric
+    : (Object.values(music.lyric || {}) as Lyric[]);
+  const sortedSlides = slideEntries
+    .filter((l) => l?.show_slide === 1)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  for (let i = 0; i < sortedSlides.length; i++) {
+    if (signal?.aborted) break;
+    const slideText = stripHtml(sortedSlides[i]?.lyric || "").trim();
+    if (!slideText) continue;
+
+    const slideId = `music_slide_${idMusic}_${i}_${region || "default"}`;
+    const existingSlide = await getCached(slideId, "music");
+    if (existingSlide?.gloss) continue;
+
+    const slideGloss = await translateText(slideText);
+    if (slideGloss) {
+      const slideTokens = uniqueTokens(slideGloss);
+      await setCached({
+        id: slideId,
+        type: "music",
+        ref_id: String(idMusic),
+        lang,
+        original_text: slideText,
+        gloss: slideGloss,
+        tokens: slideTokens,
+        bundles_cached: true,
+        bundles_size: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
+
   // Download dos bundles
   onProgress?.("download", 0, tokens.length);
   const bundlesSize = await downloadAllBundles(
@@ -471,6 +514,36 @@ export async function translateBibleChapter(
   if (signal?.aborted) return null;
   onProgress?.("translate", 1, 1);
   const tokens = uniqueTokens(gloss);
+
+  // Traduz e cacheia cada versículo individualmente para uso offline
+  const verseKeys = Object.keys(verses).sort((a, b) => Number(a) - Number(b));
+  for (let i = 0; i < verseKeys.length; i++) {
+    if (signal?.aborted) break;
+    const verseText = stripHtml(verses[verseKeys[i]] || "").trim();
+    if (!verseText) continue;
+
+    const verseId = `bible_verse_${versionAbbrev}_${book.id_bible_book}_${chapter}_${verseKeys[i]}_${region || "default"}`;
+    const existingVerse = await getCached(verseId, "bible");
+    if (existingVerse?.gloss) continue;
+
+    const verseGloss = await translateText(verseText);
+    if (verseGloss) {
+      const verseTokens = uniqueTokens(verseGloss);
+      await setCached({
+        id: verseId,
+        type: "bible",
+        ref_id: `${versionAbbrev}_${book.id_bible_book}_${chapter}_${verseKeys[i]}`,
+        lang,
+        original_text: verseText,
+        gloss: verseGloss,
+        tokens: verseTokens,
+        bundles_cached: true,
+        bundles_size: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
 
   onProgress?.("download", 0, tokens.length);
   const bundlesSize = await downloadAllBundles(
@@ -546,6 +619,7 @@ export default {
   getCached,
   setCached,
   removeCached,
+  findCachedByText,
   listCached,
   clearCache,
   extractMusicText,

@@ -60,7 +60,8 @@
     "video-online": "Vídeo Online",
     "biblioteca-midia": "Biblioteca de Medios",
     "som-de-fundo": "Sonido de Fondo",
-    "anuncios": "Anuncios"
+    "anuncios": "Anuncios",
+    "overlay": "Overlay"
   },
   "inputs": {
     "type": "Tipo",
@@ -255,5 +256,13 @@
   "anuncios": {
     "select_label": "Selecciona los anuncios a proyectar:",
     "all": "Todos"
+  },
+  "overlay": {
+    "select_slot": "Seleccionar overlay",
+    "action": "Acción",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "link_overlay": "Vincular Overlay",
+    "linked_overlay": "Overlay vinculado"
   }
 }

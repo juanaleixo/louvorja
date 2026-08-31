@@ -25,6 +25,8 @@ import es from "../lang/es.json";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
 import { useBackgroundSound } from "@/composables/useBackgroundSound";
+import { readAllSlots as readAllOverlaySlots, writeSlot as writeOverlaySlot } from "@/helpers/Overlay";
+import type { OverlaySlot } from "@/types/Overlay";
 import type { LiturgyItem, ScheduledCategory, LiturgyMusicItem } from "@/types/Liturgy";
 import { AUDIO_EXT, IMAGE_EXT, VIDEO_EXT } from "@constants/FileTypes";
 
@@ -100,6 +102,9 @@ export const DEFAULT_FORM = (): LiturgyItem => ({
   has_instrumental_music: false,
   subtipo: "",
   blocoId: "",
+  overlay_id: "",
+  overlay_action: "activate",
+  linked_overlay_id: "",
 });
 
 function _groupItemsByBloco(list: LiturgyItem[]): LiturgyItem[] {
@@ -176,6 +181,8 @@ export function useLiturgyItems(
   const musicsCache = ref<LiturgyMusicItem[] | null>(null);
   const isDraggingOver = ref(false);
   const menuOpen = ref(false);
+  const overlaySlots = ref<OverlaySlot[]>([]);
+  const overlaySlotsLoaded = ref(false);
 
   const items: WritableComputedRef<LiturgyItem[]> = computed({
     get() {
@@ -335,6 +342,7 @@ export function useLiturgyItems(
       form.value.subtipo = "sung";
     }
     dialog.value = true;
+    void loadOverlaySlots();
   }
 
   function quickAdd(tipo: LiturgyItemTypeEnum): void {
@@ -350,6 +358,10 @@ export function useLiturgyItems(
     if (form.value.tipo !== LiturgyItemTypeEnum.VIDEO_ONLINE) {
       form.value.url = "";
       form.value.subitem = "";
+    }
+    if (form.value.tipo !== LiturgyItemTypeEnum.OVERLAY) {
+      form.value.overlay_id = "";
+      form.value.overlay_action = "activate";
     }
     // Arquivo selecionado pertence ao tipo anterior — limpa ao trocar.
     form.value.dir = "";
@@ -495,6 +507,16 @@ export function useLiturgyItems(
           : "";
         break;
       }
+      case LiturgyItemTypeEnum.OVERLAY: {
+        const slot = overlaySlots.value.find((s) => s.id === f.overlay_id);
+        built.overlay_id = f.overlay_id || "";
+        built.overlay_action = f.overlay_action || "activate";
+        built.item = (f.overlay_action === "activate"
+          ? t("overlay.activate")
+          : t("overlay.deactivate")) + ": " + (slot?.name || built.overlay_id);
+        built.subitem = slot?.name || built.overlay_id;
+        break;
+      }
       case LiturgyItemTypeEnum.BLOCO:
         built.subitem = "";
         built.blocoId = undefined;
@@ -595,7 +617,13 @@ export function useLiturgyItems(
       case LiturgyItemTypeEnum.ANOTACAO:
         alert(item.item + (item.subitem ? "\n\n" + item.subitem : ""));
         break;
+      case LiturgyItemTypeEnum.OVERLAY:
+        void toggleOverlay(item);
+        break;
     }
+
+    // Após execução, ativar overlay vinculado (se houver)
+    void activateLinkedOverlay(item);
   }
 
   async function playMusic(item: LiturgyItem, mode = "sung"): Promise<void> {
@@ -760,6 +788,47 @@ export function useLiturgyItems(
     // Espera a janela de projeção montar antes de enviar o broadcast.
     await new Promise((r) => setTimeout(r, 300));
     $broadcast.send(BROADCAST_TYPE.ANNOUNCEMENTS_STATE, payload);
+  }
+
+  /* ============== Overlay ============== */
+  async function toggleOverlay(item: LiturgyItem): Promise<void> {
+    if (!item.overlay_id) return;
+    const slots = await readAllOverlaySlots();
+    const slot = slots.find((s) => s.id === item.overlay_id);
+    if (!slot) return;
+
+    slot.enabled = item.overlay_action === "activate";
+    await writeOverlaySlot(slot);
+
+    if (slot.enabled) $userdata.set(KEYS.MODULES.OVERLAY.ENABLED, true);
+
+    $broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {
+      enabled: slot.enabled,
+      slot,
+    });
+  }
+
+  async function activateLinkedOverlay(item: LiturgyItem): Promise<void> {
+    if (!item.linked_overlay_id) return;
+    const slots = await readAllOverlaySlots();
+    const slot = slots.find((s) => s.id === item.linked_overlay_id);
+    if (!slot) return;
+
+    slot.enabled = true;
+    await writeOverlaySlot(slot);
+
+    $userdata.set(KEYS.MODULES.OVERLAY.ENABLED, true);
+
+    $broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {
+      enabled: true,
+      slot,
+    });
+  }
+
+  async function loadOverlaySlots(): Promise<void> {
+    if (overlaySlotsLoaded.value) return;
+    overlaySlots.value = await readAllOverlaySlots();
+    overlaySlotsLoaded.value = true;
   }
 
 
@@ -1189,6 +1258,7 @@ export function useLiturgyItems(
     videosCache,
     isDraggingOver,
     menuOpen,
+    overlaySlots,
     items,
     totalDuration,
     musicsList,
@@ -1226,6 +1296,7 @@ export function useLiturgyItems(
     loadVideosList,
     loadMediaLibraryEntries,
     loadBgSoundEntries,
+    loadOverlaySlots,
     setFormField,
     toggleMenuOpen,
     closeMenu,

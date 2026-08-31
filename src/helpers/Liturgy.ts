@@ -67,6 +67,7 @@ function iconForItem(item: LiturgyItem): string {
     [LiturgyItemTypeEnum.ANUNCIOS]: "mdi-bullhorn",
     [LiturgyItemTypeEnum.ITENS_AGENDADOS]: "mdi-calendar-multiselect",
     [LiturgyItemTypeEnum.BLOCO]: "mdi-view-dashboard",
+    [LiturgyItemTypeEnum.OVERLAY]: "mdi-overlay",
   };
   return map[item.tipo] || "mdi-circle-medium";
 }

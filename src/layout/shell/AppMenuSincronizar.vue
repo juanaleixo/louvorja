@@ -522,7 +522,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from "vue";
+import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
@@ -531,6 +531,7 @@ import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { useSyncManager } from "@/composables/useSyncManager";
+import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
 import ProgressBar from "@/components/ProgressBar.vue";
 import $snackbar from "@/helpers/Snackbar";
 import Seed from "@/helpers/Seed";
@@ -564,6 +565,11 @@ interface StorageStats {
 /* ---- Composable ---- */
 
 const sync = useSyncManager();
+const bgTasks = useBackgroundTasks();
+
+function findTask(id: string) {
+  return bgTasks.tasks.value.find((t) => t.id === id && t.status === "running");
+}
 
 /* ---- Estado ---- */
 
@@ -606,18 +612,39 @@ const preparing = ref<boolean>(false);
 const prepareDone = ref<number>(0);
 const prepareTotal = ref<number>(0);
 
-// Wrap refs do composable para compatibilidade com o template
-const downloading = computed(() => sync.downloading.value);
-const downloadedCount = computed(() => sync.downloadProgress.value.done);
-const failedDownloadCount = computed(() => sync.downloadFailedCount.value);
-const totalDownloads = computed(() => sync.downloadProgress.value.total);
-const currentDownloadFile = computed(() => sync.downloadProgress.value.currentFile || null);
+// Wrap refs do composable — lê de bgTasks se download está rodando em background
+const downloading = computed(() => sync.downloading.value || !!findTask("sync-collections"));
+const downloadedCount = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task._done ?? 0) : sync.downloadProgress.value.done;
+});
+const failedDownloadCount = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task._failed ?? 0) : sync.downloadFailedCount.value;
+});
+const totalDownloads = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task._total ?? 0) : sync.downloadProgress.value.total;
+});
+const currentDownloadFile = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task.detail ?? null) : sync.downloadProgress.value.currentFile || null;
+});
 const completedMsg = computed(() => sync.downloadCompletedMsg.value);
 
-const bibleDownloading = computed(() => sync.bibleDownloading.value);
-const bibleDone = computed(() => sync.bibleProgress.value.done);
-const bibleTotal = computed(() => sync.bibleProgress.value.total);
-const bibleCurrentFile = computed(() => sync.bibleProgress.value.currentFile || null);
+const bibleDownloading = computed(() => sync.bibleDownloading.value || !!findTask("sync-bible"));
+const bibleDone = computed(() => {
+  const task = findTask("sync-bible");
+  return task ? (task._done ?? 0) : sync.bibleProgress.value.done;
+});
+const bibleTotal = computed(() => {
+  const task = findTask("sync-bible");
+  return task ? (task._total ?? 0) : sync.bibleProgress.value.total;
+});
+const bibleCurrentFile = computed(() => {
+  const task = findTask("sync-bible");
+  return task ? (task.detail ?? null) : sync.bibleProgress.value.currentFile || null;
+});
 const bibleCompletedMsg = computed(() => sync.bibleCompletedMsg.value);
 
 const downloadProcessed = computed(() => downloadedCount.value + failedDownloadCount.value);

@@ -117,7 +117,11 @@
   <OverlayRenderer />
   <LibrasOverlay
     :slide-lyric="projType === 'music' ? (slide?.lyric as string) : undefined"
+    :music-id="projType === 'music' ? (slide?.id_music as number | undefined) : undefined"
     :verse-text="projType === 'bible' ? bibleText : undefined"
+    :bible-version="projType === 'bible' ? bibleVersion : undefined"
+    :bible-book-id="projType === 'bible' ? bibleBookId : undefined"
+    :bible-chapter="projType === 'bible' ? Number(bibleChapter) || undefined : undefined"
     :type="projType"
   />
 </template>
@@ -233,9 +237,11 @@ const { container, fontSizePc } = useContainerSize();
 const bibleText = ref("");
 const bibleReference = ref("");
 const bibleBook = ref("");
+const bibleBookId = ref<number | undefined>(undefined);
 const bibleChapter = ref("");
 const bibleVerses = ref<number[]>([]);
 const bibleVersion = ref("");
+const bibleVersionId = ref<number | undefined>(undefined);
 const bibleActive = ref(false);
 
 const _bibleTick = ref(0);
@@ -322,9 +328,11 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload: unknown) => {
     bibleText.value = (p.text as string) || "";
     bibleReference.value = (p.reference as string) || "";
     bibleBook.value = (p.book as string) || "";
+    bibleBookId.value = p.book_id as number | undefined;
     bibleChapter.value = (p.chapter as string) || "";
     bibleVerses.value = (p.verses as number[]) || [];
     bibleVersion.value = (p.version as string) || "";
+    bibleVersionId.value = p.version_id as number | undefined;
     bibleActive.value = true;
   } else {
     bibleActive.value = false;

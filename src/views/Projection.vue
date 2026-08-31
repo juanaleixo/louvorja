@@ -1,7 +1,11 @@
 <template>
   <Slide :slide="slide" :title="title" :progress="progress" show-progress class="projection-fill" />
   <OverlayRenderer />
-  <LibrasOverlay :slide-lyric="slide?.lyric" type="music" />
+  <LibrasOverlay
+    :slide-lyric="slide?.lyric"
+    :music-id="Number(slide?.id_music) || undefined"
+    type="music"
+  />
 </template>
 
 <script setup>

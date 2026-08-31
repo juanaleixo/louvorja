@@ -67,9 +67,17 @@ const props = withDefaults(
     slideLyric?: string;
     verseText?: string;
     type?: "music" | "bible";
+    musicId?: number;
+    bibleVersion?: string;
+    bibleBookId?: number;
+    bibleChapter?: number;
   }>(),
   {
     type: "music",
+    musicId: undefined,
+    bibleVersion: undefined,
+    bibleBookId: undefined,
+    bibleChapter: undefined,
   }
 );
 
@@ -81,6 +89,7 @@ const isTranslating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const avatarVisible = ref(false);
 const isExiting = ref(false);
+const isMediaActive = ref(false);
 
 const displayText = computed(() => Libras.formatGloss(rawGloss.value));
 
@@ -183,7 +192,7 @@ function isTypeEnabled(): boolean {
 const shouldShow = computed(() => isTypeEnabled());
 
 const hasContent = computed(() => {
-  if (props.type === "music") return !!props.slideLyric;
+  if (props.type === "music") return isMediaActive.value;
   if (props.type === "bible") return !!props.verseText;
   return false;
 });
@@ -213,7 +222,7 @@ function onUnityMessage(event: MessageEvent) {
         if (hasContent.value && shouldShow.value) {
           avatarVisible.value = true;
         }
-      }, 2500); // Timeout para somente aparecer o avatar depois que o player do unity carregou e renderizou completamente
+      }, 3000); // Timeout para somente aparecer o avatar depois que o player do unity carregou e renderizou completamente
     }
     if (pendingGloss) {
       sendToUnity("PlayerManager", "playNow", pendingGloss);
@@ -340,14 +349,27 @@ async function translateAndShow(text: string): Promise<void> {
   }
 
   const region = currentRegion.value;
+
+  // 1. Fallback: in-memory Map (rápido, para textos já traduzidos nesta sessão)
   const cacheKey = `${region}:${plainText}`;
-  const cached = glossCache.get(cacheKey);
-  if (cached) {
-    rawGloss.value = cached;
-    playGloss(cached);
+  const memCached = glossCache.get(cacheKey);
+  if (memCached) {
+    rawGloss.value = memCached;
+    playGloss(memCached);
     return;
   }
 
+  // 2. Buscar gloss por texto no IndexedDB (funciona offline se já foi traduzido)
+  const entryType = props.type === "bible" ? "bible" : "music";
+  const textCached = await Libras.findCachedByText(plainText, entryType);
+  if (textCached?.gloss) {
+    rawGloss.value = textCached.gloss;
+    glossCache.set(cacheKey, textCached.gloss);
+    playGloss(textCached.gloss);
+    return;
+  }
+
+  // 3. API (só online — se nenhum cache existir)
   isTranslating.value = true;
   try {
     const result = await Libras.translateText(plainText);
@@ -355,6 +377,23 @@ async function translateAndShow(text: string): Promise<void> {
       rawGloss.value = result;
       glossCache.set(cacheKey, result);
       playGloss(result);
+
+      // Salvar gloss no IndexedDB para uso offline futuro
+      const tokens = Libras.uniqueTokens(result);
+      const slideId = `${entryType}_slide_${props.musicId || "unknown"}_${tokens.join("_").slice(0, 40)}_${region}`;
+      await Libras.setCached({
+        id: slideId,
+        type: entryType,
+        ref_id: String(props.musicId || ""),
+        lang: "pt",
+        original_text: plainText,
+        gloss: result,
+        tokens,
+        bundles_cached: false,
+        bundles_size: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     }
   } catch (e) {
     console.warn("[LibrasOverlay] tradução falhou:", e);
@@ -377,8 +416,11 @@ watch(hasContent, (has) => {
 watch(
   () => props.slideLyric,
   (lyric) => {
-    if (!shouldShow.value || !lyric) return;
-    translateAndShow(lyric);
+    if (!shouldShow.value) return;
+    if (lyric) {
+      isMediaActive.value = true;
+      translateAndShow(lyric);
+    }
   }
 );
 
@@ -401,10 +443,13 @@ onMounted(() => {
   unlistenMediaClose = $broadcast.listen((msg: { type: string }) => {
     if (msg.type === BROADCAST_TYPE.MEDIA_CLOSE) {
       sendToUnity("PlayerManager", "stopAll", "");
-      startExitAnimation();
+      if (avatarVisible.value) {
+        startExitAnimation();
+      }
       rawGloss.value = "";
       isTranslating.value = false;
       settingsApplied = false;
+      isMediaActive.value = false;
     }
   });
 

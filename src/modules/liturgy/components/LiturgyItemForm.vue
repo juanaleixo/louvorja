@@ -40,6 +40,7 @@
             <option :value="LiturgyItemTypeEnum.MUSICA">{{ t("types.musica") }}</option>
             <option :value="LiturgyItemTypeEnum.SITE">{{ t("types.site") }}</option>
             <option :value="LiturgyItemTypeEnum.BG_SOUND">{{ t("types.som-de-fundo") }}</option>
+            <option :value="LiturgyItemTypeEnum.OVERLAY">{{ t("types.overlay") }}</option>
             <option :value="LiturgyItemTypeEnum.VIDEO_ONLINE">{{ t("types.video-online") }}</option>
           </select>
         </div>
@@ -385,6 +386,86 @@
         </label>
       </div>
 
+      <!-- Painel OVERLAY -->
+      <div v-if="form.tipo === LiturgyItemTypeEnum.OVERLAY" class="lit-panel">
+        <div class="lit-panel-title">{{ t("types.overlay") }}</div>
+        <div class="lit-field">
+          <label>{{ t("overlay.select_slot") }}</label>
+          <select
+            :value="(form as LiturgyItem).overlay_id"
+            class="lit-select"
+            @change="setFormField('overlay_id', inputVal($event))"
+          >
+            <option value="">{{ t("overlay.select_slot") }}</option>
+            <option v-for="slot in overlaySlots" :key="slot.id" :value="slot.id">
+              {{ slot.name || slot.id }}
+            </option>
+          </select>
+        </div>
+        <div class="lit-field mt-2">
+          <label>{{ t("overlay.action") }}</label>
+          <div class="d-flex ga-2 mt-1">
+            <button
+              type="button"
+              class="lit-btn"
+              :class="
+                (form as LiturgyItem).overlay_action !== 'deactivate'
+                  ? 'lit-btn--primary'
+                  : 'lit-btn--ghost'
+              "
+              @click="setFormField('overlay_action', 'activate')"
+            >
+              <v-icon icon="mdi-eye" size="14" />
+              <span>{{ t("overlay.activate") }}</span>
+            </button>
+            <button
+              type="button"
+              class="lit-btn"
+              :class="
+                (form as LiturgyItem).overlay_action === 'deactivate'
+                  ? 'lit-btn--danger'
+                  : 'lit-btn--ghost'
+              "
+              @click="setFormField('overlay_action', 'deactivate')"
+            >
+              <v-icon icon="mdi-eye-off" size="14" />
+              <span>{{ t("overlay.deactivate") }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vincular Overlay (exceto bloco, overlay e musica "escolha") -->
+      <div
+        v-if="
+          form.tipo !== LiturgyItemTypeEnum.BLOCO &&
+          form.tipo !== LiturgyItemTypeEnum.OVERLAY &&
+          !(form.tipo === LiturgyItemTypeEnum.MUSICA && (form as LiturgyItem).escolha)
+        "
+        class="lit-panel"
+      >
+        <label class="lit-check">
+          <input
+            type="checkbox"
+            :checked="!!(form as LiturgyItem).linked_overlay_id"
+            @change="onLinkOverlayToggle($event)"
+          />
+          <span>{{ t("overlay.link_overlay") }}</span>
+        </label>
+        <div v-if="(form as LiturgyItem).linked_overlay_id" class="lit-field mt-2">
+          <select
+            :value="(form as LiturgyItem).linked_overlay_id"
+            class="lit-select"
+            @change="setFormField('linked_overlay_id', inputVal($event))"
+          >
+            <option value="">{{ t("overlay.select_slot") }}</option>
+            <option v-for="slot in overlaySlots" :key="slot.id" :value="slot.id">
+              {{ slot.name || slot.id }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <!-- BLOCO -->
       <div v-if="form.tipo === LiturgyItemTypeEnum.BLOCO" class="lit-panel">
         <div class="lit-panel-title">{{ t("types.bloco") }}</div>
@@ -432,6 +513,7 @@ import LiturgyLibrarySearch, { type LibrarySearchItem } from "./LiturgyLibrarySe
 import $idb from "@/helpers/IndexedDB";
 import { DB_TABLE } from "@/constants/DbTables";
 import type { LiturgyItem, LiturgyMusicItem, ScheduledCategory } from "@/types/Liturgy";
+import type { OverlaySlot } from "@/types/Overlay";
 import { LiturgyItemTypeEnum } from "@/enums/LiturgyItemTypeEnum";
 
 const TRANSLATIONS: Record<string, Record<string, unknown>> = { pt, es };
@@ -457,6 +539,7 @@ const props = withDefaults(
     scheduledCategories?: ScheduledCategory[];
     blocoItems?: LiturgyItem[];
     videosList?: { id: string; name: string; url: string }[];
+    overlaySlots?: OverlaySlot[];
     setFormField: (key: string, value: unknown) => void;
     onTypeChange: () => void;
     onMusicChange: () => void;
@@ -476,6 +559,7 @@ const props = withDefaults(
     scheduledCategories: () => [],
     blocoItems: () => [],
     videosList: () => [],
+    overlaySlots: () => [],
   }
 );
 
@@ -483,6 +567,11 @@ defineEmits<{ "update:modelValue": [value: boolean] }>();
 
 const { locale } = useI18n();
 const t = (key: string) => _t(key, locale.value);
+
+function onLinkOverlayToggle(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked;
+  props.setFormField("linked_overlay_id", checked ? props.overlaySlots?.[0]?.id || "" : "");
+}
 
 watch(
   () => (props.form as LiturgyItem).musica,

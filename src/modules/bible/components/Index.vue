@@ -162,6 +162,15 @@
             clearable
             prepend-inner-icon="mdi-magnify"
           />
+          <v-checkbox
+            v-if="verse_filter"
+            v-model="filterNavigateOnly"
+            :label="t('filter_navigate_only')"
+            density="compact"
+            hide-details
+            class="mt-1"
+            color="primary"
+          />
         </div>
         <div class="bible-col__verses-list">
           <v-skeleton-loader v-show="loading_book || loading_verses" type="list-item-two-line" />
@@ -327,6 +336,7 @@ const versions: Ref<BibleVersion[]> = ref([]);
 const books: Ref<BibleBook[]> = ref([]);
 const verses: Ref<Record<string, string>> = ref({});
 const verse_filter: Ref<string> = ref("");
+const filterNavigateOnly: Ref<boolean> = ref(false);
 const history_selected: Ref<number | null> = ref(null);
 
 const show_history = computed({
@@ -703,9 +713,11 @@ async function selVerse(event: MouseEvent | null, num: number | string): Promise
     text: select_bible.text,
     reference: select_bible.scriptural_reference,
     book: select_bible.book,
+    book_id: select_bible.id_bible_book,
     chapter: select_bible.chapter,
     verses: [...(select_bible.verses || [])],
     version: select_bible.version,
+    version_id: select_bible.id_bible_version,
     next_text,
     next_reference,
     active: true,
@@ -779,20 +791,34 @@ async function prevVerse(): Promise<void> {
   if (select_bible?.id_bible_book) await selBook(select_bible.id_bible_book);
   if (select_bible?.chapter) await selChapter(select_bible.chapter);
   if (select_bible?.verses && select_bible.verses.length > 0) {
-    let verse = Math.min(...select_bible.verses.filter((n) => n > 0));
-    if (verse > 1) {
-      verse--;
+    const current = Math.min(...select_bible.verses.filter((n) => n > 0));
+    const useFiltered =
+      filterNavigateOnly.value &&
+      verse_filter.value.trim() &&
+      filteredVerseNumbers.value.length > 0;
+
+    if (useFiltered) {
+      const idx = filteredVerseNumbers.value.indexOf(current);
+      if (idx > 0) {
+        selVerse(null, filteredVerseNumbers.value[idx - 1]);
+      }
+      return;
+    }
+
+    if (current > 1) {
+      selVerse(null, current - 1);
     } else if ((select_bible.chapter ?? 0) > 1) {
       await selChapter((select_bible.chapter ?? 0) - 1);
-      verse = Math.max(0, ...Object.keys(verses.value).map(Number));
+      const verse = Math.max(0, ...Object.keys(verses.value).map(Number));
+      selVerse(null, verse);
     } else {
       const bookIndex = books.value.findIndex((b) => b.id_bible_book == bible.id_bible_book);
       const bk = bookIndex > 0 ? books.value[bookIndex - 1] : books.value[books.value.length - 1];
       await selBook(bk.id_bible_book);
       await selChapter(bk.chapters);
-      verse = Math.max(0, ...Object.keys(verses.value).map(Number));
+      const verse = Math.max(0, ...Object.keys(verses.value).map(Number));
+      selVerse(null, verse);
     }
-    selVerse(null, verse);
   }
 }
 
@@ -801,22 +827,34 @@ async function nextVerse(): Promise<void> {
   if (select_bible?.id_bible_book) await selBook(select_bible.id_bible_book);
   if (select_bible?.chapter) await selChapter(select_bible.chapter);
   if (select_bible?.verses && select_bible.verses.length > 0) {
-    let verse = Math.max(...select_bible.verses);
+    const current = Math.max(...select_bible.verses);
+    const useFiltered =
+      filterNavigateOnly.value &&
+      verse_filter.value.trim() &&
+      filteredVerseNumbers.value.length > 0;
+
+    if (useFiltered) {
+      const idx = filteredVerseNumbers.value.indexOf(current);
+      if (idx >= 0 && idx < filteredVerseNumbers.value.length - 1) {
+        selVerse(null, filteredVerseNumbers.value[idx + 1]);
+      }
+      return;
+    }
+
     const max_verse = Math.max(0, ...Object.keys(verses.value).map(Number));
     const max_chapter = book.value?.chapters ?? 0;
-    if (verse < max_verse) {
-      verse++;
+    if (current < max_verse) {
+      selVerse(null, current + 1);
     } else if ((select_bible.chapter ?? 0) < max_chapter) {
       await selChapter((select_bible.chapter ?? 0) + 1);
-      verse = 1;
+      selVerse(null, 1);
     } else {
       const bookIndex = books.value.findIndex((b) => b.id_bible_book == bible.id_bible_book);
       const bk = bookIndex < books.value.length - 1 ? books.value[bookIndex + 1] : books.value[0];
       await selBook(bk.id_bible_book);
       await selChapter(1);
-      verse = 1;
+      selVerse(null, 1);
     }
-    selVerse(null, verse);
   }
 }
 
@@ -830,10 +868,39 @@ const versesList = computed(() => {
   return Object.keys(verses.value).map((v) => ({ id: +v, value: +v }));
 });
 
+function parseVerseNumbers(term: string): Set<number> | null {
+  if (!/^[\d,\-\s]+$/.test(term)) return null;
+  const nums = new Set<number>();
+  for (const part of term.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+      const a = parseInt(rangeMatch[1], 10);
+      const b = parseInt(rangeMatch[2], 10);
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) nums.add(i);
+    } else {
+      const n = parseInt(trimmed, 10);
+      if (!isNaN(n)) nums.add(n);
+    }
+  }
+  return nums.size > 0 ? nums : null;
+}
+
 const filteredVerses = computed(() => {
   if (!verses.value) return {} as Record<string, string>;
   const term = (verse_filter.value || "").trim().toLowerCase();
   if (!term) return verses.value;
+
+  const verseNums = parseVerseNumbers(term);
+  if (verseNums) {
+    const out: Record<string, string> = {};
+    for (const [num, text] of Object.entries(verses.value)) {
+      if (verseNums.has(parseInt(num, 10))) out[num] = text;
+    }
+    return out;
+  }
+
   const match = (text: string): boolean =>
     String(text || "")
       .replace(/<[^>]+>/g, "")
@@ -844,6 +911,12 @@ const filteredVerses = computed(() => {
     if (term === String(num) || match(text)) out[num] = text;
   }
   return out;
+});
+
+const filteredVerseNumbers = computed(() => {
+  return Object.keys(filteredVerses.value)
+    .map(Number)
+    .sort((a, b) => a - b);
 });
 
 function numbersInterval(numbers: number[]): string {
@@ -1038,9 +1111,11 @@ useBroadcastListener(BROADCAST_TYPE.REQUEST_BIBLE_STATE, () => {
       text: select_bible.text || "",
       reference: select_bible.scriptural_reference || "",
       book: select_bible.book || "",
+      book_id: select_bible.id_bible_book,
       chapter: select_bible.chapter || "",
       verses: [...(select_bible.verses || [])],
       version: select_bible.version || "",
+      version_id: select_bible.id_bible_version,
       next_text,
       next_reference,
       active: !!(select_bible.text && select_bible.verses?.length),

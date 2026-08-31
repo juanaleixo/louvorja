@@ -27,6 +27,7 @@
         :total-duration="totalDuration"
         :is-checked="isChecked"
         :subtitle-for="subtitleFor"
+        :overlay-slots="overlaySlots"
         :on-reorder="onReorder"
         :on-bloco-assign="adjustBlocoAssignment"
         :open-item-dialog="openItemDialog"
@@ -56,6 +57,7 @@
       :musics-list="musicsList"
       :scheduled-categories="scheduledCategories"
       :bloco-items="blocoItems"
+      :overlay-slots="overlaySlots"
       :set-form-field="setFormField"
       :on-type-change="onTypeChange"
       :on-music-change="onMusicChange"
@@ -244,6 +246,7 @@ const {
   setFormField,
   videosCache,
   loadVideosList,
+  overlaySlots,
 } = litItems;
 
 const musicsForSpotlight = computed<SearchMusicItem[]>(

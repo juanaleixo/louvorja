@@ -36,6 +36,10 @@ import ScheduledStore from "@/helpers/ScheduledStore";
 import Seed from "@/helpers/Seed";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Projection from "@/helpers/Projection";
+import {
+  readAllSlots as readAllOverlaySlots,
+  writeSlot as writeOverlaySlot,
+} from "@/helpers/Overlay";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
@@ -411,8 +415,39 @@ $storage.hydrate().then(async () => {
                     }
                     break;
                   }
+                  case "overlay": {
+                    const ovSlots = await readAllOverlaySlots();
+                    const ovSlot = ovSlots.find((s) => s.id === litItem.overlay_id);
+                    if (ovSlot) {
+                      ovSlot.enabled = litItem.overlay_action === "activate";
+                      await writeOverlaySlot(ovSlot);
+                      Broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {
+                        enabled: ovSlot.enabled,
+                        slot: ovSlot,
+                      });
+                    }
+                    break;
+                  }
                   default:
                     console.warn("[http] liturgy-execute: tipo desconhecido", litItem.tipo);
+                }
+
+                // Overlay vinculado — ativa automaticamente após execução
+                if (litItem.linked_overlay_id) {
+                  try {
+                    const linkedSlots = await readAllOverlaySlots();
+                    const linkedSlot = linkedSlots.find((s) => s.id === litItem.linked_overlay_id);
+                    if (linkedSlot) {
+                      linkedSlot.enabled = true;
+                      await writeOverlaySlot(linkedSlot);
+                      Broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {
+                        enabled: true,
+                        slot: linkedSlot,
+                      });
+                    }
+                  } catch (e) {
+                    console.error("[http] liturgy-execute: overlay vinculado falhou:", e);
+                  }
                 }
               } catch (e) {
                 console.error("[http] liturgy-execute falhou:", litItem.tipo, e);
@@ -424,10 +459,10 @@ $storage.hydrate().then(async () => {
               Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
                 text: data.text,
                 reference: data.reference,
-                bookId: data.bookId,
+                book_id: data.bookId,
                 chapter: data.chapter,
                 verses: data.verses,
-                versionId: data.versionId,
+                version_id: data.versionId,
                 active: true,
               });
               ProjectionWindows.openBibleWindow();

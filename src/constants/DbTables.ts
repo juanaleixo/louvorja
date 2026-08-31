@@ -46,7 +46,7 @@ export const DB_TABLE = {
   CUSTOM_ONLINE_VIDEOS_CATEGORIES: ModuleEnum.CUSTOM_ONLINE_VIDEOS + ".category",
   CUSTOM_SONGS: ModuleEnum.CUSTOM_COLLECTIONS + ".songs",
   CUSTOM_COLLECTIONS: ModuleEnum.CUSTOM_COLLECTIONS + ".collections",
-  MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY + ".library",
+  MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY,
   MEDIA_LIBRARY_CATEGORY: ModuleEnum.MEDIA_LIBRARY + ".category",
   AUDIO_LIBRARY: "audio_library",
   IMAGE_LIBRARY: "image_library",

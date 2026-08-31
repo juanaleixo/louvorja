@@ -10,6 +10,7 @@ export interface Slide {
   instrumental_time?: string;
   url_image?: string;
   image_position?: string | number;
+  id_music?: number;
   [key: string]: unknown;
 }
 

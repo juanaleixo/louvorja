@@ -406,12 +406,10 @@ async function refreshStatus() {
     externalRoutesEnabled.value = false;
   }
   httpServerLoading.value = false;
-  if (!localIps.value.length) {
-    try {
-      localIps.value = await Platform.httpServer.localIps();
-    } catch {
-      /* noop */
-    }
+  try {
+    localIps.value = await Platform.httpServer.localIps();
+  } catch {
+    /* noop */
   }
 }
 

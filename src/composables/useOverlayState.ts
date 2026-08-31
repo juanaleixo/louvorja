@@ -42,6 +42,7 @@ export function useOverlayState(): OverlayStateReturn {
     const p = payload as { enabled?: boolean } | null;
     if (p?.enabled !== undefined) {
       enabled.value = p.enabled;
+      $userdata.set(KEYS.MODULES.OVERLAY.ENABLED, p.enabled);
     }
     refresh();
   });

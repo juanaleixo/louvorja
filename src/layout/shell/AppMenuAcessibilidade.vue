@@ -626,16 +626,16 @@
         <section class="opt-section">
           <div class="opt-stats opt-stats--compact">
             <div class="opt-stat">
-              <span class="opt-stat-label">{{ $t("accessibility.storage.total_size") }}</span>
-              <span class="opt-stat-value">{{ Libras.humanSize(stats.total_bytes) }}</span>
-            </div>
-            <div class="opt-stat">
               <span class="opt-stat-label">{{ $t("accessibility.storage.gloss_entries") }}</span>
               <span class="opt-stat-value">{{ stats.total_entries }}</span>
             </div>
             <div class="opt-stat">
-              <span class="opt-stat-label">{{ $t("accessibility.storage.bundles_size") }}</span>
+              <span class="opt-stat-label">{{ $t("accessibility.stats.bundles_size") }}</span>
               <span class="opt-stat-value">{{ Libras.humanSize(stats.total_bundles_bytes) }}</span>
+            </div>
+            <div class="opt-stat">
+              <span class="opt-stat-label">{{ $t("accessibility.storage.total_size") }}</span>
+              <span class="opt-stat-value">{{ Libras.humanSize(stats.total_bytes) }}</span>
             </div>
           </div>
 
@@ -664,6 +664,7 @@ import $alert from "@/helpers/Alert";
 import $snackbar from "@/helpers/Snackbar";
 import Libras from "@/helpers/Libras";
 import { useSyncManager } from "@/composables/useSyncManager";
+import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
 import ProgressBar from "@/components/ProgressBar.vue";
 import { BG_SWATCHES } from "@/config/Theme";
 import $broadcast from "@/helpers/Broadcast";
@@ -688,7 +689,12 @@ interface Category {
 
 const { t, locale } = useI18n();
 const sync = useSyncManager();
+const bgTasks = useBackgroundTasks();
 const activeTab = ref("avatar");
+
+function findTask(id: string) {
+  return bgTasks.tasks.value.find((t) => t.id === id && t.status === "running");
+}
 
 // Stats
 const stats = ref<LibrasCacheStats>({
@@ -732,14 +738,34 @@ const translatingBible = ref(false);
 const bibleCompletedMsg = ref("");
 const savingBible = ref(false);
 
-// Progresso de tradução Libras
-const musicProgress = computed(() => sync.librasMusicProgress.value);
+// Progresso de tradução Libras (lê de bgTasks se download está rodando em background)
+const musicProgress = computed(() => {
+  const task = findTask("libras-music");
+  if (task) {
+    return {
+      done: task._done ?? 0,
+      total: task._total ?? 0,
+      current: task.detail ?? "",
+    };
+  }
+  return sync.librasMusicProgress.value;
+});
 const musicPercent = computed(() =>
   musicProgress.value.total > 0
     ? Math.round((musicProgress.value.done / musicProgress.value.total) * 100)
     : 0
 );
-const bibleProgress = computed(() => sync.librasBibleProgress.value);
+const bibleProgress = computed(() => {
+  const task = findTask("libras-bible");
+  if (task) {
+    return {
+      done: task._done ?? 0,
+      total: task._total ?? 0,
+      current: task.detail ?? "",
+    };
+  }
+  return sync.librasBibleProgress.value;
+});
 const biblePercent = computed(() =>
   bibleProgress.value.total > 0
     ? Math.round((bibleProgress.value.done / bibleProgress.value.total) * 100)
@@ -1022,6 +1048,14 @@ onMounted(async () => {
   // Carregar catálogo e versões antes das stats (refreshStats depende de categories e bibleVersions)
   await Promise.all([loadCatalog(), loadBibleVersions()]);
   await refreshStats();
+
+  // Restaurar estado de download a partir do bgTasks (sobrevive ao fechar/reabrir menu)
+  if (findTask("libras-music")) {
+    translating.value = true;
+  }
+  if (findTask("libras-bible")) {
+    translatingBible.value = true;
+  }
 });
 
 watch(activeTab, (tab) => {
@@ -1033,6 +1067,19 @@ watch(activeTab, (tab) => {
 watch(currentRegion, () => {
   refreshStats();
 });
+
+// Sincronizar estado de translating com bgTasks (download pode terminar com menu fechado)
+watch(
+  () => bgTasks.tasks.value.length,
+  () => {
+    if (!findTask("libras-music") && translating.value) {
+      translating.value = false;
+    }
+    if (!findTask("libras-bible") && translatingBible.value) {
+      translatingBible.value = false;
+    }
+  }
+);
 
 // ─── Stats ──────────────────────────────────────────────────────────────────
 

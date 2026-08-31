@@ -327,6 +327,16 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload: unknown) 
   }
 });
 
+// Atualiza localSlots quando overlay é alterado externamente (ex.: liturgia)
+useBroadcastListener(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, (payload: unknown) => {
+  const p = payload as { enabled?: boolean } | null;
+  if (p?.enabled !== undefined) {
+    enabled.value = p.enabled;
+    $userdata.set("modules.overlay.enabled", p.enabled);
+  }
+  load();
+});
+
 onMounted(() => {
   enabled.value = $userdata.get<boolean>("modules.overlay.enabled", false) === true;
   load();
