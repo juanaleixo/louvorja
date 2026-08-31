@@ -1,13 +1,14 @@
 <template>
   <Teleport to="body">
     <!-- Wrapper para posicionamento (separa transform de animação) -->
-    <div v-show="enabled" class="libras-anchor" :style="wrapperStyle">
+    <div v-show="enabled" class="libras-anchor" :style="anchorStyle">
       <!-- Player Unity no iframe -->
       <iframe
         ref="iframeRef"
         :src="unitySrc"
         sandbox="allow-scripts allow-same-origin allow-pointer-lock"
         class="libras-unity-iframe"
+        :style="bgStyle"
         :class="[
           {
             'libras-unity-visible': avatarVisible,
@@ -132,12 +133,11 @@ const anchorStyle = computed(() => {
     ...pos,
     width: `${avatarWidth.value}px`,
     height: `${avatarHeight.value}px`,
-    backgroundColor: backgroundColor.value,
   };
 });
 
-const wrapperStyle = computed(() => ({
-  ...anchorStyle.value,
+const bgStyle = computed(() => ({
+  backgroundColor: backgroundColor.value,
   "--entry-dur": `${animationDuration.value}ms`,
   "--exit-dur": `${exitAnimationDuration.value}ms`,
 }));
@@ -213,7 +213,7 @@ function onUnityMessage(event: MessageEvent) {
         if (hasContent.value && shouldShow.value) {
           avatarVisible.value = true;
         }
-      }, 2500);
+      }, 2500); // Timeout para somente aparecer o avatar depois que o player do unity carregou e renderizou completamente
     }
     if (pendingGloss) {
       sendToUnity("PlayerManager", "playNow", pendingGloss);

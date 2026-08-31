@@ -564,17 +564,13 @@ export function useSyncManager() {
     });
 
     const cleanupFns: CleanupFn[] = [];
-    let firstProgress = true;
 
     cleanupFns.push(
       Platform.download.onProgress((d: any) => {
         downloadProgress.value = {
-          done: downloadProgress.value.done,
-          failed: downloadProgress.value.failed,
-          total: firstProgress ? d.total : downloadProgress.value.total,
+          ...downloadProgress.value,
           currentFile: d.file ? (d.file.split("/").pop() ?? "") : "",
         };
-        firstProgress = false;
       })
     );
     cleanupFns.push(
@@ -610,6 +606,8 @@ export function useSyncManager() {
       if (result?.queued === 0) {
         downloading.value = false;
         downloadCompletedMsg.value = result.message || "Já está atualizado.";
+      } else if (result?.queued != null) {
+        downloadProgress.value = { ...downloadProgress.value, total: result.queued };
       }
     } catch (e) {
       downloading.value = false;
@@ -738,7 +736,14 @@ export function useSyncManager() {
         `album_${albumId}`
       );
       if (albumData?.musics) {
-        allIds.push(...albumData.musics.map((m) => Number(m.id_music)));
+        for (const m of albumData.musics) {
+          const id = Number(m.id_music);
+          const cacheId = Libras.musicCacheId(id, region);
+          const existing = await Libras.getCached(cacheId, "music");
+          if (!existing?.bundles_cached) {
+            allIds.push(id);
+          }
+        }
       }
     }
 

@@ -5,7 +5,9 @@
 
       <div class="opt-stats opt-stats--compact">
         <div class="opt-stat">
-          <span class="opt-stat-label">{{ $t("accessibility.stats.loading") }}</span>
+          <span class="opt-stat-label">
+            {{ $t(statsLoading ? "accessibility.stats.loading" : "accessibility.stats.total") }}
+          </span>
           <span v-if="!statsLoading" class="opt-stat-value">
             {{
               $t("accessibility.stats.usage", {
@@ -125,14 +127,15 @@
               </div>
 
               <div v-if="!transparentBg" class="mt-2">
-                <v-color-picker
-                  v-model="bgColor"
+                <v-color-input
+                  :model-value="bgColor"
+                  pip-variant="flat"
+                  color-pip
                   mode="rgba"
                   show-swatches
+                  hide-actions
                   :swatches="bgSwatches"
                   density="compact"
-                  hide-canvas
-                  hide-sliders
                   width="100%"
                   max-width="340"
                   @update:model-value="setBgColor"
@@ -311,9 +314,11 @@
             </v-col>
           </v-row>
 
-          <div class="opt-divider" />
-
-          <v-row class="align-start">
+          <!--       TODO atualizar api para suportar essas opções
+           Opções desativadas, pois a api nao suporta atualmente
+-->
+          <div class="opt-divider d-none" />
+          <v-row class="align-start d-none">
             <v-col cols="12" sm="3">
               <!-- Velocidade dos gestos -->
               <span class="opt-label">{{ $t("accessibility.avatar.speed") }}</span>
@@ -474,8 +479,18 @@
           </div>
 
           <!-- Progresso -->
-          <div v-if="translating" class="libras-progress">
-            <label class="opt-label">
+          <ProgressBar
+            v-if="translating"
+            class="libras-progress"
+            :done="musicProgress.done"
+            :total="musicProgress.total"
+            :current="musicProgress.current"
+            :completed-msg="completedMsg"
+            show-cancel
+            :cancel-label="$t('accessibility.musics.cancel')"
+            @cancel="sync.cancelLibrasDownloads()"
+          >
+            <template #label>
               {{
                 $t("accessibility.musics.progress", {
                   done: musicProgress.done,
@@ -483,22 +498,8 @@
                   percent: musicPercent,
                 })
               }}
-            </label>
-            <v-progress-linear
-              :model-value="musicPercent"
-              color="primary"
-              height="8"
-              rounded
-              class="mt-1"
-            />
-            <div v-if="musicProgress.current" class="opt-folder-path">
-              {{ musicProgress.current }}
-            </div>
-          </div>
-
-          <p v-if="completedMsg" class="opt-hint" style="color: rgb(var(--v-theme-primary))">
-            {{ completedMsg }}
-          </p>
+            </template>
+          </ProgressBar>
 
           <div class="opt-actions" style="margin-top: 8px">
             <button
@@ -518,15 +519,6 @@
             >
               <v-icon icon="mdi-content-save" size="14" class="mr-1" />
               {{ saving ? $t("accessibility.musics.saving") : $t("accessibility.musics.save") }}
-            </button>
-            <button
-              v-if="translating"
-              type="button"
-              class="opt-btn opt-btn--danger"
-              @click="sync.cancelLibrasDownloads()"
-            >
-              <v-icon icon="mdi-close-circle" size="14" class="mr-1" />
-              {{ $t("accessibility.musics.cancel") }}
             </button>
           </div>
         </section>
@@ -571,8 +563,18 @@
             </div>
           </div>
 
-          <div v-if="translatingBible" class="libras-progress">
-            <label class="opt-label">
+          <ProgressBar
+            v-if="translatingBible"
+            class="libras-progress"
+            :done="bibleProgress.done"
+            :total="bibleProgress.total"
+            :current="bibleProgress.current"
+            :completed-msg="bibleCompletedMsg"
+            show-cancel
+            :cancel-label="$t('accessibility.bible.cancel')"
+            @cancel="sync.cancelLibrasDownloads()"
+          >
+            <template #label>
               {{
                 $t("accessibility.bible.progress", {
                   done: bibleProgress.done,
@@ -580,22 +582,8 @@
                   percent: biblePercent,
                 })
               }}
-            </label>
-            <v-progress-linear
-              :model-value="biblePercent"
-              color="primary"
-              height="8"
-              rounded
-              class="mt-1"
-            />
-            <div v-if="bibleProgress.current" class="opt-folder-path">
-              {{ bibleProgress.current }}
-            </div>
-          </div>
-
-          <p v-if="bibleCompletedMsg" class="opt-hint" style="color: rgb(var(--v-theme-primary))">
-            {{ bibleCompletedMsg }}
-          </p>
+            </template>
+          </ProgressBar>
 
           <div class="opt-actions" style="margin-top: 8px">
             <button
@@ -615,15 +603,6 @@
             >
               <v-icon icon="mdi-content-save" size="14" class="mr-1" />
               {{ savingBible ? $t("accessibility.bible.saving") : $t("accessibility.bible.save") }}
-            </button>
-            <button
-              v-if="translatingBible"
-              type="button"
-              class="opt-btn opt-btn--danger"
-              @click="sync.cancelLibrasDownloads()"
-            >
-              <v-icon icon="mdi-close-circle" size="14" class="mr-1" />
-              {{ $t("accessibility.bible.cancel") }}
             </button>
           </div>
         </section>
@@ -672,11 +651,12 @@ import $alert from "@/helpers/Alert";
 import $snackbar from "@/helpers/Snackbar";
 import Libras from "@/helpers/Libras";
 import { useSyncManager } from "@/composables/useSyncManager";
+import ProgressBar from "@/components/ProgressBar.vue";
+import { BG_SWATCHES } from "@/config/Theme";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-import type { Music } from "@/types/Music";
 import type { BibleVersion, BibleBook } from "@/types/Bible";
 import Icon from "@components/Icon.vue";
 import { LibrasCacheStats } from "@/types/Libras";
@@ -902,38 +882,21 @@ function setExitAnimationDuration(value: number) {
 
 // Cor de fundo
 const transparentBg = ref(true);
-const bgColor = ref({ r: 0, g: 0, b: 0, a: 1 });
-const bgSwatches = [
-  [
-    { r: 0, g: 0, b: 0, a: 1 },
-    { r: 255, g: 255, b: 255, a: 1 },
-  ],
-  [
-    { r: 33, g: 150, b: 243, a: 1 },
-    { r: 76, g: 175, b: 80, a: 1 },
-  ],
-  [
-    { r: 255, g: 152, b: 0, a: 1 },
-    { r: 244, g: 67, b: 54, a: 1 },
-  ],
-];
-
-function rgbaToString(c: { r: number; g: number; b: number; a: number }): string {
-  return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
-}
+const bgColor = ref("");
+const bgSwatches = BG_SWATCHES;
 
 function toggleTransparentBg(value: boolean | null) {
   transparentBg.value = value === true;
   if (value === true) {
     $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent");
   } else {
-    $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, rgbaToString(bgColor.value));
+    $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, bgColor.value);
   }
 }
 
-function setBgColor(c: { r: number; g: number; b: number; a: number }) {
+function setBgColor(c: string) {
   bgColor.value = c;
-  $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, rgbaToString(c));
+  $userdata.set(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, c);
 }
 
 // Posição
@@ -1026,9 +989,21 @@ onMounted(async () => {
     $userdata.get<string>(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent") || "transparent";
   transparentBg.value = savedBg === "transparent";
   if (!transparentBg.value) {
-    const match = savedBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]+)\)/);
-    if (match) {
-      bgColor.value = { r: +match[1], g: +match[2], b: +match[3], a: +match[4] };
+    if (savedBg.startsWith("#")) {
+      bgColor.value = savedBg.length === 9 ? savedBg : `${savedBg}ff`;
+    } else {
+      const match = savedBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*([\d.]+)\)/);
+      if (match) {
+        const r = +match[1],
+          g = +match[2],
+          b = +match[3],
+          a = +match[4];
+        const hex = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+        const alphaHex = Math.round(a * 255)
+          .toString(16)
+          .padStart(2, "0");
+        bgColor.value = `${hex}${alphaHex}`;
+      }
     }
   }
   // Carregar catálogo e versões antes das stats (refreshStats depende de categories e bibleVersions)

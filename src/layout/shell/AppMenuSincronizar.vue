@@ -216,26 +216,35 @@
             </div>
 
             <div class="opt-section-bottom">
-              <div v-if="preparing" class="opt-row opt-row--col">
-                <div class="opt-folder-path">
+              <ProgressBar
+                v-if="preparing"
+                class="opt-row opt-row--col"
+                :done="prepareDone"
+                :total="prepareTotal"
+              >
+                <template #label>
                   {{
                     $t("options.collections_download.preparing", {
                       done: prepareDone,
                       total: prepareTotal,
                     })
                   }}
-                </div>
-                <v-progress-linear
-                  :model-value="prepareTotal > 0 ? (prepareDone / prepareTotal) * 100 : 0"
-                  color="primary"
-                  height="8"
-                  rounded
-                  class="mt-1"
-                />
-              </div>
+                </template>
+              </ProgressBar>
 
-              <div v-if="downloading" class="opt-row opt-row--col">
-                <label class="opt-label">
+              <ProgressBar
+                v-if="downloading"
+                class="opt-row opt-row--col"
+                :done="downloadedCount"
+                :total="totalDownloads"
+                :current="currentDownloadFile"
+                :failed="failedDownloadCount"
+                :completed-msg="completedMsg"
+                show-cancel
+                :cancel-label="$t('options.collections_download.cancel')"
+                @cancel="sync.cancelDownloads()"
+              >
+                <template #label>
                   {{
                     $t("options.collections_download.progress", {
                       done: downloadedCount,
@@ -243,25 +252,11 @@
                       percent: downloadPercent,
                     })
                   }}
-                </label>
-                <v-progress-linear
-                  :model-value="downloadPercent"
-                  color="primary"
-                  height="8"
-                  rounded
-                  class="mt-1"
-                />
-                <div v-if="currentDownloadFile" class="opt-folder-path">
-                  {{ currentDownloadFile }}
-                </div>
-                <div v-if="failedDownloadCount > 0" class="opt-hint">
+                </template>
+                <template #failed>
                   {{ $t("options.collections_download.failed", { n: failedDownloadCount }) }}
-                </div>
-              </div>
-
-              <div v-if="completedMsg" class="opt-folder-path">
-                {{ completedMsg }}
-              </div>
+                </template>
+              </ProgressBar>
 
               <p v-if="!ftpOk && !downloading && !preparing" class="opt-hint pt-5">
                 {{ $t("options.collections_download.no_connection_hint") }}
@@ -290,14 +285,6 @@
                     }}
                   </button>
                 </template>
-                <button
-                  v-if="downloading"
-                  type="button"
-                  class="opt-btn opt-btn--danger"
-                  @click="sync.cancelDownloads()"
-                >
-                  {{ $t("options.collections_download.cancel") }}
-                </button>
               </div>
             </div>
           </section>
@@ -371,36 +358,25 @@
             </div>
 
             <div class="opt-section-bottom">
-              <div v-if="bibleDownloading" class="opt-row opt-row--col">
-                <label class="opt-label">
+              <ProgressBar
+                v-if="bibleDownloading"
+                class="opt-row opt-row--col"
+                :done="bibleDone"
+                :total="bibleTotal"
+                :current="
+                  bibleCurrentFile ? sync.formatBibleKey(bibleCurrentFile, bibleVersions) : null
+                "
+                :completed-msg="bibleCompletedMsg"
+                show-cancel
+                :cancel-label="$t('options.bible_download.cancel')"
+                @cancel="sync.cancelDownloads()"
+              >
+                <template #label>
                   {{
                     $t("options.bible_download.downloading", { done: bibleDone, total: bibleTotal })
                   }}
-                </label>
-                <v-progress-linear
-                  :model-value="biblePercent"
-                  color="primary"
-                  height="8"
-                  rounded
-                  class="mt-1"
-                />
-                <div v-if="bibleCurrentFile" class="opt-folder-path">
-                  {{ sync.formatBibleKey(bibleCurrentFile, bibleVersions) }}
-                </div>
-                <div class="opt-folder-actions" style="margin-top: 8px">
-                  <button
-                    type="button"
-                    class="opt-btn opt-btn--danger"
-                    @click="sync.cancelDownloads()"
-                  >
-                    {{ $t("options.bible_download.cancel") }}
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="bibleCompletedMsg" class="opt-folder-path">
-                {{ bibleCompletedMsg }}
-              </div>
+                </template>
+              </ProgressBar>
 
               <div class="opt-folder-actions">
                 <button
@@ -555,6 +531,7 @@ import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { useSyncManager } from "@/composables/useSyncManager";
+import ProgressBar from "@/components/ProgressBar.vue";
 import $snackbar from "@/helpers/Snackbar";
 import Seed from "@/helpers/Seed";
 import type { BibleVersion } from "@/types/Bible";
@@ -667,10 +644,6 @@ const hasPendingRemovals = computed<boolean>(() => {
   if (cachedHymnal1996Baseline.value && !selectedHymnal1996.value) return true;
   return false;
 });
-
-const biblePercent = computed<number>(() =>
-  bibleTotal.value > 0 ? Math.round((bibleDone.value / bibleTotal.value) * 100) : 0
-);
 
 const bibleHasPendingRemovals = computed<boolean>(() => {
   if (bibleDownloadedBaseline.value.size === 0) return false;
