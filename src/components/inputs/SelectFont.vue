@@ -39,7 +39,7 @@ import {
   FAMILY_FONT_DEFAULT_UI,
   FAMILY_FONT_DEFAULT_PROJECTION,
   type FontOption,
-} from "@/config/fonts";
+} from "@/config/Fonts";
 
 const props = withDefaults(
   defineProps<{

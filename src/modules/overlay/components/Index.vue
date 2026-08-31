@@ -121,7 +121,7 @@ import OverlaySlotEditor from "./OverlaySlotEditor.vue";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $userdata from "@/helpers/UserData";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import {
   getImage,

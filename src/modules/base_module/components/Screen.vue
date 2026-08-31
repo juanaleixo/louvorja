@@ -28,7 +28,7 @@ import { module as manifest } from "../manifest";
 import Modules from "@/helpers/Modules";
 import UserData from "@/helpers/UserData";
 import { useContainerSize } from "@/composables/useContainerSize";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 const { container, fontSizePc } = useContainerSize();
 let timer = null;

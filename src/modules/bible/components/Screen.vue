@@ -68,7 +68,7 @@ import { useContainerSize } from "@/composables/useContainerSize";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { ModuleState } from "@/types/Module";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 interface BibleData {
   text?: string;

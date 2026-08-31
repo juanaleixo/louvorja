@@ -18,7 +18,7 @@ import UserData from "@/helpers/UserData";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useContainerSize } from "@/composables/useContainerSize";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 export function useModuleBodyStyle(moduleId: string) {
   // Força re-leitura do UserData quando formatação muda.
@@ -44,7 +44,7 @@ export function useModuleBodyStyle(moduleId: string) {
     return v == null ? fallback : v;
   }
 
-  const font = computed(() => resolveFont(read<string>("font", null), FONT_DEFAULT_PROJECTION));
+  const font = computed(() => resolveFont(read<string>("font", ""), FONT_DEFAULT_PROJECTION));
   const font_color = computed(() => read<string>("font_color", "#FFFFFF"));
   const font_size = computed(() => read<number>("font_size", 50));
   const alert_color = computed(() => read<string>("alert_color", "#E74C3C"));

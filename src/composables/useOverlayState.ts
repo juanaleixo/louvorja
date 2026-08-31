@@ -10,7 +10,7 @@ import {
   type OverlaySlot,
 } from "@/types/Overlay";
 import { KEYS } from "@/constants/UserDataKeys";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 interface OverlayStateReturn {
   enabled: Ref<boolean>;

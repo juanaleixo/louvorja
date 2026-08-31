@@ -3,7 +3,7 @@ import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import type { RibbonPage } from "@/types/Ribbon"
 import { Module } from "@/types/Module"
 import { ICONS } from "@/config/Icons"
-import { FONT_DEFAULT_PROJECTION } from "@/config/fonts"
+import { FONT_DEFAULT_PROJECTION } from "@/config/Fonts"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 

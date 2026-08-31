@@ -1013,7 +1013,7 @@ import { ICONS } from "@/config/Icons";
 import { KEYS } from "@/constants/UserDataKeys";
 import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
 import { THEMES } from "@/config/Theme";
-import { FONT_DEFAULT_PROJECTION, FONT_DEFAULT_UI, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, FONT_DEFAULT_UI, resolveFont } from "@/config/Fonts";
 
 interface ThemeOption {
   id: string;

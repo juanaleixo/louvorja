@@ -17,7 +17,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { Fonts } from "@/config/fonts";
+import { Fonts } from "@/config/Fonts";
 
 defineProps({
   modelValue: { type: [String, null], default: null },

@@ -82,7 +82,7 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-import { resolveFont, FONT_DEFAULT_PROJECTION } from "@/config/fonts";
+import { resolveFont, FONT_DEFAULT_PROJECTION } from "@/config/Fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import DrawProjection from "@/modules/draw/components/DrawProjection.vue";

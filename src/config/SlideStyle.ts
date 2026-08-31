@@ -1,4 +1,4 @@
-import { FONT_DEFAULT_PROJECTION } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION } from "@/config/Fonts";
 
 /**
  * Defaults que replicam o visual original do Delphi/Projection atual.

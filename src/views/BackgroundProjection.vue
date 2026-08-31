@@ -146,7 +146,7 @@ import { SETTINGS_TABLE } from "@/constants/DbTables";
 import type { YTAPI, YTPlayer } from "@/types/Media";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 GlobalWorkerOptions.workerSrc = pdfjsWorker;
 

@@ -69,7 +69,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useI18n } from "vue-i18n";
 import { getModule } from "@/config/modules";
 import { ModuleEnum } from "@/enums/ModuleEnum";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 interface Props {
   text?: string;

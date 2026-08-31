@@ -65,7 +65,7 @@ import UserData from "@/helpers/UserData";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useContainerSize } from "@/composables/useContainerSize";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/fonts";
+import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
 
 const props = defineProps({
   text: { type: String, default: "" },
