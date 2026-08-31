@@ -21,6 +21,19 @@
       </div>
     </section>
 
+    <v-alert
+      type="info"
+      variant="tonal"
+      density="compact"
+      icon="mdi-information-outline"
+      class="mt-2"
+      closable
+      close-icon="mdi-close"
+      style="font-size: 13px"
+    >
+      {{ $t("accessibility.internet_hint") }}
+    </v-alert>
+
     <v-tabs v-model="activeTab" density="compact" color="primary" class="mt-2">
       <v-tab value="avatar">
         <v-icon icon="mdi-human-greeting" class="mr-2" size="16" />

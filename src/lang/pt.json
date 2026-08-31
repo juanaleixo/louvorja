@@ -1042,6 +1042,7 @@
   },
   "accessibility": {
     "title": "Acessibilidade — Libras",
+    "internet_hint": "A tradução para Libras requer conexão com a internet e utiliza API de terceiros.",
     "tabs": {
       "musics": "Músicas",
       "bible": "Bíblia",
