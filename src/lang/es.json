@@ -176,6 +176,7 @@
     "slides": {
       "title": "Diapositivas de Músicas",
       "open_at": "Abrir en el monitor:",
+      "font": "Fuente de proyección:",
       "alignment": "Alineación de la letra:",
       "align_top": "Arriba",
       "align_center": "Centro",
@@ -417,7 +418,12 @@
       "restore_db_done": "Base de datos restaurada.",
       "restore_db_error": "Fallo al restaurar la base de datos.",
       "move_confirm": "¿Mover el contenido actual a la nueva carpeta?",
-      "change_failed": "Falló el cambio de la carpeta de medios."
+      "change_failed": "Falló el cambio de la carpeta de medios.",
+      "classic_version": "Versión clásica",
+      "use_classic_dir": "Usar directorio de la versión clásica",
+      "classic_not_found": "No se encontró la versión clásica en C:\\Program Files (x86)\\LouvorJA",
+      "classic_confirm": "¿Usar el mismo directorio de la versión clásica de LouvorJA?",
+      "classic_import_confirm": "¿Desea copiar o mover los archivos de la versión clásica a la nueva carpeta?"
     },
     "videos": {
       "title": "Vídeos On-line",
@@ -442,6 +448,12 @@
       "fade": "Usar fundido al abrir/cerrar proyección",
       "fade_duration": "Duración del fundido",
       "custom_background": "Personalizar fondo de proyección"
+    },
+    "utilities": {
+      "title": "Utilidades",
+      "open_at": "Proyectar utilidades en:",
+      "show_return": "Mostrar pantalla de retorno",
+      "font": "Fuente de proyección:"
     },
     "dev": {
       "title": "Desarrollador",
@@ -1159,5 +1171,14 @@
     "dont_show_again": "No mostrar de nuevo para esta versión",
     "view_on_github": "Ver en GitHub",
     "no_notes": "No hay notas de versión para mostrar."
+  },
+  "classic": {
+    "title": "Versión clásica detectada",
+    "scanning": "Verificando instalación de la versión clásica...",
+    "detected": "Se detectó la instalación de la versión clásica de LouvorJA.",
+    "not_found": "No se encontró ninguna instalación de la versión clásica.",
+    "language_detected": "Idioma detectado: {lang}",
+    "accept": "Usar directorio de la versión clásica",
+    "decline": "No usar"
   }
 }

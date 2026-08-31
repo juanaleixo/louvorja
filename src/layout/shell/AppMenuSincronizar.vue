@@ -413,12 +413,31 @@
               <label class="opt-label">{{ $t("options.storage.folder") }}</label>
               <div class="opt-folder">
                 <code class="opt-folder-path">{{ storageStats?.filesDir || "—" }}</code>
+                <v-chip
+                  v-if="useClassicDir"
+                  size="x-small"
+                  color="warning"
+                  variant="tonal"
+                  class="ml-2"
+                >
+                  <v-icon icon="mdi-desktop-classic" size="12" class="mr-1" />
+                  {{ $t("options.storage.classic_version") }}
+                </v-chip>
                 <div class="opt-folder-actions">
                   <button type="button" class="opt-btn" @click="openFolder">
                     {{ $t("options.storage.open_folder") }}
                   </button>
                   <button type="button" class="opt-btn" @click="changeFolder">
                     {{ $t("options.storage.change_folder") }}
+                  </button>
+                  <button
+                    v-if="!useClassicDir && Platform.platform === 'win32'"
+                    type="button"
+                    class="opt-btn"
+                    @click="detectClassic"
+                  >
+                    <v-icon icon="mdi-desktop-classic" size="14" class="mr-1" />
+                    {{ $t("options.storage.use_classic_dir") }}
                   </button>
                 </div>
               </div>
@@ -983,6 +1002,36 @@ const quotaGb = computed({
   set: (v: number) => $userdata.set(KEYS.OPTIONS.STORAGE_QUOTA_GB, Number(v) || 0),
 });
 
+const useClassicDir = computed((): boolean => {
+  return $userdata.get<boolean>(KEYS.OPTIONS.USE_CLASSIC_DIR, false) === true;
+});
+
+async function detectClassic(): Promise<void> {
+  if (!Platform.classic?.detect) return;
+  try {
+    const result = await Platform.classic.detect();
+    if (!result.detected) {
+      $alert.error({ text: "options.storage.classic_not_found" });
+      return;
+    }
+    $alert.yesno("options.storage.classic_confirm", (async (btn: string) => {
+      if (btn === "cancel") return;
+      $userdata.set(KEYS.OPTIONS.USE_CLASSIC_DIR, true);
+      $userdata.set(KEYS.OPTIONS.CLASSIC_LANG, result.lang || "pt");
+      const cur = (await Platform.userStore?.read("storage")) || {};
+      await Platform.userStore?.write("storage", {
+        ...cur,
+        classicDir: result.configDir,
+        classicLang: result.lang || "pt",
+        useClassicDir: true,
+      });
+      await reloadStats();
+    }) as (...args: unknown[]) => unknown);
+  } catch (e) {
+    console.warn("[Sincronizar] classic:detect falhou:", e);
+  }
+}
+
 async function reloadStats(): Promise<void> {
   if (!Platform?.storage?.stats) return;
   loading.value = true;
@@ -1002,7 +1051,36 @@ async function openFolder(): Promise<void> {
 async function changeFolder(): Promise<void> {
   const newDir = await Platform?.storage?.chooseDir?.();
   if (!newDir) return;
-  $alert.yesno("options.storage.move_confirm", (async (btn) => {
+
+  if (useClassicDir.value) {
+    $alert.yesno("options.storage.classic_import_confirm", (async (btn: string) => {
+      if (btn === "cancel") return;
+      const move = btn === "yes";
+      try {
+        const cur = (await Platform.userStore?.read("storage")) || {};
+        const classicDir = cur.classicDir || "";
+        const lang = cur.classicLang || "pt";
+        if (classicDir && Platform.storage?.importFromClassic) {
+          await Platform.storage.importFromClassic(classicDir, newDir, lang, {
+            moveExisting: move,
+          });
+        }
+        await Platform.storage?.setFilesDir?.(newDir, { moveExisting: false });
+        await Platform.userStore?.write("storage", {
+          ...cur,
+          filesDir: newDir,
+          useClassicDir: false,
+        });
+        $userdata.set(KEYS.OPTIONS.USE_CLASSIC_DIR, false);
+        await reloadStats();
+      } catch (e) {
+        $alert.error({ text: "options.storage.change_failed", error: e as Error });
+      }
+    }) as (...args: unknown[]) => unknown);
+    return;
+  }
+
+  $alert.yesno("options.storage.move_confirm", (async (btn: string) => {
     if (btn === "cancel") return;
     const move = btn === "yes";
     try {

@@ -235,6 +235,9 @@ export const KEYS = {
     AUTO_DOWNLOAD_UPDATES: `${OPTIONS}.auto_download_updates`,
     AUTO_CACHE_MEDIA: `${OPTIONS}.auto_cache_media`,
     STORAGE_QUOTA_GB: `${OPTIONS}.storage_quota_gb`,
+    USE_CLASSIC_DIR: `${OPTIONS}.use_classic_dir`,
+    SKIP_CLASSIC_CHECK: `${OPTIONS}.skip_classic_check`,
+    CLASSIC_LANG: `${OPTIONS}.classic_lang`,
     OPEN_RETURN: `${OPTIONS}.open_return`,
     OPEN_OPERATOR: `${OPTIONS}.open_operator`,
     DISPLAYS: {

@@ -36,6 +36,7 @@
     <HotkeysCheatsheet v-model="hotkeysOpen" />
     <ReleaseNotesDialog v-model="releaseNotesOpen" @close="onReleaseNotesClose" />
     <StartupCheckDialog v-model="startupCheckOpen" />
+    <ClassicVersionDialog v-model="classicCheckOpen" />
     <UpdateAvailableDialog
       v-model="updateDialogOpen"
       :version="updateDialogVersion"
@@ -47,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useTheme, useDisplay } from "vuetify";
 
@@ -65,6 +66,7 @@ import OpenModulesTabs from "@/layout/shell/OpenModulesTabs.vue";
 import ShellLiturgyPanel from "@/layout/shell/ShellLiturgyPanel.vue";
 import HotkeysCheatsheet from "@/layout/shell/HotkeysCheatsheet.vue";
 import StartupCheckDialog from "@/components/StartupCheckDialog.vue";
+import ClassicVersionDialog from "@/components/ClassicVersionDialog.vue";
 import ReleaseNotesDialog from "@/components/ReleaseNotesDialog.vue";
 import UpdateAvailableDialog from "@/components/UpdateAvailableDialog.vue";
 import packageJson from "@root/package.json";
@@ -92,6 +94,7 @@ const musicSearchOpen = ref(false);
 const bibleSearchOpen = ref(false);
 const hotkeysOpen = ref(false);
 const startupCheckOpen = ref(false);
+const classicCheckOpen = ref(false);
 const releaseNotesOpen = ref(false);
 const updateDialogOpen = ref(false);
 const updateDialogVersion = ref("");
@@ -151,6 +154,13 @@ let _startupCheckPending = false;
 let _pendingReleaseNotes = false;
 let _startupCheckTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// Quando o startup check fecha, verificar se há versão clássica no Windows
+watch(startupCheckOpen, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) {
+    _showPendingClassicCheck();
+  }
+});
+
 function _openUpdatesScreen() {
   window.dispatchEvent(new CustomEvent("louvorja:open-updates"));
 }
@@ -177,7 +187,17 @@ function _showPendingStartupCheck() {
   const skip = $userdata.get<boolean>(KEYS.OPTIONS.SKIP_STARTUP_CHECK, false);
   if (!skip) {
     startupCheckOpen.value = true;
+  } else {
+    _showPendingClassicCheck();
   }
+}
+
+function _showPendingClassicCheck() {
+  if (!Platform.isDesktop || Platform.platform !== "win32") return;
+  const skip = $userdata.get<boolean>(KEYS.OPTIONS.SKIP_CLASSIC_CHECK, false);
+  const alreadyUsing = $userdata.get<boolean>(KEYS.OPTIONS.USE_CLASSIC_DIR, false);
+  if (skip || alreadyUsing) return;
+  classicCheckOpen.value = true;
 }
 
 function _handleUpdaterState(
