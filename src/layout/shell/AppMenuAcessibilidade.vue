@@ -44,77 +44,107 @@
       <!-- ═══ Aba Avatar ═══ -->
       <v-window-item value="avatar">
         <section class="opt-section">
-          <p class="opt-hint">{{ $t("accessibility.avatar.hint") }}</p>
-
-          <div class="opt-download-scroll">
-            <div class="opt-download-list">
-              <label
-                v-for="option in avatarOptions"
-                :key="option.value"
-                class="opt-checkbox opt-album"
-              >
-                <input
-                  type="radio"
-                  :value="option.value"
-                  :checked="selectedAvatar === option.value"
-                  @change="selectAvatar(option.value)"
+          <v-row class="mt-5">
+            <v-col cols="12" md="4">
+              <div class="opt-row">
+                <span class="opt-label">{{ $t("accessibility.avatar.enable_projection") }}</span>
+                <v-switch
+                  v-model="librasEnabled"
+                  density="compact"
+                  color="primary"
+                  hide-details
+                  @update:model-value="toggleLibrasEnabled"
                 />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
-          </div>
+              </div>
+              <div class="opt-row">
+                <span class="opt-label">{{ $t("accessibility.avatar.translate_musics") }}</span>
+                <v-switch
+                  v-model="librasMusicsEnabled"
+                  density="compact"
+                  color="primary"
+                  hide-details
+                  :disabled="!librasEnabled"
+                  @update:model-value="toggleMusicsEnabled"
+                />
+              </div>
+              <div class="opt-row">
+                <span class="opt-label">{{ $t("accessibility.avatar.translate_bible") }}</span>
+                <v-switch
+                  v-model="librasBibleEnabled"
+                  density="compact"
+                  color="primary"
+                  hide-details
+                  :disabled="!librasEnabled"
+                  @update:model-value="toggleBibleEnabled"
+                />
+              </div>
+              <div class="opt-row">
+                <span class="opt-label">{{ $t("accessibility.avatar.show_on_obs") }}</span>
+                <v-switch
+                  v-model="showOnObs"
+                  density="compact"
+                  color="primary"
+                  hide-details
+                  @update:model-value="toggleShowOnObs"
+                />
+              </div>
+            </v-col>
+
+            <v-col cols="12" md="4">
+              <p class="opt-hint">{{ $t("accessibility.avatar.hint") }}</p>
+              <div class="opt-download-scroll">
+                <div class="opt-download-list">
+                  <label
+                    v-for="option in avatarOptions"
+                    :key="option.value"
+                    class="opt-checkbox opt-album"
+                  >
+                    <input
+                      type="radio"
+                      :value="option.value"
+                      :checked="selectedAvatar === option.value"
+                      @change="selectAvatar(option.value)"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </v-col>
+            <v-col cols="12" md="4">
+              <!-- Cor de fundo do avatar -->
+              <span class="opt-label">{{ $t("accessibility.avatar.background_color") }}</span>
+              <div class="opt-row">
+                <v-switch
+                  v-model="transparentBg"
+                  density="compact"
+                  color="primary"
+                  hide-details
+                  :label="t('accessibility.avatar.bg_transparent')"
+                  @update:model-value="toggleTransparentBg"
+                />
+              </div>
+
+              <div v-if="!transparentBg" class="mt-2">
+                <v-color-picker
+                  v-model="bgColor"
+                  mode="rgba"
+                  show-swatches
+                  :swatches="bgSwatches"
+                  density="compact"
+                  hide-canvas
+                  hide-sliders
+                  width="100%"
+                  max-width="340"
+                  @update:model-value="setBgColor"
+                />
+              </div>
+            </v-col>
+          </v-row>
 
           <div class="opt-divider" />
 
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.enable_projection") }}</span>
-            <v-switch
-              v-model="librasEnabled"
-              density="compact"
-              color="primary"
-              hide-details
-              @update:model-value="toggleLibrasEnabled"
-            />
-          </div>
-
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.translate_musics") }}</span>
-            <v-switch
-              v-model="librasMusicsEnabled"
-              density="compact"
-              color="primary"
-              hide-details
-              :disabled="!librasEnabled"
-              @update:model-value="toggleMusicsEnabled"
-            />
-          </div>
-
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.translate_bible") }}</span>
-            <v-switch
-              v-model="librasBibleEnabled"
-              density="compact"
-              color="primary"
-              hide-details
-              :disabled="!librasEnabled"
-              @update:model-value="toggleBibleEnabled"
-            />
-          </div>
-
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.show_on_obs") }}</span>
-            <v-switch
-              v-model="showOnObs"
-              density="compact"
-              color="primary"
-              hide-details
-              @update:model-value="toggleShowOnObs"
-            />
-          </div>
-
-          <div class="opt-divider" />
           <v-row class="align-start">
-            <v-col cols="12" sm="4">
+            <v-col cols="12" lg="4">
               <!-- Posição -->
               <div class="opt-label mb-1">{{ $t("accessibility.avatar.position") }}</div>
               <div class="position-options">
@@ -144,7 +174,7 @@
               </div>
             </v-col>
 
-            <v-col cols="12" sm="4">
+            <v-col cols="12" lg="3">
               <!-- Deslocamento -->
               <div class="opt-label mb-1">{{ $t("accessibility.avatar.align_hint") }}</div>
               <v-row dense class="mt-2">
@@ -175,7 +205,7 @@
               </v-row>
 
               <!-- Tamanho -->
-              <div class="opt-label mt-5 mb-1">{{ $t("accessibility.avatar.size_hint") }}</div>
+              <div class="opt-label mt-5 mb-3">{{ $t("accessibility.avatar.size_hint") }}</div>
               <v-row dense>
                 <v-col cols="6">
                   <v-text-field
@@ -206,50 +236,80 @@
               </v-row>
             </v-col>
 
-            <v-col cols="12" sm="4">
+            <v-col cols="12" lg="5">
               <!-- Animação de entrada -->
-              <span class="opt-label">{{ $t("accessibility.avatar.animation") }}</span>
-              <v-select
-                v-model="currentAnimation"
-                :items="animationOptions"
-                density="compact"
-                hide-details
-                variant="outlined"
-                style="max-width: 160px"
-                @update:model-value="setAnimation"
-              />
+              <v-row dense>
+                <v-col>
+                  <div class="opt-label mb-2">
+                    <span class="opt-label">{{ $t("accessibility.avatar.animation") }}</span>
+                  </div>
+                  <v-select
+                    v-model="currentAnimation"
+                    :items="animationOptions"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    @update:model-value="setAnimation"
+                  />
+                </v-col>
+                <v-col>
+                  <!-- Duração da entrada -->
+                  <span class="opt-label">{{ $t("accessibility.avatar.animation_duration") }}</span>
+                  <v-slider
+                    v-model="currentAnimationDuration"
+                    :min="0"
+                    :max="3000"
+                    :step="100"
+                    density="compact"
+                    hide-details
+                    color="primary"
+                    thumb-label
+                    :thumb-size="12"
+                    @update:model-value="setAnimationDuration"
+                  >
+                    <template #thumb-label="{ modelValue }">{{ modelValue }}ms</template>
+                  </v-slider>
+                </v-col>
+              </v-row>
+
+              <v-row dense class="mt-8">
+                <v-col>
+                  <!-- Animação de saída -->
+                  <div class="opt-label mb-2">
+                    <span class="opt-label">{{ $t("accessibility.avatar.exit_animation") }}</span>
+                  </div>
+                  <v-select
+                    v-model="currentExitAnimation"
+                    :items="animationOptions"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    @update:model-value="setExitAnimation"
+                  />
+                </v-col>
+                <v-col>
+                  <!-- Duração da saída -->
+                  <span class="opt-label">
+                    {{ $t("accessibility.avatar.exit_animation_duration") }}
+                  </span>
+                  <v-slider
+                    v-model="currentExitAnimationDuration"
+                    :min="0"
+                    :max="3000"
+                    :step="100"
+                    density="compact"
+                    hide-details
+                    color="primary"
+                    thumb-label
+                    :thumb-size="12"
+                    @update:model-value="setExitAnimationDuration"
+                  >
+                    <template #thumb-label="{ modelValue }">{{ modelValue }}ms</template>
+                  </v-slider>
+                </v-col>
+              </v-row>
             </v-col>
           </v-row>
-
-          <div class="opt-divider" />
-
-          <!-- Cor de fundo do avatar -->
-          <div class="opt-row">
-            <span class="opt-label">{{ $t("accessibility.avatar.background_color") }}</span>
-            <v-switch
-              v-model="transparentBg"
-              density="compact"
-              color="primary"
-              hide-details
-              :label="transparentBg ? $t('accessibility.avatar.bg_transparent') : ''"
-              @update:model-value="toggleTransparentBg"
-            />
-          </div>
-
-          <div v-if="!transparentBg" class="mt-2">
-            <v-color-picker
-              v-model="bgColor"
-              mode="rgba"
-              show-swatches
-              :swatches="bgSwatches"
-              density="compact"
-              hide-canvas
-              hide-sliders
-              width="100%"
-              max-width="340"
-              @update:model-value="setBgColor"
-            />
-          </div>
 
           <div class="opt-divider" />
 
@@ -415,10 +475,25 @@
 
           <!-- Progresso -->
           <div v-if="translating" class="libras-progress">
-            <v-progress-linear indeterminate color="primary" class="mb-1" />
-            <p class="opt-hint">
-              {{ $t("accessibility.musics.translating") }}
-            </p>
+            <label class="opt-label">
+              {{
+                $t("accessibility.musics.progress", {
+                  done: musicProgress.done,
+                  total: musicProgress.total,
+                  percent: musicPercent,
+                })
+              }}
+            </label>
+            <v-progress-linear
+              :model-value="musicPercent"
+              color="primary"
+              height="8"
+              rounded
+              class="mt-1"
+            />
+            <div v-if="musicProgress.current" class="opt-folder-path">
+              {{ musicProgress.current }}
+            </div>
           </div>
 
           <p v-if="completedMsg" class="opt-hint" style="color: rgb(var(--v-theme-primary))">
@@ -434,6 +509,15 @@
             >
               <v-icon icon="mdi-translate" size="14" class="mr-1" />
               {{ $t("accessibility.musics.translate") }}
+            </button>
+            <button
+              type="button"
+              class="opt-btn"
+              :disabled="translating || !hasPendingRemovals || saving"
+              @click="saveSelection"
+            >
+              <v-icon icon="mdi-content-save" size="14" class="mr-1" />
+              {{ saving ? $t("accessibility.musics.saving") : $t("accessibility.musics.save") }}
             </button>
             <button
               v-if="translating"
@@ -488,10 +572,25 @@
           </div>
 
           <div v-if="translatingBible" class="libras-progress">
-            <v-progress-linear indeterminate color="primary" class="mb-1" />
-            <p class="opt-hint">
-              {{ $t("accessibility.bible.translating") }}
-            </p>
+            <label class="opt-label">
+              {{
+                $t("accessibility.bible.progress", {
+                  done: bibleProgress.done,
+                  total: bibleProgress.total,
+                  percent: biblePercent,
+                })
+              }}
+            </label>
+            <v-progress-linear
+              :model-value="biblePercent"
+              color="primary"
+              height="8"
+              rounded
+              class="mt-1"
+            />
+            <div v-if="bibleProgress.current" class="opt-folder-path">
+              {{ bibleProgress.current }}
+            </div>
           </div>
 
           <p v-if="bibleCompletedMsg" class="opt-hint" style="color: rgb(var(--v-theme-primary))">
@@ -507,6 +606,15 @@
             >
               <v-icon icon="mdi-translate" size="14" class="mr-1" />
               {{ $t("accessibility.bible.translate") }}
+            </button>
+            <button
+              type="button"
+              class="opt-btn"
+              :disabled="translatingBible || !bibleHasPendingRemovals || savingBible"
+              @click="saveBibleSelection"
+            >
+              <v-icon icon="mdi-content-save" size="14" class="mr-1" />
+              {{ savingBible ? $t("accessibility.bible.saving") : $t("accessibility.bible.save") }}
             </button>
             <button
               v-if="translatingBible"
@@ -556,7 +664,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ICONS } from "@/config/Icons";
 import $database from "@/helpers/Database";
@@ -615,13 +723,35 @@ const loadingCatalog = ref(false);
 const translating = ref(false);
 const completedMsg = ref("");
 
+// Baselines (snapshots do estado cacheado no último scan)
+const cachedAlbumsBaseline = ref<Set<number>>(new Set());
+const cachedHymnalBaseline = ref(false);
+const cachedHymnal1996Baseline = ref(false);
+const saving = ref(false);
+
 // Bíblia
 const bibleVersions = ref<BibleVersion[]>([]);
 const selectedBibleVersions = ref<Set<number>>(new Set());
 const cachedBibleVersionIds = ref<Set<number>>(new Set());
+const cachedBibleBaseline = ref<Set<number>>(new Set());
 const loadingBible = ref(false);
 const translatingBible = ref(false);
 const bibleCompletedMsg = ref("");
+const savingBible = ref(false);
+
+// Progresso de tradução Libras
+const musicProgress = computed(() => sync.librasMusicProgress.value);
+const musicPercent = computed(() =>
+  musicProgress.value.total > 0
+    ? Math.round((musicProgress.value.done / musicProgress.value.total) * 100)
+    : 0
+);
+const bibleProgress = computed(() => sync.librasBibleProgress.value);
+const biblePercent = computed(() =>
+  bibleProgress.value.total > 0
+    ? Math.round((bibleProgress.value.done / bibleProgress.value.total) * 100)
+    : 0
+);
 
 // Avatar
 const selectedAvatar = ref("icaro");
@@ -748,6 +878,28 @@ function setAnimation(value: string) {
   $userdata.set(KEYS.MODULES.LIBRAS.ANIMATION, value);
 }
 
+// Animação de saída
+const currentExitAnimation = ref("fade");
+
+function setExitAnimation(value: string) {
+  currentExitAnimation.value = value;
+  $userdata.set(KEYS.MODULES.LIBRAS.EXIT_ANIMATION, value);
+}
+
+// Duração das animações
+const currentAnimationDuration = ref(1500);
+const currentExitAnimationDuration = ref(1000);
+
+function setAnimationDuration(value: number) {
+  currentAnimationDuration.value = value;
+  $userdata.set(KEYS.MODULES.LIBRAS.ANIMATION_DURATION, value);
+}
+
+function setExitAnimationDuration(value: number) {
+  currentExitAnimationDuration.value = value;
+  $userdata.set(KEYS.MODULES.LIBRAS.EXIT_ANIMATION_DURATION, value);
+}
+
 // Cor de fundo
 const transparentBg = ref(true);
 const bgColor = ref({ r: 0, g: 0, b: 0, a: 1 });
@@ -828,6 +980,23 @@ const hasAnySelection = computed(
   () => selectedAlbums.value.size > 0 || selectedHymnal.value || selectedHymnal1996.value
 );
 
+const hasPendingRemovals = computed<boolean>(() => {
+  for (const id of cachedAlbumsBaseline.value) {
+    if (!selectedAlbums.value.has(id)) return true;
+  }
+  if (cachedHymnalBaseline.value && !selectedHymnal.value) return true;
+  if (cachedHymnal1996Baseline.value && !selectedHymnal1996.value) return true;
+  return false;
+});
+
+const bibleHasPendingRemovals = computed<boolean>(() => {
+  if (cachedBibleBaseline.value.size === 0) return false;
+  for (const id of cachedBibleBaseline.value) {
+    if (!selectedBibleVersions.value.has(id)) return true;
+  }
+  return false;
+});
+
 // ─── Init ───────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -847,6 +1016,12 @@ onMounted(async () => {
   currentEmotion.value = $userdata.get<string>(KEYS.MODULES.LIBRAS.EMOTION, "default") || "default";
   currentRegion.value = $userdata.get<string>(KEYS.MODULES.LIBRAS.REGION, "BR") || "BR";
   currentAnimation.value = $userdata.get<string>(KEYS.MODULES.LIBRAS.ANIMATION, "fade") || "fade";
+  currentExitAnimation.value =
+    $userdata.get<string>(KEYS.MODULES.LIBRAS.EXIT_ANIMATION, "fade") || "fade";
+  currentAnimationDuration.value =
+    $userdata.get<number>(KEYS.MODULES.LIBRAS.ANIMATION_DURATION, 1500) || 1500;
+  currentExitAnimationDuration.value =
+    $userdata.get<number>(KEYS.MODULES.LIBRAS.EXIT_ANIMATION_DURATION, 1000) || 1000;
   const savedBg =
     $userdata.get<string>(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent") || "transparent";
   transparentBg.value = savedBg === "transparent";
@@ -856,7 +1031,19 @@ onMounted(async () => {
       bgColor.value = { r: +match[1], g: +match[2], b: +match[3], a: +match[4] };
     }
   }
-  await Promise.all([refreshStats(), loadCatalog(), loadBibleVersions()]);
+  // Carregar catálogo e versões antes das stats (refreshStats depende de categories e bibleVersions)
+  await Promise.all([loadCatalog(), loadBibleVersions()]);
+  await refreshStats();
+});
+
+watch(activeTab, (tab) => {
+  if (tab === "musics" || tab === "bible") {
+    refreshStats();
+  }
+});
+
+watch(currentRegion, () => {
+  refreshStats();
 });
 
 // ─── Stats ──────────────────────────────────────────────────────────────────
@@ -866,24 +1053,71 @@ async function refreshStats(): Promise<void> {
   try {
     stats.value = await Libras.getCacheStats();
     const cached = await Libras.listCached();
-    cachedAlbumIds.value = new Set(
-      cached
-        .filter((e) => e.type === "music")
-        .map((e) => {
-          const parts = e.ref_id.split("_");
-          return parseInt(parts[parts.length - 1], 10);
-        })
-        .filter((id) => !isNaN(id))
+    const region = currentRegion.value;
+
+    // Filtrar entries pela região atual
+    const regionSuffix = `_${region}`;
+    const cachedMusicEntries = cached.filter(
+      (e) => e.type === "music" && e.id.endsWith(regionSuffix)
     );
+    const cachedBibleEntries = cached.filter(
+      (e) => e.type === "bible" && e.id.endsWith(regionSuffix)
+    );
+
+    // Extrair music IDs das entries cacheadas
+    const cachedMusicIds = new Set(
+      cachedMusicEntries.map((e) => parseInt(e.ref_id, 10)).filter((id) => !isNaN(id))
+    );
+
+    // Mapear music IDs → album IDs usando o catálogo (paralelo)
+    const allAlbums = categories.value.flatMap((cat) => cat.albums || []);
+    const albumEntries = await Promise.all(
+      allAlbums.map(async (album) => {
+        const data = await $database.get<{ musics?: { id_music: number }[] }>(
+          `album_${album.id_album}`
+        );
+        return { id: album.id_album, musics: data?.musics };
+      })
+    );
+
+    const albumIdSet = new Set<number>();
+    for (const { id, musics } of albumEntries) {
+      if (musics && musics.length > 0) {
+        const allCached = musics.every((m) => cachedMusicIds.has(Number(m.id_music)));
+        if (allCached) albumIdSet.add(id);
+      }
+    }
+    cachedAlbumIds.value = albumIdSet;
+
+    // Calcular hinários cacheados
+    isHymnalCached.value =
+      hymnalIds.value.length > 0 && hymnalIds.value.every((id) => cachedMusicIds.has(id));
+    isHymnal1996Cached.value =
+      hymnal1996Ids.value.length > 0 && hymnal1996Ids.value.every((id) => cachedMusicIds.has(id));
+
+    // Mapear bible version abbreviation → id_bible_version
+    const versionByAbbrev = new Map<string, number>();
+    for (const v of bibleVersions.value) {
+      if (v.abbreviation) versionByAbbrev.set(v.abbreviation, v.id_bible_version);
+    }
     cachedBibleVersionIds.value = new Set(
-      cached
-        .filter((e) => e.type === "bible")
+      cachedBibleEntries
         .map((e) => {
           const parts = e.ref_id.split("_");
-          return parseInt(parts[0], 10);
+          return versionByAbbrev.get(parts[0]) ?? NaN;
         })
         .filter((id) => !isNaN(id))
     );
+
+    // Pre-selecionar itens cacheados + salvar baselines
+    selectedAlbums.value = new Set(albumIdSet);
+    cachedAlbumsBaseline.value = new Set(albumIdSet);
+    selectedHymnal.value = isHymnalCached.value;
+    cachedHymnalBaseline.value = isHymnalCached.value;
+    selectedHymnal1996.value = isHymnal1996Cached.value;
+    cachedHymnal1996Baseline.value = isHymnal1996Cached.value;
+    selectedBibleVersions.value = new Set(cachedBibleVersionIds.value);
+    cachedBibleBaseline.value = new Set(cachedBibleVersionIds.value);
   } finally {
     statsLoading.value = false;
   }
@@ -1026,6 +1260,110 @@ async function translateSelectedBibles(): Promise<void> {
     console.error("[Acessibilidade] Erro ao traduzir bíblia:", e);
   } finally {
     translatingBible.value = false;
+    await refreshStats();
+  }
+}
+
+// ─── Remoção de traduções ───────────────────────────────────────────────────
+
+async function saveSelection(): Promise<void> {
+  if (!hasPendingRemovals.value) return;
+
+  saving.value = true;
+  let removedAlbums = 0;
+  let removedHymnal = false;
+  let removedHymnal1996 = false;
+
+  try {
+    const region = currentRegion.value;
+    const albumsToRemove = [...cachedAlbumsBaseline.value].filter(
+      (id) => !selectedAlbums.value.has(id)
+    );
+
+    for (const id of albumsToRemove) {
+      const albumData = await $database.get<{ musics?: { id_music: number }[] }>(`album_${id}`);
+      if (albumData?.musics) {
+        for (const m of albumData.musics) {
+          await Libras.removeCached(Libras.musicCacheId(Number(m.id_music), region), "music");
+        }
+      }
+      cachedAlbumsBaseline.value.delete(id);
+      removedAlbums += 1;
+    }
+    cachedAlbumsBaseline.value = new Set(cachedAlbumsBaseline.value);
+
+    if (cachedHymnalBaseline.value && !selectedHymnal.value) {
+      for (const id of hymnalIds.value) {
+        await Libras.removeCached(Libras.musicCacheId(id, region), "music");
+      }
+      cachedHymnalBaseline.value = false;
+      removedHymnal = true;
+    }
+
+    if (cachedHymnal1996Baseline.value && !selectedHymnal1996.value) {
+      for (const id of hymnal1996Ids.value) {
+        await Libras.removeCached(Libras.musicCacheId(id, region), "music");
+      }
+      cachedHymnal1996Baseline.value = false;
+      removedHymnal1996 = true;
+    }
+
+    const total = removedAlbums + (removedHymnal ? 1 : 0) + (removedHymnal1996 ? 1 : 0);
+    if (total > 0) {
+      $snackbar.success(t("accessibility.musics.save_done", { count: total }));
+    }
+  } catch (e) {
+    console.error("[Acessibilidade] saveSelection:", e);
+    $snackbar.error((e as Error).message);
+  } finally {
+    saving.value = false;
+    await refreshStats();
+  }
+}
+
+async function saveBibleSelection(): Promise<void> {
+  if (!bibleHasPendingRemovals.value) return;
+
+  savingBible.value = true;
+  let removed = 0;
+
+  try {
+    const region = currentRegion.value;
+    const versionsToRemove = [...cachedBibleBaseline.value].filter(
+      (id) => !selectedBibleVersions.value.has(id)
+    );
+
+    const allBibleEntries = await Libras.listCached("bible");
+    const regionSuffix = `_${region}`;
+
+    for (const versionId of versionsToRemove) {
+      const version = bibleVersions.value.find((v) => v.id_bible_version === versionId);
+      if (!version?.abbreviation) continue;
+
+      const entriesToRemove = allBibleEntries.filter(
+        (e) =>
+          e.type === "bible" &&
+          e.id.endsWith(regionSuffix) &&
+          e.ref_id.startsWith(`${version.abbreviation}_`)
+      );
+
+      for (const entry of entriesToRemove) {
+        await Libras.removeCached(entry.id, "bible");
+        removed++;
+      }
+
+      cachedBibleBaseline.value.delete(versionId);
+    }
+    cachedBibleBaseline.value = new Set(cachedBibleBaseline.value);
+
+    if (removed > 0) {
+      $snackbar.success(t("accessibility.bible.save_done", { count: removed }));
+    }
+  } catch (e) {
+    console.error("[Acessibilidade] saveBibleSelection:", e);
+    $snackbar.error((e as Error).message);
+  } finally {
+    savingBible.value = false;
     await refreshStats();
   }
 }

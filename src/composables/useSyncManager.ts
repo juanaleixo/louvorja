@@ -716,6 +716,8 @@ export function useSyncManager() {
 
   const librasMusicCancelled = ref(false);
   const librasBibleCancelled = ref(false);
+  const librasMusicProgress = ref({ done: 0, total: 0, current: "" });
+  const librasBibleProgress = ref({ done: 0, total: 0, current: "" });
 
   let _librasMusicAbort: AbortController | null = null;
   let _librasBibleAbort: AbortController | null = null;
@@ -736,13 +738,14 @@ export function useSyncManager() {
         `album_${albumId}`
       );
       if (albumData?.musics) {
-        allIds.push(...albumData.musics.map((m) => m.id_music));
+        allIds.push(...albumData.musics.map((m) => Number(m.id_music)));
       }
     }
 
     if (allIds.length === 0) return 0;
 
     librasMusicCancelled.value = false;
+    librasMusicProgress.value = { done: 0, total: allIds.length, current: "" };
     _librasMusicAbort = new AbortController();
     const signal = _librasMusicAbort.signal;
 
@@ -760,6 +763,7 @@ export function useSyncManager() {
       try {
         const music = await Database.get<Music>(`music_${id}`);
         if (!music) continue;
+        librasMusicProgress.value = { ...librasMusicProgress.value, current: music.name || `#${id}` };
         const result = await Libras.translateMusic(
           id,
           music,
@@ -775,6 +779,7 @@ export function useSyncManager() {
           signal
         );
         if (result) translated++;
+        librasMusicProgress.value = { done: i + 1, total: allIds.length, current: "" };
       } catch (e) {
         if (signal.aborted) break;
         console.error(`[useSyncManager] Erro ao traduzir música ${id}:`, e);
@@ -818,6 +823,7 @@ export function useSyncManager() {
     if (chapters.length === 0) return 0;
 
     librasBibleCancelled.value = false;
+    librasBibleProgress.value = { done: 0, total: chapters.length, current: "" };
     _librasBibleAbort = new AbortController();
     const signal = _librasBibleAbort.signal;
 
@@ -837,6 +843,10 @@ export function useSyncManager() {
           `bible_${versionId}_${book.id_bible_book}_${ch}`
         );
         if (!verses) continue;
+        librasBibleProgress.value = {
+          ...librasBibleProgress.value,
+          current: `${book.name ?? abbreviation} ${ch}`,
+        };
         const result = await Libras.translateBibleChapter(
           abbreviation,
           book,
@@ -854,6 +864,7 @@ export function useSyncManager() {
           signal
         );
         if (result) translated++;
+        librasBibleProgress.value = { done: i + 1, total: chapters.length, current: "" };
       } catch (e) {
         if (signal.aborted) break;
         console.error(`[useSyncManager] Erro ao traduzir bíblia:`, e);
@@ -909,6 +920,8 @@ export function useSyncManager() {
     startLibrasMusicDownloads,
     startLibrasBibleDownloads,
     cancelLibrasDownloads,
+    librasMusicProgress,
+    librasBibleProgress,
     bibleDownloading,
     bibleProgress,
     bibleCompletedMsg,

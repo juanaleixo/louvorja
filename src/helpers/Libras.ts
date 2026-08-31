@@ -20,7 +20,12 @@ import { DB_TABLE } from "@/constants/DbTables";
 import type { Music } from "@/types/Music";
 import type { Lyric } from "@/types/Lyric";
 import type { BibleBook } from "@/types/Bible";
-import { DICTIONARY_BASE_URL, REQUEST_TIMEOUT, TRANSLATE_URL } from "@/config/Libras";
+import {
+  BUNDLE_URL,
+  REQUEST_TIMEOUT,
+  BUNDLE_RETRY_MAX,
+  TRANSLATE_URL,
+} from "@/config/Libras";
 import { LibrasCacheEntry, LibrasCacheStats } from "@/types/Libras";
 
 /** Tabela de cache conforme tipo de conteúdo. */
@@ -230,6 +235,19 @@ export function uniqueTokens(gloss: string): string[] {
   return [...new Set(parseGlossTokens(gloss))];
 }
 
+/**
+ * Normaliza um token gloss para busca no dicionário.
+ * Remove acentos (NFD), mantém apenas letras A-Z, e converte para maiúsculas.
+ * Ex: "DÁDIVA" → "DADIVA", "BÊNÇÃO" → "BENCAO", "NÃO" → "NAO"
+ */
+export function normalizeToken(token: string): string {
+  return token
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z]/g, "")
+    .toUpperCase();
+}
+
 // ─── Download de Bundles ────────────────────────────────────────────────────
 
 /** Chave de bundle no IndexedDB com sotaque. */
@@ -252,22 +270,57 @@ export async function isBundleCached(token: string, region?: string): Promise<bo
 
 /**
  * Baixa um bundle de animação de um token gloss.
- * Retorna o ArrayBuffer do bundle ou null em caso de erro.
+ * Retorna o ArrayBuffer do bundle ou null em caso de erro/404.
+ *
+ * Estratégia:
+ *   1. Normaliza o token (remove acentos, A-Z, maiúsculas)
+ *   2. Tenta com o token original no dicionário
+ *   3. Se 404, tenta com o token normalizado (ex: BÊNÇÃO → BENCAO)
+ *   4. Retry em caso de erro de rede (até BUNDLE_RETRY_MAX)
  */
-async function downloadBundleRaw(token: string): Promise<ArrayBuffer | null> {
-  try {
-    const url = `${DICTIONARY_BASE_URL}/${encodeURIComponent(token)}`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+async function downloadBundleRaw(
+  token: string,
+  region?: string
+): Promise<ArrayBuffer | null> {
+  const regionPath = region || "BR";
+  const normalized = normalizeToken(token);
 
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
+  // Tokens para tentar: primeiro o original, depois o normalizado (se diferente)
+  const candidates =
+    normalized !== token.toUpperCase() ? [token, normalized] : [token];
 
-    if (!response.ok) return null;
-    return response.arrayBuffer();
-  } catch {
-    return null;
+  for (const candidate of candidates) {
+    for (let attempt = 0; attempt <= BUNDLE_RETRY_MAX; attempt++) {
+      try {
+        const url = `${BUNDLE_URL}/${regionPath}/${encodeURIComponent(candidate)}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+
+        if (response.ok) return response.arrayBuffer();
+
+        // 404: token não existe no dicionário — não tentar outros candidatos
+        if (response.status === 404) break;
+
+        // Outro erro HTTP: retry (exceto no último attempt)
+        if (attempt < BUNDLE_RETRY_MAX) {
+          await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+          continue;
+        }
+      } catch {
+        // Erro de rede/timeout: retry
+        if (attempt < BUNDLE_RETRY_MAX) {
+          await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+          continue;
+        }
+      }
+      break; // Sai do retry loop neste candidato
+    }
   }
+
+  return null;
 }
 
 /**
@@ -277,7 +330,7 @@ async function downloadBundleRaw(token: string): Promise<ArrayBuffer | null> {
 export async function downloadBundle(token: string, region?: string): Promise<number> {
   if (!token || token.startsWith("&") || token.endsWith("&")) return 0;
 
-  const data = await downloadBundleRaw(token);
+  const data = await downloadBundleRaw(token, region);
   if (!data) return 0;
 
   const size = data.byteLength;

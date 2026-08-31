@@ -1,5 +1,41 @@
 <template>
   <div class="shell-tools">
+    <!--    Projeção de Fundo-->
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button v-bind="props" type="button" class="shell-tool" @click="toggleBackgroundProjection">
+          <v-icon
+            :icon="!isBgPlaying ? ICONS.PROJECTION.START : ICONS.PROJECTION.STOP"
+            :color="!isBgPlaying ? COLORS.SURFACE : COLORS.DANGER"
+            :size="sizeIcon"
+          />
+        </button>
+      </template>
+      {{ isBgPlaying ? "Desativar projeção de fundo" : "Ativar projeção de fundo" }}
+    </v-tooltip>
+
+    <!--    Libras-->
+    <v-tooltip location="bottom" :open-delay="300">
+      <template #activator="{ props }">
+        <button
+          v-bind="props"
+          type="button"
+          class="shell-tool"
+          :class="{ 'shell-tool--active': isLibrasEnabled }"
+          @click="toggleLibras"
+        >
+          <v-icon
+            v-if="isLibrasEnabled"
+            :icon="ICONS.UI.LIBRAS_ON"
+            :size="sizeIcon"
+            :color="COLORS.WARNING"
+          />
+          <v-icon v-else :icon="ICONS.UI.LIBRAS_OFF" :size="sizeIcon" />
+        </button>
+      </template>
+      {{ isLibrasEnabled ? $t("accessibility.musics.cached") + " Libras" : "Libras" }}
+    </v-tooltip>
+    <!--    Atividades em segundo plano-->
     <v-tooltip v-if="hasUpdate" location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button
@@ -13,23 +49,21 @@
       </template>
       {{ $t("shell.appmenu_items.check_update") }}
     </v-tooltip>
-
-    <v-tooltip
-      v-if="bgTasks.hasActiveTasks.value"
-      location="bottom"
-      :open-delay="300"
-      :open-on-click="false"
-      :open-on-hover="false"
-    >
-      <template v-if="bgTasks.hasActiveTasks.value" #activator="{ props: tipProps }">
+    <v-tooltip location="bottom" :open-delay="300" :open-on-click="false" :open-on-hover="false">
+      <template #activator="{ props: tipProps }">
         <v-menu :close-on-content-click="false" location="bottom end" offset="8">
           <template #activator="{ props: menuProps }">
             <button
               v-bind="{ ...menuProps, ...tipProps }"
               type="button"
-              class="shell-tool shell-tool--tasks"
+              class="shell-tool"
+              :class="{ 'shell-tool--active': bgTasks.hasActiveTasks.value }"
             >
-              <v-icon icon="mdi-progress-download" color="warning" :size="sizeIcon" />
+              <v-icon
+                icon="mdi-progress-download"
+                :color="bgTasks.hasActiveTasks.value ? 'warning' : undefined"
+                :size="sizeIcon"
+              />
             </button>
           </template>
           <v-card min-width="340" max-width="420" class="bg-tasks-card">
@@ -75,19 +109,7 @@
       {{ t("shell.background_tasks.title") }}
     </v-tooltip>
 
-    <v-tooltip location="bottom" :open-delay="300">
-      <template #activator="{ props }">
-        <button v-bind="props" type="button" class="shell-tool" @click="toggleBackgroundProjection">
-          <v-icon
-            :icon="!isBgPlaying ? ICONS.PROJECTION.START : ICONS.PROJECTION.STOP"
-            :color="!isBgPlaying ? COLORS.SURFACE : COLORS.DANGER"
-            :size="sizeIcon"
-          />
-        </button>
-      </template>
-      {{ isBgPlaying ? "Desativar projeção de fundo" : "Ativar projeção de fundo" }}
-    </v-tooltip>
-
+    <!--    Pesquisa Rápida-->
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="openCommandPalette">
@@ -96,27 +118,8 @@
       </template>
       {{ $t("shell.quick_search") }}
     </v-tooltip>
-    <v-tooltip location="bottom" :open-delay="300">
-      <template #activator="{ props }">
-        <button
-          v-bind="props"
-          type="button"
-          class="shell-tool"
-          :class="{ 'shell-tool--active': isLibrasEnabled }"
-          @click="toggleLibras"
-        >
-          <v-icon
-            v-if="isLibrasEnabled"
-            :icon="ICONS.UI.LIBRAS_ON"
-            :size="sizeIcon"
-            :color="COLORS.WARNING"
-          />
-          <v-icon v-else :icon="ICONS.UI.LIBRAS_OFF" :size="sizeIcon" />
-        </button>
-      </template>
-      {{ isLibrasEnabled ? $t("accessibility.musics.cached") + " Libras" : "Libras" }}
-    </v-tooltip>
 
+    <!--    Pesquisa Bíblia-->
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="openBibleSearch">
@@ -126,6 +129,7 @@
       {{ $t("shell.bible_quick_search") }}
     </v-tooltip>
 
+    <!--    Favoritos-->
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="openFavorites">
@@ -135,6 +139,7 @@
       {{ $t("ribbon.btn.favorites") }}
     </v-tooltip>
 
+    <!--    Modo de cor-->
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="toggleTheme">
@@ -144,6 +149,7 @@
       {{ $t("shell.toggle_theme") }}
     </v-tooltip>
 
+    <!--    Sobre-->
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="openAbout">
@@ -153,6 +159,7 @@
       {{ $t("shell.appmenu_items.about") }}
     </v-tooltip>
 
+    <!--    Hotkeys-->
     <v-tooltip location="bottom" :open-delay="300">
       <template #activator="{ props }">
         <button v-bind="props" type="button" class="shell-tool" @click="openHotkeys">

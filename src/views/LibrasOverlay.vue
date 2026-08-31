@@ -1,19 +1,28 @@
 <template>
   <Teleport to="body">
-    <!-- Player Unity no iframe (sempre no DOM quando ativo) -->
-    <iframe
-      v-show="enabled"
-      ref="iframeRef"
-      :src="unitySrc"
-      sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-      :style="iframeStyle"
-      class="libras-unity-iframe"
-      :class="[
-        { 'libras-unity-visible': avatarVisible, 'libras-border': showBorder },
-        `libras-anim-${currentAnimation}`,
-      ]"
-      @load="onIframeLoad"
-    />
+    <!-- Wrapper para posicionamento (separa transform de animação) -->
+    <div v-show="enabled" class="libras-anchor" :style="wrapperStyle">
+      <!-- Player Unity no iframe -->
+      <iframe
+        ref="iframeRef"
+        :src="unitySrc"
+        sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+        class="libras-unity-iframe"
+        :class="[
+          {
+            'libras-unity-visible': avatarVisible,
+            'libras-exiting': isExiting,
+            'libras-border': showBorder,
+          },
+          avatarVisible || isExiting
+            ? isExiting
+              ? `libras-exit-${currentExitAnimation}`
+              : `libras-anim-${currentAnimation}`
+            : `libras-anim-${currentAnimation}`,
+        ]"
+        @load="onIframeLoad"
+      />
+    </div>
 
     <!-- Overlay com texto formatado (só exibe se habilitado no Dev) -->
     <div
@@ -70,6 +79,7 @@ const rawGloss = ref("");
 const isTranslating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const avatarVisible = ref(false);
+const isExiting = ref(false);
 
 const displayText = computed(() => Libras.formatGloss(rawGloss.value));
 
@@ -83,6 +93,15 @@ const showBorder = computed(
 );
 const currentAnimation = computed(
   () => $userdata.get<string>(KEYS.MODULES.LIBRAS.ANIMATION, "fade") || "fade"
+);
+const currentExitAnimation = computed(
+  () => $userdata.get<string>(KEYS.MODULES.LIBRAS.EXIT_ANIMATION, "fade") || "fade"
+);
+const animationDuration = computed(
+  () => $userdata.get<number>(KEYS.MODULES.LIBRAS.ANIMATION_DURATION, 1500) || 1500
+);
+const exitAnimationDuration = computed(
+  () => $userdata.get<number>(KEYS.MODULES.LIBRAS.EXIT_ANIMATION_DURATION, 1000) || 1000
 );
 const backgroundColor = computed(
   () => $userdata.get<string>(KEYS.MODULES.LIBRAS.BACKGROUND_COLOR, "transparent") || "transparent"
@@ -103,7 +122,7 @@ const offsetY = computed(() => $userdata.get<number>(KEYS.MODULES.LIBRAS.OFFSET_
 const avatarWidth = computed(() => $userdata.get<number>(KEYS.MODULES.LIBRAS.WIDTH, 200) || 200);
 const avatarHeight = computed(() => $userdata.get<number>(KEYS.MODULES.LIBRAS.HEIGHT, 300) || 300);
 
-const iframeStyle = computed(() => {
+const anchorStyle = computed(() => {
   const pos = buildAnchorStyle({
     anchor: anchor.value,
     offset_x: offsetX.value,
@@ -116,6 +135,12 @@ const iframeStyle = computed(() => {
     backgroundColor: backgroundColor.value,
   };
 });
+
+const wrapperStyle = computed(() => ({
+  ...anchorStyle.value,
+  "--entry-dur": `${animationDuration.value}ms`,
+  "--exit-dur": `${exitAnimationDuration.value}ms`,
+}));
 
 const overlayStyle = computed(() => {
   // Posicionar o overlay de texto acima do avatar
@@ -268,6 +293,33 @@ function stopUnity() {
   }
   unityReady = false;
   avatarVisible.value = false;
+  isExiting.value = false;
+}
+
+function startExitAnimation() {
+  if (isExiting.value) return;
+  isExiting.value = true;
+
+  const el = iframeRef.value;
+  if (!el) {
+    avatarVisible.value = false;
+    isExiting.value = false;
+    return;
+  }
+
+  const onEnd = () => {
+    el.removeEventListener("transitionend", onEnd);
+    avatarVisible.value = false;
+    isExiting.value = false;
+  };
+  el.addEventListener("transitionend", onEnd);
+
+  // Fallback: se a transition não disparar (ex: display:none), limpa após a duração + margem
+  setTimeout(() => {
+    el.removeEventListener("transitionend", onEnd);
+    avatarVisible.value = false;
+    isExiting.value = false;
+  }, exitAnimationDuration.value + 100);
 }
 
 function disable() {
@@ -315,9 +367,10 @@ async function translateAndShow(text: string): Promise<void> {
 
 watch(hasContent, (has) => {
   if (has && unityReady && shouldShow.value) {
+    isExiting.value = false;
     avatarVisible.value = true;
-  } else {
-    avatarVisible.value = false;
+  } else if (avatarVisible.value) {
+    startExitAnimation();
   }
 });
 
@@ -348,7 +401,7 @@ onMounted(() => {
   unlistenMediaClose = $broadcast.listen((msg: { type: string }) => {
     if (msg.type === BROADCAST_TYPE.MEDIA_CLOSE) {
       sendToUnity("PlayerManager", "stopAll", "");
-      avatarVisible.value = false;
+      startExitAnimation();
       rawGloss.value = "";
       isTranslating.value = false;
       settingsApplied = false;
@@ -384,18 +437,25 @@ onBeforeUnmount(() => {
 </style>
 
 <style scoped>
-.libras-unity-iframe {
+.libras-anchor {
   position: fixed;
+  z-index: 9997;
+}
+
+.libras-unity-iframe {
+  width: 100%;
+  height: 100%;
   background: transparent;
   border: none;
-  z-index: 9997;
   pointer-events: none;
   opacity: 0;
 }
 
+/* ─── Entrada ─────────────────────────────────────────────────────── */
+
 /* Fade */
 .libras-anim-fade {
-  transition: opacity 1.5s ease-in;
+  transition: opacity var(--entry-dur, 1500ms) ease-in;
 }
 .libras-anim-fade.libras-unity-visible {
   opacity: 1;
@@ -405,8 +465,8 @@ onBeforeUnmount(() => {
 .libras-anim-slide-left {
   transform: translateX(-100px);
   transition:
-    opacity 1.5s ease-in,
-    transform 1.5s ease-in;
+    opacity var(--entry-dur, 1500ms) ease-in,
+    transform var(--entry-dur, 1500ms) ease-in;
 }
 .libras-anim-slide-left.libras-unity-visible {
   opacity: 1;
@@ -417,8 +477,8 @@ onBeforeUnmount(() => {
 .libras-anim-slide-right {
   transform: translateX(100px);
   transition:
-    opacity 1.5s ease-in,
-    transform 1.5s ease-in;
+    opacity var(--entry-dur, 1500ms) ease-in,
+    transform var(--entry-dur, 1500ms) ease-in;
 }
 .libras-anim-slide-right.libras-unity-visible {
   opacity: 1;
@@ -429,10 +489,60 @@ onBeforeUnmount(() => {
 .libras-anim-slide-up {
   transform: translateY(100px);
   transition:
-    opacity 1.5s ease-in,
-    transform 1.5s ease-in;
+    opacity var(--entry-dur, 1500ms) ease-in,
+    transform var(--entry-dur, 1500ms) ease-in;
 }
 .libras-anim-slide-up.libras-unity-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Saída ───────────────────────────────────────────────────────── */
+
+/* Fade out */
+.libras-exit-fade {
+  transition: opacity var(--exit-dur, 1000ms) ease-out;
+  opacity: 0;
+}
+.libras-exit-fade.libras-exiting {
+  opacity: 1;
+}
+
+/* Slide para a esquerda (saindo) */
+.libras-exit-slide-left {
+  transition:
+    opacity var(--exit-dur, 1000ms) ease-out,
+    transform var(--exit-dur, 1000ms) ease-out;
+  opacity: 0;
+  transform: translateX(-100px);
+}
+.libras-exit-slide-left.libras-exiting {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Slide para a direita (saindo) */
+.libras-exit-slide-right {
+  transition:
+    opacity var(--exit-dur, 1000ms) ease-out,
+    transform var(--exit-dur, 1000ms) ease-out;
+  opacity: 0;
+  transform: translateX(100px);
+}
+.libras-exit-slide-right.libras-exiting {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Slide para baixo (saindo) */
+.libras-exit-slide-up {
+  transition:
+    opacity var(--exit-dur, 1000ms) ease-out,
+    transform var(--exit-dur, 1000ms) ease-out;
+  opacity: 0;
+  transform: translateY(100px);
+}
+.libras-exit-slide-up.libras-exiting {
   opacity: 1;
   transform: translateY(0);
 }
