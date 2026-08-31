@@ -160,6 +160,9 @@ export const CONTRIBUTORS: ContributorsCategory[] = [
       },
       {
         name: "Paulo Vitor",
+        description: [
+          ROLE_CONTRIBUTOR[RoleContribuitorEnum.web],
+        ],
         email: "paulovitor.ssantos@outlook.com",
         github: "paulo-ssantos",
         linkedin: "paulo-2048",
