@@ -3,7 +3,7 @@ import type { RibbonPage } from "@/types/Ribbon"
 import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
-import { FONT_DEFAULT_PROJECTION } from "@/config/Fonts"
+import { FONT } from "@/config/Fonts"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import { KEYS } from "@/constants/UserDataKeys"
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes"
@@ -26,7 +26,7 @@ export const module: Module = {
   order: 0,
   dependencies: [],
   customization: {
-    font: { type: "font", default: FONT_DEFAULT_PROJECTION },
+    font: { type: "font", default: FONT.PROJECTION.INHERIT },
     font_color: { type: "color", default: "#FFFFFF" },
     text_background_enabled: { type: "boolean", default: false },
     text_background_color: { type: "color", default: "transparent" },
@@ -34,7 +34,7 @@ export const module: Module = {
     text_shadow: { type: "boolean", default: false },
     text_shadow_color: { type: "color", default: "#000000" },
     text_shadow_blur: { type: "font-size", default: 4 },
-    reference_font: { type: "font", default: FONT_DEFAULT_PROJECTION },
+    reference_font: { type: "font", default: FONT.PROJECTION.INHERIT },
     reference_font_color: { type: "color", default: "#FB8C00" },
     reference_font_size: { type: "font-size", default: 10 },
     background_color: { type: "color", default: "#000000" },

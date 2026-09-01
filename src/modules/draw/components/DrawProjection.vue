@@ -69,7 +69,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useI18n } from "vue-i18n";
 import { getModule } from "@/config/modules";
 import { ModuleEnum } from "@/enums/ModuleEnum";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 interface Props {
   text?: string;
@@ -102,7 +102,7 @@ function ud<T>(key: string, fallback: T): T {
 }
 
 const background_color = computed(() => ud("background_color", "#000000"));
-const font = computed(() => resolveFont(ud("font", null), FONT_DEFAULT_PROJECTION));
+const font = computed(() => resolveFont(ud("font", null), FONT.PROJECTION.FALLBACK));
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 50));
 const text_shadow = computed(() => ud("text_shadow", false));

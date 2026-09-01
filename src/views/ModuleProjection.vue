@@ -44,7 +44,7 @@
           :style="{
             color: color || font_color || '#FFFFFF',
             fontSize: font_size_px + 'px',
-            fontFamily: font || FONT_DEFAULT_PROJECTION,
+            fontFamily: font || FONT.PROJECTION.FALLBACK,
             textAlign: textAlign,
             ...textShadowStyle,
           }"
@@ -58,17 +58,12 @@
           :style="{
             color: reference_font_color || font_color || '#FB8C00',
             fontSize: ref_font_size_px + 'px',
-            fontFamily: reference_font || font || FONT_DEFAULT_PROJECTION,
+            fontFamily: reference_font || font || FONT.PROJECTION.FALLBACK,
             textAlign: extraAlign,
           }"
         >
           {{ extra }}
         </span>
-      </div>
-
-      <div v-else class="module-projection__empty">
-        <div class="module-projection__empty-icon">{{ emptyIcon }}</div>
-        <div class="module-projection__empty-hint">{{ emptyHint }}</div>
       </div>
     </Transition>
   </div>
@@ -82,7 +77,7 @@ import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
-import { resolveFont, FONT_DEFAULT_PROJECTION } from "@/config/Fonts";
+import { FONT, resolveFont } from "@/config/Fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import DrawProjection from "@/modules/draw/components/DrawProjection.vue";
@@ -119,15 +114,18 @@ function ud(key, fallback = null) {
 }
 
 const font = computed(() => {
-  const saved = ud("font", null) || UserData.get(KEYS.OPTIONS.UTILITIES_FONT, "");
-  return resolveFont(saved, FONT_DEFAULT_PROJECTION);
+  const saved =
+    ud("font", null) || UserData.get(KEYS.OPTIONS.UTILITIES_FONT, "") || FONT.PROJECTION.INHERIT;
+  return resolveFont(saved, FONT.PROJECTION.FALLBACK);
 });
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 15));
 const text_shadow = computed(() => ud("text_shadow", false));
 const text_shadow_color = computed(() => ud("text_shadow_color", "#000000"));
 const text_shadow_blur = computed(() => ud("text_shadow_blur", 4));
-const reference_font = computed(() => ud("reference_font", null));
+const reference_font = computed(() =>
+  resolveFont(ud("reference_font", null), font.value, font.value)
+);
 const reference_font_color = computed(() => ud("reference_font_color", "#FB8C00"));
 const reference_font_size = computed(() => ud("reference_font_size", 10));
 const background_color = computed(() => ud("background_color", "#000000"));

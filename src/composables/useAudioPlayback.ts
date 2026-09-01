@@ -94,6 +94,7 @@ function _create(): AudioPlayback {
       }
       _el.addEventListener("timeupdate", _syncTime);
       _el.addEventListener("progress", _syncTime);
+      _el.addEventListener("loadedmetadata", _syncTime);
     }
     _el.autoplay = true;
     return _el;
@@ -239,6 +240,7 @@ function _create(): AudioPlayback {
     if (_el) {
       _el.removeEventListener("timeupdate", _syncTime);
       _el.removeEventListener("progress", _syncTime);
+      _el.removeEventListener("loadedmetadata", _syncTime);
       if (_el.parentNode) _el.parentNode.removeChild(_el);
       _el = null;
     }

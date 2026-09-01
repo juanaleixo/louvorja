@@ -67,6 +67,8 @@ const error = ref(null);
 const last_filter = ref({});
 const loading = ref(true);
 let _paginateRaf = null;
+let _rafCycles = 0;
+const _RAF_MAX_CYCLES = 3;
 
 const primaryColor = computed(() => (AppData.get("is_dark") ? undefined : "primary"));
 
@@ -153,6 +155,7 @@ async function loadData() {
 
 function filterData() {
   limit.value = 0;
+  _rafCycles = 0;
   let value = Strings.clean(props.search);
 
   // Gate de performance: com search_min_length configurado, só filtra a partir
@@ -232,12 +235,16 @@ function paginateData() {
   data.value = filter_data.value.slice(0, limit.value);
   loading.value = false;
 
-  // Fallback: sem barra de rolagem, segue paginando até completar.
+  // Fallback: sem barra de rolagem, segue paginando até completar,
+  // mas limita a _RAF_MAX_CYCLES iterações para não renderizar tudo de uma vez.
   if (!props.has_scroll && data.value.length < filter_data.value.length) {
-    if (_paginateRaf) cancelAnimationFrame(_paginateRaf);
-    _paginateRaf = requestAnimationFrame(() => {
-      paginateData();
-    });
+    _rafCycles++;
+    if (_rafCycles <= _RAF_MAX_CYCLES) {
+      if (_paginateRaf) cancelAnimationFrame(_paginateRaf);
+      _paginateRaf = requestAnimationFrame(() => {
+        paginateData();
+      });
+    }
   }
 }
 

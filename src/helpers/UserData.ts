@@ -133,32 +133,29 @@ export default {
    * abertas logo após uma mudança recebam o estado mais recente, mesmo se
    * o save debounceado ainda não tiver chegado ao disco.
    */
-  load(): void {
+  async load(): Promise<void> {
     $dev.write("carregando dados");
     const saved = $storage.get("user_data");
     if (saved && typeof saved === "object") {
       _hydrateStore(saved as Record<string, unknown>);
     }
-    // Em desktop, sobrescreve com o snapshot do main (fonte da verdade).
-    // Async — não bloqueia o boot. Quando responder, atualiza o store.
+    // Em desktop, aguarda o snapshot do main (fonte da verdade) para que o
+    // renderer monte já com as preferências definitivas.
     if (Platform.isDesktop) {
       try {
         const api = Platform.api as
           | { invoke?: (channel: string, ...args: unknown[]) => Promise<unknown> }
           | null;
         if (api && typeof api.invoke === "function") {
-          api.invoke("userdata:fetch")
-            .then((fresh: unknown) => {
-              if (fresh && typeof fresh === "object") {
-                _suppressBroadcast = true;
-                try {
-                  _hydrateStore(fresh as Record<string, unknown>);
-                } finally {
-                  _suppressBroadcast = false;
-                }
-              }
-            })
-            .catch(() => { /* main pode estar inicializando — disco já cobriu */ });
+          const fresh = await api.invoke("userdata:fetch").catch(() => null);
+          if (fresh && typeof fresh === "object") {
+            _suppressBroadcast = true;
+            try {
+              _hydrateStore(fresh as Record<string, unknown>);
+            } finally {
+              _suppressBroadcast = false;
+            }
+          }
         }
       } catch { /* ignore */ }
     }

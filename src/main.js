@@ -1,4 +1,4 @@
-import { createApp } from "vue";
+import { createApp, watchEffect } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
@@ -46,6 +46,7 @@ import { useShell } from "@/composables/useShell";
 import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import { KEYS } from "@/constants/UserDataKeys";
+import { FONT, resolveDefaultFont } from "@/config/Fonts";
 
 loadFonts();
 
@@ -93,6 +94,18 @@ if (Platform.isDesktop && typeof navigator !== "undefined") {
 // principal não chegava à janela de projeção, porque cada BrowserWindow
 // tem seu próprio Pinia store. Cada janela escuta patches das outras.
 UserData.initCrossWindow();
+
+// Aplica os padrões globais em todos os renderers, inclusive projeções que
+// não montam Shell.vue. Também reage aos patches recebidos de outras janelas.
+watchEffect(() => {
+  const uiFont = resolveDefaultFont(UserData.get(KEYS.OPTIONS.FONT), FONT.UI.FALLBACK);
+  const projectionFont = resolveDefaultFont(
+    UserData.get(KEYS.OPTIONS.PROJECTION_FONT),
+    FONT.PROJECTION.FALLBACK
+  );
+  document.documentElement.style.setProperty(FONT.UI.CSS_VAR, uiFont);
+  document.documentElement.style.setProperty(FONT.PROJECTION.CSS_VAR, projectionFont);
+});
 
 // Exposição em dev para debug rápido no DevTools de qualquer janela.
 // Permite inspecionar `__userdata.get("options.custom_background")` ou
@@ -167,7 +180,7 @@ $storage.hydrate().then(async () => {
   // state default e ignoravam Opções salvas (fundo personalizado, tamanho
   // de fonte, alinhamento, etc.).
   try {
-    UserData.load();
+    await UserData.load();
   } catch (e) {
     console.warn("[main] UserData.load falhou:", e);
   }

@@ -121,7 +121,7 @@
           <td class="text-right">{{ shortTime(item.duration) }}</td>
           <td v-if="selectedPlaylist" class="text-center">
             <v-btn
-              v-if="!isSongInPlaylist(item.id_music)"
+              v-if="!isSongInPlaylist(selectedPlaylist.id, item.id_music)"
               :icon="ICONS.MEDIA.ADD"
               variant="text"
               density="compact"
@@ -129,12 +129,15 @@
               :title="t('playlists.add_to_playlist')"
               @click="addSongToPlaylist(item)"
             />
-            <v-icon
+            <v-btn
               v-else
               icon="mdi-check"
+              variant="text"
+              density="compact"
               size="small"
               color="success"
-              :title="t('playlists.already_in_playlist')"
+              :title="t('playlists.remove_song')"
+              @click="removeSongFromPlaylist(item.id_music)"
             />
           </td>
           <td>
@@ -206,7 +209,7 @@ const userdata = computed(() => {
   return moduleContainer.value?.userdata;
 });
 
-const { selectedPlaylist, hydrate, addSong, isSongInPlaylist } = usePlaylists();
+const { selectedPlaylist, hydrate, addSong, removeSong, isSongInPlaylist } = usePlaylists();
 
 onMounted(() => {
   hydrate();
@@ -220,6 +223,12 @@ function addSongToPlaylist(item) {
     duration: DateTime.toNumber(item.duration),
     has_instrumental_music: !!item.has_instrumental_music,
   });
+}
+
+function removeSongFromPlaylist(id_music) {
+  if (!selectedPlaylist.value) return;
+  const idx = selectedPlaylist.value.songs.findIndex((s) => s.id_music === id_music);
+  if (idx >= 0) removeSong(selectedPlaylist.value.id, idx);
 }
 /* ########################################################### */
 /* ########################################################### */

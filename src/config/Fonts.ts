@@ -7,8 +7,8 @@
  *  - file?: arquivo .ttf/.otf em /assets/fonts/ (opcional)
  *
  * Valores especiais de family:
- *  - "__FONT_DEFAULT_UI__"        → Padrão da Interface (resolve para FONT_DEFAULT_UI)
- *  - "__FONT_DEFAULT_PROJECTION__" → Padrão da Projecão (resolve para FONT_DEFAULT_PROJECTION)
+ *  - "__FONT_DEFAULT_UI__"        → Padrão da Interface configurado em Geral
+ *  - "__FONT_DEFAULT_PROJECTION__" → Padrão da Projecão configurado em Geral
  *  - "__DEFAULT__"                → Padrão (resolve para defaultFont prop do SelectFont)
  */
 
@@ -18,16 +18,29 @@ export interface FontOption {
   file?: string;
 }
 
-/** Fallback padrão quando nenhuma fonte é selecionada (valor vazio). */
-export const FONT_DEFAULT_UI =
-  '"Inter", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, "Helvetica Neue", "Tahoma", sans-serif';
+/** Defaults concretos, marcadores persistidos e variáveis CSS do sistema. */
+export const FONT = {
+  DEFAULT: "__DEFAULT__",
+  UI: {
+    FALLBACK:
+      '"InterVariable", "Inter", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, "Helvetica Neue", "Tahoma", sans-serif',
+    INHERIT: "__FONT_DEFAULT_UI__",
+    CSS_VAR: "--lj-font-shell",
+  },
+  PROJECTION: {
+    FALLBACK: "DINCondensedBold",
+    INHERIT: "__FONT_DEFAULT_PROJECTION__",
+    CSS_VAR: "--lj-font-projection",
+  },
+} as const;
 
-export const FONT_DEFAULT_PROJECTION = "DINCondensedBold";
+/** Marcador aceito apenas para dados persistidos por versões antigas. */
+const LEGACY_UI_FAMILY = "__UI_FONT__";
 
 /** Lista de fontes disponíveis para seleção. */
 export const Fonts: FontOption[] = [
-  { name: "Padrão da Interface", family: "__FONT_DEFAULT_UI__" },
-  { name: "Padrão da Projecão", family: "__FONT_DEFAULT_PROJECTION__" },
+  { name: "Padrão da Interface", family: FONT.UI.INHERIT },
+  { name: "Padrão da Projecão", family: FONT.PROJECTION.INHERIT },
   { name: "Advent Sans", family: "AdventSansLogo", file: "AdventSans-Logo.otf" },
   { name: "Arial", family: "Arial, sans-serif" },
   { name: "Aventureiros", family: "InterVariable", file: "Inter-VariableFont_opsz,wght.ttf" },
@@ -49,17 +62,12 @@ export const Fonts: FontOption[] = [
   { name: "Verdana", family: "Verdana, sans-serif" },
 ];
 
-/** Family keys para opções especiais. */
-export const FAMILY_DEFAULT = "__DEFAULT__";
-export const FAMILY_FONT_DEFAULT_UI = "__FONT_DEFAULT_UI__";
-export const FAMILY_FONT_DEFAULT_PROJECTION = "__FONT_DEFAULT_PROJECTION__";
-
 /**
  * Resolve o valor CSS font-family a partir da chave salva no UserData.
  *
  * Valores especiais:
- *  - "__FONT_DEFAULT_UI__"         → FONT_DEFAULT_UI (constante)
- *  - "__FONT_DEFAULT_PROJECTION__"  → FONT_DEFAULT_PROJECTION (constante)
+ *  - "__FONT_DEFAULT_UI__"         → variável global da fonte de interface
+ *  - "__FONT_DEFAULT_PROJECTION__" → variável global da fonte de projeção
  *  - "__DEFAULT__"                  → defaultFont (passado como parâmetro)
  *  - qualquer outro valor          → retornado diretamente (CSS font-family)
  */
@@ -68,9 +76,30 @@ export function resolveFont(
   fallback: string,
   defaultFont?: string,
 ): string {
-  if (!saved || !saved.trim()) return fallback;
-  if (saved === FAMILY_FONT_DEFAULT_UI) return FONT_DEFAULT_UI;
-  if (saved === FAMILY_FONT_DEFAULT_PROJECTION) return FONT_DEFAULT_PROJECTION;
-  if (saved === FAMILY_DEFAULT) return defaultFont || fallback;
+  if (typeof saved !== "string" || !saved.trim()) return fallback;
+  if (saved === FONT.UI.INHERIT || saved === LEGACY_UI_FAMILY) {
+    return `var(${FONT.UI.CSS_VAR}, ${FONT.UI.FALLBACK})`;
+  }
+  if (saved === FONT.PROJECTION.INHERIT) {
+    return `var(${FONT.PROJECTION.CSS_VAR}, ${FONT.PROJECTION.FALLBACK})`;
+  }
+  if (saved === FONT.DEFAULT) return defaultFont || fallback;
+  return saved;
+}
+
+/** Resolve os selects de Geral, que precisam produzir uma família concreta. */
+export function resolveDefaultFont(
+  saved: string | null | undefined,
+  fallback: string,
+): string {
+  if (typeof saved !== "string" || !saved.trim()) return fallback;
+  if (
+    saved === FONT.DEFAULT ||
+    saved === FONT.UI.INHERIT ||
+    saved === FONT.PROJECTION.INHERIT ||
+    saved === LEGACY_UI_FAMILY
+  ) {
+    return fallback;
+  }
   return saved;
 }

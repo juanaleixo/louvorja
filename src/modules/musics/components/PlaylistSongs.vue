@@ -63,37 +63,53 @@
 
     <div v-if="playlist.songs.length > 0" class="playlist-songs-footer">
       <div class="playlist-songs-summary">
-        {{ t("playlists.song_count", { n: playlist.songs.length }) }}
+        {{
+          playlist.songs.length > 1
+            ? t("playlists.song_count_plural", { n: playlist.songs.length })
+            : t("playlists.song_count", { n: playlist.songs.length })
+        }}
         · {{ formatDuration(getPlaylistDuration(playlist)) }}
       </div>
       <div class="playlist-songs-options">
-        <button
-          type="button"
-          class="playlist-songs-option-btn"
-          :class="{ 'playlist-songs-option-btn--active': fadeEnabled }"
-          :title="t('playlists.fade_transition')"
-          @click="toggleFade"
-        >
-          <v-icon :icon="ICONS.PLAYER.TRANSITION" size="18" />
-        </button>
-        <button
-          type="button"
-          class="playlist-songs-option-btn"
-          :class="{ 'playlist-songs-option-btn--active': shuffleEnabled }"
-          :title="t('playlists.shuffle')"
-          @click="toggleShuffle"
-        >
-          <v-icon :icon="ICONS.PLAYER.SHUFFLE" size="18" />
-        </button>
-        <button
-          type="button"
-          class="playlist-songs-option-btn"
-          :class="{ 'playlist-songs-option-btn--active': repeatEnabled }"
-          :title="t('playlists.repeat')"
-          @click="toggleRepeat"
-        >
-          <v-icon :icon="ICONS.PLAYER.REPEAT" size="18" />
-        </button>
+        <v-tooltip :text="t('playlists.fade_transition')" location="top">
+          <template #activator="{ props: tp }">
+            <button
+              type="button"
+              class="playlist-songs-option-btn"
+              :class="{ 'playlist-songs-option-btn--active': fadeEnabled }"
+              v-bind="tp"
+              @click="toggleFade"
+            >
+              <v-icon :icon="ICONS.PLAYER.TRANSITION" size="18" />
+            </button>
+          </template>
+        </v-tooltip>
+        <v-tooltip :text="t('playlists.shuffle')" location="top">
+          <template #activator="{ props: tp }">
+            <button
+              type="button"
+              class="playlist-songs-option-btn"
+              :class="{ 'playlist-songs-option-btn--active': shuffleEnabled }"
+              v-bind="tp"
+              @click="toggleShuffle"
+            >
+              <v-icon :icon="ICONS.PLAYER.SHUFFLE" size="18" />
+            </button>
+          </template>
+        </v-tooltip>
+        <v-tooltip :text="t('playlists.repeat')" location="top">
+          <template #activator="{ props: tp }">
+            <button
+              type="button"
+              class="playlist-songs-option-btn"
+              :class="{ 'playlist-songs-option-btn--active': repeatEnabled }"
+              v-bind="tp"
+              @click="toggleRepeat"
+            >
+              <v-icon :icon="ICONS.PLAYER.REPEAT" size="18" />
+            </button>
+          </template>
+        </v-tooltip>
       </div>
       <button type="button" class="playlist-songs-play-btn" @click="playAll">
         <v-icon icon="mdi-play" size="18" />
@@ -314,7 +330,8 @@ function playAll(): void {
 }
 
 .playlist-songs-summary {
-  font-size: var(--lj-text-xs);
+  font-size: var(--lj-text-sm);
+  font-weight: var(--lj-weight-medium);
   color: var(--lj-text-muted);
   text-align: center;
 }

@@ -8,7 +8,7 @@
       v-for="f in sortedFonts"
       :key="f.family"
       :value="f.family"
-      :style="{ fontFamily: f.family || 'inherit' }"
+      :style="{ fontFamily: fontPreview(f.family) }"
     >
       {{ f.name }}
     </option>
@@ -17,7 +17,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { Fonts } from "@/config/Fonts";
+import { Fonts, resolveFont } from "@/config/Fonts";
 
 defineProps({
   modelValue: { type: [String, null], default: null },
@@ -26,6 +26,10 @@ defineProps({
 defineEmits(["update:modelValue"]);
 
 const sortedFonts = computed(() => [...Fonts].sort((a, b) => a.name.localeCompare(b.name)));
+
+function fontPreview(family) {
+  return resolveFont(family, "inherit");
+}
 </script>
 
 <style scoped>

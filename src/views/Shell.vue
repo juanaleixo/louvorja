@@ -391,8 +391,6 @@ onMounted(() => {
   // (normais ou por crash) não deixam a chave "presada" como true
   $userdata.set(KEYS.MODULES.BACKGROUND_PROJECTION.IS_PLAYING, false);
 
-  $userdata.load();
-
   // Tema
   const savedTheme = $userdata.get<string>(KEYS.OPTIONS.THEME) || COLOR_THEMES.DEFAULT;
   try {
@@ -408,12 +406,6 @@ onMounted(() => {
     $appdata.set(KEYS.SHELL.IS_DARK, !!vuetifyTheme.global.current.value?.dark);
   } catch {
     $appdata.set(KEYS.SHELL.IS_DARK, false);
-  }
-
-  // Fonte da interface
-  const savedFont = $userdata.get<string>(KEYS.OPTIONS.FONT);
-  if (savedFont) {
-    document.documentElement.style.setProperty("--lj-font-shell", savedFont);
   }
 
   // Idioma

@@ -85,7 +85,7 @@
             :model-value="getUserData(KEYS.OPTIONS.FONT, '')"
             :show-interface-default="false"
             :show-projection-default="false"
-            :default-font="FONT_DEFAULT_UI"
+            :default-font="FONT.UI.FALLBACK"
             @update:model-value="saveUserData(KEYS.OPTIONS.FONT, $event)"
           />
         </div>
@@ -99,7 +99,7 @@
             :model-value="getUserData(KEYS.OPTIONS.PROJECTION_FONT, '')"
             :show-projection-default="false"
             :show-interface-default="false"
-            :default-font="FONT_DEFAULT_PROJECTION"
+            :default-font="FONT.PROJECTION.FALLBACK"
             @update:model-value="saveUserData(KEYS.OPTIONS.PROJECTION_FONT, $event)"
           />
         </div>
@@ -1094,7 +1094,7 @@ import { ICONS } from "@/config/Icons";
 import { KEYS } from "@/constants/UserDataKeys";
 import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
 import { THEMES } from "@/config/Theme";
-import { FONT_DEFAULT_PROJECTION, FONT_DEFAULT_UI, resolveFont } from "@/config/Fonts";
+import { FONT } from "@/config/Fonts";
 
 interface ThemeOption {
   id: string;
@@ -1163,9 +1163,7 @@ const previewMonitorH: ComputedRef<number> = computed(() => previewMonitor.value
 
 function saveUserData(key: string, value: unknown): void {
   $userdata.set(key, value);
-  if (key === KEYS.OPTIONS.FONT) {
-    const font = resolveFont(value as string, FONT_DEFAULT_UI);
-    document.documentElement.style.setProperty("--lj-font-shell", font);
+  if (key === KEYS.OPTIONS.FONT || key === KEYS.OPTIONS.PROJECTION_FONT) {
     Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
   } else if (key === KEYS.MODULES.BIBLE.FONT) {
     Broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, {});

@@ -460,7 +460,11 @@ const _self = {
     const id_music = params.id_music;
     $dev.write("playlist:transitionTo", { id_music });
 
-    // 1. Fade out do áudio atual (~200ms)
+    // 1. Broadcast início da transição ANTES de parar áudio
+    //    (evita que o timeupdate de stop envie slide antigo para projeção)
+    $broadcast.send(BROADCAST_TYPE.PLAYLIST_TRANSITION, { status: "start" });
+
+    // 2. Fade out do áudio atual (~200ms)
     const el = _audio.getElement();
     if (!el.paused && el.src) {
       await new Promise<void>((resolve) => {
@@ -473,10 +477,15 @@ const _self = {
       _audio.stop();
     }
 
-    // 2. Broadcast início da transição (projeção faz fade out visual)
-    $broadcast.send(BROADCAST_TYPE.PLAYLIST_TRANSITION, { status: "start" });
+    // 3. Resetar estado do áudio (duração/tempo ficam stale senão)
+    _audio.duration.value = 0;
+    _audio.currentTime.value = 0;
+    _audio.progress.value = 0;
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.CURRENT_TIME, 0);
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.DURATION, 0);
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.PROGRESS, 0);
 
-    // 3. Aguardar fade out visual
+    // 4. Aguardar fade out visual
     await new Promise((r) => setTimeout(r, 350));
 
     // 4. Carregar dados da nova música
@@ -489,6 +498,11 @@ const _self = {
     $appdata.set(KEYS.MODULES.MEDIA.DATA, data);
     $appdata.set(KEYS.MODULES.MEDIA.ID_MUSIC, id_music);
     $appdata.set(KEYS.MODULES.MEDIA.CONFIG.TITLE, data.name);
+
+    // Fornece a duração conhecida da DB como fallback imediato — sem isso,
+    // _syncTime() usa duration.value=0 até o metadata do HTTP carregar,
+    // causando barra 0:00 e goToSlide() falhando (branch else sem seek).
+    _audio.setDurationHint($datetime.toNumber(data.duration as string));
 
     // 5. Construir slides e times
     const slidesArray = _buildSlidesFrom(data);

@@ -17,6 +17,7 @@ import { KEYS } from "@/constants/UserDataKeys";
 import { SLIDE_STYLE_DEFAULT } from "@/config/SlideStyle";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 export type SlideOption = Record<string, unknown> | null;
 
@@ -87,14 +88,7 @@ const _readSlideOpts = (): SlideCfg => {
 
   // Fonte (chave plana salva pelo select de fonte nas Opções)
   const slideFont = $userdata.get<string>(KEYS.OPTIONS.SLIDE.FONT, null);
-  if (typeof slideFont === "string" && slideFont.trim()) {
-    if (slideFont === "__UI_FONT__") {
-      const uiFont = $userdata.get<string>(KEYS.OPTIONS.FONT, "");
-      if (uiFont) merged.font = uiFont;
-    } else {
-      merged.font = slideFont;
-    }
-  }
+  merged.font = resolveFont(slideFont || merged.font, FONT.PROJECTION.FALLBACK);
 
   // O blur é um atalho global e também pode ser ajustado dentro da formatação personalizada.
   merged.text_bg_blur_enabled =
@@ -191,7 +185,7 @@ export function useSlideStyle(): SlideStyleAPI {
 
   function _baseFont(slide: SlideOption): string {
     const fromSlide = slide && typeof slide.font === "string" ? slide.font : null;
-    return (fromSlide as string) || cfg.value.font;
+    return resolveFont(fromSlide, cfg.value.font, cfg.value.font);
   }
 
   /** Quando affect_external_slides=true, ignora overrides do slide e usa só o cfg. */

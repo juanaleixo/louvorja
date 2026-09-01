@@ -460,7 +460,7 @@ ShellTools.vue
 
 | Arquivo | Função |
 |---------|--------|
-| `src/config/fonts.ts` | Config de fontes: `FontOption` interface, `Fonts` array, `FONT_DEFAULT_UI`, `FONT_DEFAULT_PROJECTION`, `resolveFont()` |
+| `src/config/fonts.ts` | Config de fontes: `FontOption`, `Fonts`, namespace `FONT`, `resolveFont()` |
 | `src/assets/styles/fonts.css` | Declarações `@font-face` para fontes customizadas |
 | `src/assets/fonts/` | Arquivos de fonte (.ttf, .otf) |
 | `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte (v-menu com preview) |
@@ -524,9 +524,18 @@ resolveFont() em projection views (inline style fontFamily)
 
 | Family key | Nome | Resolve para |
 |------------|------|-------------|
-| `"__FONT_DEFAULT_UI__"` | Padrão da Interface | `FONT_DEFAULT_UI` (constante) |
-| `"__FONT_DEFAULT_PROJECTION__"` | Padrão da Projecão | `FONT_DEFAULT_PROJECTION` (constante) |
-| `"__DEFAULT__"` | Padrão | `defaultFont` prop do SelectFont |
+| `"__FONT_DEFAULT_UI__"` | Padrão da Interface | `options.font` via `--lj-font-shell` |
+| `"__FONT_DEFAULT_PROJECTION__"` | Padrão da Projecão | `options.projection_font` via `--lj-font-projection` |
+| `"__DEFAULT__"` | Padrão | Fallback interno usado nos selects de Geral |
+
+As variáveis globais são aplicadas em `main.js`, depois da hidratação do
+UserData, para funcionarem em todas as janelas. O legado `"__UI_FONT__"` é
+aceito como alias de `"__FONT_DEFAULT_UI__"`.
+
+Os defaults e marcadores ficam unificados em `FONT`: `FONT.UI.FALLBACK`,
+`FONT.UI.INHERIT`, `FONT.PROJECTION.FALLBACK`, `FONT.PROJECTION.INHERIT` e
+`FONT.DEFAULT`. O arquivo `vuetify-overrides.css` conecta `--v-font-body` e
+`--v-font-heading` a `--lj-font-shell`, incluindo dialogs e menus teleportados.
 
 ### SelectFont — Props
 

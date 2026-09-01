@@ -271,8 +271,8 @@
    * 13. TIPOGRAFIA
    * ================================================================= */
   --lj-font-shell:
-    "Inter", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui,
-    "Helvetica Neue", "Tahoma", sans-serif;
+    "InterVariable", "Inter", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont,
+    system-ui, "Helvetica Neue", "Tahoma", sans-serif;
   --lj-font-projection:
     "DINCondensedBold", "DIN Condensed", "Bebas Neue", "Arial Narrow", sans-serif;
   --lj-font-mono: "SF Mono", "JetBrains Mono", "Consolas", monospace;

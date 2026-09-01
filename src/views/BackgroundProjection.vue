@@ -146,7 +146,7 @@ import { SETTINGS_TABLE } from "@/constants/DbTables";
 import type { YTAPI, YTPlayer } from "@/types/Media";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -253,14 +253,16 @@ function bud(key: string, fallback: unknown = null): unknown {
   return v == null ? fallback : v;
 }
 
-const bibleFont = computed(() => resolveFont(bud("font", null) as string, FONT_DEFAULT_PROJECTION));
+const bibleFont = computed(() =>
+  resolveFont(bud("font", null) as string, FONT.PROJECTION.FALLBACK)
+);
 const bibleFontColor = computed(() => bud("font_color", "#FFFFFF") as string);
 const bibleFontSize = computed(() => bud("font_size", 15) as number);
 const bibleTextShadow = computed(() => bud("text_shadow", false) as boolean);
 const bibleTextShadowColor = computed(() => bud("text_shadow_color", "#000000") as string);
 const bibleTextShadowBlur = computed(() => bud("text_shadow_blur", 4) as number);
 const bibleRefFont = computed(() =>
-  resolveFont(bud("reference_font", null) as string, FONT_DEFAULT_PROJECTION)
+  resolveFont(bud("reference_font", null) as string, FONT.PROJECTION.FALLBACK)
 );
 const bibleRefFontColor = computed(() => bud("reference_font_color", "#FB8C00") as string);
 const bibleRefFontSize = computed(() => bud("reference_font_size", 10) as number);

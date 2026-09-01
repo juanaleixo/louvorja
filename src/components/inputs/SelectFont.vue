@@ -31,15 +31,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import {
-  Fonts,
-  FONT_DEFAULT_UI,
-  FONT_DEFAULT_PROJECTION,
-  FAMILY_DEFAULT,
-  FAMILY_FONT_DEFAULT_UI,
-  FAMILY_FONT_DEFAULT_PROJECTION,
-  type FontOption,
-} from "@/config/Fonts";
+import { FONT, Fonts, resolveFont, type FontOption } from "@/config/Fonts";
 
 const props = withDefaults(
   defineProps<{
@@ -65,37 +57,32 @@ const emit = defineEmits<{
 const open = ref(false);
 
 function fontPreview(family: string): string {
-  if (family === FAMILY_FONT_DEFAULT_UI) return FONT_DEFAULT_UI;
-  if (family === FAMILY_FONT_DEFAULT_PROJECTION) return FONT_DEFAULT_PROJECTION;
-  if (family === FAMILY_DEFAULT) return props.defaultFont || "inherit";
-  return family || "inherit";
+  return resolveFont(family, "inherit", props.defaultFont);
 }
 
 const orderedFonts = computed<FontOption[]>(() => {
   const filtered = [...Fonts];
 
   const padraoInterface = props.showInterfaceDefault
-    ? filtered.find((f) => f.family === FAMILY_FONT_DEFAULT_UI)
+    ? filtered.find((f) => f.family === FONT.UI.INHERIT)
     : undefined;
   const padraoProjecao = props.showProjectionDefault
-    ? filtered.find((f) => f.family === FAMILY_FONT_DEFAULT_PROJECTION)
+    ? filtered.find((f) => f.family === FONT.PROJECTION.INHERIT)
     : undefined;
 
   const realFonts = filtered
-    .filter(
-      (f) => f.family !== FAMILY_FONT_DEFAULT_UI && f.family !== FAMILY_FONT_DEFAULT_PROJECTION
-    )
+    .filter((f) => f.family !== FONT.UI.INHERIT && f.family !== FONT.PROJECTION.INHERIT)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const padrao = props.defaultFont
-    ? ({ name: "Padrão", family: FAMILY_DEFAULT } as FontOption)
+    ? ({ name: "Padrão", family: FONT.DEFAULT } as FontOption)
     : undefined;
 
   return [padrao, padraoInterface, padraoProjecao, ...realFonts].filter(Boolean) as FontOption[];
 });
 
 const selectedFont = computed(() => {
-  if (props.modelValue === FAMILY_DEFAULT) return { name: "Padrão", family: FAMILY_DEFAULT };
+  if (props.modelValue === FONT.DEFAULT) return { name: "Padrão", family: FONT.DEFAULT };
   return Fonts.find((f) => f.family === (props.modelValue || "")) || null;
 });
 

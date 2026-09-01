@@ -68,7 +68,7 @@ import { useContainerSize } from "@/composables/useContainerSize";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { ModuleState } from "@/types/Module";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 interface BibleData {
   text?: string;
@@ -108,11 +108,11 @@ const imageFit = computed(() => ud("image_fit", "cover"));
 const imageOpacity = computed(() => ud("image_opacity", 100));
 const fontColor = computed(() => ud("font_color", "#ffffff"));
 const fontSize = computed(() => ud("font_size", 5));
-const fontFamily = computed(() => resolveFont(ud("font", null), FONT_DEFAULT_PROJECTION));
+const fontFamily = computed(() => resolveFont(ud("font", null), FONT.PROJECTION.FALLBACK));
 const refFontColor = computed(() => ud("reference_font_color", "#cccccc"));
 const refFontSize = computed(() => ud("reference_font_size", 3));
 const refFontFamily = computed(() =>
-  resolveFont(ud("reference_font", null), FONT_DEFAULT_PROJECTION)
+  resolveFont(ud("reference_font", null), FONT.PROJECTION.FALLBACK)
 );
 
 const bible: ComputedRef<BibleData | null> = computed(() => AppData.get("modules.bible.data"));

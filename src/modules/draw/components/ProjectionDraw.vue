@@ -65,7 +65,7 @@ import UserData from "@/helpers/UserData";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import { useContainerSize } from "@/composables/useContainerSize";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
-import { FONT_DEFAULT_PROJECTION, resolveFont } from "@/config/Fonts";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 const props = defineProps({
   text: { type: String, default: "" },
@@ -87,7 +87,7 @@ function ud(key, fallback = null) {
 }
 
 const background_color = computed(() => ud("background_color", "#000000"));
-const font = computed(() => resolveFont(ud("font", null), FONT_DEFAULT_PROJECTION));
+const font = computed(() => resolveFont(ud("font", null), FONT.PROJECTION.FALLBACK));
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 50));
 const chip_font_size = computed(() => ud("chip_font_size", 12));
