@@ -73,7 +73,6 @@ export const KEYS = {
     },
     MUSICS: {
       SELECTED_PLAYLIST: `${MODULES}.${ModuleEnum.MUSICS}.selected_playlist`,
-      PLAYLIST_FADE: `${MODULES}.${ModuleEnum.MUSICS}.playlist_fade`,
       PLAYLIST_SHUFFLE: `${MODULES}.${ModuleEnum.MUSICS}.playlist_shuffle`,
       PLAYLIST_REPEAT: `${MODULES}.${ModuleEnum.MUSICS}.playlist_repeat`,
     },

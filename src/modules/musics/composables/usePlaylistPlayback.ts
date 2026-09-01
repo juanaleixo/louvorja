@@ -1,5 +1,4 @@
 import { ref, computed, onUnmounted } from "vue";
-import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
 import $dev from "@/helpers/Dev";
 import DateTime from "@/helpers/DateTime";
@@ -50,10 +49,6 @@ const currentSong = computed<PlaylistSong | null>(() => {
   return currentPlaylist.value.songs[_currentIndex.value] || null;
 });
 
-function _getFadeEnabled(): boolean {
-  return !!$userdata.get(KEYS.MODULES.MUSICS.PLAYLIST_FADE, false);
-}
-
 function _getShuffleEnabled(): boolean {
   return !!$userdata.get(KEYS.MODULES.MUSICS.PLAYLIST_SHUFFLE, false);
 }
@@ -82,12 +77,7 @@ function _playSongAt(index: number): void {
   _advanceLock.value = true;
   $dev.write("playlist:play", { index, name: song.name });
 
-  const isFirstSong = _playedSongs.value.size === 0;
-  if (_getFadeEnabled() && _isActive.value && !isFirstSong) {
-    Media.transitionTo({ id_music: song.id_music, mode: MusicActionEnum.AUDIO });
-  } else {
-    Media.open({ id_music: song.id_music, mode: MusicActionEnum.AUDIO });
-  }
+  Media.open({ id_music: song.id_music, mode: MusicActionEnum.AUDIO });
 
   _playedSongs.value = new Set([..._playedSongs.value, song.id_music]);
   setTimeout(() => { _advanceLock.value = false; }, 800);

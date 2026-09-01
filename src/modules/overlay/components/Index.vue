@@ -136,7 +136,6 @@ import {
   createOverlaySlot,
   buildAnchorStyle,
   type OverlaySlot,
-  type OverlayStyle,
 } from "@/types/Overlay";
 
 const moduleContainer = ref<{ t(key: string, named?: Record<string, unknown>): string } | null>(

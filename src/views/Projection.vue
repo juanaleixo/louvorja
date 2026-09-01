@@ -1,5 +1,5 @@
 <template>
-  <div class="projection-stage" :class="{ 'projection-stage--transitioning': isTransitioning }">
+  <div class="projection-stage">
     <Slide
       :slide="slide"
       :title="title"
@@ -25,7 +25,7 @@ import Slide from "@/components/Slide.vue";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
-const { slide, progress, title, slideIndex, totalSlides, isTransitioning } = useProjectionState();
+const { slide, progress, title, slideIndex, totalSlides } = useProjectionState();
 
 function _goTo(index) {
   if (totalSlides.value <= 0) return;
@@ -73,11 +73,6 @@ onBeforeUnmount(() => {
 .projection-stage {
   width: 100vw;
   height: 100vh;
-  transition: opacity 350ms ease-in-out;
-  opacity: 1;
-}
-.projection-stage--transitioning {
-  opacity: 0;
 }
 .projection-fill {
   width: 100%;

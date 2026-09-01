@@ -107,11 +107,6 @@ export const BROADCAST_TYPE = Object.freeze({
    *  Recebido por: Projection, Obs. (ainda não emitido — ver Media.js). */
   MEDIA_CLOSE: "media_close",
 
-  /** Transição entre músicas da playlist (fade out/in visual).
-   *  Payload: { status: "start" | "end" }
-   *  Emitido por: useMedia.transitionTo(). Recebido por: Projection, ProjectionReturn. */
-  PLAYLIST_TRANSITION: "playlist_transition",
-
   /** Projeção de arquivo (imagem/vídeo) vindo de liturgia ou outro módulo.
    *  Payload: { url: string, type: "image" | "video" | "pdf", title?: string, page?: number, totalPages?: number }
    *  Emitido por: liturgy (arquivo). Recebido por: Projection. */

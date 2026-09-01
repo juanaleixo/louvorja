@@ -71,19 +71,6 @@
         · {{ formatDuration(getPlaylistDuration(playlist)) }}
       </div>
       <div class="playlist-songs-options">
-        <v-tooltip :text="t('playlists.fade_transition')" location="top">
-          <template #activator="{ props: tp }">
-            <button
-              type="button"
-              class="playlist-songs-option-btn"
-              :class="{ 'playlist-songs-option-btn--active': fadeEnabled }"
-              v-bind="tp"
-              @click="toggleFade"
-            >
-              <v-icon :icon="ICONS.PLAYER.TRANSITION" size="18" />
-            </button>
-          </template>
-        </v-tooltip>
         <v-tooltip :text="t('playlists.shuffle')" location="top">
           <template #activator="{ props: tp }">
             <button
@@ -142,14 +129,8 @@ const t = (key: string, named?: Record<string, unknown>) =>
 const { selectPlaylist, removeSong, getPlaylistDuration } = usePlaylists();
 const { playPlaylist, currentSong, playedSongs } = usePlaylistPlayback();
 
-const fadeEnabled = ref($userdata.get(KEYS.MODULES.MUSICS.PLAYLIST_FADE, false));
 const shuffleEnabled = ref($userdata.get(KEYS.MODULES.MUSICS.PLAYLIST_SHUFFLE, false));
 const repeatEnabled = ref($userdata.get(KEYS.MODULES.MUSICS.PLAYLIST_REPEAT, false));
-
-function toggleFade() {
-  fadeEnabled.value = !fadeEnabled.value;
-  $userdata.set(KEYS.MODULES.MUSICS.PLAYLIST_FADE, fadeEnabled.value);
-}
 
 function toggleShuffle() {
   shuffleEnabled.value = !shuffleEnabled.value;
