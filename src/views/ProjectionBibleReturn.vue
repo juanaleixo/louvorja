@@ -20,12 +20,17 @@
         :class="[`align-${vertical_align}`, `justify-${horizontal_align}`]"
       >
         <div class="return-text-container">
-          <div v-if="active && text" class="return-text" :style="textStyle" v-html="text" />
+          <div
+            v-if="active && displayText"
+            class="return-text"
+            :style="textStyle"
+            v-html="displayText"
+          />
         </div>
       </div>
 
       <!-- Referência no topo -->
-      <div v-if="active && reference" class="return-title">{{ reference }}</div>
+      <div v-if="active && displayReference" class="return-title">{{ displayReference }}</div>
     </div>
 
     <!-- Painel fixo no rodapé com próximo versículo -->
@@ -50,6 +55,7 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import { FONT, resolveFont } from "@/config/Fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { t } = useI18n();
@@ -58,6 +64,10 @@ const MID = "modules.bible";
 const ready = ref(false);
 const text = ref("");
 const reference = ref("");
+const book = ref("");
+const chapter = ref("");
+const verses = ref([]);
+const version = ref("");
 const nextText = ref("");
 const nextReference = ref("");
 const active = ref(false);
@@ -70,7 +80,7 @@ function ud(key, fallback = null) {
   return v == null ? fallback : v;
 }
 
-const font = computed(() => ud("font", "Arial, sans-serif"));
+const font = computed(() => resolveFont(ud("font", null), FONT.PROJECTION.FALLBACK));
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const vertical_align = computed(() => ud("vertical_align", "center"));
 const horizontal_align = computed(() => ud("horizontal_align", "center"));
@@ -81,7 +91,7 @@ const image_fit = computed(() => ud("image_fit", "cover"));
 const textStyle = computed(() => {
   return {
     color: font_color.value || "#FFFFFF",
-    fontFamily: font.value || "Arial, sans-serif",
+    fontFamily: font.value || FONT.PROJECTION.FALLBACK,
     fontSize: `clamp(24px, 11vh, 70px)`,
     textAlign:
       horizontal_align.value === "start"
@@ -92,6 +102,47 @@ const textStyle = computed(() => {
   };
 });
 
+const showReference = computed(() => ud("show_reference", true));
+const showVersion = computed(() => ud("show_version", true));
+const referenceOnly = computed(() => ud("reference_only", false));
+
+function numbersInterval(numbers) {
+  if (!numbers || numbers.length === 0) return "";
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const result = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      result.push(start === end ? `${start}` : `${start}-${end}`);
+      start = sorted[i];
+      end = sorted[i];
+    }
+  }
+  result.push(start === end ? `${start}` : `${start}-${end}`);
+  return result.join(", ");
+}
+
+const referenceOnlyText = computed(() => {
+  if (!book.value || !chapter.value) return "";
+  const interval = numbersInterval(verses.value);
+  return `${book.value} ${chapter.value}${interval ? `:${interval}` : ""}`;
+});
+
+const displayText = computed(() => {
+  if (referenceOnly.value) return referenceOnlyText.value;
+  return text.value;
+});
+
+const displayReference = computed(() => {
+  if (referenceOnly.value) return "";
+  if (!showReference.value) return "";
+  if (!showVersion.value) return referenceOnlyText.value;
+  return reference.value;
+});
+
 useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   if (payload === null || payload.active === false) {
     window.close();
@@ -99,6 +150,10 @@ useBroadcastListener(BROADCAST_TYPE.BIBLE_VERSE, (payload) => {
   }
   text.value = payload?.text || "";
   reference.value = payload?.reference || "";
+  book.value = payload?.book || "";
+  chapter.value = payload?.chapter || "";
+  verses.value = payload?.verses || [];
+  version.value = payload?.version || "";
   nextText.value = payload?.next_text || "";
   nextReference.value = payload?.next_reference || "";
   active.value = payload?.active ?? !!payload?.text;

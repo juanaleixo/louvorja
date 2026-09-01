@@ -1,7 +1,7 @@
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
 export const DB_NAME = "louvorja";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 /**
  * Nomes de todas as tabelas do banco IndexedDB unificado `louvorja`.
  * Cada módulo usa o prefixo do módulo seguido do nome da entidade.
@@ -21,6 +21,8 @@ export const DB_TABLE = {
   CACHE: "cache",
   // ─── Catálogos normalizados (1 registro por entidade) ───
   MUSICS: ModuleEnum.MUSICS,
+  // ─── Playlists do usuário ───
+  MUSICS_PLAYLISTS: ModuleEnum.MUSICS+".playlists",
   HYMNAL: ModuleEnum.HYMNAL,
   HYMNAL_1996: ModuleEnum.HYMNAL_1996,
   ALBUMS: "albums",
@@ -46,13 +48,17 @@ export const DB_TABLE = {
   CUSTOM_ONLINE_VIDEOS_CATEGORIES: ModuleEnum.CUSTOM_ONLINE_VIDEOS + ".category",
   CUSTOM_SONGS: ModuleEnum.CUSTOM_COLLECTIONS + ".songs",
   CUSTOM_COLLECTIONS: ModuleEnum.CUSTOM_COLLECTIONS + ".collections",
-  MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY + ".library",
+  MEDIA_LIBRARY: ModuleEnum.MEDIA_LIBRARY,
   MEDIA_LIBRARY_CATEGORY: ModuleEnum.MEDIA_LIBRARY + ".category",
   AUDIO_LIBRARY: "audio_library",
   IMAGE_LIBRARY: "image_library",
   LITURGY_LIBRARY: ModuleEnum.LITURGY + ".library",
   SCHEDULED_CATEGORIES: ModuleEnum.LITURGY + ".scheduled_categories",
   SCHEDULED_ITEMS: ModuleEnum.LITURGY + ".scheduled_items",
+  // ─── Cache de tradução Libras ───
+  LIBRAS_MUSICS: "libras.musics",
+  LIBRAS_BIBLE: "libras.bible",
+  LIBRAS_BUNDLES: "libras.bundles",
 } as const;
 
 export type DbTable = (typeof DB_TABLE)[keyof typeof DB_TABLE];

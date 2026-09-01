@@ -224,7 +224,7 @@ async function selectResult(res: BibleSearchResult): Promise<void> {
     const payload: BibleVersePayload = {
       text: res.text,
       reference: res.reference,
-      bookId: res.id_bible_book,
+      book_id: res.id_bible_book,
       chapter: res.chapter,
       verses: [res.verse],
       active: true,

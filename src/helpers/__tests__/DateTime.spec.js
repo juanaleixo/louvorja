@@ -15,12 +15,12 @@ describe("DateTime.shortTime", () => {
     expect(DateTime.shortTime(60)).toBe("1:00");
   });
 
-  it("formata 3600 segundos (1h) como 60:00", () => {
-    expect(DateTime.shortTime(3600)).toBe("60:00");
+  it("formata 3600 segundos (1h) como 1:00:00", () => {
+    expect(DateTime.shortTime(3600)).toBe("1:00:00");
   });
 
-  it("formata 3661 segundos (1h 1m 1s) como 61:01", () => {
-    expect(DateTime.shortTime(3661)).toBe("61:01");
+  it("formata 3661 segundos (1h 1m 1s) como 1:01:01", () => {
+    expect(DateTime.shortTime(3661)).toBe("1:01:01");
   });
 
   it("formata 90 segundos como 1:30", () => {
@@ -29,7 +29,7 @@ describe("DateTime.shortTime", () => {
 
   it("aceita string HH:MM:SS e converte corretamente", () => {
     expect(DateTime.shortTime("00:05:30")).toBe("5:30");
-    expect(DateTime.shortTime("01:00:00")).toBe("60:00");
+    expect(DateTime.shortTime("01:00:00")).toBe("1:00:00");
     expect(DateTime.shortTime("00:00:10")).toBe("0:10");
   });
 });

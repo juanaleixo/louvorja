@@ -1,5 +1,11 @@
 <template>
   <OverlayRenderer />
+  <LibrasOverlay
+    v-if="showLibrasObs"
+    :slide-lyric="slide?.lyric"
+    :music-id="Number(slide?.id_music) || undefined"
+    type="music"
+  />
   <div class="obs-root">
     <!--
       Fade-in só ao APARECER (música começa) e fade-out ao SUMIR (música
@@ -24,11 +30,13 @@
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useProjectionState } from "@/composables/useProjectionState";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
 const { slide } = useProjectionState();
+const showLibrasObs = ref(localStorage.getItem("libras_show_on_obs") === "true");
 
 onMounted(() => {
   document.body.style.margin = "0";

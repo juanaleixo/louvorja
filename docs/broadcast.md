@@ -59,7 +59,8 @@ $broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, { slide_index: 0 });
 | `SLIDES_DATA` | `"slides_data"` | `useMedia.open()` | Operator |
 | `GO_TO_SLIDE` | `"go_to_slide"` | Operator | useSlides |
 | `BIBLE_VERSE` | `"bible_verse"` | bible/Index | ObsBible, ProjectionBible |
-| `BIBLE_FORMAT_CHANGED` | `"bible_format_changed"` | bible/Index | ProjectionBible |
+| `BIBLE_FORMAT_CHANGED` | `"bible_format_changed"` | bible/Index, AppMenuOpcoes | ProjectionBible, ProjectionBibleReturn |
+| `SLIDE_FONT_CHANGED` | `"slide_font_changed"` | AppMenuOpcoes | useSlideStyle, ModuleProjection |
 | `REQUEST_BIBLE_STATE` | `"request_bible_state"` | ProjectionBible | bible/Index (re-emite) |
 | `MESSAGE_BOARD` | `"message_board"` | message_board/Index | (futuro) |
 | `MEDIA_CLOSE` | `"media_close"` | useMedia.close() | Projection, Obs, FileProjection |
@@ -78,6 +79,9 @@ $broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, { slide_index: 0 });
 | `BIBLE_RIBBON_ACTION` | `"bible_ribbon_action"` | RibbonBar | Módulo bíblia |
 | `LITURGY_RIBBON_ACTION` | `"liturgy:ribbon_action"` | RibbonBar | Módulo liturgia |
 | `RIBBON_SELECT_PAGE` | `"ribbon:select_page"` | Módulos | RibbonBar |
+| `LIBRAS_TOGGLE` | `"libras_toggle"` | ShellTools | Projection |
+| `LIBRAS_TRANSLATE` | `"libras_translate"` | useLibras | Projection, Obs |
+| `REQUEST_LIBRAS_STATE` | `"request_libras_state"` | LibrasOverlay | main.js |
 
 ### Module Projection
 

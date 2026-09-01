@@ -323,6 +323,7 @@ function listenerResize(active) {
 
 .lj-window-actions {
   display: flex;
+  align-self: flex-start;
   align-items: center;
   gap: var(--lj-space-1);
   flex-shrink: 0;
@@ -357,8 +358,12 @@ function listenerResize(active) {
   color: var(--lj-text);
 }
 
-.lj-window-btn--close:hover {
+.lj-window-btn--close {
   background: var(--lj-danger);
+  color: var(--lj-white);
+}
+.lj-window-btn--close:hover {
+  background: var(--lj-danger-dark);
   color: var(--lj-white);
 }
 </style>

@@ -59,6 +59,7 @@ src/
 │   ├── Favorites.js     # Lista de favoritos persistida → this.$favorites
 │   ├── History.js       # Histórico de músicas (MAX=50) → this.$history
 │   ├── Liturgy.js       # Helper de liturgia (addMusic, clear) → this.$liturgy
+│   ├── Libras.ts        # Tradução PT-BR → Libras (API VLibras, cache IndexedDB)
 │   ├── DateTime.js      # Formatação de tempo HH:MM:SS
 │   ├── String.js        # Limpeza e ordenação de strings UTF-8
 │   ├── Path.js          # Constrói URLs para banco e arquivos
@@ -88,7 +89,8 @@ src/
 │   └── shell/
 │       ├── ShellTools.vue       # Botões do header: busca, favoritos, tema, projeção fundo, background tasks
 │       ├── AppMenuSincronizar.vue  # Download de coletâneas/bíblia + gerenciamento de storage
-│       └── AppMenuAtualizacoes.vue # Verificação e download de atualizações do app
+│       ├── AppMenuAtualizacoes.vue # Verificação e download de atualizações do app
+│       └── AppMenuAcessibilidade.vue # Configurações de Libras (avatar, velocidade, sotaque)
 ├── modules/             # Módulos do sistema (ver ADR 0003)
 │   ├── album/
 │   ├── background_projection/  # Projeção de fundo (imagens/vídeos)
@@ -101,11 +103,19 @@ src/
 │   ├── favorites/       # Lista de músicas favoritas (drag/drop)
 │   ├── history/         # Histórico de músicas abertas
 │   ├── hymnal/
+│   ├── libras/          # Tradução Libras — widget VLibras + avatar Unity WebGL
 │   ├── liturgy/         # Planejador de culto (drag/drop, timer regressivo)
 │   ├── lyric/
 │   ├── media/
 │   ├── message_board/   # Painel de recados dinâmico
-│   ├── musics/
+│   ├── musics/          # Lista de músicas + sistema de playlists
+│   │   ├── composables/
+│   │   │   ├── usePlaylists.ts           # CRUD de playlists com persistência
+│   │   │   └── usePlaylistPlayback.ts    # Reprodução sequencial de playlists
+│   │   └── components/
+│   │       ├── Index.vue                 # Layout two-columns (playlist panel + songs)
+│   │       ├── PlaylistPanel.vue         # Painel esquerdo: criar/renomear/excluir playlists
+│   │       └── PlaylistSongs.vue         # Painel direito: músicas da playlist + play
 │   ├── name_draw/       # Sorteio de nomes (fullscreen dialog)
 │   ├── remote_control/
 │   ├── slide_editor/    # Editor de slides (autosave sessionStorage)
@@ -125,6 +135,7 @@ src/
     ├── ObsBible.vue         # /obs/bible — captura OBS de versículos da Bíblia
     ├── Operator.vue         # /operator — grade de slides com navegação por teclado
     ├── Clock.vue            # /clock — relógio digital em tela cheia
+    ├── LibrasOverlay.vue    # Overlay de tradução Libras (widget VLibras + gloss)
     └── Shell.vue            # Shell principal — boot, updater, startup check, layout
 ```
 
@@ -217,6 +228,7 @@ $userdata.set("theme", "dark");
 | `helpers/Shortcuts.js` | helper-puro | Atalhos globais OS-level (Electron) |
 | `helpers/SljaConverter.js` | helper-puro | Conversão de slides `.slja` |
 | `helpers/ModuleTypes.js` | helper-puro | Factory e validação de `manifest.json` |
+| `helpers/Libras.ts` | helper-puro | Tradução PT-BR → Libras (API VLibras, cache IndexedDB) |
 | `helpers/AppData.ts` | deve-virar-composable | Camada de acesso ao Pinia (dot-notation); candidato a `useAppState` |
 | `helpers/UserData.ts` | deve-virar-composable | Preferências persistidas via AppData |
 | `helpers/Modules.js` | deve-virar-composable | Runtime open/close de módulos |
@@ -229,6 +241,82 @@ $userdata.set("theme", "dark");
 | `helpers/Popup.js` | deve-virar-composable | |
 | `helpers/ModuleManager.js` | deve-virar-composable | Boot-time; chamado 1× em `main.js` |
 | `helpers/CommandRegistry.js` | deve-virar-composable | Usa `Modules` + `useMedia` composable |
+
+---
+
+## Sistema de Playlists
+
+O módulo Músicas possui um sistema completo de playlists implementado via composables:
+
+### Estrutura
+
+```
+src/modules/musics/
+├── composables/
+│   ├── usePlaylists.ts           # CRUD de playlists + persistência em UserData
+│   └── usePlaylistPlayback.ts    # Controle de reprodução sequencial
+└── components/
+    ├── Index.vue                 # Layout two-columns (playlist panel + songs)
+    ├── PlaylistPanel.vue         # Painel esquerdo: criar/renomear/excluir playlists
+    └── PlaylistSongs.vue         # Painel direito: músicas da playlist + play
+```
+
+### Tipos (`src/types/Music.ts`)
+
+```ts
+interface PlaylistSong {
+  id_music: number;
+  name: string;
+  duration: number;        // segundos
+  has_instrumental_music: boolean;
+}
+
+interface Playlist {
+  id: string;              // UUID
+  name: string;
+  songs: PlaylistSong[];
+  createdAt: string;       // ISO date
+  updatedAt: string;       // ISO date
+}
+```
+
+### Persistência
+
+Playlists são salvas em `UserData` via chaves:
+- `KEYS.MODULES.MUSICS.PLAYLISTS` — array de `Playlist[]`
+- `KEYS.MODULES.MUSICS.SELECTED_PLAYLIST` — ID da playlist selecionada
+
+### Fluxo de Dados
+
+```
+PlaylistPanel → usePlaylists.createPlaylist() → UserData persist
+PlaylistSongs → usePlaylistPlayback.playPlaylist() → Media.open()
+Footer.vue    → usePlaylistPlayback (barra de playlist)
+MusicMenuTable → usePlaylists.addSong() → playlist song
+```
+
+### Funcionalidades
+
+**PlaylistPanel (painel esquerdo):**
+- Criar/renomear/excluir playlists
+- Importar playlist de arquivo `.json`
+- Exportar playlist como `.json`
+- Selecionar playlist (mostra PlaylistSongs)
+
+**PlaylistSongs (painel direito):**
+- Lista de músicas com play individual
+- Botão "Reproduzir" para tocar playlist completa
+- Remover músicas da playlist
+
+**Footer.vue (barra de playlist):**
+- Nome da playlist + progresso (tocadas/total)
+- Controles prev/next/stop
+- Aparece acima do player principal
+
+**MusicMenuTable (context menu):**
+- Submenu "Adicionar à playlist" com todas as playlists
+- Só aparece quando `showPlaylistMenu={true}` (módulo músicas)
+- Marca músicas já existentes na playlist
 
 ---
 
@@ -328,6 +416,9 @@ const song   = await $database.get(`music_${id}`);
 | `go_to_slide` | `Operator.vue` | `Media.js` (via listener em getElement) |
 | `bible_verse` | `bible/Index.vue` selVerse | ObsBible |
 | `message_board` | `message_board/index.vue` | (recepção futura) |
+| `libras_toggle` | ShellTools / ribbon | Projection |
+| `libras_translate` | useLibras composable | Projection, Obs |
+| `request_libras_state` | LibrasOverlay | main.js (re-emite LIBRAS_TOGGLE) |
 
 ---
 
@@ -363,6 +454,101 @@ ShellTools.vue
 
 ---
 
+## Sistema de Fontes
+
+### Estrutura
+
+| Arquivo | Função |
+|---------|--------|
+| `src/config/fonts.ts` | Config de fontes: `FontOption`, `Fonts`, namespace `FONT`, `resolveFont()` |
+| `src/assets/styles/fonts.css` | Declarações `@font-face` para fontes customizadas |
+| `src/assets/fonts/` | Arquivos de fonte (.ttf, .otf) |
+| `src/components/inputs/SelectFont.vue` | Componente reutilizável de seleção de fonte (v-menu com preview) |
+| `src/constants/UserDataKeys.ts` | Chaves: `OPTIONS.FONT`, `OPTIONS.PROJECTION_FONT`, `OPTIONS.SLIDE.FONT`, `OPTIONS.UTILITIES_FONT` |
+
+### Como adicionar uma nova fonte
+
+1. **Copiar o arquivo** para `src/assets/fonts/` (ex: `AdventSans-Logo.otf`)
+
+2. **Adicionar `@font-face`** em `src/assets/styles/fonts.css`:
+   ```css
+   @font-face {
+     font-family: "NomeDaFamilia";
+     src: url("../fonts/arquivo.otf") format("opentype");
+     font-weight: normal;
+     font-style: normal;
+   }
+   ```
+   - Formatos suportados: `format("truetype")` para .ttf, `format("opentype")` para .otf
+
+3. **Adicionar ao array** em `src/config/fonts.ts`:
+   ```ts
+   { name: "Nome Exibido", family: "NomeDaFamilia", file: "arquivo.otf" }
+   ```
+   - `family` deve ser o mesmo valor usado no `font-family` do `@font-face`
+   - `file` é opcional (usado para referência/documentação)
+
+4. **Pronto!** A fonte aparece automaticamente:
+   - No SelectFont (Opções > Geral/Bíblia/Slides/Utilitários)
+   - No FormatPanel (formatação de módulos)
+   - Em projeções de slides, bíblia e utilitários
+
+### Fluxo de dados
+
+```
+src/assets/fonts/arquivo.otf
+  ↓
+src/assets/styles/fonts.css (@font-face)
+  ↓
+src/config/fonts.ts (Fonts array)
+  ↓
+SelectFont.vue (UI de seleção com preview visual)
+  ↓
+UserData (options.font / options.projection_font / modules.*.font)
+  ↓
+resolveFont() em projection views (inline style fontFamily)
+```
+
+### Chaves UserData
+
+| Chave | Escopo | Uso |
+|-------|--------|-----|
+| `options.font` | Global | Fonte da interface (UI) |
+| `options.projection_font` | Global | Fonte padrão de projeção |
+| `options.slide.font` | Slides | Fonte de projeção de slides |
+| `options.utilities_font` | Utilitários | Fonte de projeção de utilitários |
+| `modules.bible.font` | Bíblia | Fonte de projeção da bíblia |
+| `modules.<id>.font` | Por módulo | Fonte de projeção específica do módulo |
+
+### Opções especiais de family
+
+| Family key | Nome | Resolve para |
+|------------|------|-------------|
+| `"__FONT_DEFAULT_UI__"` | Padrão da Interface | `options.font` via `--lj-font-shell` |
+| `"__FONT_DEFAULT_PROJECTION__"` | Padrão da Projecão | `options.projection_font` via `--lj-font-projection` |
+| `"__DEFAULT__"` | Padrão | Fallback interno usado nos selects de Geral |
+
+As variáveis globais são aplicadas em `main.js`, depois da hidratação do
+UserData, para funcionarem em todas as janelas. O legado `"__UI_FONT__"` é
+aceito como alias de `"__FONT_DEFAULT_UI__"`.
+
+Os defaults e marcadores ficam unificados em `FONT`: `FONT.UI.FALLBACK`,
+`FONT.UI.INHERIT`, `FONT.PROJECTION.FALLBACK`, `FONT.PROJECTION.INHERIT` e
+`FONT.DEFAULT`. O arquivo `vuetify-overrides.css` conecta `--v-font-body` e
+`--v-font-heading` a `--lj-font-shell`, incluindo dialogs e menus teleportados.
+
+### SelectFont — Props
+
+| Prop | Tipo | Default | Descrição |
+|------|------|---------|-----------|
+| `modelValue` | `string \| null` | `""` | Valor salvo (family key) |
+| `disabled` | `boolean` | `false` | Desabilita o select |
+| `showInterfaceDefault` | `boolean` | `true` | Mostra "Padrão da Interface" |
+| `showProjectionDefault` | `boolean` | `true` | Mostra "Padrão da Projecão" |
+| `defaultFont` | `string` | `""` | CSS font-family para a opção "Padrão" |
+
+---
+
 ## Plano de Migração (Delphi → Vue)
 
 O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLite com 74+ queries, servidor HTTP embarcado, sincronismo de áudio BASS24 e suporte a múltiplos monitores. A migração está organizada em 7 fases.
@@ -377,6 +563,7 @@ O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLi
 | Busca por trecho de letra | `fmBuscaMusica.pas` full-text | ✅ já existia |
 | Coletâneas personalizadas | `cdsColETANEAS_PERSO` | ✅ já existia (module `collections`) |
 | Bíblia completa | `fmMonitorBiblia` + versões PT/ES | ✅ já existia (module `bible`) |
+| Playlists de músicas | — | ✅ módulo `musics` (usePlaylists + usePlaylistPlayback) |
 
 **Implementação:**
 - Módulo `favorites` — store com persistência, lista reordenável via `vuedraggable`
@@ -384,6 +571,7 @@ O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLi
 - Bíblia — completar carregamento, busca por livro/capítulo/versículo, múltiplas versões
 - Coletâneas personalizadas — CRUD leve com persistência local
 - Busca aprimorada — filtro por trecho de letra no `DataTable`
+- **Playlists** — CRUD de playlists com persistência em UserData, reprodução sequencial, barra de playlist no Footer, import/export JSON, submenu "Adicionar à playlist" no MusicMenuTable
 
 ---
 

@@ -27,6 +27,7 @@ const _slides = useSlides();
 const _lyric  = useLyric();
 const _album  = useAlbum();
 let _loadingId: string | number | null = null;
+let _playlistOnEnd: (() => void) | null = null;
 // XHR atual de download de áudio — abortado ao trocar de música rapidamente
 // para liberar conexão e evitar callbacks de respostas obsoletas (mesmo que
 // o early-return pelo _loadingId já as ignore, a request continuava
@@ -152,7 +153,11 @@ _audio.onTimeUpdate((ct, d) => {
   $appdata.set(KEYS.MODULES.MEDIA.CONFIG.BUFFERED, _audio.buffered.value);
 
   if (!_audio.isPaused.value && ct >= d && d > 0) {
-    _self.close(true);
+    if (_playlistOnEnd) {
+      _playlistOnEnd();
+    } else {
+      _self.close(true);
+    }
   }
 
   // Sincronia contínua de vídeo: broadcast periódico para manter o <video>
@@ -177,6 +182,7 @@ function _buildSlidesFrom(data: Music): Slide[] {
       instrumental_time:    "00:00:00",
       url_image:            data?.url_image as string | undefined,
       image_position:       data?.image_position,
+      id_music:             data?.id_music,
     },
     ...(data?.lyric || [])
       .filter((lyric) => lyric.show_slide === 1)
@@ -192,6 +198,7 @@ function _buildSlidesFrom(data: Music): Slide[] {
           lyric:          lyric.lyric ? lyric.lyric.replace(/[\r\n]+/g, "<br>") : "",
           url_image:      prev_image,
           image_position: prev_image_position,
+          id_music:       data?.id_music,
         };
       }),
   ];
@@ -744,7 +751,7 @@ const _self = {
     if (_isYouTube()) {
       const newTime = Math.max(0, _audio.currentTime.value + time);
       $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "seekTo", value: newTime });
-    } else if (_audio.duration.value > 0 && $appdata.get(KEYS.MODULES.MEDIA.CONFIG.AUDIO) != "") {
+    } else if (_audio.duration.value > 0 && Number.isFinite(_audio.duration.value) && $appdata.get(KEYS.MODULES.MEDIA.CONFIG.AUDIO) != "") {
       _audio.advanceTime(time);
       _broadcastVideoState();
     }
@@ -830,6 +837,14 @@ const _self = {
 
   setAlbumInfo(id_album: string | number | null, module = "media"): void {
     _album.setAlbumInfo(id_album, module);
+  },
+
+  registerPlaylistEndHandler(handler: () => void): void {
+    _playlistOnEnd = handler;
+  },
+
+  unregisterPlaylistEndHandler(): void {
+    _playlistOnEnd = null;
   },
 };
 

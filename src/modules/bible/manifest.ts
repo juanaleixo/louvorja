@@ -3,8 +3,10 @@ import type { RibbonPage } from "@/types/Ribbon"
 import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
+import { FONT } from "@/config/Fonts"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import { KEYS } from "@/constants/UserDataKeys"
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes"
 import $modules from "@/helpers/Modules"
 
 const moduleId = ModuleEnum.BIBLE;
@@ -24,13 +26,15 @@ export const module: Module = {
   order: 0,
   dependencies: [],
   customization: {
-    font: { type: "font", default: "Arial, sans-serif" },
+    font: { type: "font", default: FONT.PROJECTION.INHERIT },
     font_color: { type: "color", default: "#FFFFFF" },
+    text_background_enabled: { type: "boolean", default: false },
+    text_background_color: { type: "color", default: "transparent" },
     font_size: { type: "font-size", default: 15 },
     text_shadow: { type: "boolean", default: false },
     text_shadow_color: { type: "color", default: "#000000" },
     text_shadow_blur: { type: "font-size", default: 4 },
-    reference_font: { type: "font", default: "Arial, sans-serif" },
+    reference_font: { type: "font", default: FONT.PROJECTION.INHERIT },
     reference_font_color: { type: "color", default: "#FB8C00" },
     reference_font_size: { type: "font-size", default: 10 },
     background_color: { type: "color", default: "#000000" },
@@ -94,6 +98,36 @@ export const contextualPages: RibbonPage[] = [
             label: "ribbon.btn.bible_format",
             action: `${moduleId}_format`,
             color: "#1b4f8a",
+          },
+        ],
+      },
+      {
+        id: "ctx_bible_display",
+        title: "ribbon.groups.display",
+        buttons: [
+          {
+            id: `${moduleId}_show_reference`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.BIBLE.SHOW_REFERENCE,
+            label: `${modulePath}.ribbon.show_reference`,
+            defaultValue: true,
+            broadcastOnToggle: BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
+          },
+          {
+            id: `${moduleId}_show_version`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.BIBLE.SHOW_VERSION,
+            label: `${modulePath}.ribbon.show_version`,
+            defaultValue: true,
+            broadcastOnToggle: BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
+          },
+          {
+            id: `${moduleId}_reference_only`,
+            type: "checkbox",
+            optionKey: KEYS.MODULES.BIBLE.REFERENCE_ONLY,
+            label: `${modulePath}.ribbon.reference_only`,
+            defaultValue: false,
+            broadcastOnToggle: BROADCAST_TYPE.BIBLE_FORMAT_CHANGED,
           },
         ],
       },

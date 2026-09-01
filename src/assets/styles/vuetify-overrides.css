@@ -4,6 +4,14 @@
    Use !important quando o seletor Vuetify tiver alta especificidade.
    ======================================================================== */
 
+/* ---- Tipografia --------------------------------------------------------- */
+/* Vuetify teleporta dialogs, menus e tooltips para o body. Conectar suas
+   variáveis à fonte da shell mantém toda a interface no padrão selecionado. */
+:root {
+  --v-font-body: var(--lj-font-shell);
+  --v-font-heading: var(--lj-font-shell);
+}
+
 /* ---- Colapse panel (v-expansion-panels) -------------------------------- */
 .v-expansion-panel-title {
   padding: 8px 16px !important;

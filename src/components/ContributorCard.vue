@@ -137,7 +137,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Contributors, RoleContribuitor } from "@/config/contributors";
+import { Contributors, RoleContribuitor } from "@/config/Contributors";
 
 const props = defineProps<{
   contributor: Contributors;

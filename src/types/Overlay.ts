@@ -84,7 +84,7 @@ export interface OverlaySlot {
 }
 
 export const OVERLAY_STYLE_DEFAULTS: OverlayStyle = {
-  font: "Arial, sans-serif",
+  font: "DINCondensedBold",
   font_size: 5,
   color: "#FFFFFF",
   background: "transparent",

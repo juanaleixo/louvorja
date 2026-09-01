@@ -36,3 +36,18 @@ export interface SearchMusicItem extends MusicItem {
   track?: string | number;
   album?: string;
 }
+
+export interface PlaylistSong {
+  id_music: number;
+  name: string;
+  duration: number;
+  has_instrumental_music: boolean;
+}
+
+export interface Playlist {
+  id: string;
+  name: string;
+  songs: PlaylistSong[];
+  createdAt: string;
+  updatedAt: string;
+}

@@ -31,8 +31,8 @@ const path = require("path");
 const https = require("https");
 const http = require("http");
 
-const GITHUB_OWNER = "juanaleixo";
-const GITHUB_REPO = "louvorja";
+const GITHUB_OWNER = "louvorja";
+const GITHUB_REPO = "violin-app";
 const GITHUB_RELEASES_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases?per_page=20`;
 
 let autoUpdater = null;

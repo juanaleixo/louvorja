@@ -216,26 +216,35 @@
             </div>
 
             <div class="opt-section-bottom">
-              <div v-if="preparing" class="opt-row opt-row--col">
-                <div class="opt-folder-path">
+              <ProgressBar
+                v-if="preparing"
+                class="opt-row opt-row--col"
+                :done="prepareDone"
+                :total="prepareTotal"
+              >
+                <template #label>
                   {{
                     $t("options.collections_download.preparing", {
                       done: prepareDone,
                       total: prepareTotal,
                     })
                   }}
-                </div>
-                <v-progress-linear
-                  :model-value="prepareTotal > 0 ? (prepareDone / prepareTotal) * 100 : 0"
-                  color="primary"
-                  height="8"
-                  rounded
-                  class="mt-1"
-                />
-              </div>
+                </template>
+              </ProgressBar>
 
-              <div v-if="downloading" class="opt-row opt-row--col">
-                <label class="opt-label">
+              <ProgressBar
+                v-if="downloading"
+                class="opt-row opt-row--col"
+                :done="downloadedCount"
+                :total="totalDownloads"
+                :current="currentDownloadFile"
+                :failed="failedDownloadCount"
+                :completed-msg="completedMsg"
+                show-cancel
+                :cancel-label="$t('options.collections_download.cancel')"
+                @cancel="sync.cancelDownloads()"
+              >
+                <template #label>
                   {{
                     $t("options.collections_download.progress", {
                       done: downloadedCount,
@@ -243,25 +252,11 @@
                       percent: downloadPercent,
                     })
                   }}
-                </label>
-                <v-progress-linear
-                  :model-value="downloadPercent"
-                  color="primary"
-                  height="8"
-                  rounded
-                  class="mt-1"
-                />
-                <div v-if="currentDownloadFile" class="opt-folder-path">
-                  {{ currentDownloadFile }}
-                </div>
-                <div v-if="failedDownloadCount > 0" class="opt-hint">
+                </template>
+                <template #failed>
                   {{ $t("options.collections_download.failed", { n: failedDownloadCount }) }}
-                </div>
-              </div>
-
-              <div v-if="completedMsg" class="opt-folder-path">
-                {{ completedMsg }}
-              </div>
+                </template>
+              </ProgressBar>
 
               <p v-if="!ftpOk && !downloading && !preparing" class="opt-hint pt-5">
                 {{ $t("options.collections_download.no_connection_hint") }}
@@ -290,14 +285,6 @@
                     }}
                   </button>
                 </template>
-                <button
-                  v-if="downloading"
-                  type="button"
-                  class="opt-btn opt-btn--danger"
-                  @click="sync.cancelDownloads()"
-                >
-                  {{ $t("options.collections_download.cancel") }}
-                </button>
               </div>
             </div>
           </section>
@@ -371,36 +358,25 @@
             </div>
 
             <div class="opt-section-bottom">
-              <div v-if="bibleDownloading" class="opt-row opt-row--col">
-                <label class="opt-label">
+              <ProgressBar
+                v-if="bibleDownloading"
+                class="opt-row opt-row--col"
+                :done="bibleDone"
+                :total="bibleTotal"
+                :current="
+                  bibleCurrentFile ? sync.formatBibleKey(bibleCurrentFile, bibleVersions) : null
+                "
+                :completed-msg="bibleCompletedMsg"
+                show-cancel
+                :cancel-label="$t('options.bible_download.cancel')"
+                @cancel="sync.cancelDownloads()"
+              >
+                <template #label>
                   {{
                     $t("options.bible_download.downloading", { done: bibleDone, total: bibleTotal })
                   }}
-                </label>
-                <v-progress-linear
-                  :model-value="biblePercent"
-                  color="primary"
-                  height="8"
-                  rounded
-                  class="mt-1"
-                />
-                <div v-if="bibleCurrentFile" class="opt-folder-path">
-                  {{ sync.formatBibleKey(bibleCurrentFile, bibleVersions) }}
-                </div>
-                <div class="opt-folder-actions" style="margin-top: 8px">
-                  <button
-                    type="button"
-                    class="opt-btn opt-btn--danger"
-                    @click="sync.cancelDownloads()"
-                  >
-                    {{ $t("options.bible_download.cancel") }}
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="bibleCompletedMsg" class="opt-folder-path">
-                {{ bibleCompletedMsg }}
-              </div>
+                </template>
+              </ProgressBar>
 
               <div class="opt-folder-actions">
                 <button
@@ -437,12 +413,31 @@
               <label class="opt-label">{{ $t("options.storage.folder") }}</label>
               <div class="opt-folder">
                 <code class="opt-folder-path">{{ storageStats?.filesDir || "—" }}</code>
+                <v-chip
+                  v-if="useClassicDir"
+                  size="x-small"
+                  color="warning"
+                  variant="tonal"
+                  class="ml-2"
+                >
+                  <v-icon icon="mdi-desktop-classic" size="12" class="mr-1" />
+                  {{ $t("options.storage.classic_version") }}
+                </v-chip>
                 <div class="opt-folder-actions">
                   <button type="button" class="opt-btn" @click="openFolder">
                     {{ $t("options.storage.open_folder") }}
                   </button>
                   <button type="button" class="opt-btn" @click="changeFolder">
                     {{ $t("options.storage.change_folder") }}
+                  </button>
+                  <button
+                    v-if="!useClassicDir && Platform.platform === 'win32'"
+                    type="button"
+                    class="opt-btn"
+                    @click="detectClassic"
+                  >
+                    <v-icon icon="mdi-desktop-classic" size="14" class="mr-1" />
+                    {{ $t("options.storage.use_classic_dir") }}
                   </button>
                 </div>
               </div>
@@ -546,7 +541,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from "vue";
+import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Platform from "@/helpers/Platform";
 import $userdata from "@/helpers/UserData";
@@ -555,6 +550,8 @@ import { KEYS, moduleShowInMainMenu } from "@/constants/UserDataKeys";
 import { ICONS } from "@/config/Icons";
 import Icon from "@/components/Icon.vue";
 import { useSyncManager } from "@/composables/useSyncManager";
+import { useBackgroundTasks } from "@/composables/useBackgroundTasks";
+import ProgressBar from "@/components/ProgressBar.vue";
 import $snackbar from "@/helpers/Snackbar";
 import Seed from "@/helpers/Seed";
 import type { BibleVersion } from "@/types/Bible";
@@ -587,6 +584,11 @@ interface StorageStats {
 /* ---- Composable ---- */
 
 const sync = useSyncManager();
+const bgTasks = useBackgroundTasks();
+
+function findTask(id: string) {
+  return bgTasks.tasks.value.find((t) => t.id === id && t.status === "running");
+}
 
 /* ---- Estado ---- */
 
@@ -629,18 +631,39 @@ const preparing = ref<boolean>(false);
 const prepareDone = ref<number>(0);
 const prepareTotal = ref<number>(0);
 
-// Wrap refs do composable para compatibilidade com o template
-const downloading = computed(() => sync.downloading.value);
-const downloadedCount = computed(() => sync.downloadProgress.value.done);
-const failedDownloadCount = computed(() => sync.downloadFailedCount.value);
-const totalDownloads = computed(() => sync.downloadProgress.value.total);
-const currentDownloadFile = computed(() => sync.downloadProgress.value.currentFile || null);
+// Wrap refs do composable — lê de bgTasks se download está rodando em background
+const downloading = computed(() => sync.downloading.value || !!findTask("sync-collections"));
+const downloadedCount = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task._done ?? 0) : sync.downloadProgress.value.done;
+});
+const failedDownloadCount = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task._failed ?? 0) : sync.downloadFailedCount.value;
+});
+const totalDownloads = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task._total ?? 0) : sync.downloadProgress.value.total;
+});
+const currentDownloadFile = computed(() => {
+  const task = findTask("sync-collections");
+  return task ? (task.detail ?? null) : sync.downloadProgress.value.currentFile || null;
+});
 const completedMsg = computed(() => sync.downloadCompletedMsg.value);
 
-const bibleDownloading = computed(() => sync.bibleDownloading.value);
-const bibleDone = computed(() => sync.bibleProgress.value.done);
-const bibleTotal = computed(() => sync.bibleProgress.value.total);
-const bibleCurrentFile = computed(() => sync.bibleProgress.value.currentFile || null);
+const bibleDownloading = computed(() => sync.bibleDownloading.value || !!findTask("sync-bible"));
+const bibleDone = computed(() => {
+  const task = findTask("sync-bible");
+  return task ? (task._done ?? 0) : sync.bibleProgress.value.done;
+});
+const bibleTotal = computed(() => {
+  const task = findTask("sync-bible");
+  return task ? (task._total ?? 0) : sync.bibleProgress.value.total;
+});
+const bibleCurrentFile = computed(() => {
+  const task = findTask("sync-bible");
+  return task ? (task.detail ?? null) : sync.bibleProgress.value.currentFile || null;
+});
 const bibleCompletedMsg = computed(() => sync.bibleCompletedMsg.value);
 
 const downloadProcessed = computed(() => downloadedCount.value + failedDownloadCount.value);
@@ -667,10 +690,6 @@ const hasPendingRemovals = computed<boolean>(() => {
   if (cachedHymnal1996Baseline.value && !selectedHymnal1996.value) return true;
   return false;
 });
-
-const biblePercent = computed<number>(() =>
-  bibleTotal.value > 0 ? Math.round((bibleDone.value / bibleTotal.value) * 100) : 0
-);
 
 const bibleHasPendingRemovals = computed<boolean>(() => {
   if (bibleDownloadedBaseline.value.size === 0) return false;
@@ -983,6 +1002,36 @@ const quotaGb = computed({
   set: (v: number) => $userdata.set(KEYS.OPTIONS.STORAGE_QUOTA_GB, Number(v) || 0),
 });
 
+const useClassicDir = computed((): boolean => {
+  return $userdata.get<boolean>(KEYS.OPTIONS.USE_CLASSIC_DIR, false) === true;
+});
+
+async function detectClassic(): Promise<void> {
+  if (!Platform.classic?.detect) return;
+  try {
+    const result = await Platform.classic.detect();
+    if (!result.detected) {
+      $alert.error({ text: "options.storage.classic_not_found" });
+      return;
+    }
+    $alert.yesno("options.storage.classic_confirm", (async (btn: string) => {
+      if (btn === "cancel") return;
+      $userdata.set(KEYS.OPTIONS.USE_CLASSIC_DIR, true);
+      $userdata.set(KEYS.OPTIONS.CLASSIC_LANG, result.lang || "pt");
+      const cur = (await Platform.userStore?.read("storage")) || {};
+      await Platform.userStore?.write("storage", {
+        ...cur,
+        classicDir: result.configDir,
+        classicLang: result.lang || "pt",
+        useClassicDir: true,
+      });
+      await reloadStats();
+    }) as (...args: unknown[]) => unknown);
+  } catch (e) {
+    console.warn("[Sincronizar] classic:detect falhou:", e);
+  }
+}
+
 async function reloadStats(): Promise<void> {
   if (!Platform?.storage?.stats) return;
   loading.value = true;
@@ -1002,7 +1051,36 @@ async function openFolder(): Promise<void> {
 async function changeFolder(): Promise<void> {
   const newDir = await Platform?.storage?.chooseDir?.();
   if (!newDir) return;
-  $alert.yesno("options.storage.move_confirm", (async (btn) => {
+
+  if (useClassicDir.value) {
+    $alert.yesno("options.storage.classic_import_confirm", (async (btn: string) => {
+      if (btn === "cancel") return;
+      const move = btn === "yes";
+      try {
+        const cur = (await Platform.userStore?.read("storage")) || {};
+        const classicDir = cur.classicDir || "";
+        const lang = cur.classicLang || "pt";
+        if (classicDir && Platform.storage?.importFromClassic) {
+          await Platform.storage.importFromClassic(classicDir, newDir, lang, {
+            moveExisting: move,
+          });
+        }
+        await Platform.storage?.setFilesDir?.(newDir, { moveExisting: false });
+        await Platform.userStore?.write("storage", {
+          ...cur,
+          filesDir: newDir,
+          useClassicDir: false,
+        });
+        $userdata.set(KEYS.OPTIONS.USE_CLASSIC_DIR, false);
+        await reloadStats();
+      } catch (e) {
+        $alert.error({ text: "options.storage.change_failed", error: e as Error });
+      }
+    }) as (...args: unknown[]) => unknown);
+    return;
+  }
+
+  $alert.yesno("options.storage.move_confirm", (async (btn: string) => {
     if (btn === "cancel") return;
     const move = btn === "yes";
     try {

@@ -33,17 +33,17 @@ export default async ({ mode }) => {
   // projeção criam iframes do YouTube via YT.Player API. No web/PWA a
   // projeção de vídeos não usa iframes embarcados.
   const cspDesktopFrame = isDesktop
-    ? " frame-src https://www.youtube.com https://www.youtube-nocookie.com;"
+    ? " frame-src https://www.youtube.com https://www.youtube-nocookie.com https://vlibras.gov.br;"
     : "";
   const cspMeta =
     `<meta http-equiv="Content-Security-Policy" content="` +
     `default-src 'self'${cspExtra};` +
-    ` script-src 'self'${cspExtra}${cspDesktopYt};` +
+    ` script-src 'self' blob:${cspExtra}${cspDesktopYt} https://vlibras.gov.br https://cdn.jsdelivr.net 'wasm-unsafe-eval';` +
     ` style-src 'self' 'unsafe-inline'${cspExtra} https://fonts.googleapis.com;` +
-    ` font-src 'self' data:${cspExtra} https://fonts.gstatic.com;` +
+    ` font-src 'self' data:${cspExtra} https://fonts.gstatic.com https://vlibras.gov.br https://cdn.jsdelivr.net;` +
     ` img-src 'self' data: https:${cspExtra};` +
     ` media-src 'self' blob: https:${cspExtra};` +
-    ` connect-src 'self' blob:${cspExtra} https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://www.google.com https://*.google.com;` +
+    ` connect-src 'self' blob:${cspExtra} https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://www.google.com https://*.google.com https://traducao2.vlibras.gov.br https://dicionario2.vlibras.gov.br https://repositorio.vlibras.gov.br https://cdn.jsdelivr.net;` +
     `${cspDesktopFrame}` +
     ` worker-src 'self'${cspExtra};` +
     `">`;

@@ -114,12 +114,8 @@
 
     <!-- Appearance tab -->
     <div v-if="activeTab === 'appearance'" class="editor-pane">
-      <v-text-field
+      <SelectFont
         :model-value="m.style.font"
-        :label="t('style.font')"
-        density="compact"
-        hide-details
-        variant="outlined"
         @update:model-value="
           m.style.font = $event;
           emitChange();
@@ -359,6 +355,7 @@
 import { ref, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import OverlayImagePicker from "./OverlayImagePicker.vue";
+import SelectFont from "@/components/inputs/SelectFont.vue";
 import { OVERLAY_ANCHORS, OVERLAY_ANIMATIONS, OVERLAY_MODULE_SOURCES } from "@/types/Overlay";
 import { getModuleTitle } from "@/config/modules";
 

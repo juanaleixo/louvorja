@@ -216,7 +216,10 @@ export function usePlayerState(): {
     Media.setVolume(value ?? audio.volume.value);
   }
   function seekToProgress(pct: number): void {
-    const time = (audio.duration.value * pct) / 100;
+    const d = audio.duration.value;
+    if (!Number.isFinite(d) || d <= 0) return;
+    const time = (d * pct) / 100;
+    if (!Number.isFinite(time)) return;
     Media.goToTime(time);
   }
   function goToSlide(index: number): void { Media.goToSlide(index); }

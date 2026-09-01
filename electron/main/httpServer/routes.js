@@ -416,6 +416,51 @@ function setupRoutes(app, { getMainWindow, getUserData, jsonCache: _cache, getDa
   });
 
   // ---------------------------------------------------------------
+  // /libras/:token — bundles de animação VLibras (IndexedDB via IPC)
+  // Serve arquivos de animação para o player Unity localmente.
+  // O renderer grava os bundles no IndexedDB; o main process lê via IPC.
+  // ---------------------------------------------------------------
+  app.get("/libras/:token", async (req, res) => {
+    const token = req.params.token;
+    if (!token) {
+      return res.status(400).json({ error: "token obrigatório" });
+    }
+
+    try {
+      const { ipcMain } = require("electron");
+      const channel = "_libras_bundle_reply_" + Date.now();
+      const timeout = setTimeout(() => {
+        ipcMain.removeAllListeners(channel);
+        res.status(504).json({ error: "Timeout ao buscar bundle" });
+      }, 5000);
+
+      ipcMain.once(channel, (_event, data) => {
+        clearTimeout(timeout);
+        if (data && data.data) {
+          const buffer = Buffer.from(data.data);
+          res.setHeader("Content-Type", "application/octet-stream");
+          res.setHeader("Content-Length", buffer.length);
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return res.send(buffer);
+        }
+        res.status(404).json({ error: "Bundle não encontrado", token });
+      });
+
+      const mainWindow = getMainWindow();
+      if (mainWindow) {
+        mainWindow.webContents.send("http:libras-bundle", { token, replyChannel: channel });
+      } else {
+        clearTimeout(timeout);
+        ipcMain.removeAllListeners(channel);
+        res.status(503).json({ error: "Janela principal não disponível" });
+      }
+    } catch (e) {
+      console.error("[httpServer] /libras error:", e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ---------------------------------------------------------------
   // /api/liturgy — itens da liturgia do dia
   // ---------------------------------------------------------------
   app.get("/api/liturgy", (req, res) => {

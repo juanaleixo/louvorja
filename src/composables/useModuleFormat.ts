@@ -63,11 +63,8 @@ export function useModuleFormat(moduleId: string, manifest: ModuleManifest) {
   // (ex: outra janela alterou via projection).
   const reactiveView = reactive({} as Record<string, unknown>);
 
-  // Toggle do painel "Formatar" (persistido em UserData).
-  const show_format = computed({
-    get: () => !!UserData.get(`modules.${moduleId}.show_format`, false),
-    set: (v) => UserData.set(`modules.${moduleId}.show_format`, !!v),
-  });
+  // Toggle do painel "Formatar" — estado de sessão, não persistido.
+  const show_format = ref(false);
 
   return { fmt, restoreFormat, customization, reactiveView, show_format };
 }

@@ -4,19 +4,32 @@
     class="format-field format-field--input"
     @change="$emit('update:modelValue', $event.target.value)"
   >
-    <option value="">—</option>
-    <option v-for="f in FORMAT_FONT_OPTIONS" :key="f" :value="f">{{ f }}</option>
+    <option
+      v-for="f in sortedFonts"
+      :key="f.family"
+      :value="f.family"
+      :style="{ fontFamily: fontPreview(f.family) }"
+    >
+      {{ f.name }}
+    </option>
   </select>
 </template>
 
 <script setup>
-import { FORMAT_FONT_OPTIONS } from "@/composables/useModuleFormat";
+import { computed } from "vue";
+import { Fonts, resolveFont } from "@/config/Fonts";
 
 defineProps({
   modelValue: { type: [String, null], default: null },
   field: { type: Object, required: true },
 });
 defineEmits(["update:modelValue"]);
+
+const sortedFonts = computed(() => [...Fonts].sort((a, b) => a.name.localeCompare(b.name)));
+
+function fontPreview(family) {
+  return resolveFont(family, "inherit");
+}
 </script>
 
 <style scoped>

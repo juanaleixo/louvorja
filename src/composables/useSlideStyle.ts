@@ -11,10 +11,13 @@
  * editor de slides definia formatação por slide.
  */
 
-import { computed, type ComputedRef, type CSSProperties } from "vue";
+import { computed, ref, type ComputedRef, type CSSProperties } from "vue";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 import { SLIDE_STYLE_DEFAULT } from "@/config/SlideStyle";
+import { useBroadcastListener } from "@/composables/useBroadcastListener";
+import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 export type SlideOption = Record<string, unknown> | null;
 
@@ -51,12 +54,18 @@ interface SlideCfg {
   text_align: "top" | "center" | "bottom";
   transition_speed_ms: number;
   text_bg_transparent: boolean;
+  text_bg_blur_enabled: boolean;
+  text_bg_blur: number;
+  text_border_enabled: boolean;
+  text_border_color: string;
+  text_border_width: number;
   affect_external_slides: boolean;
-  /** O usuário marcou "Fundo personalizado" nas Opções. Necessário porque
-   *  background_color/background_image também têm valor mesmo sem o toggle —
-   *  sem essa flag não dá pra saber se a config custom deve substituir o
-   *  background do slide externo. */
   custom_background_active: boolean;
+  shadow_enabled: boolean;
+  shadow_color: string;
+  shadow_blur: number;
+  shadow_offset_x: number;
+  shadow_offset_y: number;
 }
 
 /**
@@ -77,8 +86,23 @@ const _readSlideOpts = (): SlideCfg => {
   const showTitle = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.SHOW_TITLE_FIRST_SLIDE, null);
   if (typeof showTitle === "boolean") merged.show_title_first_slide = showTitle;
 
+  // Fonte (chave plana salva pelo select de fonte nas Opções)
+  const slideFont = $userdata.get<string>(KEYS.OPTIONS.SLIDE.FONT, null);
+  merged.font = resolveFont(slideFont || merged.font, FONT.PROJECTION.FALLBACK);
+
+  // O blur é um atalho global e também pode ser ajustado dentro da formatação personalizada.
+  merged.text_bg_blur_enabled =
+    $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false) === true;
+  const textBgBlur = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12));
+  merged.text_bg_blur = Number.isFinite(textBgBlur)
+    ? Math.min(30, Math.max(0, textBgBlur))
+    : 12;
+
   // Formatação de texto personalizada
-  if ($userdata.get<boolean>(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false) === true) {
+  const customTextFormat =
+    $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false) === true;
+  merged.text_border_enabled = false;
+  if (customTextFormat) {
     const titleColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TITLE_COLOR, null);
     const textColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_COLOR, null);
     const repeatColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, null);
@@ -87,6 +111,9 @@ const _readSlideOpts = (): SlideCfg => {
     const bodySize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.BODY_SIZE, null) ?? NaN);
     const auxSize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.AUX_SIZE, null) ?? NaN);
     const textBgTransparent = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, null);
+    const textBorderWidth = Number(
+      $userdata.get<number>(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2)
+    );
     if (typeof titleColor === "string") merged.color_cover = titleColor;
     if (typeof textColor === "string") merged.color_lyric = textColor;
     if (typeof repeatColor === "string") merged.color_repeat = repeatColor;
@@ -95,11 +122,25 @@ const _readSlideOpts = (): SlideCfg => {
     if (Number.isFinite(bodySize) && bodySize > 0) merged.font_size_lyric = bodySize;
     if (Number.isFinite(auxSize) && auxSize > 0) merged.font_size_aux = auxSize;
     if (typeof textBgTransparent === "boolean") merged.text_bg_transparent = textBgTransparent;
+    merged.text_border_enabled =
+      $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false) === true;
+    merged.text_border_color =
+      $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, "#FFFFFF") || "#FFFFFF";
+    merged.text_border_width = Number.isFinite(textBorderWidth)
+      ? Math.min(10, Math.max(1, textBorderWidth))
+      : 2;
   }
 
   // Flag global de "afetar slides externos"
   const affectExternal = $userdata.get(KEYS.OPTIONS.SLIDE.AFFECT_EXTERNAL_SLIDES, null);
   if (typeof affectExternal === "boolean") merged.affect_external_slides = affectExternal;
+
+  // Sombra no texto
+  merged.shadow_enabled = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, false) === true;
+  merged.shadow_color = $userdata.get<string>(KEYS.OPTIONS.SLIDE.SHADOW_COLOR, "#000000") || "#000000";
+  merged.shadow_blur = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, 12)) || 12;
+  merged.shadow_offset_x = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_X, 0)) || 0;
+  merged.shadow_offset_y = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, 2)) || 2;
 
   // Fundo personalizado
   if ($userdata.get(KEYS.OPTIONS.SLIDE.CUSTOM_BACKGROUND, false) as boolean) {
@@ -134,11 +175,17 @@ const _readSlideOpts = (): SlideCfg => {
 };
 
 export function useSlideStyle(): SlideStyleAPI {
-  const cfg = computed(() => _readSlideOpts());
+  const _tick = ref(0);
+
+  useBroadcastListener(BROADCAST_TYPE.SLIDE_FONT_CHANGED, () => {
+    _tick.value += 1;
+  });
+
+  const cfg = computed(() => { void _tick.value; return _readSlideOpts(); });
 
   function _baseFont(slide: SlideOption): string {
     const fromSlide = slide && typeof slide.font === "string" ? slide.font : null;
-    return (fromSlide as string) || cfg.value.font;
+    return resolveFont(fromSlide, cfg.value.font, cfg.value.font);
   }
 
   /** Quando affect_external_slides=true, ignora overrides do slide e usa só o cfg. */
@@ -149,6 +196,12 @@ export function useSlideStyle(): SlideStyleAPI {
   function _pickColor(fromSlide: string | undefined, fromCfg: string): string {
     if (cfg.value.affect_external_slides) return fromCfg;
     return fromSlide || fromCfg;
+  }
+
+  function _buildTextShadow(): string | undefined {
+    if (!cfg.value.shadow_enabled) return undefined;
+    const { shadow_color, shadow_blur, shadow_offset_x, shadow_offset_y } = cfg.value;
+    return `${shadow_offset_x}px ${shadow_offset_y}px ${shadow_blur}px ${shadow_color}`;
   }
 
   function coverStyle(slide?: SlideOption): CSSProperties {
@@ -167,7 +220,7 @@ export function useSlideStyle(): SlideStyleAPI {
       fontWeight: 700,
       textAlign: "center",
       letterSpacing: "0.02em",
-      textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)",
+      textShadow: _buildTextShadow() ?? "none",
       lineHeight: 1.3,
       maxWidth: "92vw",
     };
@@ -189,7 +242,7 @@ export function useSlideStyle(): SlideStyleAPI {
       fontWeight: 600,
       textAlign: "center",
       letterSpacing: "0.01em",
-      textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)",
+      textShadow: _buildTextShadow() ?? "none",
       lineHeight: 1.3,
       maxWidth: "92vw",
     };
@@ -210,7 +263,7 @@ export function useSlideStyle(): SlideStyleAPI {
       color,
       fontWeight: 600,
       textAlign: "center",
-      textShadow: "0 2px 12px rgba(0,0,0,0.9)",
+      textShadow: _buildTextShadow() ?? "none",
       lineHeight: 1.3,
       maxWidth: "92vw",
     };
@@ -225,7 +278,7 @@ export function useSlideStyle(): SlideStyleAPI {
       opacity: 0.85,
       fontWeight: 600,
       lineHeight: 1.2,
-      textShadow: "0 1px 4px rgba(0,0,0,0.6)",
+      textShadow: _buildTextShadow() ?? "0 1px 4px rgba(0,0,0,0.6)",
     };
   }
 
@@ -271,12 +324,20 @@ export function useSlideStyle(): SlideStyleAPI {
     return cfg.value.color_repeat;
   }
 
-  /** Caixa de texto translúcida atrás da letra (CSS para inline-block). */
+  /** Caixa de texto com fundo, blur do backdrop e borda opcionais. */
   function textBoxStyle(): CSSProperties {
-    if (cfg.value.text_bg_transparent) {
-      return { backgroundColor: "transparent" };
-    }
-    return { backgroundColor: "rgba(0, 0, 0, 0.75)" };
+    const backdropFilter = cfg.value.text_bg_blur_enabled
+      ? `blur(${cfg.value.text_bg_blur}px)`
+      : "none";
+    return {
+      backgroundColor: cfg.value.text_bg_transparent ? "transparent" : "rgba(0, 0, 0, 0.75)",
+      backdropFilter,
+      WebkitBackdropFilter: backdropFilter,
+      border: cfg.value.text_border_enabled
+        ? `${cfg.value.text_border_width}px solid ${cfg.value.text_border_color}`
+        : "none",
+      boxSizing: "border-box",
+    };
   }
 
   const rootStyle = computed<CSSProperties>(() => ({

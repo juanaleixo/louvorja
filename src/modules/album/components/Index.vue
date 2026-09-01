@@ -43,9 +43,9 @@
             <td>
               <div class="d-flex justify-end">
                 <MusicMenuTable
-                  color="#FFF"
                   :id_music="item.id_music"
                   :name="item.name"
+                  color="white"
                   :has_instrumental_music="item.has_instrumental_music"
                 />
               </div>

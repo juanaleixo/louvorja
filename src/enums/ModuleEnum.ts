@@ -39,4 +39,5 @@ export enum ModuleEnum {
   THEME = "theme",
   TIMER = "timer",
   TIMER_WORSHIP = "timer_worship",
+  LIBRAS = "libras",
 }

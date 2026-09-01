@@ -2,7 +2,10 @@
   "title": "Biblia",
   "description": "Biblia",
   "ribbon": {
-    "title_ctx": "Configurar Biblia"
+    "title_ctx": "Configurar Biblia",
+    "show_reference": "Mostrar Referencia",
+    "show_version": "Mostrar Versión",
+    "reference_only": "Mostrar Solo Referencia"
   },
   "project_start": "Iniciar Proyección",
   "project_stop": "Detener Proyección",
@@ -13,6 +16,7 @@
   "verses": "Versículos",
   "verses_select": "Seleccionar versículos",
   "locate": "Buscar",
+  "filter_navigate_only": "Navegar solo entre los versículos listados",
   "history": "Historial",
   "show_history": "Mostrar Historial",
   "no_history": "Sin historial",

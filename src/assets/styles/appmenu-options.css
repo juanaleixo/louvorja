@@ -8,7 +8,7 @@
 }
 .opt-download-scroll {
   overflow-y: auto;
-  max-height: calc(100vh - 340px);
+  max-height: calc(85vh - 340px);
   margin: var(--lj-space-2) 0;
 }
 
@@ -53,7 +53,7 @@
   color: var(--lj-text);
   cursor: pointer;
   outline: none;
-  min-width: 220px;
+  min-width: var(--lj-opt-select-width);
 }
 
 .opt-select--inline {
@@ -501,4 +501,39 @@
   padding: 4px 10px;
   font-size: var(--lj-text-sm);
   border-color: var(--lj-surface-border);
+}
+
+/* === Range slider (sombra, fade, etc.) === */
+.opt-range-group {
+  display: flex;
+  align-items: center;
+  gap: var(--lj-space-3);
+}
+
+.opt-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--lj-surface-border-strong, #444);
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+  min-width: 80px;
+}
+.opt-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--lj-primary, #2196f3);
+  cursor: pointer;
+}
+.opt-range-val {
+  font-size: var(--lj-text-sm);
+  color: var(--lj-text-muted);
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

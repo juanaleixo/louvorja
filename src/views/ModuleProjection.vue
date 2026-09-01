@@ -28,14 +28,23 @@
     />
 
     <Transition :name="isLive ? 'no-transition' : 'fade-content'" mode="out-in">
-      <div v-if="active && (text || extra)" :key="transitionKey" class="module-projection__content">
+      <div
+        v-if="active && (text || extra)"
+        :key="transitionKey"
+        class="module-projection__content"
+        :style="{
+          backgroundColor: text_background_enabled
+            ? text_background_color || 'transparent'
+            : 'transparent',
+        }"
+      >
         <span
           v-if="text"
           class="module-projection__text"
           :style="{
             color: color || font_color || '#FFFFFF',
             fontSize: font_size_px + 'px',
-            fontFamily: font || 'Arial, sans-serif',
+            fontFamily: font || FONT.PROJECTION.FALLBACK,
             textAlign: textAlign,
             ...textShadowStyle,
           }"
@@ -49,17 +58,12 @@
           :style="{
             color: reference_font_color || font_color || '#FB8C00',
             fontSize: ref_font_size_px + 'px',
-            fontFamily: reference_font || font || 'Arial, sans-serif',
+            fontFamily: reference_font || font || FONT.PROJECTION.FALLBACK,
             textAlign: extraAlign,
           }"
         >
           {{ extra }}
         </span>
-      </div>
-
-      <div v-else class="module-projection__empty">
-        <div class="module-projection__empty-icon">{{ emptyIcon }}</div>
-        <div class="module-projection__empty-hint">{{ emptyHint }}</div>
       </div>
     </Transition>
   </div>
@@ -72,6 +76,8 @@ import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import Broadcast from "@/helpers/Broadcast";
 import UserData from "@/helpers/UserData";
+import { KEYS } from "@/constants/UserDataKeys";
+import { FONT, resolveFont } from "@/config/Fonts";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import DrawProjection from "@/modules/draw/components/DrawProjection.vue";
@@ -107,16 +113,24 @@ function ud(key, fallback = null) {
   return v == null ? fallback : v;
 }
 
-const font = computed(() => ud("font", "Arial, sans-serif"));
+const font = computed(() => {
+  const saved =
+    ud("font", null) || UserData.get(KEYS.OPTIONS.UTILITIES_FONT, "") || FONT.PROJECTION.INHERIT;
+  return resolveFont(saved, FONT.PROJECTION.FALLBACK);
+});
 const font_color = computed(() => ud("font_color", "#FFFFFF"));
 const font_size = computed(() => ud("font_size", 15));
 const text_shadow = computed(() => ud("text_shadow", false));
 const text_shadow_color = computed(() => ud("text_shadow_color", "#000000"));
 const text_shadow_blur = computed(() => ud("text_shadow_blur", 4));
-const reference_font = computed(() => ud("reference_font", null));
+const reference_font = computed(() =>
+  resolveFont(ud("reference_font", null), font.value, font.value)
+);
 const reference_font_color = computed(() => ud("reference_font_color", "#FB8C00"));
 const reference_font_size = computed(() => ud("reference_font_size", 10));
 const background_color = computed(() => ud("background_color", "#000000"));
+const text_background_color = computed(() => ud("text_background_color", "transparent"));
+const text_background_enabled = computed(() => ud("text_background_enabled", false));
 const border_spacing = computed(() => ud("border_spacing", 10));
 const vertical_align = computed(() => ud("vertical_align", "center"));
 const horizontal_align = computed(() => ud("horizontal_align", "center"));
@@ -197,8 +211,13 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_CLOSE, (payload) => {
 
 useBroadcastListener(BROADCAST_TYPE.USERDATA_PATCH, (payload) => {
   if (!payload || typeof payload.path !== "string") return;
-  if (!payload.path.startsWith(`modules.${moduleId.value}.`)) return;
-  _tick.value += 1;
+  if (
+    payload.path.startsWith(`modules.${moduleId.value}.`) ||
+    payload.path === "options.utilities_font" ||
+    payload.path === "options.font"
+  ) {
+    _tick.value += 1;
+  }
 });
 
 function onKey(e) {
@@ -283,7 +302,7 @@ onBeforeUnmount(() => {
 
 .module-projection__empty-hint {
   font-size: 1.5vw;
-  font-family: Arial, sans-serif;
+  font-family: DINCondensedBold;
   letter-spacing: 0.04em;
 }
 

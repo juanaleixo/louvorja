@@ -287,6 +287,18 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
     sizeOfPaths: (remotePaths) => ipcRenderer.invoke("storage:sizeOfPaths", remotePaths),
     /** Liga/desliga auto-cache ao reproduzir mídia. */
     setAutoCache: (enabled) => ipcRenderer.invoke("storage:setAutoCache", enabled),
+    /** Importa arquivos da versão clássica Delphi para um novo diretório. */
+    importFromClassic: (classicDir, targetDir, lang, opts) =>
+      ipcRenderer.invoke("storage:importFromClassic", classicDir, targetDir, lang, opts),
+  },
+
+  // -------------------------------------------------------------------------
+  // Versão clássica Delphi — detecção
+  // -------------------------------------------------------------------------
+
+  classic: {
+    /** Detecta se a versão Delphi está instalada. */
+    detect: () => ipcRenderer.invoke("classic:detect"),
   },
 
   // -------------------------------------------------------------------------
@@ -456,6 +468,7 @@ contextBridge.exposeInMainWorld("louvorjaApi", {
       "http:open-song",
       "http:drawing-number",
       "http:drawing-name",
+      "http:libras-bundle",
     ];
     const handlers = events.map((evt) => {
       const handler = (_e, data) => cb(evt, data);

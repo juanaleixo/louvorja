@@ -243,6 +243,15 @@ export default {
   },
 
   /**
+   * Detecção da versão clássica Delphi (Windows).
+   * { detect() } — retorna { detected, installDir, configDir, lang, folders }.
+   * null no browser/PWA.
+   */
+  get classic() {
+    return api?.classic ?? null;
+  },
+
+  /**
    * Iniciar com sistema operacional (F5.1).
    * { set(enabled), get() } via app.setLoginItemSettings.
    * null no browser/PWA.

@@ -29,9 +29,11 @@ export interface BibleVerse {
 export interface BibleVersePayload {
   text: string
   reference: string
-  bookId: number
-  chapter: number
+  book_id?: number
+  chapter: number | string
   verses: number[]
+  version?: string
+  version_id?: number
   active: boolean
 }
 

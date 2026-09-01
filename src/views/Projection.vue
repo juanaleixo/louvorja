@@ -1,6 +1,19 @@
 <template>
-  <Slide :slide="slide" :title="title" :progress="progress" show-progress class="projection-fill" />
+  <div class="projection-stage">
+    <Slide
+      :slide="slide"
+      :title="title"
+      :progress="progress"
+      show-progress
+      class="projection-fill"
+    />
+  </div>
   <OverlayRenderer />
+  <LibrasOverlay
+    :slide-lyric="slide?.lyric"
+    :music-id="Number(slide?.id_music) || undefined"
+    type="music"
+  />
 </template>
 
 <script setup>
@@ -10,6 +23,7 @@ import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import Slide from "@/components/Slide.vue";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
+import LibrasOverlay from "@/views/LibrasOverlay.vue";
 
 const { slide, progress, title, slideIndex, totalSlides } = useProjectionState();
 
@@ -56,9 +70,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.projection-fill {
+.projection-stage {
   width: 100vw;
   height: 100vh;
+}
+.projection-fill {
+  width: 100%;
+  height: 100%;
 }
 .projection-fill,
 .projection-fill :deep(*) {

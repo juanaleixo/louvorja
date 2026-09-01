@@ -1,6 +1,9 @@
 <template>
   <v-app>
     <v-main class="remote-root">
+      <v-overlay v-model="loading" class="d-flex align-center justify-center" persistent>
+        <v-progress-circular indeterminate color="primary" size="48" />
+      </v-overlay>
       <v-toolbar color="primary" density="compact" flat>
         <v-toolbar-title class="text-subtitle-1">
           {{ t("options.transmission.remote_control") }}
@@ -197,6 +200,7 @@ const { t } = useI18n();
 const route = useRoute();
 
 const tab = ref("music");
+const loading = ref(true);
 const snackbar = ref({ show: false, text: "", color: "" });
 const token = computed(() => getToken());
 
@@ -437,19 +441,23 @@ async function annStop() {
   }
 }
 
-function refreshState() {
+async function refreshState() {
   showSnackbar(t("remote_control.sync.syncing"));
-  if (tab.value === "liturgy" && liturgyRef.value) {
-    liturgyRef.value.refresh();
-  } else if (tab.value === "bible" && bibleRef.value) {
-    bibleRef.value.refresh();
-  } else if (tab.value === "announcements" && announcementsRef.value) {
-    announcementsRef.value.refresh();
+  try {
+    if (tab.value === "liturgy" && liturgyRef.value) {
+      await liturgyRef.value.refresh();
+    } else if (tab.value === "bible" && bibleRef.value) {
+      await bibleRef.value.refresh();
+    } else if (tab.value === "announcements" && announcementsRef.value) {
+      await announcementsRef.value.refresh();
+    }
+  } finally {
+    loading.value = false;
   }
 }
 
-onMounted(() => {
-  setTimeout(refreshState, 500);
+onMounted(async () => {
+  await refreshState();
 });
 </script>
 

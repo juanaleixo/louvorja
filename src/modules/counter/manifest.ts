@@ -3,6 +3,7 @@ import type { RibbonPage } from "@/types/Ribbon"
 import { ModuleCategoryEnum } from "@/enums/ModuleCategoryEnum"
 import { ModuleGroupEnum } from "@/enums/ModuleGroupEnum"
 import { ICONS } from "@/config/Icons"
+import { FONT } from "@/config/Fonts"
 import { ModuleEnum } from "@/enums/ModuleEnum"
 import $modules from "@/helpers/Modules"
 
@@ -22,8 +23,10 @@ export const module: Module = {
   group: ModuleGroupEnum.DRAWS,
   order: 1,
   customization: {
-    font: { type: "font", default: "Arial, sans-serif" },
+    font: { type: "font", default: FONT.PROJECTION.INHERIT },
     font_color: { type: "color", default: "#FFFFFF" },
+    text_background_enabled: { type: "boolean", default: false },
+    text_background_color: { type: "color", default: "transparent" },
     font_size: { type: "font-size", default: 50 },
     text_shadow: { type: "boolean", default: false },
     text_shadow_color: { type: "color", default: "#000000" },

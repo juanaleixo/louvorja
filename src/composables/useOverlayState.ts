@@ -10,6 +10,7 @@ import {
   type OverlaySlot,
 } from "@/types/Overlay";
 import { KEYS } from "@/constants/UserDataKeys";
+import { FONT, resolveFont } from "@/config/Fonts";
 
 interface OverlayStateReturn {
   enabled: Ref<boolean>;
@@ -42,6 +43,7 @@ export function useOverlayState(): OverlayStateReturn {
     const p = payload as { enabled?: boolean } | null;
     if (p?.enabled !== undefined) {
       enabled.value = p.enabled;
+      $userdata.set(KEYS.MODULES.OVERLAY.ENABLED, p.enabled);
     }
     refresh();
   });
@@ -163,7 +165,7 @@ export function useOverlayState(): OverlayStateReturn {
   function textStyle(slot: OverlaySlot): Record<string, string> {
     const s = slot.style;
     return {
-      fontFamily: s.font || "Arial, sans-serif",
+      fontFamily: resolveFont(s.font, FONT.PROJECTION.FALLBACK),
       fontSize: `clamp(14px, ${s.font_size || 5}vh, 80px)`,
       color: s.color || "#FFFFFF",
       textAlign: s.text_align || "center",

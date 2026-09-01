@@ -42,6 +42,7 @@
                 role="menuitem"
                 @click="selectItem(item)"
               >
+                <Icon :icon="item.icon" class="mr-2" />
                 <span class="app-menu-item-label lj-u-truncate">{{ $t(item.label) }}</span>
               </button>
             </nav>
@@ -56,6 +57,7 @@
               <AppMenuSobre v-else-if="activeItem?.id === 'about'" />
               <AppMenuTransmitir v-else-if="activeItem?.id === 'transmission'" />
               <AppMenuSincronizar v-else-if="activeItem?.id === 'sync'" />
+              <AppMenuAcessibilidade v-else-if="activeItem?.id === 'accessibility'" />
               <AppMenuAtualizacoes v-else-if="activeItem?.id === 'updates'" />
               <AppMenuImportExport v-else-if="activeItem?.id === 'import_export'" />
               <AppMenuAlbums v-else-if="activeItem?.id === 'albums'" />
@@ -78,6 +80,7 @@ import AppMenuOpcoes from "./AppMenuOpcoes.vue";
 import AppMenuSobre from "./AppMenuSobre.vue";
 import AppMenuTransmitir from "./AppMenuTransmitir.vue";
 import AppMenuSincronizar from "./AppMenuSincronizar.vue";
+import AppMenuAcessibilidade from "./AppMenuAcessibilidade.vue";
 import AppMenuAtualizacoes from "./AppMenuAtualizacoes.vue";
 import AppMenuImportExport from "./AppMenuImportExport.vue";
 import AppMenuAlbums from "./AppMenuAlbums.vue";
@@ -115,25 +118,82 @@ const optionsTab = ref("general");
  * (em vez de fechar o menu e disparar uma ação).
  */
 const items = computed(() => [
-  { id: "about", label: "shell.appmenu_items.about", inline: true },
-  { id: "settings", label: "shell.appmenu_items.settings", inline: true },
-  { id: "transmission", label: "shell.appmenu_items.transmission", inline: true },
+  {
+    id: "about",
+    label: "shell.appmenu_items.about",
+    icon: ICONS.UI.INFORMATION_OUTLINE,
+    inline: true,
+  },
+  {
+    id: "settings",
+    label: "shell.appmenu_items.settings",
+    icon: ICONS.UI.OPTIONS,
+    inline: true,
+  },
+  {
+    id: "transmission",
+    label: "shell.appmenu_items.transmission",
+    icon: ICONS.UI.SERVER,
+    inline: true,
+  },
   {
     id: "import_export",
     label: "shell.appmenu_items.import_export",
+    icon: ICONS.UI.IMPORT_EXPORT,
     inline: true,
   },
-  { id: "sync", label: "shell.appmenu_items.sync", inline: true },
-  { id: "feedback", label: "shell.appmenu_items.feedback", action: openFeedback },
-  { id: "updates", label: "shell.appmenu_items.check_update", inline: true },
+  {
+    id: "sync",
+    label: "shell.appmenu_items.sync",
+    icon: ICONS.UI.SYNC_CLOUD,
+    inline: true,
+  },
+  {
+    id: "accessibility",
+    label: "shell.appmenu_items.accessibility",
+    icon: ICONS.UI.ACCESSIBILITY,
+    inline: true,
+  },
+  {
+    id: "updates",
+    label: "shell.appmenu_items.check_update",
+    icon: ICONS.UI.CHECK_UPDATE,
+    inline: true,
+  },
   {
     id: "albums",
     label: "shell.appmenu_items.albums",
+    icon: ICONS.MUSIC.OFF,
     inline: true,
   },
-  ...(isDev ? [{ id: "dev", label: "shell.appmenu_items.dev", inline: true }] : []),
-  { id: "donate", label: "shell.appmenu_items.donate", action: openDonation },
-  { id: "exit", label: "shell.appmenu_items.exit", action: exitApp },
+  ...(isDev
+    ? [
+        {
+          id: "dev",
+          label: "shell.appmenu_items.dev",
+          icon: ICONS.UI.DEV,
+          inline: true,
+        },
+      ]
+    : []),
+  {
+    id: "feedback",
+    label: "shell.appmenu_items.feedback",
+    icon: ICONS.UI.FEEDBACK,
+    action: openFeedback,
+  },
+  {
+    id: "donate",
+    label: "shell.appmenu_items.donate",
+    icon: ICONS.UI.DONATE,
+    action: openDonation,
+  },
+  {
+    id: "exit",
+    label: "shell.appmenu_items.exit",
+    icon: ICONS.UI.INFORMATION_OUTLINE,
+    action: exitApp,
+  },
 ]);
 
 function toggle() {
@@ -182,7 +242,7 @@ function selectItem(item) {
 
 function openFeedback() {
   if (typeof window !== "undefined") {
-    window.open("https://github.com/juanaleixo/louvorja/issues", "_blank", "noopener,noreferrer");
+    window.open("https://github.com/louvorja/violin-app/issues", "_blank", "noopener,noreferrer");
   }
 }
 

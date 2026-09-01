@@ -4,13 +4,51 @@
     class="footer"
     :class="{
       'footer--active': hasPlayer || hasBgSound || hasProjection,
-      'footer--bg-sound': hasPlayer && hasBgSound,
+      'footer--bg-sound': hasBgSound,
       'footer--bg-only': hasBgSound && !hasPlayer && !hasProjection,
       'footer--fp-only': hasProjection && !hasPlayer && !hasBgSound,
+      'footer--playlist': playlist.isActive.value,
     }"
   >
     <BackgroundSoundPlayer v-if="hasBgSound" />
     <FileProjectionBar v-if="hasProjection" />
+    <div v-if="playlist.isActive.value" class="playlist-bar">
+      <v-icon icon="mdi-playlist-music" size="14" class="playlist-bar-icon" />
+      <span class="playlist-bar-name">{{ playlist.currentPlaylist.value?.name }}</span>
+      <span class="playlist-bar-meta">
+        {{ playlist.playedCount.value }}/{{ playlist.totalSongs.value }} ·
+        {{ formatDuration(playlist.playedDuration.value) }} /
+        {{ formatDuration(playlist.totalDuration.value) }}
+      </span>
+      <div class="playlist-bar-controls">
+        <button
+          type="button"
+          class="player-btn"
+          :disabled="playlist.currentIndex.value <= 0"
+          :title="$t('shell.player.prev')"
+          @click="playlist.playPrev()"
+        >
+          <v-icon icon="mdi-skip-previous" size="18" />
+        </button>
+        <button
+          type="button"
+          class="player-btn"
+          :disabled="playlist.currentIndex.value >= playlist.totalSongs.value - 1"
+          :title="$t('shell.player.next')"
+          @click="playlist.playNext()"
+        >
+          <v-icon icon="mdi-skip-next" size="18" />
+        </button>
+        <button
+          type="button"
+          class="player-btn player-btn--danger"
+          :title="$t('shell.player.close')"
+          @click="playlist.stopPlaylist()"
+        >
+          <v-icon icon="mdi-close" size="16" />
+        </button>
+      </div>
+    </div>
     <div v-if="hasPlayer" class="player">
       <div class="player-title" :class="{ 'player-title--youtube': isYouTube }">
         <v-icon
@@ -166,6 +204,7 @@ import DateTime from "@/helpers/DateTime";
 import BackgroundSoundPlayer from "@/components/BackgroundSoundPlayer.vue";
 import FileProjectionBar from "@/components/FileProjectionBar.vue";
 import { useFileProjection } from "@/composables/useFileProjection";
+import { usePlaylistPlayback } from "@/modules/musics/composables/usePlaylistPlayback";
 
 const dbVersion = ref(0);
 
@@ -174,6 +213,7 @@ const media = computed(() => Modules.get("media"));
 
 const bg = useBackgroundSound();
 const fp = useFileProjection();
+const playlist = usePlaylistPlayback();
 
 const hasPlayer = computed(() => {
   try {
@@ -238,13 +278,31 @@ const slideText = computed(() => {
 });
 
 const shortTime = (t) => DateTime.shortTime(t);
+const formatDuration = (seconds) => DateTime.shortTime(seconds);
 const firstSlide = () => Media.firstSlide();
-const prevSlide = () => Media.prevSlide();
+const prevSlide = () => {
+  if (playlist.isActive.value) {
+    playlist.playPrev();
+  } else {
+    Media.prevSlide();
+  }
+};
 const rewind = () => Media.advanceTime(-10);
 const forward = () => Media.advanceTime(10);
-const nextSlide = () => Media.nextSlide();
+const nextSlide = () => {
+  if (playlist.isActive.value) {
+    playlist.playNext();
+  } else {
+    Media.nextSlide();
+  }
+};
 const lastSlide = () => Media.lastSlide();
-const closeMedia = () => Media.close();
+const closeMedia = () => {
+  if (playlist.isActive.value) {
+    playlist.stopPlaylist();
+  }
+  Media.close();
+};
 const maximizeMedia = () => Media.maximize();
 const fullscreenMedia = () => Media.fullscreen(true);
 
@@ -297,6 +355,14 @@ onMounted(loadDBVersion);
   height: calc(var(--lj-player-height) + 30px);
 }
 
+.footer--playlist {
+  height: calc(var(--lj-player-height) + 28px);
+}
+
+.footer--playlist.footer--bg-sound {
+  height: calc(var(--lj-player-height) + 58px);
+}
+
 .footer--bg-only {
   height: 30px;
 }
@@ -307,6 +373,46 @@ onMounted(loadDBVersion);
 .footer--active {
   transform: translateY(0);
   transition: transform 0.3s ease; /* entrada: 0.3s (rápida) */
+}
+
+/* Playlist bar */
+.playlist-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--lj-space-3);
+  height: 28px;
+  padding: 0 var(--lj-space-4);
+  background: var(--lj-tabs-bg);
+  border-bottom: 1px solid var(--lj-footer-border);
+  font-size: var(--lj-text-xs);
+  color: var(--lj-text-on-navy);
+  flex-shrink: 0;
+}
+
+.playlist-bar-icon {
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.playlist-bar-name {
+  font-weight: var(--lj-weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.playlist-bar-meta {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  margin-left: auto;
+}
+
+.playlist-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--lj-space-1);
+  margin-left: var(--lj-space-2);
 }
 
 /* Player */

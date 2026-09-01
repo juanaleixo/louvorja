@@ -229,6 +229,7 @@ import type { RibbonButton, RibbonGroup, RibbonPage } from "@/types/Ribbon";
 import RibbonButtonComponent from "@/layout/shell/RibbonButtonComponent.vue";
 import RibbonGroupComponent from "@/layout/shell/RibbonGroupComponent.vue";
 import RibbonTabs from "@/components/RibbonTabs.vue";
+import { THEMES } from "@/config/Theme";
 
 const { t } = useI18n();
 const shell = useShell();
@@ -313,6 +314,9 @@ function getCheckValue(btn: RibbonButton): boolean {
 function setCheckValue(btn: RibbonButton, checked: boolean | null): void {
   if (!btn.optionKey) return;
   $userdata.set(btn.optionKey, checked ?? false);
+  if (btn.broadcastOnToggle) {
+    Broadcast.send(btn.broadcastOnToggle, {});
+  }
 }
 
 function isDependencyMet(btn: RibbonButton): boolean {
@@ -475,8 +479,8 @@ function resolveBtnColor(btn: RibbonButton): string | undefined {
   // Estilo de interface "Electron": todos os botões da ribbon usam a cor
   // primária do tema ativo (stateBinding também — estado indicado por ícone).
   // Em tema escuro os ícones ficam brancos para contraste na ribbon escura.
-  const uiStyle = $userdata.get<string>(KEYS.OPTIONS.UI_STYLE, "delphi");
-  if (uiStyle === "electron") {
+  const uiStyle = $userdata.get<string>(KEYS.OPTIONS.UI_STYLE, THEMES.CLASSIC);
+  if (uiStyle === THEMES.VIOLIN) {
     const isDark = $appdata.get<boolean>(KEYS.SHELL.IS_DARK, false);
     return isDark ? "#FFFFFF" : COLORS.PRIMARY;
   }

@@ -1,22 +1,25 @@
 <template>
   <div class="mmt">
     <template v-if="!compact">
-      <button
+      <v-btn
         v-for="(btn, key) in buttons"
         :key="key"
         type="button"
         class="mmt-btn"
+        variant="text"
         :class="{
           'mmt-btn--disabled': btn.disabled,
           'mmt-btn--star': btn.icon === 'mdi-star',
         }"
-        :disabled="!!btn.disabled"
+        max-idth="5"
+        :color="color ?? 'var(--lj-text-muted)'"
+        :disabled="btn.disabled"
         :title="btn.title"
         :data-testid="'mmt-btn-' + btn.testid"
         @click="btn.click"
       >
         <v-icon :icon="btn.icon" size="16" />
-      </button>
+      </v-btn>
     </template>
 
     <v-menu location="start">
@@ -90,8 +93,11 @@ import Favorites from "@/helpers/Favorites";
 import Liturgy from "@/helpers/Liturgy";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
+import $snackbar from "@/helpers/Snackbar";
 import { ICONS } from "@/config/Icons";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import { usePlaylists } from "@/modules/musics/composables/usePlaylists";
+import type { PlaylistSong } from "@/types/Music";
 
 interface ButtonItem {
   testid: string;
@@ -124,6 +130,7 @@ const props = defineProps<{
   has_instrumental_music: boolean | number;
   color?: string;
   extraMenu?: ExtraMenuItem[];
+  showPlaylistMenu?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -205,6 +212,8 @@ const buttons = computed<ButtonItem[]>(() => [
   },
 ]);
 
+const { playlists, addSong, isSongInPlaylist } = usePlaylists();
+
 const menu = computed<MenuItem[]>(() => [
   {
     title: t("components.music_menu.add_to"),
@@ -224,6 +233,29 @@ const menu = computed<MenuItem[]>(() => [
       },
     ],
   },
+  ...(props.showPlaylistMenu && playlists.value.length > 0
+    ? [
+        {
+          title: t("components.music_menu.add_to_playlist"),
+          icon: "mdi-playlist-plus",
+          menu: playlists.value.map((p) => ({
+            title: p.name,
+            icon: isSongInPlaylist(p.id, props.id_music) ? "mdi-check" : "mdi-playlist-music",
+            disabled: isSongInPlaylist(p.id, props.id_music),
+            click: () => {
+              const song: PlaylistSong = {
+                id_music: props.id_music,
+                name: props.name,
+                duration: 0,
+                has_instrumental_music: !!props.has_instrumental_music,
+              };
+              addSong(p.id, song);
+              $snackbar.show(t("playlists.song_added"));
+            },
+          })),
+        },
+      ]
+    : []),
   {
     title: t("components.music_menu.execute"),
     icon: "mdi-play",
@@ -289,7 +321,6 @@ const menu = computed<MenuItem[]>(() => [
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--lj-radius-sm);
-  color: var(--lj-text-muted);
   cursor: pointer;
   transition:
     background var(--lj-transition-fast),
@@ -301,7 +332,6 @@ const menu = computed<MenuItem[]>(() => [
 
 .mmt-btn:hover:not(:disabled) {
   background: var(--lj-active-bg);
-  color: var(--lj-navy);
   border-color: var(--lj-navy);
 }
 

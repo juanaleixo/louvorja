@@ -51,6 +51,7 @@ export interface RibbonButton {
     labelOn?: string;
     labelOff?: string;
   };
+  broadcastOnToggle?: string;
 }
 
 export interface RibbonAction {

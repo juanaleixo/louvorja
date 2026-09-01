@@ -29,6 +29,10 @@
         <v-icon :icon="ICONS.UI.FILE"></v-icon>
         {{ $t("options.file_projection.title") }}
       </v-tab>
+      <v-tab value="utilities">
+        <v-icon icon="mdi-tools"></v-icon>
+        {{ $t("options.utilities.title") }}
+      </v-tab>
     </v-tabs>
 
     <v-tabs-window v-model="tab" class="pt-5">
@@ -65,12 +69,39 @@
           <select
             id="opt-ui-style"
             class="opt-select"
-            :value="getUserData(KEYS.OPTIONS.UI_STYLE, 'delphi')"
+            :value="getUserData(KEYS.OPTIONS.UI_STYLE, THEMES.CLASSIC)"
             @change="saveUserData(KEYS.OPTIONS.UI_STYLE, $v($event))"
           >
-            <option value="delphi">{{ $t("options.general.ui_style_delphi") }}</option>
-            <option value="electron">{{ $t("options.general.ui_style_electron") }}</option>
+            <option v-for="t in THEMES" :key="t.toString()" :value="t">
+              {{ t.toString().toUpperCase() }}
+            </option>
           </select>
+        </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-font">{{ $t("options.general.font") }}</label>
+          <SelectFont
+            id="opt-font"
+            :model-value="getUserData(KEYS.OPTIONS.FONT, '')"
+            :show-interface-default="false"
+            :show-projection-default="false"
+            :default-font="FONT.UI.FALLBACK"
+            @update:model-value="saveUserData(KEYS.OPTIONS.FONT, $event)"
+          />
+        </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-projection-font">
+            {{ $t("options.general.projection_font") }}
+          </label>
+          <SelectFont
+            id="opt-projection-font"
+            :model-value="getUserData(KEYS.OPTIONS.PROJECTION_FONT, '')"
+            :show-projection-default="false"
+            :show-interface-default="false"
+            :default-font="FONT.PROJECTION.FALLBACK"
+            @update:model-value="saveUserData(KEYS.OPTIONS.PROJECTION_FONT, $event)"
+          />
         </div>
 
         <div v-if="isDesktop" class="opt-row">
@@ -253,6 +284,15 @@
             @update:model-value="setPref('bible_return', $event)"
           />
         </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-bible-font">{{ $t("options.bible.font") }}</label>
+          <SelectFont
+            id="opt-bible-font"
+            :model-value="$userdata.get(KEYS.MODULES.BIBLE.FONT, '')"
+            @update:model-value="saveUserData(KEYS.MODULES.BIBLE.FONT, $event)"
+          />
+        </div>
       </v-tabs-window-item>
 
       <v-tabs-window-item value="slides">
@@ -283,6 +323,14 @@
             <option value="center">{{ $t("options.slides.align_center") }}</option>
             <option value="bottom">{{ $t("options.slides.align_bottom") }}</option>
           </select>
+        </div>
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-slides-font">{{ $t("options.slides.font") }}</label>
+          <SelectFont
+            id="opt-slides-font"
+            :model-value="getUserData(KEYS.OPTIONS.SLIDE.FONT, '')"
+            @update:model-value="saveUserData(KEYS.OPTIONS.SLIDE.FONT, $event)"
+          />
         </div>
         <div class="opt-row">
           <label class="opt-checkbox">
@@ -365,6 +413,17 @@
           </label>
         </div>
 
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false)"
+              @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, $c($event))"
+            />
+            <span>{{ $t("options.slides.text_bg_blur_enabled") }}</span>
+          </label>
+        </div>
+
         <!-- Formatação de texto personalizada -->
         <div class="opt-row">
           <label class="opt-checkbox">
@@ -380,91 +439,242 @@
           v-if="getUserData(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false)"
           class="opt-format-block"
         >
-          <div class="opt-format-row">
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.title_color") }}</span>
-              <input
-                type="color"
-                class="opt-color"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.TITLE_COLOR, '#ffd84d')"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.TITLE_COLOR, $v($event))"
-              />
-            </label>
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.text_color") }}</span>
-              <input
-                type="color"
-                class="opt-color"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_COLOR, '#ffffff')"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_COLOR, $v($event))"
-              />
-            </label>
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.repeat_color") }}</span>
-              <input
-                type="color"
-                class="opt-color"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, '#bbbbbb')"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, $v($event))"
-              />
-            </label>
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.aux_color") }}</span>
-              <input
-                type="color"
-                class="opt-color"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.AUX_COLOR, '#cccccc')"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.AUX_COLOR, $v($event))"
-              />
-            </label>
-            <label class="opt-checkbox opt-format-check">
-              <input
-                type="checkbox"
-                :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, false)"
-                @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, $c($event))"
-              />
-              <span>{{ $t("options.slides.text_bg_transparent") }}</span>
-            </label>
-          </div>
-          <div class="opt-format-row">
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.title_size") }}</span>
-              <input
-                type="number"
-                min="6"
-                max="60"
-                class="opt-input opt-input--num"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.TITLE_SIZE, 18)"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.TITLE_SIZE, Number($v($event)) || 18)"
-              />
-            </label>
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.text_size_label") }}</span>
-              <input
-                type="number"
-                min="6"
-                max="60"
-                class="opt-input opt-input--num"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.BODY_SIZE, 14)"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.BODY_SIZE, Number($v($event)) || 14)"
-              />
-            </label>
-            <label class="opt-format-field">
-              <span class="opt-format-label">{{ $t("options.slides.aux_size") }}</span>
-              <input
-                type="number"
-                min="6"
-                max="60"
-                class="opt-input opt-input--num"
-                :value="getUserData(KEYS.OPTIONS.SLIDE.AUX_SIZE, 10)"
-                @input="saveUserData(KEYS.OPTIONS.SLIDE.AUX_SIZE, Number($v($event)) || 10)"
-              />
-            </label>
-            <button type="button" class="opt-btn opt-btn--ghost" @click="restoreTextFormat">
-              <v-icon icon="mdi-refresh" size="14" class="mr-1" />
-              {{ $t("options.slides.restore") }}
-            </button>
-          </div>
+          <v-row>
+            <v-col cols="12" sm="3">
+              <div class="opt-format-row">
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.title_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TITLE_COLOR, '#ffd84d')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TITLE_COLOR, $v($event))"
+                  />
+                </label>
+
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_COLOR, '#ffffff')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_COLOR, $v($event))"
+                  />
+                </label>
+
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.repeat_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, '#bbbbbb')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, $v($event))"
+                  />
+                </label>
+
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.aux_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.AUX_COLOR, '#cccccc')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.AUX_COLOR, $v($event))"
+                  />
+                </label>
+              </div>
+
+              <div class="opt-format-row">
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.title_size") }}</span>
+                  <input
+                    type="number"
+                    min="6"
+                    max="60"
+                    class="opt-input opt-input--num"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TITLE_SIZE, 18)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TITLE_SIZE, Number($v($event)) || 18)"
+                  />
+                </label>
+
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_size_label") }}</span>
+                  <input
+                    type="number"
+                    min="6"
+                    max="60"
+                    class="opt-input opt-input--num"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.BODY_SIZE, 14)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.BODY_SIZE, Number($v($event)) || 14)"
+                  />
+                </label>
+
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.aux_size") }}</span>
+                  <input
+                    type="number"
+                    min="6"
+                    max="60"
+                    class="opt-input opt-input--num"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.AUX_SIZE, 10)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.AUX_SIZE, Number($v($event)) || 10)"
+                  />
+                </label>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <label class="opt-checkbox opt-format-check">
+                <input
+                  type="checkbox"
+                  :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, false)"
+                  @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, $c($event))"
+                />
+                <span>{{ $t("options.slides.text_bg_transparent") }}</span>
+              </label>
+
+              <label class="opt-checkbox opt-format-check ml-3">
+                <input
+                  type="checkbox"
+                  :checked="getUserData(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, false)"
+                  @change="saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, $c($event))"
+                />
+                <span>{{ $t("options.slides.shadow_enabled") }}</span>
+              </label>
+
+              <div
+                v-if="getUserData(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, false)"
+                class="opt-format-row"
+              >
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.shadow_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.SHADOW_COLOR, '#000000')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_COLOR, $v($event))"
+                  />
+                </label>
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.shadow_blur") }}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="30"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, 12)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, 12) }}px
+                  </span>
+                </label>
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.shadow_offset_x") }}</span>
+                  <input
+                    type="range"
+                    min="-20"
+                    max="20"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_X, 0)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_X, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_X, 0) }}px
+                  </span>
+                </label>
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.shadow_offset_y") }}</span>
+                  <input
+                    type="range"
+                    min="-20"
+                    max="20"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, 2)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, 2) }}px
+                  </span>
+                </label>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="5">
+              <label class="opt-checkbox opt-format-check">
+                <input
+                  type="checkbox"
+                  :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false)"
+                  @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, $c($event))"
+                />
+                <span>{{ $t("options.slides.text_bg_blur_enabled") }}</span>
+              </label>
+
+              <div
+                v-if="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false)"
+                class="opt-format-row"
+              >
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_bg_blur") }}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="30"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12) }}px
+                  </span>
+                </label>
+              </div>
+
+              <label class="opt-checkbox opt-format-check">
+                <input
+                  type="checkbox"
+                  :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false)"
+                  @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, $c($event))"
+                />
+                <span>{{ $t("options.slides.text_border_enabled") }}</span>
+              </label>
+
+              <div
+                v-if="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false)"
+                class="opt-format-row"
+              >
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_border_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, '#ffffff')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, $v($event))"
+                  />
+                </label>
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_border_width") }}</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2) }}px
+                  </span>
+                </label>
+              </div>
+            </v-col>
+          </v-row>
+          <button type="button" class="opt-btn opt-btn--ghost" @click="restoreTextFormat">
+            <v-icon icon="mdi-refresh" size="14" class="mr-1" />
+            {{ $t("options.slides.restore") }}
+          </button>
         </div>
 
         <!-- Formatação de texto do retorno personalizada -->
@@ -824,6 +1034,43 @@
           </div>
         </template>
       </v-tabs-window-item>
+
+      <v-tabs-window-item value="utilities">
+        <!-- Utilitários -->
+
+        <div class="opt-row">
+          <label class="opt-label" for="opt-utilities-monitor">
+            {{ $t("options.utilities.open_at") }}
+          </label>
+          <MonitorSelect
+            id="opt-utilities-monitor"
+            :model-value="getUserData(KEYS.OPTIONS.UTILITIES_MONITOR, '') ?? ''"
+            @update:model-value="saveUserData(KEYS.OPTIONS.UTILITIES_MONITOR, $event || null)"
+          />
+        </div>
+
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="getUserData(KEYS.OPTIONS.UTILITIES_SHOW_RETURN, false)"
+              @change="saveUserData(KEYS.OPTIONS.UTILITIES_SHOW_RETURN, $c($event))"
+            />
+            <span>{{ $t("options.utilities.show_return") }}</span>
+          </label>
+        </div>
+
+        <div class="opt-row opt-row--field">
+          <label class="opt-label" for="opt-utilities-font">
+            {{ $t("options.utilities.font") }}
+          </label>
+          <SelectFont
+            id="opt-utilities-font"
+            :model-value="getUserData(KEYS.OPTIONS.UTILITIES_FONT, '')"
+            @update:model-value="saveUserData(KEYS.OPTIONS.UTILITIES_FONT, $event)"
+          />
+        </div>
+      </v-tabs-window-item>
     </v-tabs-window>
   </div>
 </template>
@@ -838,6 +1085,7 @@ import { useI18n } from "vue-i18n";
 import { useTheme } from "vuetify";
 import { useDisplays } from "@/composables/useDisplays";
 import MonitorSelect from "@/components/inputs/MonitorSelect.vue";
+import SelectFont from "@/components/inputs/SelectFont.vue";
 import MonitorShape from "@/components/MonitorShape.vue";
 import $appdata from "@/helpers/AppData";
 import $userdata from "@/helpers/UserData";
@@ -845,6 +1093,8 @@ import Platform from "@/helpers/Platform";
 import { ICONS } from "@/config/Icons";
 import { KEYS } from "@/constants/UserDataKeys";
 import { MAIN_BACKGROUND_ID, Settings } from "@/types/Settings";
+import { THEMES } from "@/config/Theme";
+import { FONT } from "@/config/Fonts";
 
 interface ThemeOption {
   id: string;
@@ -913,6 +1163,15 @@ const previewMonitorH: ComputedRef<number> = computed(() => previewMonitor.value
 
 function saveUserData(key: string, value: unknown): void {
   $userdata.set(key, value);
+  if (key === KEYS.OPTIONS.FONT || key === KEYS.OPTIONS.PROJECTION_FONT) {
+    Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
+  } else if (key === KEYS.MODULES.BIBLE.FONT) {
+    Broadcast.send(BROADCAST_TYPE.BIBLE_FORMAT_CHANGED, {});
+  } else if (key === KEYS.OPTIONS.SLIDE.FONT) {
+    Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
+  } else if (key === KEYS.OPTIONS.UTILITIES_FONT) {
+    Broadcast.send(BROADCAST_TYPE.SLIDE_FONT_CHANGED, {});
+  }
 }
 
 /* ── Wallpaper via IndexedDB ── */
@@ -1008,6 +1267,16 @@ function restoreTextFormat(): void {
   saveUserData(KEYS.OPTIONS.SLIDE.BODY_SIZE, 14);
   saveUserData(KEYS.OPTIONS.SLIDE.AUX_SIZE, 10);
   saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, "#ffffff");
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2);
+  saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_COLOR, "#000000");
+  saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, 12);
+  saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_X, 0);
+  saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, 2);
 }
 
 const mediaFadeAudio: ComputedRef<boolean> = computed(

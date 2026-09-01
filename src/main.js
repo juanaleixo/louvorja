@@ -1,4 +1,4 @@
-import { createApp } from "vue";
+import { createApp, watchEffect } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
@@ -36,12 +36,17 @@ import ScheduledStore from "@/helpers/ScheduledStore";
 import Seed from "@/helpers/Seed";
 import ProjectionWindows from "@/helpers/ProjectionWindows";
 import Projection from "@/helpers/Projection";
+import {
+  readAllSlots as readAllOverlaySlots,
+  writeSlot as writeOverlaySlot,
+} from "@/helpers/Overlay";
 import Shortcuts from "@/helpers/Shortcuts";
 import Hotkeys from "@/helpers/Hotkeys";
 import { useShell } from "@/composables/useShell";
 import { BROADCAST_TYPE } from "@helpers/BroadcastTypes";
 import { ModuleEnum } from "@/enums/ModuleEnum";
 import { KEYS } from "@/constants/UserDataKeys";
+import { FONT, resolveDefaultFont } from "@/config/Fonts";
 
 loadFonts();
 
@@ -89,6 +94,18 @@ if (Platform.isDesktop && typeof navigator !== "undefined") {
 // principal não chegava à janela de projeção, porque cada BrowserWindow
 // tem seu próprio Pinia store. Cada janela escuta patches das outras.
 UserData.initCrossWindow();
+
+// Aplica os padrões globais em todos os renderers, inclusive projeções que
+// não montam Shell.vue. Também reage aos patches recebidos de outras janelas.
+watchEffect(() => {
+  const uiFont = resolveDefaultFont(UserData.get(KEYS.OPTIONS.FONT), FONT.UI.FALLBACK);
+  const projectionFont = resolveDefaultFont(
+    UserData.get(KEYS.OPTIONS.PROJECTION_FONT),
+    FONT.PROJECTION.FALLBACK
+  );
+  document.documentElement.style.setProperty(FONT.UI.CSS_VAR, uiFont);
+  document.documentElement.style.setProperty(FONT.PROJECTION.CSS_VAR, projectionFont);
+});
 
 // Exposição em dev para debug rápido no DevTools de qualquer janela.
 // Permite inspecionar `__userdata.get("options.custom_background")` ou
@@ -163,7 +180,7 @@ $storage.hydrate().then(async () => {
   // state default e ignoravam Opções salvas (fundo personalizado, tamanho
   // de fonte, alinhamento, etc.).
   try {
-    UserData.load();
+    await UserData.load();
   } catch (e) {
     console.warn("[main] UserData.load falhou:", e);
   }
@@ -411,8 +428,39 @@ $storage.hydrate().then(async () => {
                     }
                     break;
                   }
+                  case "overlay": {
+                    const ovSlots = await readAllOverlaySlots();
+                    const ovSlot = ovSlots.find((s) => s.id === litItem.overlay_id);
+                    if (ovSlot) {
+                      ovSlot.enabled = litItem.overlay_action === "activate";
+                      await writeOverlaySlot(ovSlot);
+                      Broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {
+                        enabled: ovSlot.enabled,
+                        slot: ovSlot,
+                      });
+                    }
+                    break;
+                  }
                   default:
                     console.warn("[http] liturgy-execute: tipo desconhecido", litItem.tipo);
+                }
+
+                // Overlay vinculado — ativa automaticamente após execução
+                if (litItem.linked_overlay_id) {
+                  try {
+                    const linkedSlots = await readAllOverlaySlots();
+                    const linkedSlot = linkedSlots.find((s) => s.id === litItem.linked_overlay_id);
+                    if (linkedSlot) {
+                      linkedSlot.enabled = true;
+                      await writeOverlaySlot(linkedSlot);
+                      Broadcast.send(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, {
+                        enabled: true,
+                        slot: linkedSlot,
+                      });
+                    }
+                  } catch (e) {
+                    console.error("[http] liturgy-execute: overlay vinculado falhou:", e);
+                  }
                 }
               } catch (e) {
                 console.error("[http] liturgy-execute falhou:", litItem.tipo, e);
@@ -424,10 +472,10 @@ $storage.hydrate().then(async () => {
               Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, {
                 text: data.text,
                 reference: data.reference,
-                bookId: data.bookId,
+                book_id: data.bookId,
                 chapter: data.chapter,
                 verses: data.verses,
-                versionId: data.versionId,
+                version_id: data.versionId,
                 active: true,
               });
               ProjectionWindows.openBibleWindow();
@@ -525,6 +573,24 @@ $storage.hydrate().then(async () => {
         case "http:drawing-number":
           Broadcast.send(BROADCAST_TYPE.DRAWING_NUMBER, { number: data.number });
           break;
+        case "http:libras-bundle": {
+          // Handler para bundles de animação VLibras.
+          // O renderer busca o bundle no IndexedDB e envia de volta via replyChannel.
+          const { token, replyChannel } = data;
+          if (token && replyChannel && Platform.api?.send) {
+            // Buscar no IndexedDB (tabela libras_bundles)
+            const bundleKey = `bundle_${token}`;
+            $idb
+              .get("libras_bundles", bundleKey)
+              .then((entry) => {
+                Platform.api.send(replyChannel, entry || null);
+              })
+              .catch(() => {
+                Platform.api.send(replyChannel, null);
+              });
+          }
+          break;
+        }
         case "http:drawing-name":
           Broadcast.send(BROADCAST_TYPE.DRAWING_NAME, { name: data.name });
           break;
@@ -540,6 +606,7 @@ $storage.hydrate().then(async () => {
     Broadcast.listen((msg) => {
       if (msg.type === BROADCAST_TYPE.REQUEST_BIBLE_STATE) {
         const last = Broadcast.getLastPayload(BROADCAST_TYPE.BIBLE_VERSE);
+        console.log("[main] REQUEST_BIBLE_STATE recebido. Cache:", last);
         if (last) {
           Broadcast.send(BROADCAST_TYPE.BIBLE_VERSE, last);
         }
@@ -549,6 +616,12 @@ $storage.hydrate().then(async () => {
         const last = Broadcast.getLastPayload(BROADCAST_TYPE.SLIDE_CHANGE);
         if (last) {
           Broadcast.send(BROADCAST_TYPE.SLIDE_CHANGE, last);
+          if (msg.type === BROADCAST_TYPE.REQUEST_LIBRAS_STATE) {
+            const last = Broadcast.getLastPayload(BROADCAST_TYPE.LIBRAS_TOGGLE);
+            if (last) {
+              Broadcast.send(BROADCAST_TYPE.LIBRAS_TOGGLE, last);
+            }
+          }
         }
       }
 

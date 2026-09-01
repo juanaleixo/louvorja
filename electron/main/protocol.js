@@ -98,6 +98,50 @@ function setAutoCacheEnabled(enabled) {
   _autoCacheEnabled = !!enabled;
 }
 
+// ---------------------------------------------------------------------------
+// Classic mode — roteamento de paths para versão Delphi
+// ---------------------------------------------------------------------------
+
+let _classicMode = false;
+let _classicLang = null;
+
+/**
+ * Ativa/desativa o modo clássico. Quando ativo, o protocolo roteia
+ * paths da estrutura nova para a estrutura Delphi:
+ *   covers/ → capas/
+ *   images/ → imagens/
+ *   musics/<lang>/ → musicas/
+ *
+ * @param {boolean} enabled
+ * @param {string|null} lang  "pt" ou "es"
+ */
+function setClassicMode(enabled, lang) {
+  _classicMode = !!enabled;
+  _classicLang = lang || null;
+}
+
+/**
+ * Mapeia um caminho relativo da estrutura nova para a estrutura clássica.
+ * Só aplica quando _classicMode está ativo.
+ *
+ * @param {string} relPath  Caminho relativo (sem / inicial)
+ * @returns {string} Caminho possivelmente mapeado
+ */
+function _mapClassicPath(relPath) {
+  if (!_classicMode) return relPath;
+
+  if (relPath.startsWith("covers/")) {
+    return "capas/" + relPath.slice(7);
+  }
+  if (relPath.startsWith("images/")) {
+    return "imagens/" + relPath.slice(7);
+  }
+  if (_classicLang && relPath.startsWith("musics/" + _classicLang + "/")) {
+    return "musicas/" + relPath.slice(8 + _classicLang.length);
+  }
+  return relPath;
+}
+
 /**
  * Grava um ReadableStream em um arquivo via .tmp + rename atômico.
  * Usado pelo auto-cache do host "files".
@@ -206,13 +250,13 @@ function handle() {
         if (!isFileVideoProjection) {
           const csp = [
             "default-src 'self' file: louvorja:",
-            "script-src 'self' file: louvorja: https://www.youtube.com https://*.doubleclick.net https://www.google.com",
+            "script-src 'self' blob: file: louvorja: https://www.youtube.com https://*.doubleclick.net https://www.google.com https://vlibras.gov.br https://cdn.jsdelivr.net 'wasm-unsafe-eval'",
             "style-src 'self' 'unsafe-inline' file: louvorja: https://fonts.googleapis.com",
-            "font-src 'self' data: file: louvorja: https://fonts.gstatic.com",
+            "font-src 'self' data: file: louvorja: https://fonts.gstatic.com https://vlibras.gov.br https://cdn.jsdelivr.net",
             "img-src 'self' blob: data: https: file: louvorja: https://*.ytimg.com https://*.youtube.com",
             "media-src 'self' blob: https: file: louvorja: https://*.googlevideo.com",
-            "connect-src 'self' blob: louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com",
-            "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+            "connect-src 'self' blob: louvorja: https://api.louvorja.com.br https://*.louvorja.com.br http://localhost:* ws://localhost:* https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://*.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://*.doubleclick.net https://www.google.com https://*.google.com https://traducao2.vlibras.gov.br https://dicionario2.vlibras.gov.br https://repositorio.vlibras.gov.br https://cdn.jsdelivr.net",
+            "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://vlibras.gov.br",
             "worker-src 'self' file: louvorja:",
           ].join("; ");
           return new Response(response.body, {
@@ -280,6 +324,8 @@ function handle() {
         } catch {
           rawRelative = pathname.replace(/^\/+/, "");
         }
+        // Classic mode: mapear paths da estrutura nova para a estrutura Delphi
+        rawRelative = _mapClassicPath(rawRelative);
         const localPath = path.resolve(filesDir, rawRelative);
 
         // Proteção path traversal: o caminho resolvido deve iniciar com filesDir
@@ -426,4 +472,4 @@ function getRemoteConfig() {
   return { ..._config };
 }
 
-module.exports = { register, handle, setRemoteConfig, getRemoteConfig, setAutoCacheEnabled };
+module.exports = { register, handle, setRemoteConfig, getRemoteConfig, setAutoCacheEnabled, setClassicMode };

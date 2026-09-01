@@ -121,6 +121,7 @@ import OverlaySlotEditor from "./OverlaySlotEditor.vue";
 import $broadcast from "@/helpers/Broadcast";
 import { BROADCAST_TYPE } from "@/helpers/BroadcastTypes";
 import $userdata from "@/helpers/UserData";
+import { FONT, resolveFont } from "@/config/Fonts";
 import { useBroadcastListener } from "@/composables/useBroadcastListener";
 import {
   getImage,
@@ -135,7 +136,6 @@ import {
   createOverlaySlot,
   buildAnchorStyle,
   type OverlaySlot,
-  type OverlayStyle,
 } from "@/types/Overlay";
 
 const moduleContainer = ref<{ t(key: string, named?: Record<string, unknown>): string } | null>(
@@ -292,7 +292,7 @@ function previewImageStyle(slot: OverlaySlot): Record<string, string | number> {
 function previewTextStyle(slot: OverlaySlot): Record<string, string> {
   const s = slot.style;
   return {
-    fontFamily: s.font || "Arial, sans-serif",
+    fontFamily: resolveFont(s.font, FONT.PROJECTION.FALLBACK),
     fontSize: `clamp(5px, ${s.font_size || 5}vh, 80px)`,
     color: s.color || "#FFFFFF",
     textAlign: s.text_align || "center",
@@ -325,6 +325,16 @@ useBroadcastListener(BROADCAST_TYPE.MODULE_PROJECTION_VALUE, (payload: unknown) 
   if (p?.module) {
     moduleValues[p.module] = p.text || p.reference || "";
   }
+});
+
+// Atualiza localSlots quando overlay é alterado externamente (ex.: liturgia)
+useBroadcastListener(BROADCAST_TYPE.OVERLAY_CONFIG_CHANGED, (payload: unknown) => {
+  const p = payload as { enabled?: boolean } | null;
+  if (p?.enabled !== undefined) {
+    enabled.value = p.enabled;
+    $userdata.set("modules.overlay.enabled", p.enabled);
+  }
+  load();
 });
 
 onMounted(() => {
@@ -400,7 +410,6 @@ onMounted(() => {
 }
 
 .overlay-preview-text {
-  text-transform: uppercase;
 }
 
 .overlay-preview-img {
