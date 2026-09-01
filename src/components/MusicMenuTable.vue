@@ -93,8 +93,11 @@ import Favorites from "@/helpers/Favorites";
 import Liturgy from "@/helpers/Liturgy";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
+import $snackbar from "@/helpers/Snackbar";
 import { ICONS } from "@/config/Icons";
 import { MusicActionEnum } from "@/enums/MusicActionEnum";
+import { usePlaylists } from "@/modules/musics/composables/usePlaylists";
+import type { PlaylistSong } from "@/types/Music";
 
 interface ButtonItem {
   testid: string;
@@ -127,6 +130,7 @@ const props = defineProps<{
   has_instrumental_music: boolean | number;
   color?: string;
   extraMenu?: ExtraMenuItem[];
+  showPlaylistMenu?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -208,6 +212,8 @@ const buttons = computed<ButtonItem[]>(() => [
   },
 ]);
 
+const { playlists, addSong, isSongInPlaylist } = usePlaylists();
+
 const menu = computed<MenuItem[]>(() => [
   {
     title: t("components.music_menu.add_to"),
@@ -227,6 +233,29 @@ const menu = computed<MenuItem[]>(() => [
       },
     ],
   },
+  ...(props.showPlaylistMenu && playlists.value.length > 0
+    ? [
+        {
+          title: t("components.music_menu.add_to_playlist"),
+          icon: "mdi-playlist-plus",
+          menu: playlists.value.map((p) => ({
+            title: p.name,
+            icon: isSongInPlaylist(p.id, props.id_music) ? "mdi-check" : "mdi-playlist-music",
+            disabled: isSongInPlaylist(p.id, props.id_music),
+            click: () => {
+              const song: PlaylistSong = {
+                id_music: props.id_music,
+                name: props.name,
+                duration: 0,
+                has_instrumental_music: !!props.has_instrumental_music,
+              };
+              addSong(p.id, song);
+              $snackbar.show(t("playlists.song_added"));
+            },
+          })),
+        },
+      ]
+    : []),
   {
     title: t("components.music_menu.execute"),
     icon: "mdi-play",

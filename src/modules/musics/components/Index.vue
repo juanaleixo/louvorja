@@ -8,7 +8,11 @@
     @scroll="onScroll"
     @has-scroll="hasScroll"
   >
-    <template #header>
+    <template v-if="!compact" #left>
+      <PlaylistPanel />
+    </template>
+
+    <template v-if="userdata" #header>
       <div :class="classform.group">
         <div :class="classform.group_item" style="margin-top: 10px">
           <Search
@@ -50,6 +54,10 @@
       </div>
     </template>
 
+    <template v-if="selectedPlaylist" #right>
+      <PlaylistSongs :playlist="selectedPlaylist" />
+    </template>
+
     <Table
       v-model="data"
       :search="search"
@@ -75,6 +83,7 @@
             {{ t("table.album_name") }}
           </th>
           <th class="text-right">{{ t("table.duration") }}</th>
+          <th v-if="selectedPlaylist" />
           <th />
         </tr>
       </thead>
@@ -110,12 +119,31 @@
             </v-chip>
           </td>
           <td class="text-right">{{ shortTime(item.duration) }}</td>
+          <td v-if="selectedPlaylist" class="text-center">
+            <v-btn
+              v-if="!isSongInPlaylist(item.id_music)"
+              :icon="ICONS.MEDIA.ADD"
+              variant="text"
+              density="compact"
+              size="small"
+              :title="t('playlists.add_to_playlist')"
+              @click="addSongToPlaylist(item)"
+            />
+            <v-icon
+              v-else
+              icon="mdi-check"
+              size="small"
+              color="success"
+              :title="t('playlists.already_in_playlist')"
+            />
+          </td>
           <td>
             <div class="d-flex justify-end">
               <MusicMenuTable
                 :id_music="item.id_music"
                 :name="item.name"
                 :has_instrumental_music="item.has_instrumental_music"
+                :show-playlist-menu="true"
               />
             </div>
           </td>
@@ -151,7 +179,7 @@
 /* ########################################################### */
 /* ####### INSTALAÇÃO DO MODULO ############################## */
 /* ########################################################### */
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useDisplay } from "vuetify";
 import Media from "@/composables/useMedia";
 import AppData from "@/helpers/AppData";
@@ -159,12 +187,16 @@ import DateTime from "@/helpers/DateTime";
 import $userdata from "@/helpers/UserData";
 import { KEYS } from "@/constants/UserDataKeys";
 import { module as manifest } from "../manifest";
+import { usePlaylists } from "../composables/usePlaylists";
 import ModuleContainer from "@/components/ModuleContainer.vue";
 import Table from "@/components/DataTable.vue";
 import Search from "@/components/inputs/LjSearch.vue";
 import Checkbox from "@/components/inputs/LjCheckbox.vue";
 import MusicMenuTable from "@/components/MusicMenuTable.vue";
 import LetterPaginate from "@/components/LetterPagination.vue";
+import PlaylistPanel from "./PlaylistPanel.vue";
+import PlaylistSongs from "./PlaylistSongs.vue";
+import { ICONS } from "@/config/Icons";
 
 const moduleContainer = ref(null);
 const t = (key) => {
@@ -173,6 +205,22 @@ const t = (key) => {
 const userdata = computed(() => {
   return moduleContainer.value?.userdata;
 });
+
+const { selectedPlaylist, hydrate, addSong, isSongInPlaylist } = usePlaylists();
+
+onMounted(() => {
+  hydrate();
+});
+
+function addSongToPlaylist(item) {
+  if (!selectedPlaylist.value) return;
+  addSong(selectedPlaylist.value.id, {
+    id_music: item.id_music,
+    name: item.name,
+    duration: DateTime.toNumber(item.duration),
+    has_instrumental_music: !!item.has_instrumental_music,
+  });
+}
 /* ########################################################### */
 /* ########################################################### */
 /* ########################################################### */
@@ -192,23 +240,23 @@ const letter = ref("");
 /* COMPUTEDS                                          */
 /* -------------------------------------------------- */
 const search_name = computed(() => {
-  return userdata.value.search.name;
+  return userdata.value?.search?.name ?? "";
 });
 
 const search_lyric = computed(() => {
-  return userdata.value.search.lyric;
+  return userdata.value?.search?.lyric ?? "";
 });
 
 const search_album = computed(() => {
-  return userdata.value.search.album;
+  return userdata.value?.search?.album ?? "";
 });
 
 const search_track = computed(() => {
-  return userdata.value.search.track;
+  return userdata.value?.search?.track ?? "";
 });
 
 const filter_instrumental_music = computed(() => {
-  return userdata.value.filter.instrumental_music;
+  return userdata.value?.filter?.instrumental_music ?? false;
 });
 
 const disabled = computed(() => {

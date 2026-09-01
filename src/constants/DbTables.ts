@@ -1,7 +1,7 @@
 import { ModuleEnum } from "@/enums/ModuleEnum";
 
-export const DB_NAME = "louvorja";
-export const DB_VERSION = 4;
+export const DB_NAME = "louvorja-violin";
+export const DB_VERSION = 1;
 /**
  * Nomes de todas as tabelas do banco IndexedDB unificado `louvorja`.
  * Cada módulo usa o prefixo do módulo seguido do nome da entidade.
@@ -21,6 +21,8 @@ export const DB_TABLE = {
   CACHE: "cache",
   // ─── Catálogos normalizados (1 registro por entidade) ───
   MUSICS: ModuleEnum.MUSICS,
+  // ─── Playlists do usuário ───
+  MUSICS_PLAYLISTS: ModuleEnum.MUSICS+".playlists",
   HYMNAL: ModuleEnum.HYMNAL,
   HYMNAL_1996: ModuleEnum.HYMNAL_1996,
   ALBUMS: "albums",

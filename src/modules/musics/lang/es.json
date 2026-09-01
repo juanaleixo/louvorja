@@ -18,5 +18,30 @@
   "data": {
     "records": "Registros totales",
     "not_found": "No se encontraron registros con los filtros seleccionados. Intente cambiar los filtros de búsqueda."
+  },
+  "playlists": {
+    "title": "Playlists",
+    "create": "Nueva playlist",
+    "create_placeholder": "Nombre de la playlist",
+    "rename": "Renombrar",
+    "delete": "Eliminar playlist",
+    "delete_confirm": "¿Eliminar la playlist \"{name}\"?",
+    "empty": "Ninguna playlist creada",
+    "song_count": "{n} canción(es)",
+    "duration": "Duración total",
+    "play": "Reproducir",
+    "stop": "Detener Playlist",
+    "close": "Cerrar",
+    "play_song": "Reproducir canción",
+    "remove_song": "Quitar de la playlist",
+    "no_songs": "Sin canciones en la playlist",
+    "add_to_playlist": "Agregar a playlist",
+    "already_in_playlist": "Ya está en la playlist",
+    "song_added": "Canción agregada a la playlist",
+    "fade_transition": "Transición suave entre canciones",
+    "shuffle": "Reproducir en orden aleatorio",
+    "repeat": "Repetir playlist",
+    "import": "Importar playlist",
+    "export": "Exportar playlist"
   }
 }

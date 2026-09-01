@@ -71,6 +71,12 @@ export const KEYS = {
       MARK_ON_ACCESS: `${MODULES_LITURGY}.mark_on_access`,
       SHOW: `${MODULES_LITURGY}.show`,
     },
+    MUSICS: {
+      SELECTED_PLAYLIST: `${MODULES}.${ModuleEnum.MUSICS}.selected_playlist`,
+      PLAYLIST_FADE: `${MODULES}.${ModuleEnum.MUSICS}.playlist_fade`,
+      PLAYLIST_SHUFFLE: `${MODULES}.${ModuleEnum.MUSICS}.playlist_shuffle`,
+      PLAYLIST_REPEAT: `${MODULES}.${ModuleEnum.MUSICS}.playlist_repeat`,
+    },
     MEDIA: {
       IS_PLAYING: `${MODULES_MEDIA}.is_playing`,
       FADE_AUDIO: `${MODULES_MEDIA}.fade_audio`,

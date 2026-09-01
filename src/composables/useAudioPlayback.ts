@@ -46,9 +46,10 @@ function _create(): AudioPlayback {
 
   function _syncTime(): void {
     if (!_el) return;
-    const ct = isNaN(_el.currentTime) ? 0 : _el.currentTime;
+    const ct = isNaN(_el.currentTime) || !isFinite(_el.currentTime) ? 0 : _el.currentTime;
+    const rawD = _el.duration;
     const d =
-      isNaN(_el.duration) || _el.duration < 0 ? duration.value : _el.duration;
+      isNaN(rawD) || !isFinite(rawD) || rawD < 0 ? duration.value : rawD;
     currentTime.value = ct;
     duration.value    = d;
     progress.value    = d <= 0 ? 0 : (ct / d) * 100;
@@ -162,13 +163,12 @@ function _create(): AudioPlayback {
 
   function seekTo(time: number): void {
     const el = getElement();
-    // Usa a duração real do elemento (pode ser > duration.value se este
-    // ainda não foi atualizado por _syncTime — comum em streams via
-    // protocolo customizado)
+    if (!Number.isFinite(time) || time < 0) return;
     const d = isNaN(el.duration) || !isFinite(el.duration)
       ? duration.value
       : el.duration;
-    el.currentTime = Math.max(0, Math.min(time ?? 0, d > 0 ? d : Infinity));
+    if (!Number.isFinite(d) || d <= 0) return;
+    el.currentTime = Math.max(0, Math.min(time, d));
   }
 
   function advanceTime(delta: number): void {

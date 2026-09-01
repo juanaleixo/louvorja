@@ -108,7 +108,14 @@ src/
 │   ├── lyric/
 │   ├── media/
 │   ├── message_board/   # Painel de recados dinâmico
-│   ├── musics/
+│   ├── musics/          # Lista de músicas + sistema de playlists
+│   │   ├── composables/
+│   │   │   ├── usePlaylists.ts           # CRUD de playlists com persistência
+│   │   │   └── usePlaylistPlayback.ts    # Reprodução sequencial de playlists
+│   │   └── components/
+│   │       ├── Index.vue                 # Layout two-columns (playlist panel + songs)
+│   │       ├── PlaylistPanel.vue         # Painel esquerdo: criar/renomear/excluir playlists
+│   │       └── PlaylistSongs.vue         # Painel direito: músicas da playlist + play
 │   ├── name_draw/       # Sorteio de nomes (fullscreen dialog)
 │   ├── remote_control/
 │   ├── slide_editor/    # Editor de slides (autosave sessionStorage)
@@ -234,6 +241,82 @@ $userdata.set("theme", "dark");
 | `helpers/Popup.js` | deve-virar-composable | |
 | `helpers/ModuleManager.js` | deve-virar-composable | Boot-time; chamado 1× em `main.js` |
 | `helpers/CommandRegistry.js` | deve-virar-composable | Usa `Modules` + `useMedia` composable |
+
+---
+
+## Sistema de Playlists
+
+O módulo Músicas possui um sistema completo de playlists implementado via composables:
+
+### Estrutura
+
+```
+src/modules/musics/
+├── composables/
+│   ├── usePlaylists.ts           # CRUD de playlists + persistência em UserData
+│   └── usePlaylistPlayback.ts    # Controle de reprodução sequencial
+└── components/
+    ├── Index.vue                 # Layout two-columns (playlist panel + songs)
+    ├── PlaylistPanel.vue         # Painel esquerdo: criar/renomear/excluir playlists
+    └── PlaylistSongs.vue         # Painel direito: músicas da playlist + play
+```
+
+### Tipos (`src/types/Music.ts`)
+
+```ts
+interface PlaylistSong {
+  id_music: number;
+  name: string;
+  duration: number;        // segundos
+  has_instrumental_music: boolean;
+}
+
+interface Playlist {
+  id: string;              // UUID
+  name: string;
+  songs: PlaylistSong[];
+  createdAt: string;       // ISO date
+  updatedAt: string;       // ISO date
+}
+```
+
+### Persistência
+
+Playlists são salvas em `UserData` via chaves:
+- `KEYS.MODULES.MUSICS.PLAYLISTS` — array de `Playlist[]`
+- `KEYS.MODULES.MUSICS.SELECTED_PLAYLIST` — ID da playlist selecionada
+
+### Fluxo de Dados
+
+```
+PlaylistPanel → usePlaylists.createPlaylist() → UserData persist
+PlaylistSongs → usePlaylistPlayback.playPlaylist() → Media.open()
+Footer.vue    → usePlaylistPlayback (barra de playlist)
+MusicMenuTable → usePlaylists.addSong() → playlist song
+```
+
+### Funcionalidades
+
+**PlaylistPanel (painel esquerdo):**
+- Criar/renomear/excluir playlists
+- Importar playlist de arquivo `.json`
+- Exportar playlist como `.json`
+- Selecionar playlist (mostra PlaylistSongs)
+
+**PlaylistSongs (painel direito):**
+- Lista de músicas com play individual
+- Botão "Reproduzir" para tocar playlist completa
+- Remover músicas da playlist
+
+**Footer.vue (barra de playlist):**
+- Nome da playlist + progresso (tocadas/total)
+- Controles prev/next/stop
+- Aparece acima do player principal
+
+**MusicMenuTable (context menu):**
+- Submenu "Adicionar à playlist" com todas as playlists
+- Só aparece quando `showPlaylistMenu={true}` (módulo músicas)
+- Marca músicas já existentes na playlist
 
 ---
 
@@ -471,6 +554,7 @@ O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLi
 | Busca por trecho de letra | `fmBuscaMusica.pas` full-text | ✅ já existia |
 | Coletâneas personalizadas | `cdsColETANEAS_PERSO` | ✅ já existia (module `collections`) |
 | Bíblia completa | `fmMonitorBiblia` + versões PT/ES | ✅ já existia (module `bible`) |
+| Playlists de músicas | — | ✅ módulo `musics` (usePlaylists + usePlaylistPlayback) |
 
 **Implementação:**
 - Módulo `favorites` — store com persistência, lista reordenável via `vuedraggable`
@@ -478,6 +562,7 @@ O sistema original em Delphi (`louvorja-desktop`) possui 33 módulos, banco SQLi
 - Bíblia — completar carregamento, busca por livro/capítulo/versículo, múltiplas versões
 - Coletâneas personalizadas — CRUD leve com persistência local
 - Busca aprimorada — filtro por trecho de letra no `DataTable`
+- **Playlists** — CRUD de playlists com persistência em UserData, reprodução sequencial, barra de playlist no Footer, import/export JSON, submenu "Adicionar à playlist" no MusicMenuTable
 
 ---
 

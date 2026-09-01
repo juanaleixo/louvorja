@@ -27,6 +27,7 @@ const _slides = useSlides();
 const _lyric  = useLyric();
 const _album  = useAlbum();
 let _loadingId: string | number | null = null;
+let _playlistOnEnd: (() => void) | null = null;
 // XHR atual de download de áudio — abortado ao trocar de música rapidamente
 // para liberar conexão e evitar callbacks de respostas obsoletas (mesmo que
 // o early-return pelo _loadingId já as ignore, a request continuava
@@ -152,7 +153,11 @@ _audio.onTimeUpdate((ct, d) => {
   $appdata.set(KEYS.MODULES.MEDIA.CONFIG.BUFFERED, _audio.buffered.value);
 
   if (!_audio.isPaused.value && ct >= d && d > 0) {
-    _self.close(true);
+    if (_playlistOnEnd) {
+      _playlistOnEnd();
+    } else {
+      _self.close(true);
+    }
   }
 
   // Sincronia contínua de vídeo: broadcast periódico para manter o <video>
@@ -441,6 +446,92 @@ const _self = {
     openProjectionWindows().catch((e) => {
       console.warn("[Media] openProjectionWindows falhou:", e);
     });
+  },
+
+  /**
+   * Transição suave entre músicas da playlist (fade out visual + áudio → load → fade in).
+   * Não fecha janelas de projeção — atualiza slides e áudio in-place.
+   */
+  async transitionTo(params: MediaOpenParams): Promise<void> {
+    if (typeof params != "object") {
+      params = { id_music: params };
+    }
+
+    const id_music = params.id_music;
+    $dev.write("playlist:transitionTo", { id_music });
+
+    // 1. Fade out do áudio atual (~200ms)
+    const el = _audio.getElement();
+    if (!el.paused && el.src) {
+      await new Promise<void>((resolve) => {
+        _audio.fadeOut(() => {
+          _audio.stop();
+          resolve();
+        });
+      });
+    } else {
+      _audio.stop();
+    }
+
+    // 2. Broadcast início da transição (projeção faz fade out visual)
+    $broadcast.send(BROADCAST_TYPE.PLAYLIST_TRANSITION, { status: "start" });
+
+    // 3. Aguardar fade out visual
+    await new Promise((r) => setTimeout(r, 350));
+
+    // 4. Carregar dados da nova música
+    let data = await $database.get<Music>(`music_${id_music}`);
+    if (data == null) {
+      $broadcast.send(BROADCAST_TYPE.PLAYLIST_TRANSITION, { status: "end" });
+      return;
+    }
+
+    $appdata.set(KEYS.MODULES.MEDIA.DATA, data);
+    $appdata.set(KEYS.MODULES.MEDIA.ID_MUSIC, id_music);
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.TITLE, data.name);
+
+    // 5. Construir slides e times
+    const slidesArray = _buildSlidesFrom(data);
+    const timesArray = slidesArray.map((item) =>
+      $datetime.toNumber(item.time)
+    );
+
+    const audioUrl = $path.file(data.url_music as string);
+
+    // 6. Atualizar slides in-place (sem reset)
+    _slides.setSlides(slidesArray, timesArray, data.name);
+
+    // 7. Broadcast novos slides para Operator
+    $broadcast.send(BROADCAST_TYPE.SLIDES_DATA, {
+      slides: slidesArray,
+      title: data.name,
+      slide_index: 0,
+    });
+
+    // 8. Broadcast primeiro slide para Projection
+    _slides.broadcastSlide();
+
+    // 9. Preparar áudio: setSrc + bindAudio + play
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.AUDIO, audioUrl);
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.AUDIO_ONLY, false);
+    _slides.bindAudio(_audio);
+    _audio.setSrc(audioUrl);
+    _audio.getElement().currentTime = 0;
+    $appdata.set(KEYS.MODULES.MEDIA.CONFIG.IS_PAUSED, false);
+    _audio.play();
+
+    // 10. Fade in do áudio
+    const maxVol = ($appdata.get(KEYS.MODULES.MEDIA.CONFIG.VOLUME) as number) || 80;
+    await new Promise<void>((resolve) => {
+      _audio.fadeIn(maxVol, resolve);
+    });
+
+    // 11. Broadcast fim da transição (projeção faz fade in visual)
+    $broadcast.send(BROADCAST_TYPE.PLAYLIST_TRANSITION, { status: "end" });
+
+    $appdata.set(KEYS.MODULES.MEDIA.SHOW, true);
+    $appdata.set(KEYS.MODULES.MEDIA.IS_PLAYING, true);
+    $appdata.set(KEYS.MODULES.MEDIA.LOADING, false);
   },
 
   stop(): void {
@@ -746,7 +837,7 @@ const _self = {
     if (_isYouTube()) {
       const newTime = Math.max(0, _audio.currentTime.value + time);
       $broadcast.send(BROADCAST_TYPE.YOUTUBE_CONTROL, { action: "seekTo", value: newTime });
-    } else if (_audio.duration.value > 0 && $appdata.get(KEYS.MODULES.MEDIA.CONFIG.AUDIO) != "") {
+    } else if (_audio.duration.value > 0 && Number.isFinite(_audio.duration.value) && $appdata.get(KEYS.MODULES.MEDIA.CONFIG.AUDIO) != "") {
       _audio.advanceTime(time);
       _broadcastVideoState();
     }
@@ -832,6 +923,14 @@ const _self = {
 
   setAlbumInfo(id_album: string | number | null, module = "media"): void {
     _album.setAlbumInfo(id_album, module);
+  },
+
+  registerPlaylistEndHandler(handler: () => void): void {
+    _playlistOnEnd = handler;
+  },
+
+  unregisterPlaylistEndHandler(): void {
+    _playlistOnEnd = null;
   },
 };
 

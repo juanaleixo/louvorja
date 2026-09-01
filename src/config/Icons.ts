@@ -190,6 +190,7 @@ export const ICONS = {
     SKIP_FORWARD: "mdi-skip-forward",
     STOP: "mdi-stop",
     STOP_CIRCLE: "mdi-stop-circle",
+    TRANSITION: "mdi-transition",
     VOLUME_HIGH: "mdi-volume-high",
     VOLUME_LOW: "mdi-volume-low",
     VOLUME_MEDIUM: "mdi-volume-medium",

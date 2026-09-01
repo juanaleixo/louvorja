@@ -144,7 +144,13 @@ Estrutura do `user_data` no Pinia store:
   language: "pt" | "es",
   layout: "apps" | "ribbon",
   remote: { is_connected, url, token },
-  modules: { [moduleId]: { search, filter, ...customization } },
+  modules: {
+    [moduleId]: { search, filter, ...customization },
+    musics: {
+      playlists: Playlist[],              // Array de playlists do usuário
+      selected_playlist: string | null,   // ID da playlist selecionada
+    },
+  },
   options: {
     /* slides, player, projeção */
     // Auto-update (KEYS.OPTIONS.*):
@@ -364,6 +370,8 @@ Composables principais:
 | `useFileProjection`    | Barra de controle de projeção de arquivos (mini-player no footer)                          |
 | `useProjectionState`   | Estado reativo da projeção (slides atuais, transições)                                     |
 | `useSlideStyle`        | Estilos dinâmicos de slides (cores, fontes, fundo)                                         |
+| `usePlaylists`         | CRUD de playlists com persistência em UserData (módulo músicas)                            |
+| `usePlaylistPlayback`  | Controle de reprodução sequencial de playlists (avanço automático, progresso)              |
 
 ---
 
@@ -564,6 +572,82 @@ A página de álbuns também tem:
 O **Hinário 1996** (álbum `id 629`) é sincronizado bidirecionalmente com o toggle
 "Hinário 1996": desativar o módulo adiciona `629` a `DISABLED_ALBUMS` (e vice-versa),
 fazendo as músicas dele sumirem de todas as listas e da sincronização.
+
+---
+
+## 🎵 Sistema de Playlists
+
+O módulo Músicas possui um sistema completo de playlists implementado via composables.
+
+### Estrutura
+
+```
+src/modules/musics/
+├── composables/
+│   ├── usePlaylists.ts           # CRUD de playlists + persistência em UserData
+│   └── usePlaylistPlayback.ts    # Controle de reprodução sequencial
+└── components/
+    ├── Index.vue                 # Layout two-columns (playlist panel + songs)
+    ├── PlaylistPanel.vue         # Painel esquerdo: criar/renomear/excluir playlists
+    └── PlaylistSongs.vue         # Painel direito: músicas da playlist + play
+```
+
+### Tipos (`src/types/Music.ts`)
+
+```ts
+interface PlaylistSong {
+  id_music: number;
+  name: string;
+  duration: number;        // segundos
+  has_instrumental_music: boolean;
+}
+
+interface Playlist {
+  id: string;              // UUID
+  name: string;
+  songs: PlaylistSong[];
+  createdAt: string;       // ISO date
+  updatedAt: string;       // ISO date
+}
+```
+
+### Persistência
+
+Playlists são salvas em `UserData` via chaves:
+- `KEYS.MODULES.MUSICS.PLAYLISTS` — array de `Playlist[]`
+- `KEYS.MODULES.MUSICS.SELECTED_PLAYLIST` — ID da playlist selecionada
+
+### Fluxo de Dados
+
+```
+PlaylistPanel → usePlaylists.createPlaylist() → UserData persist
+PlaylistSongs → usePlaylistPlayback.playPlaylist() → Media.open()
+Footer.vue    → usePlaylistPlayback (barra de playlist)
+MusicMenuTable → usePlaylists.addSong() → playlist song
+```
+
+### Funcionalidades
+
+**PlaylistPanel (painel esquerdo):**
+- Criar/renomear/excluir playlists
+- Importar playlist de arquivo `.json`
+- Exportar playlist como `.json`
+- Selecionar playlist (mostra PlaylistSongs)
+
+**PlaylistSongs (painel direito):**
+- Lista de músicas com play individual
+- Botão "Reproduzir" para tocar playlist completa
+- Remover músicas da playlist
+
+**Footer.vue (barra de playlist):**
+- Nome da playlist + progresso (tocadas/total)
+- Controles prev/next/stop
+- Aparece acima do player principal
+
+**MusicMenuTable (context menu):**
+- Submenu "Adicionar à playlist" com todas as playlists
+- Só aparece quando `showPlaylistMenu={true}` (módulo músicas)
+- Marca músicas já existentes na playlist
 
 ---
 
@@ -975,6 +1059,14 @@ src/
 │   ├── libras/                   # Tradução Libras (VLibras)
 │   ├── liturgy/                  # Planejador de culto
 │   ├── media_library/            # Biblioteca de mídia
+│   ├── musics/                   # Lista de músicas + sistema de playlists
+│   │   ├── composables/
+│   │   │   ├── usePlaylists.ts           # CRUD de playlists com persistência
+│   │   │   └── usePlaylistPlayback.ts    # Controle de reprodução sequencial
+│   │   └── components/
+│   │       ├── Index.vue                 # Layout two-columns (playlist panel + songs)
+│   │       ├── PlaylistPanel.vue         # Painel esquerdo: criar/renomear/excluir playlists
+│   │       └── PlaylistSongs.vue         # Painel direito: músicas da playlist + play
 │   ├── overlay/                  # Overlays customizáveis
 │   ├── scheduled_items/          # Itens agendados por categoria/data
 │   └── ...

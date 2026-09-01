@@ -1,6 +1,9 @@
 <template>
   <OverlayRenderer />
-  <div class="return-root" :class="{ 'return-root--ready': ready }">
+  <div
+    class="return-root"
+    :class="{ 'return-root--ready': ready, 'return-root--transitioning': isTransitioning }"
+  >
     <!-- Slide atual ocupa quase toda a tela (alClient) -->
     <div class="return-current">
       <!-- Progresso total da música (barra no topo) -->
@@ -71,8 +74,17 @@ import { useSlideStyle } from "@/composables/useSlideStyle";
 import OverlayRenderer from "@/components/OverlayRenderer.vue";
 
 const { t } = useI18n();
-const { slide, isCover, progress, slideProgress, title, slideIndex, totalSlides, nextSlide } =
-  useProjectionState();
+const {
+  slide,
+  isCover,
+  progress,
+  slideProgress,
+  title,
+  slideIndex,
+  totalSlides,
+  nextSlide,
+  isTransitioning,
+} = useProjectionState();
 const slideStyle = useSlideStyle();
 
 const ready = ref(false);
@@ -137,6 +149,10 @@ onBeforeUnmount(() => {
 }
 .return-root--ready {
   opacity: 1;
+}
+.return-root--transitioning {
+  opacity: 0;
+  transition: opacity 350ms ease-in-out;
 }
 
 /* Painel atual (alClient) */

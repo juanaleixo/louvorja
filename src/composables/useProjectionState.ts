@@ -34,6 +34,7 @@ interface ProjectionStateReturn {
   slideProgress: Ref<number>;
   slideIndex: Ref<number>;
   totalSlides: Ref<number>;
+  isTransitioning: Ref<boolean>;
   isCover: ComputedRef<boolean>;
   bgImgStyle: ComputedRef<BgImgStyle>;
 }
@@ -50,6 +51,7 @@ export function useProjectionState(): ProjectionStateReturn {
   const slideProgress = ref(0);
   const slideIndex  = ref(0);
   const totalSlides = ref(0);
+  const isTransitioning = ref(false);
 
   // Janelas que abrem depois da música começar não recebem o broadcast
   // anterior. Solicitamos reemissão ao montar — o emissor (useSlides na
@@ -110,6 +112,12 @@ export function useProjectionState(): ProjectionStateReturn {
     totalSlides.value = 0;
   });
 
+  // Transição fade entre músicas da playlist.
+  useBroadcastListener(BROADCAST_TYPE.PLAYLIST_TRANSITION, (payload) => {
+    const p = payload as Record<string, unknown>;
+    isTransitioning.value = p.status === "start";
+  });
+
   // Progresso contínuo do slide atual (throttled) para a barra no stage display.
   useBroadcastListener(BROADCAST_TYPE.SLIDE_PROGRESS, (payload) => {
     const p = payload as Record<string, unknown>;
@@ -149,6 +157,7 @@ export function useProjectionState(): ProjectionStateReturn {
     slideProgress,
     slideIndex,
     totalSlides,
+    isTransitioning,
     isCover, bgImgStyle,
   };
 }
