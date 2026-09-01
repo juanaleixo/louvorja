@@ -3,6 +3,7 @@ declare global {
   interface LouvorjaApi {
     platform: string;
     version: string;
+    isDev: boolean;
     storage: {
       chooseFile: () => Promise<string | null>;
       chooseImage: () => Promise<string | null>;
@@ -112,6 +113,16 @@ declare global {
 
   interface Window {
     louvorjaApi?: LouvorjaApi;
+    vlibras?: VLibrasWidget;
+    VLibras?: {
+      Widget: new (rootPath: string) => void;
+    };
+    VLibrasWidget?: {
+      open?: () => void;
+      path?: string;
+      avatar?: string;
+      position?: string;
+    };
   }
 }
 
