@@ -53,6 +53,11 @@ interface SlideCfg {
   text_align: "top" | "center" | "bottom";
   transition_speed_ms: number;
   text_bg_transparent: boolean;
+  text_bg_blur_enabled: boolean;
+  text_bg_blur: number;
+  text_border_enabled: boolean;
+  text_border_color: string;
+  text_border_width: number;
   affect_external_slides: boolean;
   custom_background_active: boolean;
   shadow_enabled: boolean;
@@ -91,8 +96,19 @@ const _readSlideOpts = (): SlideCfg => {
     }
   }
 
+  // O blur é um atalho global e também pode ser ajustado dentro da formatação personalizada.
+  merged.text_bg_blur_enabled =
+    $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false) === true;
+  const textBgBlur = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12));
+  merged.text_bg_blur = Number.isFinite(textBgBlur)
+    ? Math.min(30, Math.max(0, textBgBlur))
+    : 12;
+
   // Formatação de texto personalizada
-  if ($userdata.get<boolean>(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false) === true) {
+  const customTextFormat =
+    $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.CUSTOM_TEXT_FORMAT, false) === true;
+  merged.text_border_enabled = false;
+  if (customTextFormat) {
     const titleColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TITLE_COLOR, null);
     const textColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_COLOR, null);
     const repeatColor = $userdata.get<string>(KEYS.OPTIONS.SLIDE.REPEAT_COLOR, null);
@@ -101,6 +117,9 @@ const _readSlideOpts = (): SlideCfg => {
     const bodySize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.BODY_SIZE, null) ?? NaN);
     const auxSize = Number($userdata.get<number>(KEYS.OPTIONS.SLIDE.AUX_SIZE, null) ?? NaN);
     const textBgTransparent = $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, null);
+    const textBorderWidth = Number(
+      $userdata.get<number>(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2)
+    );
     if (typeof titleColor === "string") merged.color_cover = titleColor;
     if (typeof textColor === "string") merged.color_lyric = textColor;
     if (typeof repeatColor === "string") merged.color_repeat = repeatColor;
@@ -109,6 +128,13 @@ const _readSlideOpts = (): SlideCfg => {
     if (Number.isFinite(bodySize) && bodySize > 0) merged.font_size_lyric = bodySize;
     if (Number.isFinite(auxSize) && auxSize > 0) merged.font_size_aux = auxSize;
     if (typeof textBgTransparent === "boolean") merged.text_bg_transparent = textBgTransparent;
+    merged.text_border_enabled =
+      $userdata.get<boolean>(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false) === true;
+    merged.text_border_color =
+      $userdata.get<string>(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, "#FFFFFF") || "#FFFFFF";
+    merged.text_border_width = Number.isFinite(textBorderWidth)
+      ? Math.min(10, Math.max(1, textBorderWidth))
+      : 2;
   }
 
   // Flag global de "afetar slides externos"
@@ -304,12 +330,20 @@ export function useSlideStyle(): SlideStyleAPI {
     return cfg.value.color_repeat;
   }
 
-  /** Caixa de texto translúcida atrás da letra (CSS para inline-block). */
+  /** Caixa de texto com fundo, blur do backdrop e borda opcionais. */
   function textBoxStyle(): CSSProperties {
-    if (cfg.value.text_bg_transparent) {
-      return { backgroundColor: "transparent" };
-    }
-    return { backgroundColor: "rgba(0, 0, 0, 0.75)" };
+    const backdropFilter = cfg.value.text_bg_blur_enabled
+      ? `blur(${cfg.value.text_bg_blur}px)`
+      : "none";
+    return {
+      backgroundColor: cfg.value.text_bg_transparent ? "transparent" : "rgba(0, 0, 0, 0.75)",
+      backdropFilter,
+      WebkitBackdropFilter: backdropFilter,
+      border: cfg.value.text_border_enabled
+        ? `${cfg.value.text_border_width}px solid ${cfg.value.text_border_color}`
+        : "none",
+      boxSizing: "border-box",
+    };
   }
 
   const rootStyle = computed<CSSProperties>(() => ({

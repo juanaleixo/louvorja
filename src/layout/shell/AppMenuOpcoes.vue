@@ -413,6 +413,17 @@
           </label>
         </div>
 
+        <div class="opt-row">
+          <label class="opt-checkbox">
+            <input
+              type="checkbox"
+              :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false)"
+              @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, $c($event))"
+            />
+            <span>{{ $t("options.slides.text_bg_blur_enabled") }}</span>
+          </label>
+        </div>
+
         <!-- Formatação de texto personalizada -->
         <div class="opt-row">
           <label class="opt-checkbox">
@@ -585,6 +596,76 @@
                   />
                   <span class="opt-range-val">
                     {{ getUserData(KEYS.OPTIONS.SLIDE.SHADOW_OFFSET_Y, 2) }}px
+                  </span>
+                </label>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="5">
+              <label class="opt-checkbox opt-format-check">
+                <input
+                  type="checkbox"
+                  :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false)"
+                  @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, $c($event))"
+                />
+                <span>{{ $t("options.slides.text_bg_blur_enabled") }}</span>
+              </label>
+
+              <div
+                v-if="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false)"
+                class="opt-format-row"
+              >
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_bg_blur") }}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="30"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12) }}px
+                  </span>
+                </label>
+              </div>
+
+              <label class="opt-checkbox opt-format-check">
+                <input
+                  type="checkbox"
+                  :checked="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false)"
+                  @change="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, $c($event))"
+                />
+                <span>{{ $t("options.slides.text_border_enabled") }}</span>
+              </label>
+
+              <div
+                v-if="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false)"
+                class="opt-format-row"
+              >
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_border_color") }}</span>
+                  <input
+                    type="color"
+                    class="opt-color"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, '#ffffff')"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, $v($event))"
+                  />
+                </label>
+                <label class="opt-format-field">
+                  <span class="opt-format-label">{{ $t("options.slides.text_border_width") }}</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    class="opt-range"
+                    :value="getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2)"
+                    @input="saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, Number($v($event)))"
+                  />
+                  <span class="opt-range-val">
+                    {{ getUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2) }}px
                   </span>
                 </label>
               </div>
@@ -1188,6 +1269,11 @@ function restoreTextFormat(): void {
   saveUserData(KEYS.OPTIONS.SLIDE.BODY_SIZE, 14);
   saveUserData(KEYS.OPTIONS.SLIDE.AUX_SIZE, 10);
   saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_TRANSPARENT, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR_ENABLED, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BG_BLUR, 12);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_ENABLED, false);
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_COLOR, "#ffffff");
+  saveUserData(KEYS.OPTIONS.SLIDE.TEXT_BORDER_WIDTH, 2);
   saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_ENABLED, false);
   saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_COLOR, "#000000");
   saveUserData(KEYS.OPTIONS.SLIDE.SHADOW_BLUR, 12);

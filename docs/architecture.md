@@ -714,7 +714,8 @@ font-src     ... vlibras.gov.br
 ## 🎨 Formatação de texto dos slides
 
 Além das cores e tamanhos de fonte (formatação personalizada), os slides de
-música suportam **sombra personalizada** no texto.
+música suportam **sombra personalizada**, **fundo borrado** e **borda** na
+caixa de texto.
 
 ### Configurações (Opções → Slides → Formatação de texto)
 
@@ -725,13 +726,22 @@ música suportam **sombra personalizada** no texto.
 | Desfoque        | `SHADOW_BLUR`                  | 12        | Raio de desfoque (0–30 px)            |
 | Desloc. X       | `SHADOW_OFFSET_X`              | 0         | Deslocamento horizontal (-20 a 20 px) |
 | Desloc. Y       | `SHADOW_OFFSET_Y`              | 2         | Deslocamento vertical (-20 a 20 px)   |
+| Fundo borrado   | `TEXT_BG_BLUR_ENABLED`          | `false`   | Borra somente o fundo atrás do texto  |
+| Intensidade     | `TEXT_BG_BLUR`                  | 12        | Intensidade do blur (0–30 px)         |
+| Borda da caixa  | `TEXT_BORDER_ENABLED`           | `false`   | Ativa a borda da caixa de texto       |
+| Cor da borda    | `TEXT_BORDER_COLOR`             | `#FFFFFF` | Cor da borda                          |
+| Espessura       | `TEXT_BORDER_WIDTH`             | 2         | Espessura da borda (1–10 px)          |
 
 ### Implementação
 
 - `useSlideStyle.ts` — lê as chaves e constrói `text-shadow` via `_buildTextShadow()`
 - Aplica-se a `coverStyle()`, `lyricStyle()`, `auxStyle()` e `nextStyle()`
+- O fundo borrado usa `backdrop-filter`, portanto o texto permanece nítido
+- O blur pode ser ativado pelo atalho acima da formatação personalizada; intensidade e borda ficam no card
+- A borda só é aplicada enquanto `CUSTOM_TEXT_FORMAT` estiver ativo
+- Blur e borda são aplicados às caixas de capa, letra principal e texto auxiliar
 - Quando desativada, usa a sombra padrão hardcoded (preta, desfocada)
-- Botão "Restaurar" reseta todas as formatações inclusive sombra
+- Botão "Restaurar" reseta todas as formatações, incluindo sombra, blur e borda
 
 ---
 

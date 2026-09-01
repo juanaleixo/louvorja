@@ -24,6 +24,11 @@ export const SLIDE_STYLE_DEFAULT = Object.freeze({
   text_align: "center" as "top" | "center" | "bottom",
   transition_speed_ms: 120, // fade-in da tela inteira (rápido — antes 256ms)
   text_bg_transparent: false, // caixa de texto atrás da letra (translúcida quando false)
+  text_bg_blur_enabled: false,
+  text_bg_blur: 12,
+  text_border_enabled: false,
+  text_border_color: "#FFFFFF",
+  text_border_width: 2,
   affect_external_slides: true, // formatação personalizada vence formatação do slide externo
   custom_background_active: false, // toggle "Fundo personalizado" ligado pelo usuário
   shadow_enabled: false,

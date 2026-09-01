@@ -62,8 +62,8 @@
  * dentro do v-dialog do media). Sem multiplicadores arbitrários: o cfg.font_size_*
  * é a proporção direta.
  *
- * Fundo, cores, fontes, alinhamento, transparência da caixa de texto, refrão
- * com cor própria — tudo lido de useSlideStyle (única fonte de verdade).
+ * Fundo, cores, fontes, alinhamento, blur/borda da caixa de texto e refrão com
+ * cor própria — tudo lido de useSlideStyle (única fonte de verdade).
  */
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import Strings from "@/helpers/Strings";
